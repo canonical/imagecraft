@@ -1,17 +1,17 @@
-*********
-Starcraft
-*********
+**********
+Imagecraft
+**********
 
-Welcome to Starcraft! We hope this document helps you get started. Before
+Welcome to Imagecraft! We hope this document helps you get started. Before
 contributing any code, please sign the `Canonical contributor licence
 agreement`_.
 
+TBD
+
 Setting up a development environment
 ------------------------------------
-We use a forking, feature-based workflow, so you should start by forking the
-repository. Once you've done that, clone the project to your computer using git
-clone's ``--recurse-submodules`` parameter. (See more on the `git submodules`_
-documentation.)
+TBD
+
 
 Tooling
 =======

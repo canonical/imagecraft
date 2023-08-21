@@ -1,5 +1,5 @@
 [project]
-name = "starcraft"
+name = "imagecraft"
 dynamic = ["version", "readme"]
 dependencies = [
 
@@ -12,8 +12,6 @@ classifiers = [
 ]
 requires-python = ">=3.8"
 
-[project.scripts]
-starcraft-hello = "starcraft:hello"
 
 [project.optional-dependencies]
 dev = [
@@ -55,7 +53,7 @@ build-backend = "setuptools.build_meta"
 readme = {file = "README.rst"}
 
 [tool.setuptools_scm]
-write_to = "starcraft/_version.py"
+write_to = "imagecraft/_version.py"
 # the version comes from the latest annotated git tag formatted as 'X.Y.Z'
 # version scheme:
 #   - X.Y.Z.post<commits since tag>+g<hash>.d<%Y%m%d>
@@ -109,7 +107,7 @@ exclude_also = [
 ]
 
 [tool.pyright]
-strict = ["starcraft"]
+strict = ["imagecraft"]
 pythonVersion = "3.8"
 pythonPlatform = "Linux"
 
@@ -130,7 +128,7 @@ disallow_untyped_decorators = true
 disallow_any_generics = true
 
 [[tool.mypy.overrides]]
-module = ["starcraft.*"]
+module = ["imagecraft.*"]
 disallow_untyped_defs = true
 no_implicit_optional = true
 
@@ -141,7 +139,7 @@ strict = false
 [tool.ruff]
 line-length = 88
 target-version = "py38"
-src = ["starcraft", "tests"]
+src = ["imagecraft", "tests"]
 extend-exclude = [
     "docs",
     "__pycache__",

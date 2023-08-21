@@ -1,0 +1,13 @@
+name: ubuntu-server-amd64
+version: 23.04
+base: ubuntu-23.04
+platforms:
+  amd64:
+    build-for: [ amd64 ]
+    build-on: [ amd64 ]
+    gadget:
+      source: https://github.com/snapcore/pc-gadget.git
+
+parts:
+  rootfs:
+    plugin: germinate
