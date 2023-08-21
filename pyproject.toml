@@ -157,7 +157,6 @@ select = [  # Base linting rule selections.
     "D",  # Implement pydocstyle checking as well.
     "UP",  # Pyupgrade - note that some of are excluded below due to Python versions
     "YTT",  # flake8-2020: Misuse of `sys.version` and `sys.version_info`
-    "ANN",  # Type annotations.
     "BLE",  # Do not catch blind exceptions
     "FBT",  # Disallow boolean positional arguments (make them keyword-only)
     "B0",  # Common mistakes and typos.
@@ -208,6 +207,7 @@ extend-select = [
     "RUF100",  # #noqa directive that doesn't flag anything
 ]
 ignore = [
+    "ANN",  # Type annotations.
     "ANN10",  # Type annotations for `self` and `cls`
     #"E203",  # Whitespace before ":"  -- Commented because ruff doesn't currently check E203
     "E501",  # Line too long (reason: black will automatically fix this for us)
