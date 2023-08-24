@@ -142,8 +142,6 @@ class ImagecraftLifecycle:
             print(f"Preparing platform: {label}")
             self.prepare_platform(label, platform)
 
-        print(self.yaml)
-
         self.lcm = LifecycleManager(
             self.yaml,
             application_name="imagecraft",
