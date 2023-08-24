@@ -29,7 +29,6 @@ lint = [
 ]
 types = [
     "mypy[reports]==1.4.1",
-    "pyright==1.1.316",
 ]
 docs = [
     "furo==2023.7.26",
@@ -105,11 +104,6 @@ skip_empty = true
 exclude_also = [
     "if (typing\\.)?TYPE_CHECKING:",
 ]
-
-[tool.pyright]
-strict = ["imagecraft"]
-pythonVersion = "3.8"
-pythonPlatform = "Linux"
 
 [tool.mypy]
 python_version = "3.8"

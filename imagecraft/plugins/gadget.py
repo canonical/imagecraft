@@ -14,8 +14,10 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Optional
+from typing import Optional, cast
 from craft_parts import plugins
+
+from imagecraft.helpers import craft_base_to_ubuntu_series
 
 class GadgetPluginProperties(plugins.PluginProperties):
     gadget_target: Optional[str] = None
@@ -32,13 +34,26 @@ class GadgetPlugin(plugins.Plugin):
     properties_class = GadgetPluginProperties
 
     def get_build_snaps(self):
-        return {"ubuntu-image"}
+        return {}
 
     def get_build_packages(self):
-        return {}
+        # This list here should include all the base packages that are needed
+        # to build the gadget. More specific packages to the actual gadget
+        # build should be added manually by users.
+        return {"make"}
 
     def get_build_environment(self):
         return {}
 
     def get_build_commands(self):
-        return ["echo 'Would launch ubuntu-image now'"]
+        options = cast(GadgetPluginProperties, self._options)
+
+        gadget_arch = self._part_info.target_arch
+        gadget_series = craft_base_to_ubuntu_series(self._part_info.project_info.base)
+        gadget_target = options.gadget_target
+        if gadget_target is None:
+            gadget_target = ""
+
+        return [f"make ARCH={gadget_arch} SERIES={gadget_series} {gadget_target}"]
+        
+

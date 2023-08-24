@@ -147,6 +147,7 @@ class ImagecraftLifecycle:
         self.lcm = LifecycleManager(
             self.yaml,
             application_name="imagecraft",
+            base=self.project.base,
             work_dir=self.work_dir,
             cache_dir=self.cache_dir,
         )
