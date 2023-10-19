@@ -39,7 +39,12 @@ class ProjectModel(BaseModel):
 
 class Gadget(ProjectModel):
     source: str
+    source_branch: Optional[str]
     gadget_target: Optional[str]
+
+
+class Kernel(ProjectModel):
+    kernel_package: Optional[str]
 
 
 class Platform(ProjectModel):
@@ -47,6 +52,7 @@ class Platform(ProjectModel):
     build_for: UniqueStrList
     extensions: UniqueStrList = []
     gadget: Optional[Gadget]
+    kernel: Optional[Kernel]
     fragments: UniqueStrList = []
 
 
@@ -83,13 +89,8 @@ class Project(ProjectModel):
         platforms = []
         if not requested_platforms:
             requested_platforms = self.platforms.keys()
-        print(requested_platforms)
-        print(platforms)
         for label, platform in self.platforms.items():
-            print(label)
             if label in requested_platforms or not label:
-                print(platform.build_on)
-                print(build_on)
                 if set(build_on) <= set(platform.build_on):
                     platforms.append((label, platform))
 

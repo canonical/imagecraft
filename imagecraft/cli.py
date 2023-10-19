@@ -32,6 +32,7 @@ from imagecraft.commands import (
     build, pull, stage, prime, pack, clean,
 )
 from imagecraft.plugins import register
+from imagecraft.ubuntu_image import UbuntuImageError
 
 COMMAND_GROUPS = [
     CommandGroup(
@@ -85,6 +86,9 @@ def run():
     except CraftError as e:
         emit.error(e)
         ret = e.retcode
+    except UbuntuImageError as e:
+        emit.error(e)
+        ret = 1
     except ProvideHelpException as e:
         print(e, file=sys.stderr)
         emit.ended_ok()

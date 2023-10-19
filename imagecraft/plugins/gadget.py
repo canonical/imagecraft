@@ -17,7 +17,7 @@
 from typing import Optional, cast
 from craft_parts import plugins
 
-from imagecraft.helpers import craft_base_to_ubuntu_series
+from imagecraft.utils import craft_base_to_ubuntu_series
 
 class GadgetPluginProperties(plugins.PluginProperties):
     gadget_target: Optional[str] = None
@@ -43,17 +43,22 @@ class GadgetPlugin(plugins.Plugin):
         return {"make"}
 
     def get_build_environment(self):
-        return {}
+        gadget_arch = self._part_info.target_arch
+        gadget_series = craft_base_to_ubuntu_series(self._part_info.project_info.base)
+        return {"ARCH": gadget_arch, "SERIES": gadget_series}
 
     def get_build_commands(self):
         options = cast(GadgetPluginProperties, self._options)
 
-        gadget_arch = self._part_info.target_arch
-        gadget_series = craft_base_to_ubuntu_series(self._part_info.project_info.base)
         gadget_target = options.gadget_target
         if gadget_target is None:
             gadget_target = ""
 
-        return [f"make ARCH={gadget_arch} SERIES={gadget_series} {gadget_target}"]
-        
+        gadget_cmd = [
+            f"make {gadget_target}",
+            "cp -a $CRAFT_PART_BUILD/install/* $CRAFT_PART_INSTALL/",
+            # Temporary before we change ubuntu-image
+            "cp $CRAFT_PART_INSTALL/meta/gadget.yaml $CRAFT_PART_INSTALL/",
+        ]
 
+        return gadget_cmd

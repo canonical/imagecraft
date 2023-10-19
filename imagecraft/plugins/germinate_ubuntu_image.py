@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, List, Optional, cast
 from pydantic import conlist
 from craft_parts import plugins
 
+
 from imagecraft.ubuntu_image import generate_ubuntu_image_calls_rootfs
 from imagecraft.utils import craft_base_to_ubuntu_series
 
@@ -30,12 +31,18 @@ else:
     UniqueStrList = conlist(str, unique_items=True, min_items=1)
 
 
-class GerminatePluginProperties(plugins.PluginProperties):
+class GerminateUbuntuImagePluginProperties(plugins.PluginProperties):
     germinate_sources: UniqueStrList
     germinate_source_branch: Optional[str]
     germinate_seeds: UniqueStrList
     germinate_components: UniqueStrList
     germinate_pocket: Optional[str] = "updates"
+
+    # Optional only to the ubuntu-image germination plugin
+    germinate_extra_snaps: Optional[UniqueStrList] = None
+
+    # Internal variables, not to be set by the user
+    germinate_active_kernel: Optional[str] = None
 
     @classmethod
     def unmarshal(cls, data):
@@ -45,8 +52,8 @@ class GerminatePluginProperties(plugins.PluginProperties):
         return cls(**plugin_data)
 
 
-class GerminatePlugin(plugins.Plugin):
-    properties_class = GerminatePluginProperties
+class GerminateUbuntuImagePlugin(plugins.Plugin):
+    properties_class = GerminateUbuntuImagePluginProperties
 
     def get_build_snaps(self):
         return ["ubuntu-image"]
@@ -58,7 +65,7 @@ class GerminatePlugin(plugins.Plugin):
         return {}
 
     def get_build_commands(self):
-        options = cast(GerminatePluginProperties, self._options)
+        options = cast(GerminateUbuntuImagePluginProperties, self._options)
 
         germinate_arch = self._part_info.target_arch
         germinate_series = craft_base_to_ubuntu_series(
@@ -67,7 +74,11 @@ class GerminatePlugin(plugins.Plugin):
         if not germinate_source_branch:
             germinate_source_branch = germinate_series
 
-        return generate_ubuntu_image_calls_rootfs(
+        # The ubuntu-image germinate plugin operates on generating a
+        # special image-definition file for the given germinate part
+        # and then executing ubuntu-image only up until the stage where
+        # the rootfs is generated
+        germinate_cmd = generate_ubuntu_image_calls_rootfs(
             germinate_series,
             germinate_arch,
             options.germinate_sources,
@@ -75,4 +86,14 @@ class GerminatePlugin(plugins.Plugin):
             options.germinate_seeds,
             options.germinate_components,
             options.germinate_pocket,
+            options.germinate_active_kernel,
+            options.germinate_extra_snaps,
         )
+
+        # We also need to make sure to prepare a proper fstab entry
+        # as ubuntu-image doesn't do that for us
+        germinate_cmd.append(
+            "echo \"LABEL=writable   /    ext4   defaults    0 0\n\""
+            " >$CRAFT_PART_BUILD/work/chroot/etc/fstab")
+
+        return germinate_cmd

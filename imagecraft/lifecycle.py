@@ -15,6 +15,7 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from copy import deepcopy
+import os
 import yaml
 
 from xdg import BaseDirectory
@@ -23,7 +24,8 @@ from craft_parts import ActionType, LifecycleManager, Step
 from craft_cli import ArgumentParsingError
 
 from imagecraft.project import Project
-from imagecraft.helpers import host_deb_arch
+from imagecraft.ubuntu_image import pack_image
+from imagecraft.utils import host_deb_arch
 
 
 
@@ -32,6 +34,7 @@ class ImagecraftLifecycle:
     def __init__(self, args):
         self.cache_dir = BaseDirectory.save_cache_path("imagecraft")
         self.work_dir = "."
+        self.output_dir = args.output_dir if args.output_dir else "."
 
         self.load("imagecraft.yaml", args.platform)
 
@@ -108,17 +111,8 @@ class ImagecraftLifecycle:
     
     def prepare_platform(self, label, platform):
         # Add any platform-specific parts - like the gadget
-        print(platform)
         if platform.gadget:
-            print("aaa")
             gadget_name = f"{label}_gadget"
-
-            # We need to make sure the gadget is built first
-            for part in self.yaml["parts"].values():
-                if "after" in part:
-                    part["after"].append(gadget_name)
-                else:
-                    part["after"] = [gadget_name]
 
             # Add the gadget part
             gadget = {
@@ -132,10 +126,54 @@ class ImagecraftLifecycle:
                 "override-prime": "true",
             }
             if platform.gadget.gadget_target:
-                gadget["gadget_target"] = platform.gadget.gadget_target
+                gadget["gadget-target"] = platform.gadget.gadget_target
+            if platform.gadget.source_branch:
+                gadget["source-branch"] = platform.gadget.source_branch
             self.yaml["parts"][gadget_name] = gadget
 
-            
+        if platform.kernel:
+            if platform.kernel.kernel_package:
+                # Workaround until we get a better germinate plugin
+                for part in self.project.parts.values():
+                    if part["plugin"] == "germinate":
+                        part["germinate-active-kernel"] = \
+                            platform.kernel.kernel_package
+            # TODO: this will be done better with a native germinate plugin
+            # if platform.kernel.kernel_package:
+            #     kernel_name = f"{label}_kernel"
+
+            #     # We need to make sure the kernel is built after the rootfs
+            #     # TODO: maybe we should be smarter than just finiding by the
+            #     # label
+            #     if "rootfs" in self.yaml["parts"]:
+            #         self.yaml["parts"]["rootfs"]["after"].append(
+            #             kernel_name)
+
+            #     # Add the kernel part
+            #     kernel = {
+            #         "plugin": "nil",
+            #         "stage-packages": [platform.kernel.kernel_package],
+            #     }
+            #     self.yaml["parts"][kernel_name] = kernel
+
+    def pack_platform(self, label, platform):
+        # The gadget is not always required
+        if platform.gadget:
+            gadget_name = f"{label}_gadget"
+            gadget_path = os.path.join(
+                self.work_dir, "parts", gadget_name, "install")
+        else:
+            gadget_path = None
+
+        # The prime directory contains our final filesystem
+        prime_path = os.path.join(
+            self.work_dir, "prime")
+        
+        # Create per-platform output directories
+        platform_output = os.path.join(self.output_dir, label)
+        os.makedirs(platform_output, exist_ok=True)
+
+        pack_image(prime_path, gadget_path, platform_output)
  
     def run(self, target_step):
         for (label, platform) in self.selected_platforms:
@@ -159,7 +197,7 @@ class ImagecraftLifecycle:
 
         for (label, platform) in self.selected_platforms:
             print(f"Preparing image for platform: {label}")
-            # TODO
+            self.pack_platform(label, platform)
 
     def clean(self):
         pass

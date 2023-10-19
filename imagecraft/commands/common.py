@@ -50,9 +50,14 @@ class ImagecraftCommand(BaseCommand, abc.ABC):
         parser.add_argument(
             "--platform",
             action="append",
-            help=(
-                "Only build image for the selected platforms."
-            ),
+            help="Only build image for the selected platforms."
+        )
+        parser.add_argument(
+            "-O",
+            "--output-dir",
+            metavar="output_dir",
+            type=str,
+            help="Path to the output directory."
         )
         # TODO: add more common arguments
 

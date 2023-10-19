@@ -15,6 +15,7 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from craft_cli import emit
+from overrides import overrides
 
 from .common import ImagecraftCommand
 
@@ -25,3 +26,8 @@ class PackCommand(ImagecraftCommand):
     help_msg = "Pack parts of the image build."
     overview = "TBD"
     execute_step = "pack"
+
+    @overrides
+    def run(self, args):
+        # TODO: run the pack operation manually
+        pass

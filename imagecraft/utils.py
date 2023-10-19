@@ -37,8 +37,6 @@ def craft_base_to_ubuntu_series(base):
 
     if not base.startswith("ubuntu-"):
         return None
-    
-    print(version_to_series_map)
 
     if not version_to_series_map:
         # I wonder if there's an easier way than this
