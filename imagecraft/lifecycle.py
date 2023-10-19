@@ -24,9 +24,8 @@ from craft_parts import ActionType, LifecycleManager, Step
 from craft_cli import ArgumentParsingError
 
 from imagecraft.project import Project
-from imagecraft.ubuntu_image import pack_image
+from imagecraft.ubuntu_image import ubuntu_image_pack
 from imagecraft.utils import host_deb_arch
-
 
 
 class ImagecraftLifecycle:
@@ -173,7 +172,14 @@ class ImagecraftLifecycle:
         platform_output = os.path.join(self.output_dir, label)
         os.makedirs(platform_output, exist_ok=True)
 
-        pack_image(prime_path, gadget_path, platform_output)
+        ubuntu_image_pack(prime_path, gadget_path, platform_output)
+
+    def pack_selected_platforms(self):
+        # Helper function to iterate over selected platforms and
+        # prepare images for them
+        for (label, platform) in self.selected_platforms:
+            print(f"Preparing image for platform: {label}")
+            self.pack_platform(label, platform)
  
     def run(self, target_step):
         for (label, platform) in self.selected_platforms:
@@ -195,9 +201,7 @@ class ImagecraftLifecycle:
                     print(f"Execute: {self._action_message(action)}")
                     ctx.execute(action)
 
-        for (label, platform) in self.selected_platforms:
-            print(f"Preparing image for platform: {label}")
-            self.pack_platform(label, platform)
+        self.pack_selected_platforms()
 
     def clean(self):
         pass

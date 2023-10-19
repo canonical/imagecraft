@@ -103,7 +103,7 @@ def generate_ubuntu_image_calls_rootfs(series, arch, sources, seed_branch,
     return cmds
 
 
-def pack_image(rootfs_path, gadget_path, output_path, image_type=None):
+def ubuntu_image_pack(rootfs_path, gadget_path, output_path, image_type=None):
     """Pack the primed image contents into an image file."""
     cmd = ["./ubuntu-image", "pack", "--gadget-dir", gadget_path, "--rootfs-dir", rootfs_path, "-O", output_path]
 

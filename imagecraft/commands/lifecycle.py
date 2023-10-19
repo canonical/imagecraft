@@ -18,12 +18,13 @@ import abc
 
 from craft_cli import BaseCommand, emit
 from craft_cli.dispatcher import _CustomArgumentParser
+from overrides import overrides
 
 from imagecraft.lifecycle import ImagecraftLifecycle
 
 
-class ImagecraftCommand(BaseCommand, abc.ABC):
-    """Base class for all imagecraft commands."""
+class ImagecraftLifecycleCommand(BaseCommand, abc.ABC):
+    """Base class for all imagecraft lifecycle commands."""
 
     execute_step = None
 
@@ -68,3 +69,69 @@ class ImagecraftCommand(BaseCommand, abc.ABC):
         lifecycle = ImagecraftLifecycle(args)
         lifecycle.run(self.execute_step)
 
+
+class PullCommand(ImagecraftLifecycleCommand):
+    """Pull parts of the image build."""
+
+    name = "pull"
+    help_msg = "Pull parts of the image build."
+    overview = "TBD"
+    execute_step = "pull"
+
+
+class BuildCommand(ImagecraftLifecycleCommand):
+    """Build parts of the image build."""
+
+    name = "build"
+    help_msg = "Build parts of the image build."
+    overview = "TBD"
+    execute_step = "build"
+
+
+class StageCommand(ImagecraftCommand):
+    """Stage parts of the image build."""
+
+    name = "stage"
+    help_msg = "Stage parts of the image build."
+    overview = "TBD"
+    execute_step = "stage"
+
+
+class PrimeCommand(ImagecraftLifecycleCommand):
+    """Prime parts of the image build."""
+
+    name = "prime"
+    help_msg = "Prime parts of the image build."
+    overview = "TBD"
+    execute_step = "prime"
+
+
+class PackCommand(ImagecraftLifecycleCommand):
+    """Pack parts of the image build."""
+
+    name = "pack"
+    help_msg = "Pack parts of the image build."
+    overview = "TBD"
+    execute_step = "pack"
+
+    @overrides
+    def run(self, args):
+        """Run only the pack command."""
+        emit.debug("Running clean command")
+        lifecycle = ImagecraftLifecycle(args)
+        lifecycle.pack_selected_platforms()
+
+
+class CleanCommand(ImagecraftLifecycleCommand):
+    """Prime parts of the image build."""
+
+    name = "clean"
+    help_msg = "Clean parts of the image build."
+    overview = "TBD"
+    execute_step = "clean"
+
+    def run(self, args):
+        """Run the clean command."""
+        emit.debug("Running clean command")
+        lifecycle = ImagecraftLifecycle(args)
+        lifecycle.clean()

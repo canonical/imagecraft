@@ -28,9 +28,7 @@ from craft_cli import (
     emit,
 )
 
-from imagecraft.commands import (
-    build, pull, stage, prime, pack, clean,
-)
+from imagecraft.commands import lifecycle
 from imagecraft.plugins import register
 from imagecraft.ubuntu_image import UbuntuImageError
 
@@ -38,17 +36,17 @@ COMMAND_GROUPS = [
     CommandGroup(
         "Lifecycle",
         [
-            build.BuildCommand,
-            pull.PullCommand,
-            stage.StageCommand,
-            prime.PrimeCommand,
-            pack.PackCommand,
+            lifecycle.BuildCommand,
+            lifecycle.PullCommand,
+            lifecycle.StageCommand,
+            lifecycle.PrimeCommand,
+            lifecycle.PackCommand,
         ],
     ),
     CommandGroup(
         "General",
         [
-            clean.CleanCommand,
+            lifecycle.CleanCommand,
         ],
     ),
 ]
