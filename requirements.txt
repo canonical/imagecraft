@@ -149,7 +149,7 @@ ubuntu-drivers-common==0.0.0
 ufw==0.36.1
 unattended-upgrades==0.1
 unidiff==0.7.3
-urllib3==1.26.12
+urllib3==1.26.18
 usb-creator==0.3.16
 userpath==1.8.0
 virtualenv==20.19.0+ds
