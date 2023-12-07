@@ -1,4 +1,4 @@
-# This file is part of starcraft.
+# This file is part of imagecraft.
 #
 # Copyright 2023 Canonical Ltd.
 #
@@ -13,32 +13,14 @@
 #
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""Basic Starcraft package demo unit tests."""
-from unittest import mock
 
-import starcraft
-
-
-def test_version():
-    assert starcraft.__version__ is not None
+from craft_cli import CraftError
+from craft_parts import PartsError
 
 
-def test_hello(mocker):
-    mocker.patch("builtins.print")
-
-    starcraft.hello()
-
-    print.assert_called_once_with("Hello *craft team!")
+class ImagecraftError(CraftError):
+    """Base class for all imagecraft errors."""
 
 
-def test_hello_people(mocker):
-    mocker.patch("builtins.print")
-
-    starcraft.hello(["people"])
-
-    print.assert_has_calls(
-        [
-            mock.call("Hello *craft team!"),
-            mock.call("Hello people!"),
-        ]
-    )
+class UbuntuImageError(ImagecraftError):
+    """Raised when an error occurs while using ubuntu-image."""

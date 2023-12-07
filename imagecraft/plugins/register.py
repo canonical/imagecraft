@@ -18,6 +18,7 @@ from craft_parts import plugins
 
 from imagecraft.plugins import germinate_ubuntu_image, prepare_image, gadget
 
+
 def register_plugins():
     plugins.register(
         {

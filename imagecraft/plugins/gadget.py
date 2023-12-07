@@ -19,6 +19,7 @@ from craft_parts import plugins
 
 from imagecraft.utils import craft_base_to_ubuntu_series
 
+
 class GadgetPluginProperties(plugins.PluginProperties):
     gadget_target: Optional[str] = None
 
@@ -44,7 +45,8 @@ class GadgetPlugin(plugins.Plugin):
 
     def get_build_environment(self):
         gadget_arch = self._part_info.target_arch
-        gadget_series = craft_base_to_ubuntu_series(self._part_info.project_info.base)
+        gadget_series = craft_base_to_ubuntu_series(
+            self._part_info.project_info.base)
         return {"ARCH": gadget_arch, "SERIES": gadget_series}
 
     def get_build_commands(self):

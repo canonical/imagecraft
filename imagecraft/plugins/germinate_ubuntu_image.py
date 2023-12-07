@@ -14,12 +14,12 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import TYPE_CHECKING, List, Optional, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, cast
 from pydantic import conlist
 from craft_parts import plugins
 
 
-from imagecraft.ubuntu_image import generate_ubuntu_image_calls_rootfs
+from imagecraft.ubuntu_image import ubuntu_image_cmds_build_rootfs
 from imagecraft.utils import craft_base_to_ubuntu_series
 
 # A workaround for mypy false positives
@@ -38,14 +38,12 @@ class GerminateUbuntuImagePluginProperties(plugins.PluginProperties):
     germinate_components: UniqueStrList
     germinate_pocket: Optional[str] = "updates"
 
-    # Optional only to the ubuntu-image germination plugin
+    # Optional, only to the ubuntu-image germination plugin
     germinate_extra_snaps: Optional[UniqueStrList] = None
-
-    # Internal variables, not to be set by the user
     germinate_active_kernel: Optional[str] = None
 
     @classmethod
-    def unmarshal(cls, data):
+    def unmarshal(cls, data: Dict[str, Any]):
         plugin_data = plugins.base.extract_plugin_properties(
             data, plugin_name="germinate"
         )
@@ -55,16 +53,16 @@ class GerminateUbuntuImagePluginProperties(plugins.PluginProperties):
 class GerminateUbuntuImagePlugin(plugins.Plugin):
     properties_class = GerminateUbuntuImagePluginProperties
 
-    def get_build_snaps(self):
-        return ["ubuntu-image"]
+    def get_build_snaps(self) -> Set[str]:
+        return set("ubuntu-image")
 
-    def get_build_packages(self):
-        return []
+    def get_build_packages(self) -> Set[str]:
+        return set()
 
-    def get_build_environment(self):
+    def get_build_environment(self) -> Dict[str, str]:
         return {}
 
-    def get_build_commands(self):
+    def get_build_commands(self) -> List[str]:
         options = cast(GerminateUbuntuImagePluginProperties, self._options)
 
         germinate_arch = self._part_info.target_arch
@@ -78,7 +76,7 @@ class GerminateUbuntuImagePlugin(plugins.Plugin):
         # special image-definition file for the given germinate part
         # and then executing ubuntu-image only up until the stage where
         # the rootfs is generated
-        germinate_cmd = generate_ubuntu_image_calls_rootfs(
+        germinate_cmd = ubuntu_image_cmds_build_rootfs(
             germinate_series,
             germinate_arch,
             options.germinate_sources,

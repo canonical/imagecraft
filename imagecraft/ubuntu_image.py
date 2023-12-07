@@ -16,20 +16,23 @@
 
 
 import subprocess
+from typing import List
 from craft_cli import emit
 
-from imagecraft.utils import craft_base_to_ubuntu_series
+from imagecraft.errors import UbuntuImageError
 
 
-class UbuntuImageError(Exception):
-    """Raised when an error occurs while using ubuntu-image."""
-    pass
-
-
-def generate_partial_def_rootfs(series, arch, sources, seed_branch,
-                                seeds, components_list, pocket,
-                                kernel=None, extra_snaps=None):
-    """Generate a partial definition yaml file for rootfs creation."""
+def generate_legacy_def_rootfs(
+        series: str,
+        arch: str,
+        sources: List[str],
+        seed_branch: str,
+        seeds: List[str],
+        components_list: List[str],
+        pocket: str,
+        kernel: str | None = None,
+        extra_snaps: List[str] | None = None) -> str:
+    """Generate a definition yaml file for rootfs creation."""
     components = ", ".join(components_list)
     seed_urls = ", ".join(f'"{w}"' for w in sources)
     seed_names = ", ".join(f'"{w}"' for w in seeds)
@@ -46,6 +49,10 @@ customization:
 """
 
     definition_yaml = f"""
+name: craft-driver
+display-name: Craft Driver
+revision: 1
+class: preinstalled
 architecture: {arch}
 series: {series}
 class: preinstalled
@@ -60,24 +67,6 @@ rootfs:
     pocket: {pocket}
 
 {customization}
-"""
-    return definition_yaml
-
-
-def generate_legacy_def_rootfs(series, arch, sources, seed_branch,
-                               seeds, components_list, pocket,
-                               kernel=None, extra_snaps=None):
-    """Generate a definition yaml file for rootfs creation before ubuntu-image
-       control support."""
-    rootfs = generate_partial_def_rootfs(
-        series, arch, sources, seed_branch, seeds, components_list, pocket,
-        kernel, extra_snaps)
-    definition_yaml = f"""
-name: craft-driver
-display-name: Craft Driver
-revision: 1
-class: preinstalled
-{rootfs}
 
 artifacts:
   manifest:
@@ -86,16 +75,23 @@ artifacts:
     return definition_yaml
 
 
-def generate_ubuntu_image_calls_rootfs(series, arch, sources, seed_branch,
-                                       seeds, components_list, pocket,
-                                       kernel=None, extra_snaps=None):
+def ubuntu_image_cmds_build_rootfs(
+        series: str,
+        arch: str,
+        sources: List[str],
+        seed_branch: str,
+        seeds: List[str],
+        components_list: List[str],
+        pocket: str,
+        kernel: str | None = None,
+        extra_snaps: List[str] | None = None) -> List[str]:
     """Call ubuntu-image to generate a rootfs."""
     definition_yaml = generate_legacy_def_rootfs(
         series, arch, sources, seed_branch, seeds, components_list, pocket,
         kernel, extra_snaps)
     cmds = [
         f"cat << EOF > craft.yaml\n{definition_yaml}\nEOF",
-        "ubuntu-image classic --workdir work -O output/ --thru" \
+        "ubuntu-image classic --workdir work -O output/ --thru"
         "=preseed_image craft.yaml",
         "mv work/chroot/* $CRAFT_PART_INSTALL/",
         #  "ubuntu-image control build-rootfs craft.yaml",
@@ -103,18 +99,26 @@ def generate_ubuntu_image_calls_rootfs(series, arch, sources, seed_branch,
     return cmds
 
 
-def ubuntu_image_pack(rootfs_path, gadget_path, output_path, image_type=None):
+def ubuntu_image_pack(
+        rootfs_path: str,
+        gadget_path: str,
+        output_path: str,
+        image_type: str | None = None) -> None:
     """Pack the primed image contents into an image file."""
-    cmd = ["./ubuntu-image", "pack", "--gadget-dir", gadget_path, "--rootfs-dir", rootfs_path, "-O", output_path]
+    cmd = ["./ubuntu-image", "pack", "--gadget-dir", gadget_path,
+           "--rootfs-dir", rootfs_path, "-O", output_path]
 
     if image_type:
         cmd.extend(["--artifact-type", image_type])
-    
+
     emit.debug(f"Pack command: {cmd}")
     try:
         subprocess.check_call(cmd, universal_newlines=True)
     except subprocess.CalledProcessError as err:
-        msg = f"Cannot pack snap file: {err!s}"
-        if err.stderr:
-            msg += f" ({err.stderr.strip()!s})"
-        raise UbuntuImageError(msg)
+        message = f"Cannot make (pack) image: {err!s}"
+        details = f"Error output: {err.stderr.strip()!s}"
+        resolution = "Please check the error output for resolution guidance."
+
+        raise UbuntuImageError(
+            message=message, details=details, resolution=resolution
+        )

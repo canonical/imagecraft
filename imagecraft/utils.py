@@ -22,17 +22,7 @@ import subprocess
 version_to_series_map = {}
 
 
-def host_deb_arch():
-    """Get the Debian architecture of the host system."""
-    # Use dpkg --print-architecture to get the host architecture
-    # See https://manpages.debian.org/testing/dpkg/dpkg-architecture.1.en.html
-    # for more information.
-    return subprocess.check_output(
-        ["dpkg", "--print-architecture"], universal_newlines=True
-    ).strip()
-
-
-def craft_base_to_ubuntu_series(base):
+def craft_base_to_ubuntu_series(base: str) -> str | None:
     global version_to_series_map
 
     if not base.startswith("ubuntu-"):
@@ -57,4 +47,3 @@ def craft_base_to_ubuntu_series(base):
 
     base_version = base.split("-")[1]
     return version_to_series_map.get(base_version, None)
-

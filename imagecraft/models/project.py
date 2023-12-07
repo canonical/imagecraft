@@ -17,6 +17,12 @@
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from pydantic import BaseModel, ValidationError, validator, conlist
 
+from pydantic_yaml import YamlModelMixin
+
+from craft_application.models import BuildInfo, Project as BaseProject
+from craft_providers import bases
+
+
 # A workaround for mypy false positives
 # see https://github.com/samuelcolvin/pydantic/issues/975#issuecomment-551147305
 # fmt: off
@@ -26,7 +32,7 @@ else:
     UniqueStrList = conlist(str, unique_items=True, min_items=1)
 
 
-class ProjectModel(BaseModel):
+class ProjectModel(YamlModelMixin, BaseProject):
     """Base model for the imagecraft project class."""
 
     class Config:
@@ -37,22 +43,21 @@ class ProjectModel(BaseModel):
         alias_generator = lambda s: s.replace("_", "-")
 
 
-class Gadget(ProjectModel):
-    source: str
-    source_branch: Optional[str]
-    gadget_target: Optional[str]
+class ElementModel(YamlModelMixin, BaseModel):
+    """Base model for project elements (subentries)."""
+
+    class Config:
+        validate_assignment = True
+        extra = "forbid"
+        allow_mutation = True
+        allow_population_by_field_name = True
+        alias_generator = lambda s: s.replace("_", "-")
 
 
-class Kernel(ProjectModel):
-    kernel_package: Optional[str]
-
-
-class Platform(ProjectModel):
-    build_on: UniqueStrList
-    build_for: UniqueStrList
+class Platform(ElementModel):
+    build_on: Optional[UniqueStrList]
+    build_for: Optional[UniqueStrList]
     extensions: UniqueStrList = []
-    gadget: Optional[Gadget]
-    kernel: Optional[Kernel]
     fragments: UniqueStrList = []
 
 
@@ -66,32 +71,28 @@ class Project(ProjectModel):
 
     parts: Dict[str, Any]  # parts are handled by craft-parts
 
-    @classmethod
-    def unmarshal(cls, data):
-        if not isinstance(data, dict):
-            raise TypeError("Project data is not a dictionary")
+    @property
+    def effective_base(self) -> bases.BaseName:
+        """Get the Base name for craft-providers."""
+        base = super().effective_base
+        name, channel = base.split("@")
+        return bases.BaseName(name, channel)
 
-        try:
-            project = Project(**data)
-        except ValidationError as err:
-            # TODO: proper error handling
-            raise err
+    def get_build_plan(self) -> List[BuildInfo]:
+        """Obtain the list of architectures and bases from the project file."""
+        build_infos: List[BuildInfo] = []
+        base = self.effective_base
 
-        return project
+        for platform_entry, platform in self.platforms.items():
+            for build_for in platform.build_for or [platform_entry]:
+                for build_on in platform.build_on or [platform_entry]:
+                    build_infos.append(
+                        BuildInfo(
+                            platform=platform_entry,
+                            build_on=build_on,
+                            build_for=build_for,
+                            base=base,
+                        )
+                    )
 
-    @validator("platforms", pre=True, always=True)
-    @classmethod
-    def _apply_dynamic_default(cls, platforms):
-        # TODO: handle build-on and build-for defaults
-        return platforms
-    
-    def select_platforms(self, requested_platforms, build_on):
-        platforms = []
-        if not requested_platforms:
-            requested_platforms = self.platforms.keys()
-        for label, platform in self.platforms.items():
-            if label in requested_platforms or not label:
-                if set(build_on) <= set(platform.build_on):
-                    platforms.append((label, platform))
-
-        return platforms
+        return build_infos

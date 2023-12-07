@@ -1,6 +1,6 @@
-.. starcraft documentation root file
+.. imagecraft documentation root file
 
-StarCraft
+ImageCraft
 =========
 
 .. toctree::
@@ -16,7 +16,7 @@ StarCraft
 
    .. grid-item-card:: :ref:`Tutorial <tutorial>`
 
-      **Get started** with a hands-on introduction to Starcraft
+      **Get started** with a hands-on introduction to Imagecraft
 
    .. grid-item-card:: :ref:`How-to guides <howto>`
 
@@ -27,7 +27,7 @@ StarCraft
 
    .. grid-item-card:: :ref:`Reference <reference>`
 
-      **Technical information** about Starcraft
+      **Technical information** about Imagecraft
 
    .. grid-item-card:: :ref:`Explanation <explanation>`
 
@@ -36,7 +36,7 @@ StarCraft
 Project and community
 =====================
 
-Starcraft is a member of the Canonical family. It's an open source project
+Imagecraft is a member of the Canonical family. It's an open source project
 that warmly welcomes community projects, contributions, suggestions, fixes
 and constructive feedback.
 

@@ -1,17 +1,16 @@
 name: ubuntu-server-amd64
 version: 22.04
-base: ubuntu-22.04
+base: ubuntu@22.04
 platforms:
   amd64:
     build-for: [ amd64 ]
     build-on: [ amd64 ]
-    gadget:
-      source: https://github.com/snapcore/pc-gadget.git
-      source-branch: classic
-    kernel:
-      kernel-package: linux-generic
 
 parts:
+  gadget:
+    plugin: gadget
+    source: https://github.com/snapcore/pc-gadget.git
+    source-branch: classic
   rootfs:
     plugin: germinate
     germinate-sources:
@@ -27,6 +26,7 @@ parts:
       - restricted
     germinate-pocket: updates
     germinate-extra-snaps: [ core20, snapd ]
+    germinate-active-kernel: linux-generic
     stage:
       - -etc/cloud/cloud.cfg.d/90_dpkg.cfg
   cloud-init:
