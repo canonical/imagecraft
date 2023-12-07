@@ -7,7 +7,7 @@ blinker==1.5
 boto==2.49.0
 breezy==3.3.2
 Brlapi==0.8.4
-certifi==2022.9.24
+certifi==2023.7.22
 Chameleon==3.8.1
 chardet==5.1.0
 click==8.1.3
