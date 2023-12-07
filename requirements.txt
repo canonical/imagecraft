@@ -69,7 +69,7 @@ lunr==0.6.2
 lxml==4.9.2
 Mako==1.2.4.dev0
 Markdown==3.4.3
-markdown-it-py==2.1.0
+markdown-it-py==2.2.0
 MarkupSafe==2.1.2
 mdurl==0.1.2
 merge3==0.0.8
