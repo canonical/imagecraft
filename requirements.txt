@@ -41,7 +41,7 @@ gbp==0.9.30
 germinate==2.39
 ghp-import==2.1.0
 gitdb==4.0.9
-GitPython==3.1.30
+GitPython==3.1.37
 gpg==1.18.0
 html5lib==1.1
 httplib2==0.20.4
