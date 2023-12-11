@@ -16,14 +16,14 @@
 
 from craft_parts import plugins
 
-from imagecraft.plugins import germinate_ubuntu_image, prepare_image, gadget
+from imagecraft.plugins import gadget, germinate_ubuntu_image
 
 
-def register_plugins():
+def setup_plugins() -> None:
+    """Register plugins specific to imagecraft."""
     plugins.register(
         {
             "gadget": gadget.GadgetPlugin,
             "germinate": germinate_ubuntu_image.GerminateUbuntuImagePlugin,
-            "prepare-image": prepare_image.PrepareImagePlugin,
-        }
+        },
     )

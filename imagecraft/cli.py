@@ -14,16 +14,19 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+"""Command-line application entry point."""
+
 import logging
 
-from imagecraft.plugins import register
+from imagecraft.application import Imagecraft
+from imagecraft.plugins import setup_plugins
 from imagecraft.services.service_factory import ImagecraftServiceFactory
 
 
 def run() -> int:
     """Command-line interface entrypoint."""
     # Register our own plugins
-    register.register_plugins()
+    setup_plugins()
 
     # Set lib loggers to debug level so that all messages are sent to Emitter
     for lib_name in ("craft_providers", "craft_parts"):
@@ -35,17 +38,14 @@ def run() -> int:
     return app.run()
 
 
-def _create_app():
+def _create_app() -> Imagecraft:
     # pylint: disable=import-outside-toplevel
     # Import these here so that the script that generates the docs for the
     # commands doesn't need to know *too much* of the application.
     from .application import APP_METADATA, Imagecraft
 
     services = ImagecraftServiceFactory(
-        # type: ignore # type: ignore[call-arg]
         app=APP_METADATA,
     )
 
-    app = Imagecraft(app=APP_METADATA, services=services)
-
-    return app
+    return Imagecraft(app=APP_METADATA, services=services)

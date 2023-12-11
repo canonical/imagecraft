@@ -1,7 +1,7 @@
 .. imagecraft documentation root file
 
 ImageCraft
-=========
+==========
 
 .. toctree::
    :maxdepth: 1

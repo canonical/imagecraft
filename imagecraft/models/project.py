@@ -14,20 +14,24 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
-from pydantic import BaseModel, ValidationError, validator, conlist
+"""Imagecraft project definition.
 
-from pydantic_yaml import YamlModelMixin
+This module defines a imagecraft.yaml file, exportable to a JSON schema.
+"""
 
-from craft_application.models import BuildInfo, Project as BaseProject
+from typing import TYPE_CHECKING
+
+from craft_application.models import BuildInfo
+from craft_application.models import Project as BaseProject
 from craft_providers import bases
-
+from pydantic import BaseModel, conlist
+from pydantic_yaml import YamlModelMixin
 
 # A workaround for mypy false positives
 # see https://github.com/samuelcolvin/pydantic/issues/975#issuecomment-551147305
 # fmt: off
 if TYPE_CHECKING:
-    UniqueStrList = List[str]
+    UniqueStrList = list[str]
 else:
     UniqueStrList = conlist(str, unique_items=True, min_items=1)
 
@@ -36,40 +40,41 @@ class ProjectModel(YamlModelMixin, BaseProject):
     """Base model for the imagecraft project class."""
 
     class Config:
+        """Pydantic model configuration."""
+
         validate_assignment = True
         extra = "forbid"
         allow_mutation = True
         allow_population_by_field_name = True
-        alias_generator = lambda s: s.replace("_", "-")
+        alias_generator = lambda s: s.replace("_", "-")  # noqa: E731 # type: ignore[reportUnknownLambdaType,reportUnknownVariableType,reportUnknownMemberType]
 
 
 class ElementModel(YamlModelMixin, BaseModel):
     """Base model for project elements (subentries)."""
 
     class Config:
+        """Pydantic model configuration."""
+
         validate_assignment = True
         extra = "forbid"
         allow_mutation = True
         allow_population_by_field_name = True
-        alias_generator = lambda s: s.replace("_", "-")
+        alias_generator = lambda s: s.replace("_", "-")  # noqa: E731 # type: ignore[reportUnknownLambdaType,reportUnknownVariableType,reportUnknownMemberType]
 
 
 class Platform(ElementModel):
-    build_on: Optional[UniqueStrList]
-    build_for: Optional[UniqueStrList]
+    """Imagecraft project platform definition."""
+
+    build_on: UniqueStrList | None
+    build_for: UniqueStrList | None
     extensions: UniqueStrList = []
     fragments: UniqueStrList = []
 
 
 class Project(ProjectModel):
-    name: str
-    version: str
-    base: str
-    build_base: Optional[str]  # this == base if not set
+    """Definition of imagecraft.yaml configuration."""
 
-    platforms: Dict[str, Platform]
-
-    parts: Dict[str, Any]  # parts are handled by craft-parts
+    platforms: dict[str, Platform]
 
     @property
     def effective_base(self) -> bases.BaseName:
@@ -78,21 +83,20 @@ class Project(ProjectModel):
         name, channel = base.split("@")
         return bases.BaseName(name, channel)
 
-    def get_build_plan(self) -> List[BuildInfo]:
+    def get_build_plan(self) -> list[BuildInfo]:
         """Obtain the list of architectures and bases from the project file."""
-        build_infos: List[BuildInfo] = []
+        build_infos: list[BuildInfo] = []
         base = self.effective_base
 
         for platform_entry, platform in self.platforms.items():
             for build_for in platform.build_for or [platform_entry]:
-                for build_on in platform.build_on or [platform_entry]:
-                    build_infos.append(
-                        BuildInfo(
+                build_infos.extend(
+                    BuildInfo(
                             platform=platform_entry,
                             build_on=build_on,
                             build_for=build_for,
                             base=base,
-                        )
-                    )
+                    ) for build_on in platform.build_on or [platform_entry]
+                )
 
         return build_infos
