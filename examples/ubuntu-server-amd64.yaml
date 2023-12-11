@@ -3,8 +3,8 @@ version: 22.04
 base: ubuntu@22.04
 platforms:
   amd64:
-    build-for: [ amd64 ]
-    build-on: [ amd64 ]
+    build-for: [amd64]
+    build-on: [amd64]
 
 parts:
   gadget:
@@ -25,7 +25,7 @@ parts:
       - main
       - restricted
     germinate-pocket: updates
-    germinate-extra-snaps: [ core20, snapd ]
+    germinate-extra-snaps: [core20, snapd]
     germinate-active-kernel: linux-generic
     stage:
       - -etc/cloud/cloud.cfg.d/90_dpkg.cfg
