@@ -25,3 +25,10 @@ class ImagecraftError(CraftError):
 
 class UbuntuImageError(ImagecraftError):
     """Raised when an error occurs while using ubuntu-image."""
+
+
+class NoValidSeriesError(ImagecraftError):
+    """Error finding project file."""
+
+    def __init__(self) -> None:
+        super().__init__("No valid series could be found for the given version")
