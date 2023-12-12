@@ -18,9 +18,8 @@ Tooling
 We use a large number of tools for our project. Most of these are installed for
 you with tox, but you'll need to install:
 
-- Python 3.8 (default on Ubuntu 20.04, available on Ubuntu 22.04 through the
-  deadsnakes_ PPA) with setuptools.
-- tox_ version 3.8 or later
+- Python 3.10 (default on Ubuntu 22.04) with setuptools.
+- tox_ version 4.6 or later
 - ShellCheck_  (also available via snap: ``snap install shellcheck``)
 
 Once you have all of those installed, you can install the necessary virtual
