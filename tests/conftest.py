@@ -14,6 +14,7 @@
 import types
 
 import pytest
+from imagecraft import plugins
 
 
 @pytest.fixture()
@@ -34,3 +35,8 @@ def project_main_module() -> types.ModuleType:
             "Failed to import the project's main module: check if it needs updating",
         )
     return main_module
+
+
+@pytest.fixture(autouse=True, scope="session")
+def _setup_parts():
+    plugins.setup_plugins()
