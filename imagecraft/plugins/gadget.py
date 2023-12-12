@@ -69,6 +69,4 @@ class GadgetPlugin(plugins.Plugin):
         return [
             f"make {gadget_target}",
             "cp -a $CRAFT_PART_BUILD/install/* $CRAFT_PART_INSTALL/",
-            # Temporary before we change ubuntu-image
-            "cp $CRAFT_PART_INSTALL/meta/gadget.yaml $CRAFT_PART_INSTALL/",
         ]
