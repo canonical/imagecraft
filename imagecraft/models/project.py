@@ -18,13 +18,12 @@
 
 This module defines a imagecraft.yaml file, exportable to a JSON schema.
 """
-
 from typing import TYPE_CHECKING
 
 from craft_application.models import BuildInfo
 from craft_application.models import Project as BaseProject
 from craft_providers import bases
-from pydantic import BaseModel, conlist
+from pydantic import BaseModel, conlist, validator
 from pydantic_yaml import YamlModelMixin
 
 # A workaround for mypy false positives
@@ -68,13 +67,24 @@ class Platform(ElementModel):
     build_on: UniqueStrList | None
     build_for: UniqueStrList | None
     extensions: UniqueStrList = []
-    fragments: UniqueStrList = []
+
+    def __hash__(self) -> int:
+        return hash("_".join(str(self.build_for) + str(self.extensions)))
+
+    @validator("build_on", "build_for", pre=True, always=True)
+    @classmethod
+    def _apply_vectorise(cls, val: UniqueStrList | None | str) -> UniqueStrList | None | str:
+        """Implement a hook to vectorise."""
+        if isinstance(val, str):
+            val = [val]
+        return val
 
 
 class Project(ProjectModel):
     """Definition of imagecraft.yaml configuration."""
 
     platforms: dict[str, Platform]
+    series: str
 
     @property
     def effective_base(self) -> bases.BaseName:
