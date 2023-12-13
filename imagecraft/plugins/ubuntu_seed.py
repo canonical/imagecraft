@@ -38,14 +38,14 @@ else:
 class UbuntuSeedPluginProperties(plugins.PluginProperties):
     """Supported attributes for the 'UbuntuSeedPlugin' plugin."""
 
-    sources: UniqueStrList
-    source_branch: str | None
-    seeds: UniqueStrList
-    components: UniqueStrList
-    pocket: str = "updates"
+    ubuntu_seed_sources: UniqueStrList
+    ubuntu_seed_source_branch: str | None
+    ubuntu_seed_seeds: UniqueStrList
+    ubuntu_seed_components: UniqueStrList
+    ubuntu_seed_pocket: str = "updates"
 
-    extra_snaps: UniqueStrList | None = None
-    active_kernel: str | None = None
+    ubuntu_seed_extra_snaps: UniqueStrList | None = None
+    ubuntu_seed_active_kernel: str | None = None
 
     @classmethod
     def unmarshal(cls, data: dict[str, Any]) -> Self:
@@ -89,7 +89,7 @@ class UbuntuSeedPlugin(plugins.Plugin):
             self._part_info.project_info.base)
         if not series:
             raise NoValidSeriesError
-        source_branch = options.source_branch
+        source_branch = options.ubuntu_seed_source_branch
 
         if not source_branch:
             source_branch = series
@@ -97,13 +97,13 @@ class UbuntuSeedPlugin(plugins.Plugin):
         ubuntu_seed_cmd = ubuntu_image_cmds_build_rootfs(
             series,
             arch,
-            options.sources,
+            options.ubuntu_seed_sources,
             source_branch,
-            options.seeds,
-            options.components,
-            options.pocket,
-            options.active_kernel,
-            options.extra_snaps,
+            options.ubuntu_seed_seeds,
+            options.ubuntu_seed_components,
+            options.ubuntu_seed_pocket,
+            options.ubuntu_seed_active_kernel,
+            options.ubuntu_seed_extra_snaps,
         )
 
         # We also need to make sure to prepare a proper fstab entry

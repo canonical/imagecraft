@@ -13,20 +13,20 @@ parts:
     source-branch: classic
   rootfs:
     plugin: ubuntu-seed
-    sources:
+    ubuntu-seed-sources:
       - "git://git.launchpad.net/~ubuntu-core-dev/ubuntu-seeds/+git/"
-    source-branch: jammy
-    seeds:
+    ubuntu-seed-source-branch: jammy
+    ubuntu-seed-seeds:
       - server
       - minimal
       - standard
       - cloud-image
-    components:
+    ubuntu-seed-components:
       - main
       - restricted
-    pocket: updates
-    extra-snaps: [core20, snapd]
-    active-kernel: linux-generic
+    ubuntu-seed-pocket: updates
+    ubuntu-seed-extra-snaps: [core20, snapd]
+    ubuntu-seed-active-kernel: linux-generic
     stage:
       - -etc/cloud/cloud.cfg.d/90_dpkg.cfg
   cloud-init:
