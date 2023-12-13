@@ -184,6 +184,7 @@ exclude = [
     "**/_version.py",
     "venv",
     "docs",
+    "build",
 ]
 
 [tool.mypy]
