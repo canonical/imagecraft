@@ -14,6 +14,7 @@
 import types
 
 import pytest
+from craft_application.models.constraints import ProjectName, SummaryStr
 from imagecraft import plugins
 
 
@@ -40,3 +41,54 @@ def project_main_module() -> types.ModuleType:
 @pytest.fixture(autouse=True, scope="session")
 def _setup_parts():
     plugins.setup_plugins()
+
+
+@pytest.fixture()
+def new_dir(monkeypatch, tmpdir):
+    """Change to a new temporary directory."""
+    monkeypatch.chdir(tmpdir)
+    return tmpdir
+
+
+@pytest.fixture()
+def extra_project_params():
+    """Configuration fixture for the Project used by the default services."""
+    return {}
+
+
+@pytest.fixture()
+def default_project(extra_project_params):
+    from craft_application.models.constraints import VersionStr
+    from imagecraft.models.project import Platform, Project
+
+    parts = extra_project_params.pop("parts", {})
+
+    return Project(
+        name=ProjectName("default"),
+        version=VersionStr("1.0"),
+        summary=SummaryStr("default project"),
+        description="default project",
+        base="ubuntu@22.04",
+        series="jammy",
+        parts=parts,
+        platforms={"amd64": Platform(build_for=["amd64"], build_on=["amd64"])},
+        **extra_project_params,
+    )
+
+
+@pytest.fixture()
+def default_factory(default_project):
+    from imagecraft.application import APP_METADATA
+    from imagecraft.services import ImagecraftServiceFactory
+
+    return ImagecraftServiceFactory(
+        app=APP_METADATA,
+        project=default_project,
+    )
+
+
+@pytest.fixture()
+def default_application(default_factory):
+    from imagecraft.application import APP_METADATA, Imagecraft
+
+    return Imagecraft(APP_METADATA, default_factory)
