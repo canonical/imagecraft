@@ -89,8 +89,8 @@ class UbuntuSeedPlugin(plugins.Plugin):
             self._part_info.project_info.base)
         if not series:
             raise NoValidSeriesError
-        source_branch = options.ubuntu_seed_source_branch
 
+        source_branch = options.ubuntu_seed_source_branch
         if not source_branch:
             source_branch = series
 
