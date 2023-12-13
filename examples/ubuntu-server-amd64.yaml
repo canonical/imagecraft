@@ -12,21 +12,21 @@ parts:
     source: https://github.com/snapcore/pc-gadget.git
     source-branch: classic
   rootfs:
-    plugin: germinate
-    germinate-sources:
+    plugin: ubuntu-seed
+    sources:
       - "git://git.launchpad.net/~ubuntu-core-dev/ubuntu-seeds/+git/"
-    germinate-source-branch: jammy
-    germinate-seeds:
+    source-branch: jammy
+    seeds:
       - server
       - minimal
       - standard
       - cloud-image
-    germinate-components:
+    components:
       - main
       - restricted
-    germinate-pocket: updates
-    germinate-extra-snaps: [core20, snapd]
-    germinate-active-kernel: linux-generic
+    pocket: updates
+    extra-snaps: [core20, snapd]
+    active-kernel: linux-generic
     stage:
       - -etc/cloud/cloud.cfg.d/90_dpkg.cfg
   cloud-init:
