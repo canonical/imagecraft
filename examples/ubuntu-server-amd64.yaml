@@ -1,6 +1,7 @@
 name: ubuntu-server-amd64
 version: 22.04
 base: ubuntu@22.04
+series: jammy
 platforms:
   amd64:
     build-for: [amd64]
