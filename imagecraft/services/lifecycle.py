@@ -15,13 +15,10 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from typing import cast
+from overrides import override  # type: ignore[reportUnknownVariableType]
 
-from craft_application import (
-    AppMetadata, LifecycleService, ServiceFactory, util)
-from craft_cli import emit
-from craft_parts import Features, callbacks
-from craft_parts.errors import CallbackRegistrationError
-from overrides import override
+from craft_application import AppMetadata, LifecycleService, ServiceFactory, util
+from craft_parts import Features
 
 from imagecraft.errors import ImagecraftError
 from imagecraft.models.project import Project
@@ -42,14 +39,18 @@ class ImagecraftLifecycleService(LifecycleService):
         work_dir: str,
         project: Project,
         build_for: str,
-        platform: str,
+        platform: str | None,
     ) -> None:
         super().__init__(
-            app, services,
-            project=project, build_for=build_for, platform=platform,
-            cache_dir=cache_dir, work_dir=work_dir)
+            app,
+            services,
+            project=project,
+            build_for=build_for,
+            platform=platform,
+            cache_dir=cache_dir,
+            work_dir=work_dir,
+        )
         self._platform = platform
-        # self._platform = project.platforms.get(platform)
         self._build_for = build_for
 
     @override
@@ -60,19 +61,17 @@ class ImagecraftLifecycleService(LifecycleService):
             build_on = util.get_host_architecture()
             base_build_plan = self._project.get_build_plan()
             build_plan = [
-                plan for plan in base_build_plan
-                if plan.build_for == self._build_for
+                plan for plan in base_build_plan if plan.build_for == self._build_for
             ]
-            build_plan = [
-                plan for plan in build_plan if plan.build_on == build_on
-            ]
+            build_plan = [plan for plan in build_plan if plan.build_on == build_on]
 
             if len(build_plan) != 1:
                 message = "Unable to determine which platform to build."
-                details = f"Possible values are: " \
-                          f"{[info.platform for info in base_build_plan]}."
-                resolution = \
-                    'Choose a platform with the "--platform" parameter.'
+                details = (
+                    f"Possible values are: "
+                    f"{[info.platform for info in base_build_plan]}."
+                )
+                resolution = 'Choose a platform with the "--platform" parameter.'
                 raise ImagecraftError(
                     message=message, details=details, resolution=resolution
                 )
@@ -85,7 +84,6 @@ class ImagecraftLifecycleService(LifecycleService):
 
         self._manager_kwargs.update(
             base=project.base,
-            # package_repositories=project.package_repositories or [],
             project_name=project.name,
             project_vars=project_vars,
         )
@@ -93,18 +91,8 @@ class ImagecraftLifecycleService(LifecycleService):
         super().setup()
 
     @override
-    def run(
-        self,
-        step_name: str | None,
-        part_names: list[str] | None = None
-    ) -> None:
+    def run(self, step_name: str | None, part_names: list[str] | None = None) -> None:
         """Run the lifecycle manager for the parts."""
-        # Overridden to configure package repositories.
-        # project = cast(Project, self._project)
-        # package_repositories = project.package_repositories
-        # if package_repositories is not None:
-        #     _install_package_repositories(package_repositories, self._lcm)
-        #     with contextlib.suppress(CallbackRegistrationError):
-        #         callbacks.register_configure_overlay(_install_overlay_repositories)
+        # TODO: Add overriding package repositories here.
 
         super().run(step_name, part_names)
