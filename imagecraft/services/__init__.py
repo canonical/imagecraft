@@ -15,8 +15,8 @@
 """Imagecraft services."""
 
 from imagecraft.services.pack import ImagecraftPackService
-from imagecraft.services.service_factory import ImagecraftServiceFactory
 from imagecraft.services.lifecycle import ImagecraftLifecycleService
+from imagecraft.services.service_factory import ImagecraftServiceFactory
 
 __all__ = [
     "ImagecraftPackService",

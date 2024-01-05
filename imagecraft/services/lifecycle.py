@@ -14,11 +14,13 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+"""Imagecraft Lifecycle service."""
+
 from typing import cast
-from overrides import override  # type: ignore[reportUnknownVariableType]
 
 from craft_application import AppMetadata, LifecycleService, ServiceFactory, util
 from craft_parts import Features
+from overrides import override  # type: ignore[reportUnknownVariableType]
 
 from imagecraft.errors import ImagecraftError
 from imagecraft.models.project import Project
@@ -30,7 +32,7 @@ Features(enable_overlay=True)
 class ImagecraftLifecycleService(LifecycleService):
     """Imagecraft-specific lifecycle service."""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         app: AppMetadata,
         services: ServiceFactory,
@@ -56,7 +58,6 @@ class ImagecraftLifecycleService(LifecycleService):
     @override
     def setup(self) -> None:
         """Initialize the LifecycleManager with previously-set arguments."""
-
         if self._platform is None:
             build_on = util.get_host_architecture()
             base_build_plan = self._project.get_build_plan()
@@ -73,7 +74,9 @@ class ImagecraftLifecycleService(LifecycleService):
                 )
                 resolution = 'Choose a platform with the "--platform" parameter.'
                 raise ImagecraftError(
-                    message=message, details=details, resolution=resolution
+                    message=message,
+                    details=details,
+                    resolution=resolution,
                 )
 
             self._platform = build_plan[0].platform
