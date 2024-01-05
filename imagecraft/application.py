@@ -14,14 +14,15 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+"""Main Imagecraft Application."""
+
 from copy import deepcopy
-from typing import Any, Dict
+from typing import Any
 
 from craft_application import Application, AppMetadata, util
-from overrides import override
+from overrides import override  # type: ignore[reportUnknownVariableType]
 
-from imagecraft.project import Project
-
+from imagecraft.models import Project
 
 APP_METADATA = AppMetadata(
     name="imagecraft",
@@ -31,14 +32,10 @@ APP_METADATA = AppMetadata(
 
 
 class Imagecraft(Application):
-    """Imagecraft application definition"""
+    """Imagecraft application definition."""
 
     @override
-    def _configure_services(
-        self,
-        platform: str | None,
-        build_for: str | None
-    ) -> None:
+    def _configure_services(self, platform: str | None, build_for: str | None) -> None:
         super()._configure_services(platform, build_for)
         if build_for is None:
             build_for = util.get_host_architecture()
@@ -57,10 +54,7 @@ class Imagecraft(Application):
         )
 
     @override
-    def _extra_yaml_transform(
-        self,
-        yaml_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def _extra_yaml_transform(self, yaml_data: dict[str, Any]) -> dict[str, Any]:
         # TODO: Apply extensions to the yaml
 
         # The method documentation says to return a new yaml dict

@@ -14,24 +14,26 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+"""Ubuntu-image related helpers."""
 
 import subprocess
-from typing import List
+
 from craft_cli import emit
 
 from imagecraft.errors import UbuntuImageError
 
 
-def generate_legacy_def_rootfs(
-        series: str,
-        arch: str,
-        sources: List[str],
-        seed_branch: str,
-        seeds: List[str],
-        components_list: List[str],
-        pocket: str,
-        kernel: str | None = None,
-        extra_snaps: List[str] | None = None) -> str:
+def generate_legacy_def_rootfs(  # noqa: PLR0913
+    series: str,
+    arch: str,
+    sources: list[str],
+    seed_branch: str,
+    seeds: list[str],
+    components_list: list[str],
+    pocket: str,
+    kernel: str | None = None,
+    extra_snaps: list[str] | None = None,
+) -> str:
     """Generate a definition yaml file for rootfs creation."""
     components = ", ".join(components_list)
     seed_urls = ", ".join(f'"{w}"' for w in sources)
@@ -40,15 +42,14 @@ def generate_legacy_def_rootfs(
     customization = ""
 
     if extra_snaps:
-        extra_snaps_list = "\n".join(
-            f"    - name: {snap}" for snap in extra_snaps)
+        extra_snaps_list = "\n".join(f"    - name: {snap}" for snap in extra_snaps)
         customization = f"""
 customization:
   extra-snaps:
 {extra_snaps_list}
 """
 
-    definition_yaml = f"""
+    return f"""
 name: craft-driver
 display-name: Craft Driver
 revision: 1
@@ -72,44 +73,60 @@ artifacts:
   manifest:
     name: craft.manifest
 """
-    return definition_yaml
 
 
-def ubuntu_image_cmds_build_rootfs(
-        series: str,
-        arch: str,
-        sources: List[str],
-        seed_branch: str,
-        seeds: List[str],
-        components_list: List[str],
-        pocket: str,
-        kernel: str | None = None,
-        extra_snaps: List[str] | None = None) -> List[str]:
+def ubuntu_image_cmds_build_rootfs(  # noqa: PLR0913
+    series: str,
+    arch: str,
+    sources: list[str],
+    seed_branch: str,
+    seeds: list[str],
+    components_list: list[str],
+    pocket: str,
+    kernel: str | None = None,
+    extra_snaps: list[str] | None = None,
+) -> list[str]:
     """Call ubuntu-image to generate a rootfs."""
     definition_yaml = generate_legacy_def_rootfs(
-        series, arch, sources, seed_branch, seeds, components_list, pocket,
-        kernel, extra_snaps)
-    cmds = [
+        series,
+        arch,
+        sources,
+        seed_branch,
+        seeds,
+        components_list,
+        pocket,
+        kernel,
+        extra_snaps,
+    )
+    return [
         f"cat << EOF > craft.yaml\n{definition_yaml}\nEOF",
         "ubuntu-image classic --workdir work -O output/ --thru"
         "=preseed_image craft.yaml",
         "mv work/chroot/* $CRAFT_PART_INSTALL/",
         #  "ubuntu-image control build-rootfs craft.yaml",
     ]
-    return cmds
 
 
 def ubuntu_image_pack(
-        rootfs_path: str,
-        gadget_path: str,
-        output_path: str,
-        image_type: str | None = None) -> None:
+    rootfs_path: str,
+    gadget_path: str,
+    output_path: str,
+    image_type: str | None = None,
+) -> None:
     """Pack the primed image contents into an image file."""
-    cmd = ["./ubuntu-image", "pack", "--gadget-dir", gadget_path,
-           "--rootfs-dir", rootfs_path, "-O", output_path]
+    cmd: list[str] = [
+        "./ubuntu-image",
+        "pack",
+        "--gadget-dir",
+        gadget_path,
+        "--rootfs-dir",
+        rootfs_path,
+        "-O",
+        output_path,
+    ]
 
     if image_type:
-        cmd.extend(["--artifact-type", image_type])
+        cmd.extend(["--artifact-type", str(image_type)])
 
     emit.debug(f"Pack command: {cmd}")
     try:
@@ -120,5 +137,7 @@ def ubuntu_image_pack(
         resolution = "Please check the error output for resolution guidance."
 
         raise UbuntuImageError(
-            message=message, details=details, resolution=resolution
-        )
+            message=message,
+            details=details,
+            resolution=resolution,
+        ) from err

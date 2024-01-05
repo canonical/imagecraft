@@ -14,16 +14,18 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import subprocess
+"""Collection of utilities for imagecraft."""
 
+import subprocess
 
 # Note: not a great idea, but quick to avoid having to call distro-info
 # multiple times
-version_to_series_map = {}
+version_to_series_map: dict[str, str] = {}
 
 
 def craft_base_to_ubuntu_series(base: str) -> str | None:
-    global version_to_series_map
+    """Convert a base to a series name."""
+    global version_to_series_map  # noqa: PLW0603
 
     if not base.startswith("ubuntu-"):
         return None
@@ -32,12 +34,22 @@ def craft_base_to_ubuntu_series(base: str) -> str | None:
         # I wonder if there's an easier way than this
         # Execute the distro-info command to get the list of Ubuntu releases
         try:
-            ubuntu_codenames = subprocess.check_output(
-                ["distro-info", "--all", "-c"], universal_newlines=True
-            ).strip().splitlines()
-            ubuntu_versions = subprocess.check_output(
-                ["distro-info", "--all", "-r"], universal_newlines=True
-            ).strip().splitlines()
+            ubuntu_codenames = (
+                subprocess.check_output(
+                    ["distro-info", "--all", "-c"],
+                    universal_newlines=True,
+                )
+                .strip()
+                .splitlines()
+            )
+            ubuntu_versions = (
+                subprocess.check_output(
+                    ["distro-info", "--all", "-r"],
+                    universal_newlines=True,
+                )
+                .strip()
+                .splitlines()
+            )
         except subprocess.CalledProcessError:
             return None
         # Go through the version list and remove the LTS suffix if present

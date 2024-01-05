@@ -15,14 +15,17 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import subprocess
-import imagecraft.utils
+from typing import cast
+from unittest.mock import Mock
 
+import imagecraft.utils
 from imagecraft.utils import craft_base_to_ubuntu_series
+from pytest_mock import MockerFixture
 
 
 def test_craft_base_to_ubuntu_series():
     imagecraft.utils.version_to_series_map.clear()
-    
+
     test_cases = {
         "ubuntu-20.04": "focal",
         "ubuntu-22.04": "jammy",
@@ -36,20 +39,24 @@ def test_craft_base_to_ubuntu_series():
         assert craft_base_to_ubuntu_series(base) == expected_series
 
 
-def test_craft_base_to_ubuntu_series_cached(mocker):
+def test_craft_base_to_ubuntu_series_cached(mocker: MockerFixture):
     mocker.patch("subprocess.check_output", side_effect=["focal", "20.04"])
 
     imagecraft.utils.version_to_series_map.clear()
     craft_base_to_ubuntu_series("ubuntu-20.04")
     craft_base_to_ubuntu_series("ubuntu-22.04")
 
-    assert subprocess.check_output.call_count == 2
+    check_output = cast(Mock, subprocess.check_output)
+
+    assert check_output.call_count == 2
 
 
 def test_craft_base_to_ubuntu_series_fail(mocker):
-    mocker.patch("subprocess.check_output",
-                 side_effect=subprocess.CalledProcessError(1, "error"))
+    mocker.patch(
+        "subprocess.check_output",
+        side_effect=subprocess.CalledProcessError(1, "error"),
+    )
 
     imagecraft.utils.version_to_series_map.clear()
 
-    assert craft_base_to_ubuntu_series("ubuntu-20.04") == None
+    assert craft_base_to_ubuntu_series("ubuntu-20.04") is None

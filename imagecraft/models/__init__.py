@@ -13,22 +13,8 @@
 #
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""Data models for Imagecraft."""
 
-"""Imagecraft error definitions."""
+from imagecraft.models.project import Project
 
-from craft_cli import CraftError
-
-
-class ImagecraftError(CraftError):
-    """Base class for all imagecraft errors."""
-
-
-class UbuntuImageError(ImagecraftError):
-    """Raised when an error occurs while using ubuntu-image."""
-
-
-class NoValidSeriesError(ImagecraftError):
-    """Error finding project file."""
-
-    def __init__(self) -> None:
-        super().__init__("No valid series could be found for the given version")
+__all__ = ["Project"]

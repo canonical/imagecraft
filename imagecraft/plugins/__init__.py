@@ -13,3 +13,11 @@
 #
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+"""Plugins support."""
+
+from ._setup import setup_plugins
+
+__all__ = [
+    "setup_plugins",
+]
