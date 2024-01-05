@@ -44,11 +44,7 @@ class ImagecraftPackService(PackageService):
         self._build_for = build_for
 
     @override
-    def pack(
-        self,
-        prime_dir: pathlib.Path,
-        dest: pathlib.Path
-    ) -> list[pathlib.Path]:
+    def pack(self, prime_dir: pathlib.Path, dest: pathlib.Path) -> list[pathlib.Path]:
         """Pack the image.
 
         :param dest: Directory into which to write the gadget
@@ -56,10 +52,9 @@ class ImagecraftPackService(PackageService):
         gadget_path = "$CRAFT_PART_INSTALL/install"
 
         # Create per-platform output directories
-        platform_output = pathlib.Path(
-            dest, self._platform if self._platform else "")
+        platform_output = pathlib.Path(dest, self._platform if self._platform else "")
         os.makedirs(platform_output, exist_ok=True)
-    
+
         ubuntu_image_pack(str(prime_dir), gadget_path, str(dest))
 
         return []
