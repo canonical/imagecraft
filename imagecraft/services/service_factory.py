@@ -28,4 +28,8 @@ from imagecraft import services
 class ImagecraftServiceFactory(ServiceFactory):
     """Imagecraft-specific Service Factory."""
 
-    PackageClass: type[base_services.PackageService] = services.ImagecraftPackageService
+    # These are overrides of default ServiceFactory services
+    LifecycleClass: type[
+        base_services.LifecycleService
+    ] = services.ImagecraftLifecycleService
+    PackageClass: type[base_services.PackageService] = services.ImagecraftPackService

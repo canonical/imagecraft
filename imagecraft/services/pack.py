@@ -14,6 +14,7 @@
 
 """Imagecraft Package service."""
 
+import os
 import pathlib
 import typing
 
@@ -26,7 +27,7 @@ if typing.TYPE_CHECKING:
     from imagecraft.services import ImagecraftServiceFactory
 
 
-class ImagecraftPackageService(PackageService):
+class ImagecraftPackService(PackageService):
     """Package service subclass for Imagecraft."""
 
     def __init__(  # noqa: PLR0913
@@ -43,12 +44,22 @@ class ImagecraftPackageService(PackageService):
         self._build_for = build_for
 
     @override
-    def pack(self, prime_dir: pathlib.Path, dest: pathlib.Path) -> list[pathlib.Path]:
-        """Package the image.
+    def pack(
+        self,
+        prime_dir: pathlib.Path,
+        dest: pathlib.Path
+    ) -> list[pathlib.Path]:
+        """Pack the image.
 
         :param dest: Directory into which to write the gadget
         """
         gadget_path = "$CRAFT_PART_INSTALL/install"
+
+        # Create per-platform output directories
+        platform_output = pathlib.Path(
+            dest, self._platform if self._platform else "")
+        os.makedirs(platform_output, exist_ok=True)
+    
         ubuntu_image_pack(str(prime_dir), gadget_path, str(dest))
 
         return []
