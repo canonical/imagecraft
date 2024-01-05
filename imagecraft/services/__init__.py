@@ -14,10 +14,12 @@
 
 """Imagecraft services."""
 
-from imagecraft.services.package import ImagecraftPackageService
+from imagecraft.services.pack import ImagecraftPackService
 from imagecraft.services.service_factory import ImagecraftServiceFactory
+from imagecraft.services.lifecycle import ImagecraftLifecycleService
 
 __all__ = [
-    "ImagecraftPackageService",
+    "ImagecraftPackService",
     "ImagecraftServiceFactory",
+    "ImagecraftLifecycleService",
 ]
