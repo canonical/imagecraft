@@ -14,7 +14,6 @@
 
 """Imagecraft Package service."""
 
-import os
 import pathlib
 import typing
 
@@ -53,7 +52,7 @@ class ImagecraftPackService(PackageService):
 
         # Create per-platform output directories
         platform_output = pathlib.Path(dest, self._platform if self._platform else "")
-        os.makedirs(platform_output, exist_ok=True)
+        platform_output.mkdir(parents=True)
 
         ubuntu_image_pack(str(prime_dir), gadget_path, str(dest))
 
