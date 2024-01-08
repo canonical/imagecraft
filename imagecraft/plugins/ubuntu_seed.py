@@ -16,6 +16,8 @@
 
 """UbuntuSeed plugin."""
 
+import pathlib
+import re
 from typing import TYPE_CHECKING, Any, cast
 
 from craft_parts import plugins
@@ -34,6 +36,8 @@ if TYPE_CHECKING:
 else:
     UniqueStrList = conlist(str, unique_items=True, min_items=1)
 
+
+seed_version_regex = re.compile(r"^[a-z0-9].*")
 
 class UbuntuSeedPluginProperties(plugins.PluginProperties):
     """Supported attributes for the 'UbuntuSeedPlugin' plugin."""
@@ -113,3 +117,76 @@ class UbuntuSeedPlugin(plugins.Plugin):
             " >$CRAFT_PART_BUILD/work/chroot/etc/fstab")
 
         return ubuntu_seed_cmd
+
+
+class Germinate:
+    """Germinate configure the germinate command line."""
+
+    mirror: str
+    arch: str
+    dist: str
+    components_list: UniqueStrList
+    seed_sources: UniqueStrList
+    seed_dist: str
+    seed_names: UniqueStrList
+    vcs: bool
+    workdir: str
+
+    def __init__(  # noqa: PLR0913
+        self,
+        mirror: str,
+        arch: str,
+        dist: str,
+        vcs: bool, # noqa:  FBT001
+        components_list: UniqueStrList,
+        flavor: str,
+        seed_branch: str,
+        seed_sources: UniqueStrList,
+        seed_names: UniqueStrList,
+        ) -> None:
+        """Create a Germinate object to configure the command to run it."""
+        self.mirror = mirror
+        self.arch = arch
+        self.dist = dist
+        self.vcs = vcs
+        self.components_list = components_list
+        self.seed_sources = seed_sources
+        self.seed_names = seed_names
+
+        self.seed_dist = flavor
+        if seed_branch:
+            self.seed_dist += seed_branch
+
+    def command(self) -> list[str]:
+        """Command to run germinate."""
+        cmd: list[str] = [
+            "germinate",
+            "--mirror", self.mirror,
+            "--arch", self.arch,
+            "--dist", self.dist,
+            "--seed-source", ",".join(self.seed_sources),
+            "--seed-dist", self.seed_dist,
+            "--no-rdepends",
+        ]
+
+        if self.vcs:
+            cmd.append("--vcs=auto")
+
+        if len(self.components_list):
+            cmd.append("--components="+",".join(self.components_list))
+
+        return cmd
+
+
+    def packages(self) -> tuple[list[str],list[str]]:
+        """List packages obtained after germinate."""
+        package_dict = {".seed":[],".snap":[]}
+
+        for file_extension, package_list in package_dict.items():
+            for name in self.seed_names:
+                file_path = pathlib.Path(self.workdir, name+file_extension)
+                with file_path.open() as f:
+                    for line in f:
+                        if seed_version_regex.match(line):
+                            package_name = line.split( )[0]
+                            package_list.append(package_name)
