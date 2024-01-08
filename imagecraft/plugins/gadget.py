@@ -69,4 +69,5 @@ class GadgetPlugin(plugins.Plugin):
         return [
             f"make {gadget_target}",
             "cp -a $CRAFT_PART_BUILD/install/* $CRAFT_PART_INSTALL/",
+            "ln -s $CRAFT_PART_INSTALL/ $CRAFT_PART_INSTALL/install",
         ]
