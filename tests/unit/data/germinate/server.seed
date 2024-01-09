@@ -1,0 +1,7 @@
+Package                     | Source                | Why                      | Maintainer                                                | Deb Size (B)    | Inst Size (KB) 
+----------------------------+-----------------------+--------------------------+-----------------------------------------------------------+-----------------+-----------------
+apport                      | apport                | Ubuntu.Noble server seed | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           83304 |             656
+bcache-tools                | bcache-tools          | Ubuntu.Noble server seed | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           20336 |              91
+btrfs-progs                 | btrfs-progs           | Ubuntu.Noble server seed | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |         1324192 |            5089
+-------------------------------------------------------------------------------------------------------------------------------------------+-----------------+-----------------
+                                                                                                                                           |        13399882 |           52672

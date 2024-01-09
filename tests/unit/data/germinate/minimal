@@ -1,0 +1,8 @@
+Package                 | Source                 | Why                                 | Maintainer                                                     | Deb Size (B)    | Inst Size (KB) 
+------------------------+------------------------+-------------------------------------+----------------------------------------------------------------+-----------------+-----------------
+adduser                 | adduser                | Ubuntu.Noble minimal seed           | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>      |          100872 |             452
+apt                     | apt                    | Ubuntu.Noble minimal seed           | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>      |         1329588 |            4593
+apt-utils               | apt                    | Ubuntu.Noble minimal seed           | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>      |          204786 |             772
+gir1.2-glib-2.0         | gobject-introspection  | networkd-dispatcher                 | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>      |          218824 |             729
+--------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------+-----------------
+                                                                                                                                                        |        58262442 |          225144

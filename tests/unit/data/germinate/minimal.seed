@@ -1,0 +1,8 @@
+Package                | Source                 | Why                       | Maintainer                                                | Deb Size (B)    | Inst Size (KB) 
+-----------------------+------------------------+---------------------------+-----------------------------------------------------------+-----------------+-----------------
+adduser                | adduser                | Ubuntu.Noble minimal seed | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |          100872 |             452
+apt                    | apt                    | Ubuntu.Noble minimal seed | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |         1329588 |            4593
+apt-utils              | apt                    | Ubuntu.Noble minimal seed | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |          204786 |             772
+iproute2               | iproute2               | Ubuntu.Noble minimal seed | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |         1119008 |            3641
+----------------------------------------------------------------------------------------------------------------------------------------+-----------------+-----------------
+                                                                                                                                        |        12312516 |           50815
