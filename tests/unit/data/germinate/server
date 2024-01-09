@@ -1,0 +1,12 @@
+Package                     | Source                    | Why                              | Maintainer                                                | Deb Size (B)    | Inst Size (KB) 
+----------------------------+---------------------------+----------------------------------+-----------------------------------------------------------+-----------------+-----------------
+apport                      | apport                    | Ubuntu.Noble server seed         | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           83304 |             656
+apport-symptoms             | apport-symptoms           | apport (Recommends)              | Ubuntu Developers <ubuntu-motu@lists.ubuntu.com>          |           13532 |              61
+appstream                   | appstream                 | packagekit (Recommends)          | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           81726 |             388
+bc                          | bc                        | landscape-common                 | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           85626 |             203
+bcache-tools                | bcache-tools              | Ubuntu.Noble server seed         | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           20336 |              91
+bolt                        | bolt                      | fwupd (Recommends)               | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |          142784 |             521
+btrfs-progs                 | btrfs-progs               | Ubuntu.Noble server seed         | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |         1324192 |            5089
+gir1.2-packagekitglib-1.0   | packagekit                | software-properties-common       | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           25596 |             111
+-------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------+-----------------
+                                                                                                                                                       |        91296168 |          381395

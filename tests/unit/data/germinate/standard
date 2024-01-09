@@ -1,0 +1,108 @@
+Package                      | Source                    | Why                            | Maintainer                                                | Deb Size (B)    | Inst Size (KB) 
+-----------------------------+---------------------------+--------------------------------+-----------------------------------------------------------+-----------------+-----------------
+apparmor                     | apparmor                  | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |          604838 |            3152
+bash-completion              | bash-completion           | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |          179856 |            1454
+bind9-dnsutils               | bind9                     | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |          154582 |             589
+bind9-host                   | bind9                     | bind9-dnsutils                 | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           50022 |             165
+bind9-libs                   | bind9                     | bind9-host                     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |         1190610 |            3554
+bsdextrautils                | util-linux                | man-db                         | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           71388 |             618
+busybox-static               | busybox                   | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |          910148 |            1918
+command-not-found            | command-not-found         | Ubuntu.Noble standard seed     | Michael Vogt <michael.vogt@ubuntu.com>                    |            5124 |              29
+cpio                         | cpio                      | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           94134 |             320
+cron                         | cron                      | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           81172 |             260
+cron-daemon-common           | cron                      | cron                           | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           13004 |              50
+dmidecode                    | dmidecode                 | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           60768 |             225
+dosfstools                   | dosfstools                | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           86886 |             229
+ed                           | ed                        | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           52900 |             115
+file                         | file                      | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           21934 |              99
+friendly-recovery            | friendly-recovery         | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |            8888 |              45
+ftp                          | tnftp                     | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |            4724 |              24
+fuse3                        | fuse3                     | ntfs-3g                        | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           23988 |             170
+gettext-base                 | gettext                   | friendly-recovery (Recommends) | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           37294 |             364
+groff-base                   | groff                     | man-db                         | Colin Watson <cjwatson@debian.org>                        |          988866 |            3892
+hdparm                       | hdparm                    | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           95468 |             226
+inetutils-telnet             | inetutils                 | telnet                         | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           96910 |             268
+info                         | texinfo                   | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |          141100 |             464
+install-info                 | texinfo                   | info                           | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           61280 |             232
+iptables                     | iptables                  | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |          385660 |            8429
+iputils-tracepath            | iputils                   | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           13004 |              88
+irqbalance                   | irqbalance                | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           56022 |             238
+libcbor0.10                  | libcbor                   | libfido2-1                     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           25404 |              93
+libdrm-common                | libdrm                    | libdrm2                        | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |            7586 |              42
+libdrm2                      | libdrm                    | plymouth                       | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           41134 |             167
+libedit2                     | libedit                   | bind9-dnsutils                 | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           96352 |             302
+libfido2-1                   | libfido2                  | openssh-client                 | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           83738 |             285
+libfuse3-3                   | fuse3                     | fuse3                          | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           81364 |             295
+libgdbm6                     | gdbm                      | man-db                         | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           33750 |              85
+libgpm2                      | gpm                       | libncurses6 (Recommends)       | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           15486 |              64
+libip6tc2                    | iptables                  | iptables                       | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           22654 |             100
+libjansson4                  | jansson                   | libnftables1                   | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           34306 |              96
+liblmdb0                     | lmdb                      | bind9-libs                     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           47352 |             147
+libmagic-mgc                 | file                      | libmagic1                      | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |          307240 |            8332
+libmagic1                    | file                      | file                           | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           85078 |             236
+libmaxminddb0                | libmaxminddb              | bind9-libs                     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           24370 |             120
+libncurses6                  | ncurses                   | mtr-tiny                       | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |          107916 |             435
+libnetfilter-conntrack3      | libnetfilter-conntrack    | iptables                       | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           44314 |             151
+libnfnetlink0                | libnfnetlink              | libnetfilter-conntrack3        | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           15408 |              43
+libnftables1                 | nftables                  | nftables                       | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |          350696 |            1028
+libnftnl11                   | libnftnl                  | libnftables1                   | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           64432 |             229
+libnghttp2-14                | nghttp2                   | bind9-libs                     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           72736 |             228
+libntfs-3g89                 | ntfs-3g                   | ntfs-3g                        | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |          156262 |             414
+libnuma1                     | numactl                   | irqbalance                     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           22492 |              86
+libparted2                   | parted                    | parted                         | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |          150222 |             388
+libpcap0.8                   | libpcap                   | tcpdump                        | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |          144194 |             375
+libpci3                      | pciutils                  | pciutils                       | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           34504 |             163
+libpipeline1                 | libpipeline               | man-db                         | Colin Watson <cjwatson@debian.org>                        |           23276 |              87
+libplymouth5                 | plymouth                  | plymouth                       | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |          133310 |             444
+libpng16-16                  | libpng1.6                 | libplymouth5                   | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |          203020 |             365
+libpsl5                      | libpsl                    | wget                           | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           57004 |             152
+libuchardet0                 | uchardet                  | groff-base                     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           75068 |             210
+libusb-1.0-0                 | libusb-1.0                | usbutils                       | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           51768 |             140
+libuv1                       | libuv1                    | bind9-libs                     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           93904 |             310
+libx11-6                     | libx11                    | xauth                          | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |          644830 |            1389
+libx11-data                  | libx11                    | libx11-6                       | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |          115374 |            1342
+libxau6                      | libxau                    | libxcb1                        | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |            7624 |              31
+libxcb1                      | libxcb                    | libx11-6                       | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           47580 |             238
+libxdmcp6                    | libxdmcp                  | libxcb1                        | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           10808 |              38
+libxext6                     | libxext                   | xauth                          | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           31118 |             106
+libxmuu1                     | libxmu                    | xauth                          | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           10368 |              37
+lshw                         | lshw                      | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |          294842 |             812
+lsof                         | lsof                      | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |          246412 |             474
+man-db                       | man-db                    | Ubuntu.Noble standard seed     | Colin Watson <cjwatson@debian.org>                        |         1224418 |            3268
+manpages                     | manpages                  | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |         1339556 |            1562
+mtr-tiny                     | mtr                       | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           53472 |             240
+nano                         | nano                      | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |          278214 |             888
+nftables                     | nftables                  | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           69994 |             221
+ntfs-3g                      | ntfs-3g                   | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |          395414 |            1978
+openssh-client               | openssh                   | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |          868316 |            3617
+parted                       | parted                    | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           41830 |             218
+pci.ids                      | pci.ids                   | libpci3                        | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |          269134 |            1386
+pciutils                     | pciutils                  | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           67636 |             249
+plymouth                     | plymouth                  | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |          153102 |            1160
+plymouth-theme-ubuntu-text   | plymouth                  | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           11056 |              95
+powermgmt-base               | powermgmt-base            | hdparm (Recommends)            | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |            8098 |              28
+psmisc                       | psmisc                    | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |          177298 |             876
+publicsuffix                 | publicsuffix              | libpsl5 (Recommends)           | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |          128986 |             375
+python3-commandnotfound      | command-not-found         | command-not-found              | Michael Vogt <michael.vogt@ubuntu.com>                    |           11368 |              51
+python3-distro-info          | distro-info               | update-manager-core            | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |            6960 |              35
+python3-distupgrade          | ubuntu-release-upgrader   | python3-update-manager         | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |          118380 |             585
+python3-gdbm                 | python3-stdlib-extensions | python3-commandnotfound        | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           18476 |             165
+python3-update-manager       | update-manager            | update-manager-core            | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           42580 |             188
+rsync                        | rsync                     | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |          425672 |             807
+strace                       | strace                    | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |          549718 |            1731
+tcpdump                      | tcpdump                   | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |          493562 |            1428
+telnet                       | inetutils                 | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |            3676 |              46
+time                         | time                      | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           44474 |             163
+tnftp                        | tnftp                     | ftp                            | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |          101228 |             249
+ubuntu-release-upgrader-core | ubuntu-release-upgrader   | update-manager-core            | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           25702 |             264
+ubuntu-standard              | ubuntu-meta               | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           10132 |              16
+ufw                          | ufw                       | Ubuntu.Noble standard seed     | Jamie Strandboge <jdstrand@ubuntu.com>                    |          168544 |             847
+update-manager-core          | update-manager            | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           11598 |             124
+usb.ids                      | usb.ids                   | lshw (Recommends)              | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |          221904 |             721
+usbutils                     | usbutils                  | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           83644 |             456
+uuid-runtime                 | util-linux                | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           32326 |             278
+wget                         | wget                      | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |          330130 |             924
+xauth                        | xauth                     | openssh-client (Recommends)    | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           25442 |              84
+xz-utils                     | xz-utils                  | Ubuntu.Noble standard seed     | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |          276838 |             828
+------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------+-----------------
+                                                                                                                                                      |        17694744 |           73447

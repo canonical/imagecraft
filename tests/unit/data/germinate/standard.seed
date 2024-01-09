@@ -1,0 +1,8 @@
+Package         | Source      | Why                        | Maintainer                                                | Deb Size (B)    | Inst Size (KB) 
+----------------+-------------+----------------------------+-----------------------------------------------------------+-----------------+-----------------
+bind9-dnsutils  | bind9       | Ubuntu.Noble standard seed | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |          154582 |             589
+busybox-static  | busybox     | Ubuntu.Noble standard seed | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |          910148 |            1918
+cpio            | cpio        | Ubuntu.Noble standard seed | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           94134 |             320
+cron            | cron        | Ubuntu.Noble standard seed | Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com> |           81172 |             260
+-----------------------------------------------------------------------------------------------------------------------+-----------------+-----------------
+                                                                                                                       |         5546854 |           15512
