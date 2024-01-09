@@ -38,6 +38,7 @@ else:
 
 
 seed_version_regex = re.compile(r"^[a-z0-9].*")
+locale_present_regex = re.compile(r"(?m)^LANG=|LC_[A-Z_]+=")
 
 class UbuntuSeedPluginProperties(plugins.PluginProperties):
     """Supported attributes for the 'UbuntuSeedPlugin' plugin."""
@@ -188,5 +189,88 @@ class Germinate:
                 with file_path.open() as f:
                     for line in f:
                         if seed_version_regex.match(line):
-                            package_name = line.split( )[0]
+                            package_name = line.split(" ")[0]
                             package_list.append(package_name)
+
+
+class Bootstrap:
+    """Bootstrap a basic chroot."""
+
+    """ TODO:
+    - create workdir
+    - generate debootsrap cmd
+    - run it
+    - fix hostname
+    - fix revolv.conf
+    - add any extra apt sources to /etc/apt/sources.list
+
+    """
+    workdir: str
+    arch: str
+    components_list: UniqueStrList
+    mirror: str
+    suite: str
+    extra_ppas: bool
+
+
+    def __init__(  # noqa: PLR0913
+        self,
+        mirror: str,
+        arch: str,
+        dist: str,
+        suite: str,
+        extra_ppas: bool, # noqa:  FBT001
+        components_list: UniqueStrList,
+        ) -> None:
+        """Create a Germinate object to configure the command to run it."""
+        self.mirror = mirror
+        self.arch = arch
+        self.dist = dist
+        self.suite = suite
+        self.extra_ppas = extra_ppas
+        self.components_list = components_list
+
+    def command(self) -> list[str]:
+        """Command to run debootstrap."""
+        cmd: list[str] = [
+            "debootstrap",
+            "--arch", self.arch,
+            "--variant=minbase",
+        ]
+
+        if self.extra_ppas:
+            cmd.append("--include=ca-certificates")
+
+        if len(self.components_list):
+            cmd.append("--components="+",".join(self.components_list))
+
+        cmd.append(self.suite,self.workdir,self.mirror)
+
+        return cmd
+
+    def truncate_revolvconf(self) -> None:
+        """Clean resolv.conf debootstrap copied from build environment."""
+        resolve_conf = pathlib.Path(self.workdir, "etc", "resolv.conf")
+        with resolve_conf.open("w+", encoding="utf-8") as f:
+            f.truncate()
+
+    def fix_hostname(self) -> None:
+        """Set fresh hostname since debootstrap copies /etc/hostname from build environment."""
+        hostname = pathlib.Path(self.workdir, "etc", "hostname")
+        with hostname.open("w+", encoding="utf-8") as f:
+            f.write("ubuntu\n")
+
+    def set_default_locale(self) -> None:
+        """Make sure a default locale is set."""
+        default_path = pathlib.Path(self.workdir, "etc", "default")
+        locale_path = pathlib.Path(default_path, "locale")
+
+        with locale_path.open("r", encoding="utf-8") as f:
+            content = f.readline()
+            if len(content) and bool(locale_present_regex.match(content)):
+                return
+
+        default_path.mkdir(mode=0o755, parents=True,exist_ok=True)
+
+        with locale_path.open("w", encoding="utf-8") as f:
+            f.write("# Default Ubuntu locale\nLANG=C.UTF-8\n")
