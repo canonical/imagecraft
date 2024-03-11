@@ -56,7 +56,6 @@ revision: 1
 class: preinstalled
 architecture: {arch}
 series: {series}
-class: preinstalled
 {kernel_line}
 
 rootfs:
@@ -68,10 +67,6 @@ rootfs:
     pocket: {pocket}
 
 {customization}
-
-artifacts:
-  manifest:
-    name: craft.manifest
 """
 
 
@@ -100,8 +95,7 @@ def ubuntu_image_cmds_build_rootfs(  # noqa: PLR0913
     )
     return [
         f"cat << EOF > craft.yaml\n{definition_yaml}\nEOF",
-        "ubuntu-image classic --workdir work -O output/ --thru"
-        "=preseed_image craft.yaml",
+        "ubuntu-image classic --workdir work -O output/ craft.yaml",
         "mv work/chroot/* $CRAFT_PART_INSTALL/",
         #  "ubuntu-image control build-rootfs craft.yaml",
     ]
