@@ -97,7 +97,6 @@ def ubuntu_image_cmds_build_rootfs(  # noqa: PLR0913
         f"cat << EOF > craft.yaml\n{definition_yaml}\nEOF",
         "ubuntu-image classic --workdir work -O output/ craft.yaml",
         "mv work/chroot/* $CRAFT_PART_INSTALL/",
-        #  "ubuntu-image control build-rootfs craft.yaml",
     ]
 
 
