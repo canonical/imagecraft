@@ -102,6 +102,7 @@ def test_get_build_commands(gadget_plugin):
     assert gadget_plugin.get_build_commands() == [
         "make ",
         "cp -a $CRAFT_PART_BUILD/install/* $CRAFT_PART_INSTALL/",
+        "ln -s $CRAFT_PART_INSTALL/ $CRAFT_PART_INSTALL/install",
     ]
 
 
@@ -109,4 +110,5 @@ def test_get_build_commands_with_target(gadget_plugin_with_target):
     assert gadget_plugin_with_target.get_build_commands() == [
         "make test_target",
         "cp -a $CRAFT_PART_BUILD/install/* $CRAFT_PART_INSTALL/",
+        "ln -s $CRAFT_PART_INSTALL/ $CRAFT_PART_INSTALL/install",
     ]

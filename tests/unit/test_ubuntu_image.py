@@ -45,7 +45,6 @@ revision: 1
 class: preinstalled
 architecture: amd64
 series: mantic
-class: preinstalled
 kernel: linux-image-generic
 
 rootfs:
@@ -62,10 +61,6 @@ customization:
     - name: lxd
     - name: snapd
 
-
-artifacts:
-  manifest:
-    name: craft.manifest
 """
     )
 
@@ -87,7 +82,6 @@ revision: 1
 class: preinstalled
 architecture: amd64
 series: mantic
-class: preinstalled
 
 
 rootfs:
@@ -99,10 +93,6 @@ rootfs:
     pocket: updates
 
 
-
-artifacts:
-  manifest:
-    name: craft.manifest
 """
     )
 
@@ -125,7 +115,7 @@ def test_ubuntu_image_cmds_build_rootfs(mocker):
         extra_snaps=["lxd", "snapd"],
     ) == [
         "cat << EOF > craft.yaml\ntest\nEOF",
-        "ubuntu-image classic --workdir work -O output/ --thru=preseed_image craft.yaml",
+        "ubuntu-image classic --workdir work -O output/ craft.yaml",
         "mv work/chroot/* $CRAFT_PART_INSTALL/",
     ]
 
