@@ -31,7 +31,7 @@ class GadgetPluginProperties(plugins.PluginProperties):
 
     @classmethod
     def unmarshal(cls, data: dict[str, Any]) -> Self:
-        """unmarshal."""
+        """Unmarshal."""
         plugin_data = plugins.base.extract_plugin_properties(data, plugin_name="gadget")
         return cls(**plugin_data)
 

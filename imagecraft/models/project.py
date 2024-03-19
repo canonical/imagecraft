@@ -18,15 +18,40 @@
 
 This module defines a imagecraft.yaml file, exportable to a JSON schema.
 """
+
+import enum
+import re
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any
 
+import pydantic
 from craft_application.errors import CraftValidationError
 from craft_application.models import BuildInfo
 from craft_application.models import Project as BaseProject
+from craft_application.util.error_formatting import format_pydantic_errors
+from craft_archives.repo import errors  # type: ignore[import-untyped]
+from craft_archives.repo.package_repository import (  # type: ignore[import-untyped]
+    KeyIdStr,
+)
+
+# pyright: reportMissingTypeStubs=false
+from craft_archives.repo.package_repository import (  # type: ignore[import-untyped]
+    PackageRepository as BasePackageRepository,
+)
+from craft_archives.repo.package_repository import (
+    PackageRepositoryApt as BasePackageRepositoryApt,
+)
+from craft_archives.repo.package_repository import (
+    PackageRepositoryAptPPA as BasePackageRepositoryAptPPA,
+)
+from craft_cli import CraftError
 from craft_providers import bases
 from pydantic import (
+    AnyUrl,
     BaseModel,
+    ConstrainedStr,
+    FileUrl,
+    ValidationError,
     conlist,
     root_validator,  # pyright: ignore[reportUnknownVariableType]
     validator,  # pyright: ignore[reportUnknownVariableType]
@@ -43,6 +68,26 @@ if TYPE_CHECKING:
 else:
     UniqueStrList = conlist(str, unique_items=True, min_items=1)
 
+file_name = "imagecraft.yaml"
+
+def _alias_generator(s: str) -> str:
+    return s.replace("_", "-")
+
+
+class AuthStr(ConstrainedStr):
+    """A constrained string for a auth string."""
+
+    regex = re.compile(r".*:.*")
+
+class UsedForEnum(enum.Enum):
+    """Enum values that represent how/when the package repository can be used for."""
+
+    BUILD = "build"
+    RUN = "run"
+    ALWAYS = "always"
+
+class ProjectValidationError(CraftError):
+    """Error validating imagecraft.yaml."""
 
 class ProjectModel(YamlModelMixin, BaseProject):
     """Base model for the imagecraft project class."""
@@ -51,10 +96,10 @@ class ProjectModel(YamlModelMixin, BaseProject):
         """Pydantic model configuration."""
 
         validate_assignment = True
-        extra = "forbid"
+        extra = pydantic.Extra.forbid
         allow_mutation = True
         allow_population_by_field_name = True
-        alias_generator = lambda s: s.replace("_", "-")  # noqa: E731 # type: ignore[reportUnknownLambdaType,reportUnknownVariableType,reportUnknownMemberType]
+        alias_generator = _alias_generator
 
 
 class ElementModel(YamlModelMixin, BaseModel):
@@ -64,10 +109,10 @@ class ElementModel(YamlModelMixin, BaseModel):
         """Pydantic model configuration."""
 
         validate_assignment = True
-        extra = "forbid"
+        extra = pydantic.Extra.forbid
         allow_mutation = True
         allow_population_by_field_name = True
-        alias_generator = lambda s: s.replace("_", "-")  # noqa: E731 # type: ignore[reportUnknownLambdaType,reportUnknownVariableType,reportUnknownMemberType]
+        alias_generator = _alias_generator
 
 
 class Platform(ElementModel):
@@ -119,12 +164,105 @@ class Platform(ElementModel):
 
         return values
 
+class PackageRepository(BasePackageRepository): # type:ignore[misc]
+    """Imagecraft package repository definition."""
+
+    @classmethod
+    def unmarshal(cls, data: Mapping[str, Any]) -> "PackageRepositoryPPA | PackageRepositoryApt":
+        """Create a package repository object from the given data."""
+        if not isinstance(data, dict):  # pyright: ignore[reportUnnecessaryIsInstance]
+            raise errors.PackageRepositoryValidationError(
+                url=str(data),
+                brief="invalid object.",
+                details="Package repository must be a valid dictionary object.",
+                resolution=(
+                    "Verify repository configuration and ensure that the "
+                    "correct syntax is used."
+                ),
+            )
+
+        if "ppa" in data:
+            return PackageRepositoryPPA.unmarshal(data)
+
+        return PackageRepositoryApt.unmarshal(data)
+
+class PackageRepositoryPPA(BasePackageRepositoryAptPPA): # type:ignore[misc]
+    """Imagecraft PPA repository definition."""
+
+    auth: AuthStr | None
+    key_id: KeyIdStr | None = pydantic.Field(alias="key-id") # here until added to craft-archives
+    used_for: UsedForEnum = UsedForEnum.ALWAYS
+
+    @classmethod
+    def unmarshal(cls, data: Mapping[str, Any]) -> "PackageRepositoryPPA":
+        """Create and populate a new ``PackageRepository`` object from dictionary data.
+
+        The unmarshal method validates entries in the input dictionary, populating
+        the corresponding fields in the data object.
+
+        :param data: The dictionary data to unmarshal.
+
+        :return: The newly created object.
+
+        :raise TypeError: If data is not a dictionary.
+        """
+        if not isinstance(data, dict): # pyright: ignore[reportUnnecessaryIsInstance]
+            raise TypeError("Package repository PPA data is not a dictionary")
+
+        return cls(**data)
+
+class PackageRepositoryApt(BasePackageRepositoryApt): # type:ignore[misc]
+    """Imagecraft APT package repository definition."""
+
+    url: AnyUrl | FileUrl | None = None # pyright: ignore[reportUnnecessaryIsInstance]
+    # override url to make it optional
+    key_id: KeyIdStr | None = pydantic.Field(alias="key-id") # pyright: ignore[reportUnnecessaryIsInstance]
+    # override key_id to make it optional
+    used_for: UsedForEnum = UsedForEnum.ALWAYS
+
+    pocket: str | None
+    flavor: str | None
+
+    @classmethod
+    def unmarshal(cls, data: Mapping[str, Any]) -> "PackageRepositoryApt":
+        """Create and populate a new ``PackageRepositoryApt`` object from dictionary data.
+
+        The unmarshal method validates entries in the input dictionary, populating
+        the corresponding fields in the data object.
+
+        :param data: The dictionary data to unmarshal.
+
+        :return: The newly created object.
+
+        :raise TypeError: If data is not a dictionary.
+        """
+        if not isinstance(data, dict): # pyright: ignore[reportUnnecessaryIsInstance]
+            raise TypeError("Package repository data is not a dictionary")
+
+        return cls(**data)
+
 
 class Project(ProjectModel):
     """Definition of imagecraft.yaml configuration."""
 
     series: str
+    package_repositories: list[dict[str,Any]] | list[PackageRepositoryPPA | PackageRepositoryApt] | None
     platforms: dict[str, Platform]
+
+    @validator("package_repositories") # pyright: ignore[reportUntypedFunctionDecorator]
+    @classmethod
+    def _validate_package_repositories(
+        cls, project_repositories: list[dict[str, Any]],
+    ) -> list[PackageRepositoryPPA | PackageRepositoryApt]:
+        repositories: list[PackageRepositoryPPA | PackageRepositoryApt] = []
+        for data in project_repositories:
+            if not isinstance(data, dict):  # pyright: ignore[reportUnnecessaryIsInstance]
+                raise TypeError("value must be a dictionary but is not")
+
+            repositories.append(PackageRepository.unmarshal(data))
+
+        return repositories
+
 
     @validator("platforms", pre=True) # pyright: ignore[reportUntypedFunctionDecorator]
     @classmethod
@@ -198,6 +336,26 @@ class Project(ProjectModel):
             platforms[platform_label] = platform
 
         return platforms
+
+    @classmethod
+    def unmarshal(cls, data: dict[str, Any]) -> "Project":
+        """Unmarshal object with necessary translations and error handling.
+
+        (1) Perform any necessary translations.
+
+        (2) Standardize error reporting.
+
+        :returns: valid Project.
+
+        :raises CraftError: On failure to unmarshal object.
+        """
+        try:
+            return cls.parse_obj({**data})
+        except ValidationError as error:
+            raise ProjectValidationError(
+                format_pydantic_errors(error.errors(), file_name=file_name),
+            ) from error
+
 
     @property
     def effective_base(self) -> bases.BaseName:

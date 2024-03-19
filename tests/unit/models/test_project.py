@@ -19,7 +19,7 @@ from pathlib import Path
 import pytest
 import yaml
 from craft_application.errors import CraftValidationError
-from imagecraft.models import Platform, Project
+from imagecraft.models import PackageRepository, Platform, Project
 from pydantic import ValidationError
 
 IMAGECRAFT_YAML_GENERIC = """
@@ -30,6 +30,28 @@ platforms:
   amd64:
     build-for: [amd64]
     build-on: [amd64]
+
+package-repositories:
+  - type: apt
+    components: [main,restricted]
+    suites: [jammy]
+    url: http://archive.ubuntu.com/ubuntu/
+    used-for: build
+  - type: apt
+    components: [main,restricted]
+    suites: [jammy]
+  - type: apt
+    components: [main,restricted]
+    suites: [jammy]
+    url: http://archive.ubuntu.com/ubuntu/
+    used-for: run
+  - type: apt
+    ppa: canonical-foundations/ubuntu-image
+    used-for: run
+  - type: apt
+    ppa: canonical-foundations/ubuntu-image-private-test
+    auth: "sil2100:vVg74j6SM8WVltwpxDRJ"
+    used-for: run
 
 parts:
   gadget:
@@ -106,7 +128,7 @@ def yaml_loaded_data():
 
 
 def load_project_yaml(yaml_loaded_data) -> Project:
-    return Project.from_yaml_data(yaml_loaded_data, Path("rockcraft.yaml"))
+    return Project.from_yaml_data(yaml_loaded_data, Path("imagecraft.yaml"))
 
 
 @pytest.mark.parametrize(
@@ -126,7 +148,8 @@ def test_project_unmarshal(yaml_data):
         if attr == "platforms":
             assert getattr(project, attr).keys() == v.keys()
             continue
-
+        if attr == "package-repositories":
+            continue
         assert getattr(project, attr.replace("-", "_")) == v
 
 
@@ -211,4 +234,63 @@ def test_project_all_platforms_invalid(yaml_loaded_data):
     mock_platforms = None
     assert "No platforms were specified." in reload_project_platforms(
         mock_platforms,
+    )
+
+
+def test_project_package_repositories_invalid():
+    def load_package_repositories(data, raises):
+        with pytest.raises(raises) as err:
+            PackageRepository.unmarshal(data)
+
+        return str(err.value)
+
+    mock_package_repositories = {
+      "type": "apt",
+      "pocket": "invalid",
+    }
+    assert "is not a valid enumeration member" in load_package_repositories(
+        mock_package_repositories,
+        ValidationError,
+    )
+
+    mock_package_repositories = {
+      "type": "apt",
+      "used-for": "test",
+    }
+    assert "is not a valid enumeration member" in load_package_repositories(
+        mock_package_repositories,
+        ValidationError,
+    )
+
+    ## Test PPA
+    mock_package_repositories = {
+      "type": "apt",
+      "ppa": "test",
+      "used-for": "test",
+    }
+    assert "is not a valid enumeration member" in load_package_repositories(
+        mock_package_repositories,
+        ValidationError,
+    )
+
+    ## Test invalid key-id
+    mock_package_repositories = {
+      "type": "apt",
+      "ppa": "test",
+      "key-id": "tooshort",
+    }
+    assert "ensure this value has at least 40 characters" in load_package_repositories(
+        mock_package_repositories,
+        ValidationError,
+    )
+
+    ## Test invalid auth
+    mock_package_repositories = {
+      "type": "apt",
+      "ppa": "test",
+      "auth": "invalid",
+    }
+    assert "string does not match regex" in load_package_repositories(
+        mock_package_repositories,
+        ValidationError,
     )
