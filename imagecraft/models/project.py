@@ -19,14 +19,14 @@
 This module defines a imagecraft.yaml file, exportable to a JSON schema.
 """
 
-from copy import deepcopy
 from typing import TYPE_CHECKING, Any
 
 import pydantic
 from craft_application.models import BuildInfo
 from craft_application.models import Project as BaseProject
-from craft_archives import repo  # type: ignore[import-untyped]
-from craft_archives.repo.package_repository import PackageRepository
+from craft_archives.repo.package_repository import (
+    PackageRepositoryApt as BasePackageRepositoryApt,
+)
 from craft_cli import CraftError
 from craft_providers import bases
 from pydantic import BaseModel, ValidationError, conlist, validator
@@ -91,22 +91,28 @@ class Platform(ElementModel):
             val = [val]
         return val
 
-class ProjectRepository(PackageRepository):
+class PackageRepository(BasePackageRepositoryApt):
     """Imagecraft package repository definition."""
 
     keep_enabled: bool = True
 
     @classmethod
-    def unmarshal(cls, data: dict[str, Any]) -> "ProjectRepository":
+    def unmarshal(cls, data: dict[str, Any]) -> "PackageRepository":
+        """Create and populate a new ``PackageRepository`` object from dictionary data.
+
+        The unmarshal method validates entries in the input dictionary, populating
+        the corresponding fields in the data object.
+
+        :param data: The dictionary data to unmarshal.
+
+        :return: The newly created object.
+
+        :raise TypeError: If data is not a dictionary.
+        """
         if not isinstance(data, dict):
-            raise TypeError("Project data is not a dictionary")
+            raise TypeError("Package repository data is not a dictionary")
 
-        try:
-            project = cls.parse_obj({**data})
-        except pydantic.ValidationError as err:
-            raise ProjectValidationError(_format_pydantic_errors(err.errors())) from err
-
-        return project
+        return cls.parse_obj({**data})
 
 
 class Project(ProjectModel):
@@ -114,18 +120,22 @@ class Project(ProjectModel):
 
     platforms: dict[str, Platform]
     series: str
-    package_repositories: list[ProjectRepository] | None
+    package_repositories: list[dict[str,Any]] | list[PackageRepository] | None
 
-    @pydantic.validator("package_repositories", each_item=True)
+    @pydantic.validator("package_repositories")
     @classmethod
     def _validate_package_repositories(
-        cls, repository: dict[str, Any],
-    ) -> dict[str, Any]:
-        new_repo = deepcopy(repository)
-        new_repo.pop("keep-enabled", None)
-        repo.validate_repository(new_repo)
+        cls, project_repositories: list[dict[str, Any]],
+    ) -> list[PackageRepository]:
+        repositories: list[PackageRepository] = []
+        for data in project_repositories:
+            if not isinstance(data, dict):  # pyright: ignore[reportUnnecessaryIsInstance]
+                raise TypeError("value must be a dictionary but is not")
 
-        return repository
+            repositories.append(PackageRepository.unmarshal(data))
+
+        return repositories
+
 
     @classmethod
     def unmarshal(cls, data: dict[str, Any]) -> "Project":
@@ -173,7 +183,7 @@ class Project(ProjectModel):
         return build_infos
 
 
-def _format_pydantic_errors(errors, *, file_name: str = "imagecraft.yaml"):
+def _format_pydantic_errors(errors: list[Any], *, file_name: str = "imagecraft.yaml") -> str:
     """Format errors.
 
     Example 1: Single error.
@@ -198,7 +208,7 @@ def _format_pydantic_errors(errors, *, file_name: str = "imagecraft.yaml"):
         if formatted_msg == "field required":
             field_name, location = _printable_field_location_split(formatted_loc)
             combined.append(
-                f"- field {field_name} required in {location} configuration"
+                f"- field {field_name} required in {location} configuration",
             )
         elif formatted_msg == "extra fields not permitted":
             field_name, location = _printable_field_location_split(formatted_loc)
@@ -216,8 +226,8 @@ def _format_pydantic_errors(errors, *, file_name: str = "imagecraft.yaml"):
             combined.append(f"- {formatted_msg} (in field {formatted_loc!r})")
 
     return "\n".join(combined)
-    
-def _format_pydantic_error_location(loc):
+
+def _format_pydantic_error_location(loc: str) -> str:
     """Format location."""
     loc_parts = []
     for loc_part in loc:
@@ -230,7 +240,7 @@ def _format_pydantic_error_location(loc):
             previous_part += f"[{loc_part}]"
             loc_parts.append(previous_part)
         else:
-            raise RuntimeError(f"unhandled loc: {loc_part}")
+            raise TypeError(f"unhandled loc: {loc_part}")
 
     loc = ".".join(loc_parts)
 
@@ -238,11 +248,11 @@ def _format_pydantic_error_location(loc):
     return loc.replace(".__root__", "")
 
 
-def _format_pydantic_error_message(msg):
+def _format_pydantic_error_message(msg: str) -> str:
     """Format pydantic's error message field."""
     # Replace shorthand "str" with "string".
     return msg.replace("str type expected", "string type expected")
-    
+
 def _printable_field_location_split(location: str) -> tuple[str, str]:
     """Return split field location.
 

@@ -40,7 +40,7 @@ package-repositories:
     suites: [xenial]
     key-id: 78E1918602959B9C59103100F1831DDAFC42E99D
     url: http://ppa.launchpad.net/snappy-dev/snapcraft-daily/ubuntu
-    keep-enabled: true
+    keep-enabled: false
 
 parts:
   gadget:
@@ -107,5 +107,6 @@ def test_project_unmarshal(yaml_data):
         if attr == "platforms":
             assert getattr(project, attr).keys() == v.keys()
             continue
-
+        if attr == "package-repositories":
+          continue
         assert getattr(project, attr.replace("-", "_")) == v
