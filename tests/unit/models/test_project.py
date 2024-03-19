@@ -89,7 +89,7 @@ def yaml_loaded_data():
 
 
 def load_project_yaml(yaml_loaded_data) -> Project:
-    return Project.from_yaml_data(yaml_loaded_data, Path("rockcraft.yaml"))
+    return Project.from_yaml_data(yaml_loaded_data, Path("imagecraft.yaml"))
 
 
 @pytest.mark.parametrize(

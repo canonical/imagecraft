@@ -41,6 +41,9 @@ else:
     UniqueStrList = conlist(str, unique_items=True, min_items=1)
 
 
+def _alias_generator(s: str) -> str:
+    return s.replace("_", "-")
+
 class ProjectValidationError(CraftError):
     """Error validatiing image.yaml."""
 
@@ -51,10 +54,10 @@ class ProjectModel(YamlModelMixin, BaseProject):
         """Pydantic model configuration."""
 
         validate_assignment = True
-        extra = "forbid"
+        extra = pydantic.Extra.forbid
         allow_mutation = True
         allow_population_by_field_name = True
-        alias_generator = lambda s: s.replace("_", "-")  # noqa: E731 # type: ignore[reportUnknownLambdaType,reportUnknownVariableType,reportUnknownMemberType]
+        alias_generator = _alias_generator
 
 
 class ElementModel(YamlModelMixin, BaseModel):
@@ -64,10 +67,10 @@ class ElementModel(YamlModelMixin, BaseModel):
         """Pydantic model configuration."""
 
         validate_assignment = True
-        extra = "forbid"
+        extra = pydantic.Extra.forbid
         allow_mutation = True
         allow_population_by_field_name = True
-        alias_generator = lambda s: s.replace("_", "-")  # noqa: E731 # type: ignore[reportUnknownLambdaType,reportUnknownVariableType,reportUnknownMemberType]
+        alias_generator = _alias_generator
 
 
 class Platform(ElementModel):
