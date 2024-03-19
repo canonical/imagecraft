@@ -29,6 +29,19 @@ platforms:
     build-for: [amd64]
     build-on: [amd64]
 
+package-repositories:
+  - type: apt
+    components: [main]
+    suites: [xenial]
+    key-id: 78E1918602959B9C59103100F1831DDAFC42E99D
+    url: http://ppa.launchpad.net/snappy-dev/snapcraft-daily/ubuntu
+  - type: apt
+    components: [main]
+    suites: [xenial]
+    key-id: 78E1918602959B9C59103100F1831DDAFC42E99D
+    url: http://ppa.launchpad.net/snappy-dev/snapcraft-daily/ubuntu
+    keep-enabled: true
+
 parts:
   gadget:
     plugin: gadget
