@@ -31,16 +31,9 @@ platforms:
 
 package-repositories:
   - type: apt
-    components: [main]
-    suites: [xenial]
-    key-id: 78E1918602959B9C59103100F1831DDAFC42E99D
-    url: http://ppa.launchpad.net/snappy-dev/snapcraft-daily/ubuntu
-  - type: apt
-    components: [main]
-    suites: [xenial]
-    key-id: 78E1918602959B9C59103100F1831DDAFC42E99D
-    url: http://ppa.launchpad.net/snappy-dev/snapcraft-daily/ubuntu
-    keep-enabled: false
+    components: [main,restricted]
+    suites: [jammy]
+    url: http://archive.ubuntu.com/ubuntu/
 
 parts:
   gadget:

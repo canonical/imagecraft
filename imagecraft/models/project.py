@@ -104,8 +104,6 @@ class Platform(ElementModel):
 class PackageRepository(BasePackageRepositoryApt): # type:ignore[misc]
     """Imagecraft package repository definition."""
 
-    keep_enabled: bool = True
-
     @classmethod
     def unmarshal(cls, data: Mapping[str, Any]) -> "PackageRepository":
         """Create and populate a new ``PackageRepository`` object from dictionary data.
@@ -121,6 +119,9 @@ class PackageRepository(BasePackageRepositoryApt): # type:ignore[misc]
         """
         if not isinstance(data, dict): # pyright: ignore[reportUnnecessaryIsInstance]
             raise TypeError("Package repository data is not a dictionary")
+
+        if "key-id" not in data:
+            data["key-id"] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
 
         return cls(**data)
 
