@@ -19,17 +19,25 @@
 This module defines a imagecraft.yaml file, exportable to a JSON schema.
 """
 
+from collections.abc import Iterable, Mapping
 from typing import TYPE_CHECKING, Any
 
 import pydantic
 from craft_application.models import BuildInfo
 from craft_application.models import Project as BaseProject
-from craft_archives.repo.package_repository import (
+
+# pyright: reportMissingTypeStubs=false
+from craft_archives.repo.package_repository import (  # type: ignore[import-untyped]
     PackageRepositoryApt as BasePackageRepositoryApt,
 )
 from craft_cli import CraftError
 from craft_providers import bases
-from pydantic import BaseModel, ValidationError, conlist, validator
+from pydantic import (
+    BaseModel,
+    ValidationError,
+    conlist,
+    validator,  # pyright: ignore[reportUnknownVariableType]
+)
 from pydantic_yaml import YamlModelMixin
 
 # A workaround for mypy false positives
@@ -83,7 +91,7 @@ class Platform(ElementModel):
     def __hash__(self) -> int:
         return hash("_".join(str(self.build_for) + str(self.extensions)))
 
-    @validator("build_on", "build_for", pre=True, always=True)
+    @validator("build_on", "build_for", pre=True, always=True) # pyright: ignore[reportUntypedFunctionDecorator]
     @classmethod
     def _apply_vectorise(cls, val: UniqueStrList | None | str) -> UniqueStrList | None | str:
         """Implement a hook to vectorise."""
@@ -91,13 +99,13 @@ class Platform(ElementModel):
             val = [val]
         return val
 
-class PackageRepository(BasePackageRepositoryApt):
+class PackageRepository(BasePackageRepositoryApt): # type:ignore[misc]
     """Imagecraft package repository definition."""
 
     keep_enabled: bool = True
 
     @classmethod
-    def unmarshal(cls, data: dict[str, Any]) -> "PackageRepository":
+    def unmarshal(cls, data: Mapping[str, Any]) -> "PackageRepository":
         """Create and populate a new ``PackageRepository`` object from dictionary data.
 
         The unmarshal method validates entries in the input dictionary, populating
@@ -109,10 +117,10 @@ class PackageRepository(BasePackageRepositoryApt):
 
         :raise TypeError: If data is not a dictionary.
         """
-        if not isinstance(data, dict):
+        if not isinstance(data, dict): # pyright: ignore[reportUnnecessaryIsInstance]
             raise TypeError("Package repository data is not a dictionary")
 
-        return cls.parse_obj({**data})
+        return cls(**data)
 
 
 class Project(ProjectModel):
@@ -122,7 +130,7 @@ class Project(ProjectModel):
     series: str
     package_repositories: list[dict[str,Any]] | list[PackageRepository] | None
 
-    @pydantic.validator("package_repositories")
+    @validator("package_repositories") # pyright: ignore[reportUntypedFunctionDecorator]
     @classmethod
     def _validate_package_repositories(
         cls, project_repositories: list[dict[str, Any]],
@@ -227,13 +235,13 @@ def _format_pydantic_errors(errors: list[Any], *, file_name: str = "imagecraft.y
 
     return "\n".join(combined)
 
-def _format_pydantic_error_location(loc: str) -> str:
+def _format_pydantic_error_location(loc: Iterable[str | int]) -> str:
     """Format location."""
-    loc_parts = []
+    loc_parts: list[str] = []
     for loc_part in loc:
         if isinstance(loc_part, str):
             loc_parts.append(loc_part)
-        elif isinstance(loc_part, int):
+        elif isinstance(loc_part, int): # pyright: ignore[reportUnnecessaryIsInstance]
             # Integer indicates an index. Go
             # back and fix up previous part.
             previous_part = loc_parts.pop()

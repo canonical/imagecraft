@@ -108,5 +108,5 @@ def test_project_unmarshal(yaml_data):
             assert getattr(project, attr).keys() == v.keys()
             continue
         if attr == "package-repositories":
-          continue
+            continue
         assert getattr(project, attr.replace("-", "_")) == v
