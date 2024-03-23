@@ -18,12 +18,27 @@
 
 This module defines a imagecraft.yaml file, exportable to a JSON schema.
 """
-from typing import TYPE_CHECKING
 
+from collections.abc import Mapping
+from typing import TYPE_CHECKING, Any
+
+import pydantic
 from craft_application.models import BuildInfo
 from craft_application.models import Project as BaseProject
+from craft_application.util.error_formatting import format_pydantic_errors
+
+# pyright: reportMissingTypeStubs=false
+from craft_archives.repo.package_repository import (  # type: ignore[import-untyped]
+    PackageRepositoryApt as BasePackageRepositoryApt,
+)
+from craft_cli import CraftError
 from craft_providers import bases
-from pydantic import BaseModel, conlist, validator
+from pydantic import (
+    BaseModel,
+    ValidationError,
+    conlist,
+    validator,  # pyright: ignore[reportUnknownVariableType]
+)
 from pydantic_yaml import YamlModelMixin
 
 # A workaround for mypy false positives
@@ -34,6 +49,13 @@ if TYPE_CHECKING:
 else:
     UniqueStrList = conlist(str, unique_items=True, min_items=1)
 
+file_name = "imagecraft.yaml"
+
+def _alias_generator(s: str) -> str:
+    return s.replace("_", "-")
+
+class ProjectValidationError(CraftError):
+    """Error validating imagecraft.yaml."""
 
 class ProjectModel(YamlModelMixin, BaseProject):
     """Base model for the imagecraft project class."""
@@ -42,10 +64,10 @@ class ProjectModel(YamlModelMixin, BaseProject):
         """Pydantic model configuration."""
 
         validate_assignment = True
-        extra = "forbid"
+        extra = pydantic.Extra.forbid
         allow_mutation = True
         allow_population_by_field_name = True
-        alias_generator = lambda s: s.replace("_", "-")  # noqa: E731 # type: ignore[reportUnknownLambdaType,reportUnknownVariableType,reportUnknownMemberType]
+        alias_generator = _alias_generator
 
 
 class ElementModel(YamlModelMixin, BaseModel):
@@ -55,10 +77,10 @@ class ElementModel(YamlModelMixin, BaseModel):
         """Pydantic model configuration."""
 
         validate_assignment = True
-        extra = "forbid"
+        extra = pydantic.Extra.forbid
         allow_mutation = True
         allow_population_by_field_name = True
-        alias_generator = lambda s: s.replace("_", "-")  # noqa: E731 # type: ignore[reportUnknownLambdaType,reportUnknownVariableType,reportUnknownMemberType]
+        alias_generator = _alias_generator
 
 
 class Platform(ElementModel):
@@ -71,7 +93,7 @@ class Platform(ElementModel):
     def __hash__(self) -> int:
         return hash("_".join(str(self.build_for) + str(self.extensions)))
 
-    @validator("build_on", "build_for", pre=True, always=True)
+    @validator("build_on", "build_for", pre=True, always=True) # pyright: ignore[reportUntypedFunctionDecorator]
     @classmethod
     def _apply_vectorise(cls, val: UniqueStrList | None | str) -> UniqueStrList | None | str:
         """Implement a hook to vectorise."""
@@ -79,12 +101,72 @@ class Platform(ElementModel):
             val = [val]
         return val
 
+class PackageRepository(BasePackageRepositoryApt): # type:ignore[misc]
+    """Imagecraft package repository definition."""
+
+    @classmethod
+    def unmarshal(cls, data: Mapping[str, Any]) -> "PackageRepository":
+        """Create and populate a new ``PackageRepository`` object from dictionary data.
+
+        The unmarshal method validates entries in the input dictionary, populating
+        the corresponding fields in the data object.
+
+        :param data: The dictionary data to unmarshal.
+
+        :return: The newly created object.
+
+        :raise TypeError: If data is not a dictionary.
+        """
+        if not isinstance(data, dict): # pyright: ignore[reportUnnecessaryIsInstance]
+            raise TypeError("Package repository data is not a dictionary")
+
+        if "key-id" not in data:
+            data["key-id"] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+
+        return cls(**data)
+
 
 class Project(ProjectModel):
     """Definition of imagecraft.yaml configuration."""
 
     platforms: dict[str, Platform]
     series: str
+    package_repositories: list[dict[str,Any]] | list[PackageRepository] | None
+
+    @validator("package_repositories") # pyright: ignore[reportUntypedFunctionDecorator]
+    @classmethod
+    def _validate_package_repositories(
+        cls, project_repositories: list[dict[str, Any]],
+    ) -> list[PackageRepository]:
+        repositories: list[PackageRepository] = []
+        for data in project_repositories:
+            if not isinstance(data, dict):  # pyright: ignore[reportUnnecessaryIsInstance]
+                raise TypeError("value must be a dictionary but is not")
+
+            repositories.append(PackageRepository.unmarshal(data))
+
+        return repositories
+
+
+    @classmethod
+    def unmarshal(cls, data: dict[str, Any]) -> "Project":
+        """Unmarshal object with necessary translations and error handling.
+
+        (1) Perform any necessary translations.
+
+        (2) Standardize error reporting.
+
+        :returns: valid Project.
+
+        :raises CraftError: On failure to unmarshal object.
+        """
+        try:
+            return cls.parse_obj({**data})
+        except ValidationError as error:
+            raise ProjectValidationError(
+                format_pydantic_errors(error.errors(), file_name=file_name),
+            ) from error
+
 
     @property
     def effective_base(self) -> bases.BaseName:

@@ -29,6 +29,12 @@ platforms:
     build-for: [amd64]
     build-on: [amd64]
 
+package-repositories:
+  - type: apt
+    components: [main,restricted]
+    suites: [jammy]
+    url: http://archive.ubuntu.com/ubuntu/
+
 parts:
   gadget:
     plugin: gadget
@@ -76,7 +82,7 @@ def yaml_loaded_data():
 
 
 def load_project_yaml(yaml_loaded_data) -> Project:
-    return Project.from_yaml_data(yaml_loaded_data, Path("rockcraft.yaml"))
+    return Project.from_yaml_data(yaml_loaded_data, Path("imagecraft.yaml"))
 
 
 @pytest.mark.parametrize(
@@ -94,5 +100,6 @@ def test_project_unmarshal(yaml_data):
         if attr == "platforms":
             assert getattr(project, attr).keys() == v.keys()
             continue
-
+        if attr == "package-repositories":
+            continue
         assert getattr(project, attr.replace("-", "_")) == v

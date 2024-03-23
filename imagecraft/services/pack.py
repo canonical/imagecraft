@@ -29,7 +29,7 @@ if typing.TYPE_CHECKING:
 class ImagecraftPackService(PackageService):
     """Package service subclass for Imagecraft."""
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         app: AppMetadata,
         services: "ImagecraftServiceFactory",

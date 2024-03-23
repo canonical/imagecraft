@@ -32,7 +32,7 @@ Features(enable_overlay=True)
 class ImagecraftLifecycleService(LifecycleService):
     """Imagecraft-specific lifecycle service."""
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         app: AppMetadata,
         services: ServiceFactory,
@@ -89,6 +89,7 @@ class ImagecraftLifecycleService(LifecycleService):
             base=project.base,
             project_name=project.name,
             project_vars=project_vars,
+            package_repositories=project.package_repositories,
         )
 
         super().setup()
