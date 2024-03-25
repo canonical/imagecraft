@@ -1,4 +1,6 @@
 import sys
+import os
+import re
 
 sys.path.append("./")
 from custom_conf import *
@@ -120,7 +122,12 @@ if __name__ == "__main__":
     requirements = list(dict.fromkeys(requirements))
     requirements.sort()
 
-    with open(".sphinx/requirements.txt", "w") as requirements_file:
+    on_rtd = os.environ.get("READTHEDOCS") == "True"
+    if on_rtd:
+        reqs_location = re.sub("^/?", "", html_context["github_folder"])
+    else:
+        reqs_location = ""
+    with open(reqs_location + ".sphinx/requirements.txt", "w") as requirements_file:
         requirements_file.write(
             "# DO NOT MODIFY THIS FILE DIRECTLY!\n"
             "#\n"
