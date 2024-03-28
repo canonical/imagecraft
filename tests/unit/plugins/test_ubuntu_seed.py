@@ -25,28 +25,29 @@ from imagecraft.plugins import ubuntu_seed
 
 UBUNTU_SEED_BASIC_SPEC = {
     "plugin": "ubuntu-seed",
-    "ubuntu-seed-sources": [
-        "git://git.launchpad.net/~ubuntu-core-dev/ubuntu-seeds/+git/",
-    ],
-    "ubuntu-seed-source-branch": "jammy",
-    "ubuntu-seed-seeds": ["server", "minimal", "standard", "cloud-image"],
     "ubuntu-seed-components": ["main", "restricted"],
     "ubuntu-seed-pocket": "updates",
     "ubuntu-seed-extra-snaps": ["core20", "snapd"],
-    "ubuntu-seed-active-kernel": "linux-generic",
+    "ubuntu-seed-extra-packages": ["apt"],
+    "ubuntu-seed-kernel": "linux-generic",
+    "ubuntu-seed-germinate": {
+        "urls": ["git://git.launchpad.net/~ubuntu-core-dev/ubuntu-seeds/+git/"],
+        "branch": "jammy",
+        "names": ["server", "minimal", "standard", "cloud-image"],
+    },
 }
 
 
 UBUNTU_SEED_NO_SOURCE_BRANCH = {
     "plugin": "ubuntu-seed",
-    "ubuntu-seed-sources": [
-        "git://git.launchpad.net/~ubuntu-core-dev/ubuntu-seeds/+git/",
-    ],
-    "ubuntu-seed-seeds": ["server", "minimal", "standard", "cloud-image"],
     "ubuntu-seed-components": ["main", "restricted"],
     "ubuntu-seed-pocket": "updates",
     "ubuntu-seed-extra-snaps": ["core20", "snapd"],
-    "ubuntu-seed-active-kernel": "linux-generic",
+    "ubuntu-seed-kernel": "linux-generic",
+    "ubuntu-seed-germinate": {
+        "urls": ["git://git.launchpad.net/~ubuntu-core-dev/ubuntu-seeds/+git/"],
+        "names": ["server", "minimal", "standard", "cloud-image"],
+    },
 }
 
 
@@ -101,15 +102,12 @@ def test_missing_properties():
             {"gadget-something-invalid": True},
         )
     err = raised.value.errors()
-    assert len(err) == 3
-    assert err[0]["loc"] == ("ubuntu-seed-sources",)
+    assert len(err) == 2
+    assert err[0]["loc"] == ("ubuntu-seed-components",)
     assert err[0]["type"] == "value_error.missing"
 
-    assert err[1]["loc"] == ("ubuntu-seed-seeds",)
+    assert err[1]["loc"] == ("ubuntu-seed-germinate",)
     assert err[1]["type"] == "value_error.missing"
-
-    assert err[2]["loc"] == ("ubuntu-seed-components",)
-    assert err[2]["type"] == "value_error.missing"
 
 
 def test_get_build_snaps(ubuntu_seed_plugin, tmp_path):
@@ -145,11 +143,11 @@ def test_get_build_commands(ubuntu_seed_plugin, mocker, tmp_path):
         ]
 
         build_rootfs_patcher.assert_called_with(
-            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-source-branch"],
+            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("branch"),
             "amd64",
-            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-sources"],
-            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-source-branch"],
-            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-seeds"],
+            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("urls"),
+            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("branch"),
+            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("names"),
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-components"],
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-pocket"],
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-active-kernel"],
@@ -172,9 +170,9 @@ def test_get_build_commands(ubuntu_seed_plugin, mocker, tmp_path):
         build_rootfs_patcher.assert_called_with(
             "jammy",
             "amd64",
-            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-sources"],
-            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-source-branch"],
-            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-seeds"],
+            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("urls"),
+            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("branch"),
+            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("names"),
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-components"],
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-pocket"],
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-active-kernel"],
