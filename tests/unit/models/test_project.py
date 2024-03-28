@@ -50,7 +50,7 @@ parts:
       - restricted
     ubuntu-seed-pocket: updates
     ubuntu-seed-extra-snaps: [core20, snapd]
-    ubuntu-seed-active-kernel: linux-generic
+    ubuntu-seed-kernel: linux-generic
     stage:
       - -etc/cloud/cloud.cfg.d/90_dpkg.cfg
 """
