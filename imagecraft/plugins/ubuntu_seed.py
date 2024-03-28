@@ -55,7 +55,8 @@ class UbuntuSeedPluginProperties(plugins.PluginProperties):
 
     ubuntu_seed_germinate: GerminateProperties
     ubuntu_seed_extra_snaps: UniqueStrList | None = None
-    ubuntu_seed_active_kernel: str | None = None
+    ubuntu_seed_extra_packages: UniqueStrList | None = None
+    ubuntu_seed_kernel: str | None = None
 
     @classmethod
     def unmarshal(cls, data: dict[str, Any]) -> Self:

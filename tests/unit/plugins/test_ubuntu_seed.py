@@ -150,7 +150,7 @@ def test_get_build_commands(ubuntu_seed_plugin, mocker, tmp_path):
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("names"),
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-components"],
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-pocket"],
-            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-active-kernel"],
+            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-kernel"],
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-extra-snaps"],
         )
 
@@ -175,7 +175,7 @@ def test_get_build_commands(ubuntu_seed_plugin, mocker, tmp_path):
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("names"),
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-components"],
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-pocket"],
-            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-active-kernel"],
+            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-kernel"],
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-extra-snaps"],
         )
 

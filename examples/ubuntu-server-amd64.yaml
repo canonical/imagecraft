@@ -12,6 +12,8 @@ parts:
     plugin: gadget
     source: https://github.com/snapcore/pc-gadget.git
     source-branch: classic
+    gadget-type: git
+    gadget-target: server
   rootfs:
     plugin: ubuntu-seed
     ubuntu-seed-sources:
