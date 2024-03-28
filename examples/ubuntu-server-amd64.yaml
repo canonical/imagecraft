@@ -26,7 +26,18 @@ parts:
       - main
       - restricted
     ubuntu-seed-pocket: updates
+    ubuntu-seed-germinate:
+      urls:
+        - "git://git.launchpad.net/~ubuntu-core-dev/ubuntu-seeds/+git/"
+      branch: jammy
+      vcs: true
+      names:
+        - server
+        - minimal
+        - standard
+    ubuntu-seed-kernel: linux-image-generic
     ubuntu-seed-extra-snaps: [core20, snapd]
+    ubuntu-seed-extra-packages: [hello-ubuntu-image-public]
     ubuntu-seed-active-kernel: linux-generic
     stage:
       - -etc/cloud/cloud.cfg.d/90_dpkg.cfg
