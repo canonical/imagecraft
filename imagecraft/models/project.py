@@ -18,13 +18,22 @@
 
 This module defines a imagecraft.yaml file, exportable to a JSON schema.
 """
-from typing import TYPE_CHECKING
+from collections.abc import Mapping
+from typing import TYPE_CHECKING, Any
 
+from craft_application.errors import CraftValidationError
 from craft_application.models import BuildInfo
 from craft_application.models import Project as BaseProject
 from craft_providers import bases
-from pydantic import BaseModel, conlist, validator
+from pydantic import (
+    BaseModel,
+    conlist,
+    root_validator,  # pyright: ignore[reportUnknownVariableType]
+    validator,  # pyright: ignore[reportUnknownVariableType]
+)
 from pydantic_yaml import YamlModelMixin
+
+from imagecraft.architectures import SUPPORTED_ARCHS
 
 # A workaround for mypy false positives
 # see https://github.com/samuelcolvin/pydantic/issues/975#issuecomment-551147305
@@ -66,12 +75,8 @@ class Platform(ElementModel):
 
     build_on: UniqueStrList | None
     build_for: UniqueStrList | None
-    extensions: UniqueStrList = []
 
-    def __hash__(self) -> int:
-        return hash("_".join(str(self.build_for) + str(self.extensions)))
-
-    @validator("build_on", "build_for", pre=True, always=True)
+    @validator("build_on", "build_for", pre=True, always=True) # pyright: ignore[reportUntypedFunctionDecorator]
     @classmethod
     def _apply_vectorise(cls, val: UniqueStrList | None | str) -> UniqueStrList | None | str:
         """Implement a hook to vectorise."""
@@ -79,12 +84,98 @@ class Platform(ElementModel):
             val = [val]
         return val
 
+    @root_validator(skip_on_failure=True) # pyright: ignore[reportUntypedFunctionDecorator]
+    @classmethod
+    def _validate_platform_set(cls, values: Mapping[str, Any]) -> Mapping[str, Any]:
+        """Validate the build_on build_for combination."""
+        build_for: list[str] = values["build_for"] if values.get("build_for") else []
+        build_on: list[str] = values["build_on"] if values.get("build_on") else []
+
+        # We can only build for 1 arch at the moment
+        if len(build_for) > 1:
+            raise CraftValidationError(
+                str(
+                    f"Trying to build an image for {build_for} "
+                    "but multiple target architectures are not "
+                    "currently supported. Please specify only 1 value.",
+                ),
+            )
+
+        # We can only build on 1 arch at the moment
+        if len(build_on) > 1:
+            raise CraftValidationError(
+                str(
+                    f"Trying to build an image on {build_on} "
+                    "but multiple architectures are not "
+                    "currently supported. Please specify only 1 value.",
+                ),
+            )
+
+        # If build_for is provided, then build_on must also be
+        if not build_on and build_for:
+            raise CraftValidationError(
+                "'build_for' expects 'build_on' to also be provided.",
+            )
+
+        return values
+
 
 class Project(ProjectModel):
     """Definition of imagecraft.yaml configuration."""
 
-    platforms: dict[str, Platform]
     series: str
+    platforms: dict[str, Platform]
+
+    @validator("platforms") # pyright: ignore[reportUntypedFunctionDecorator]
+    @classmethod
+    def _validate_all_platforms(cls, platforms: dict[str, Any]) -> dict[str, Platform]:
+        """Make sure all provided platforms are tangible and sane."""
+        for platform_label, platform in platforms.items():
+            error_prefix = f"Error for platform entry '{platform_label}'"
+
+            # build_on and build_for are validated
+            # let's also validate the platform label
+            # If the label maps to a valid architecture and
+            # `build-for` is present, then both need to have the same value,
+            # otherwise the project is invalid.
+            if platform.build_for:
+                build_target = platform.build_for[0]
+                if platform_label in SUPPORTED_ARCHS and platform_label != build_target:
+                    raise CraftValidationError(
+                        str(
+                            f"{error_prefix}: if 'build_for' is provided and the "
+                            "platform entry label corresponds to a valid architecture, then "
+                            f"both values must match. {platform_label} != {build_target}",
+                        ),
+                    )
+            else:
+                build_target = platform_label
+
+            build_on_one_of = (
+                platform.build_on if platform.build_on else [platform_label]
+            )
+            # Both build and target architectures must be supported
+            if not any(b_o in SUPPORTED_ARCHS for b_o in build_on_one_of):
+                raise CraftValidationError(
+                    str(
+                        f"{error_prefix}: trying to build image in one of "
+                        f"{build_on_one_of}, but none of these build architectures is supported. "
+                        f"Supported architectures: {SUPPORTED_ARCHS}",
+                    ),
+                )
+
+            if build_target not in SUPPORTED_ARCHS:
+                raise CraftValidationError(
+                    str(
+                        f"{error_prefix}: trying to build image for target "
+                        f"architecture {build_target}, which is not supported. "
+                        f"Supported architectures: {SUPPORTED_ARCHS}",
+                    ),
+                )
+
+            platforms[platform_label] = platform
+
+        return platforms
 
     @property
     def effective_base(self) -> bases.BaseName:
