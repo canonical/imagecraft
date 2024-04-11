@@ -185,11 +185,13 @@ exclude = [
     "venv",
     "docs",
     "build",
+    "setup.py",
+    "results",
 ]
 
 [tool.mypy]
 python_version = "3.10"
-exclude = ["build", "tests", "results"]
+exclude = ["build", "tests", "results", "setup.py"]
 warn_unused_configs = true
 warn_redundant_casts = true
 strict_equality = true

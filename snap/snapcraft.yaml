@@ -1,0 +1,68 @@
+name: imagecraft
+base: core22
+summary: Imagecraft is a craft tool used to create Ubuntu bootable images.
+description: |
+    Imagecraft is a craft tool used to create Ubuntu bootable images. It follows
+    the same principles as snapcraft, but is focused on creating bootable images
+    instead.
+adopt-info: imagecraft
+confinement: classic
+grade: devel
+license: GPL-3.0
+source-code: https://github.com/canonical/imagecraft
+
+apps:
+  imagecraft:
+    command: bin/python $SNAP/bin/imagecraft
+    environment:
+      PATH: "/snap/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$SNAP/usr/bin:$SNAP/bin"
+
+build-packages:
+  - git
+  - libapt-pkg-dev
+  - libyaml-dev
+  - python3.10-dev
+  - pkg-config
+
+parts:
+  imagecraft-libs:
+    plugin: nil
+    build-attributes:
+      - enable-patchelf
+    stage-packages:
+      - libpython3-stdlib
+      - libpython3.10-stdlib
+      - libpython3.10-minimal
+      - python3-pip
+      - python3-setuptools
+      - python3-wheel
+      - python3-venv
+      - python3-minimal
+      - python3-distutils
+      - python3-pkg-resources
+      - python3.10-minimal
+
+  imagecraft:
+    after: [imagecraft-libs]
+    stage-snaps:
+      - ubuntu-image
+    source: .
+    plugin: python
+    build-attributes:
+      - enable-patchelf
+    python-packages:
+      - wheel
+      - pip
+      - setuptools
+    python-requirements:
+      - requirements.txt
+    build-environment:
+      - "CFLAGS": "$(pkg-config python-3.10 yaml-0.1 --cflags)"
+    override-build: |
+      craftctl default
+
+      version="$(python3 setup.py --version)"
+      ${SNAP}/libexec/snapcraft/craftctl set version="$version"
+
+      # python3 fixup symlink (snapcraft bug)
+      ln -sf ../usr/bin/python3.10 $CRAFT_PART_INSTALL/bin/python3
