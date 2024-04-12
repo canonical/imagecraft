@@ -13,7 +13,7 @@ source-code: https://github.com/canonical/imagecraft
 
 apps:
   imagecraft:
-    command: bin/python $SNAP/bin/imagecraft
+    command: bin/python3 $SNAP/bin/imagecraft
     environment:
       PATH: "/snap/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$SNAP/usr/bin:$SNAP/bin"
 
