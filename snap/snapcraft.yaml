@@ -63,6 +63,3 @@ parts:
 
       version="$(python3 setup.py --version)"
       ${SNAP}/libexec/snapcraft/craftctl set version="$version"
-
-      # python3 fixup symlink (snapcraft bug)
-      ln -sf ../usr/bin/python3.10 $CRAFT_PART_INSTALL/bin/python3
