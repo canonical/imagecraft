@@ -29,6 +29,8 @@ parts:
     plugin: nil
     build-attributes:
       - enable-patchelf
+    stage-snaps:
+      - ubuntu-image
     stage-packages:
       - apt
       - apt-transport-https
@@ -48,8 +50,6 @@ parts:
 
   imagecraft:
     after: [imagecraft-libs]
-    stage-snaps:
-      - ubuntu-image
     source: .
     plugin: python
     build-attributes:
