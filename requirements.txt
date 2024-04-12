@@ -1,9 +1,9 @@
 certifi==2024.2.2
 charset-normalizer==3.3.2
-craft-application==1.1.0
-craft-cli==2.5.0
-craft-parts==1.25.2
-craft-providers==1.20.0
+craft-application==1.2.1
+craft-cli==2.5.1
+craft-parts==1.28.1
+craft-providers==1.23.1
 Deprecated==1.2.14
 idna==3.7
 importlib_metadata==7.1.0
