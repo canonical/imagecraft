@@ -68,10 +68,14 @@ def ubuntu_seed_plugin():
             project_dirs=project_dirs,
             plugin_properties=plugin_properties,
         )
+        project_vars = {
+            "version": "22.04",
+        }
         project_info = craft_parts.ProjectInfo(
             application_name="test",
             project_dirs=project_dirs,
             cache_dir=tmp_path,
+            project_vars=project_vars,
         )
         part_info = craft_parts.PartInfo(project_info=project_info, part=part)
 
@@ -144,6 +148,7 @@ def test_get_build_commands(ubuntu_seed_plugin, mocker, tmp_path):
 
         build_rootfs_patcher.assert_called_with(
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("branch"),
+            "22.04",
             "amd64",
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("urls"),
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("branch"),
@@ -169,6 +174,7 @@ def test_get_build_commands(ubuntu_seed_plugin, mocker, tmp_path):
 
         build_rootfs_patcher.assert_called_with(
             "jammy",
+            "22.04",
             "amd64",
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("urls"),
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("branch"),

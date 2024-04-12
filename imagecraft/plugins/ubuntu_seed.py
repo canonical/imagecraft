@@ -105,8 +105,11 @@ class UbuntuSeedPlugin(plugins.Plugin):
         if not source_branch:
             source_branch = series
 
+        version = self._part_info.project_info.get_project_var("version", raw_read=True)
+
         ubuntu_seed_cmd = ubuntu_image_cmds_build_rootfs(
             series,
+            version,
             arch,
             options.ubuntu_seed_germinate.urls,
             source_branch,

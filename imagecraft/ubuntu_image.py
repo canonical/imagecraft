@@ -25,6 +25,7 @@ from imagecraft.errors import UbuntuImageError
 
 def generate_legacy_def_rootfs(  # noqa: PLR0913
     series: str,
+    revision: str,
     arch: str,
     sources: list[str],
     seed_branch: str,
@@ -33,6 +34,7 @@ def generate_legacy_def_rootfs(  # noqa: PLR0913
     pocket: str,
     kernel: str | None = None,
     extra_snaps: list[str] | None = None,
+    extra_packages: list[str] | None = None,
 ) -> str:
     """Generate a definition yaml file for rootfs creation."""
     components = ", ".join(components_list)
@@ -41,18 +43,21 @@ def generate_legacy_def_rootfs(  # noqa: PLR0913
     kernel_line = f"kernel: {kernel}" if kernel else ""
     customization = ""
 
-    if extra_snaps:
+    if extra_snaps or extra_packages:
         extra_snaps_list = "\n".join(f"    - name: {snap}" for snap in extra_snaps)
+        extra_packages_list = "\n".join(f"    - name: {pkg}" for pkg in extra_packages)
         customization = f"""
 customization:
   extra-snaps:
 {extra_snaps_list}
+  extra-packages:
+{extra_packages_list}
 """
 
     return f"""
 name: craft-driver
 display-name: Craft Driver
-revision: 1
+revision: {revision}
 class: preinstalled
 architecture: {arch}
 series: {series}
@@ -72,6 +77,7 @@ rootfs:
 
 def ubuntu_image_cmds_build_rootfs(  # noqa: PLR0913
     series: str,
+    version: str,
     arch: str,
     sources: list[str],
     seed_branch: str,
@@ -81,9 +87,10 @@ def ubuntu_image_cmds_build_rootfs(  # noqa: PLR0913
     kernel: str | None = None,
     extra_snaps: list[str] | None = None,
 ) -> list[str]:
-    """Call ubuntu-image to generate a rootfs."""
+    """List commands to ubuntu-image to generate a rootfs."""
     definition_yaml = generate_legacy_def_rootfs(
         series,
+        version,
         arch,
         sources,
         seed_branch,
@@ -93,9 +100,11 @@ def ubuntu_image_cmds_build_rootfs(  # noqa: PLR0913
         kernel,
         extra_snaps,
     )
+    image_definition_file = "craft.yaml"
+
     return [
-        f"cat << EOF > craft.yaml\n{definition_yaml}\nEOF",
-        "ubuntu-image classic --workdir work -O output/ craft.yaml",
+        f"cat << EOF > {image_definition_file}\n{definition_yaml}\nEOF",
+        f"ubuntu-image classic --workdir work -O output/ {image_definition_file}",
         "mv work/chroot/* $CRAFT_PART_INSTALL/",
     ]
 
@@ -108,7 +117,7 @@ def ubuntu_image_pack(
 ) -> None:
     """Pack the primed image contents into an image file."""
     cmd: list[str] = [
-        "./ubuntu-image",
+        "ubuntu-image",
         "pack",
         "--gadget-dir",
         gadget_path,
