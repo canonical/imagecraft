@@ -30,6 +30,12 @@ parts:
     build-attributes:
       - enable-patchelf
     stage-packages:
+      - apt
+      - apt-transport-https
+      - apt-utils
+      - binutils
+      - gpg
+      - gpgv
       - libpython3-stdlib
       - libpython3.10-stdlib
       - libpython3.10-minimal
