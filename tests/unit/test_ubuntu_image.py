@@ -29,6 +29,7 @@ def test_generate_legacy_def_rootfs():
     assert (
         generate_legacy_def_rootfs(
             series="mantic",
+            revision="22.04",
             arch="amd64",
             sources=["source1", "source2"],
             seed_branch="mantic",
@@ -37,36 +38,82 @@ def test_generate_legacy_def_rootfs():
             pocket="updates",
             kernel="linux-image-generic",
             extra_snaps=["lxd", "snapd"],
+            extra_packages=["apt", "dpkg"],
         )
-        == """
-name: craft-driver
+        == """name: craft-driver
 display-name: Craft Driver
-revision: 1
+revision: '22.04'
 class: preinstalled
 architecture: amd64
 series: mantic
 kernel: linux-image-generic
-
 rootfs:
-  components: [main, restricted]
+  components:
+  - main
+  - restricted
   seed:
-    urls: ["source1", "source2"]
+    urls:
+    - source1
+    - source2
     branch: mantic
-    names: ["server", "minimal"]
+    names:
+    - server
+    - minimal
     pocket: updates
-
-
 customization:
   extra-snaps:
-    - name: lxd
-    - name: snapd
-
+  - name: lxd
+  - name: snapd
+  extra-packages:
+  - name: apt
+  - name: dpkg
 """
     )
 
     assert (
         generate_legacy_def_rootfs(
             series="mantic",
+            revision="22.04",
+            arch="amd64",
+            sources=["source1", "source2"],
+            seed_branch="mantic",
+            seeds=["server", "minimal"],
+            components_list=["main", "restricted"],
+            pocket="updates",
+            kernel="linux-image-generic",
+            extra_packages=["apt", "dpkg"],
+        )
+        == """name: craft-driver
+display-name: Craft Driver
+revision: '22.04'
+class: preinstalled
+architecture: amd64
+series: mantic
+kernel: linux-image-generic
+rootfs:
+  components:
+  - main
+  - restricted
+  seed:
+    urls:
+    - source1
+    - source2
+    branch: mantic
+    names:
+    - server
+    - minimal
+    pocket: updates
+customization:
+  extra-packages:
+  - name: apt
+  - name: dpkg
+"""
+    )
+
+    assert (
+        generate_legacy_def_rootfs(
+            series="mantic",
+            revision="22.04",
             arch="amd64",
             sources=[],
             seed_branch="mantic",
@@ -75,15 +122,12 @@ customization:
             pocket="updates",
             extra_snaps=[],
         )
-        == """
-name: craft-driver
+        == """name: craft-driver
 display-name: Craft Driver
-revision: 1
+revision: '22.04'
 class: preinstalled
 architecture: amd64
 series: mantic
-
-
 rootfs:
   components: []
   seed:
@@ -91,8 +135,6 @@ rootfs:
     branch: mantic
     names: []
     pocket: updates
-
-
 """
     )
 
@@ -105,6 +147,7 @@ def test_ubuntu_image_cmds_build_rootfs(mocker):
 
     assert ubuntu_image_cmds_build_rootfs(
         series="mantic",
+        version="22.04",
         arch="amd64",
         sources=["source1", "source2"],
         seed_branch="mantic",
@@ -132,7 +175,7 @@ def test_ubuntu_image_pack(mocker):
 
     subprocess_patcher.assert_called_with(
         [
-            "./ubuntu-image",
+            "ubuntu-image",
             "pack",
             "--gadget-dir",
             "gadget/test",
@@ -153,7 +196,7 @@ def test_ubuntu_image_pack(mocker):
 
     subprocess_patcher.assert_called_with(
         [
-            "./ubuntu-image",
+            "ubuntu-image",
             "pack",
             "--gadget-dir",
             "gadget/test",

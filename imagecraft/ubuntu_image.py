@@ -18,9 +18,96 @@
 
 import subprocess
 
+import yaml
 from craft_cli import emit
+from pydantic import BaseModel, Field
 
 from imagecraft.errors import UbuntuImageError
+
+
+def _alias_generator(s: str) -> str:
+    return s.replace("_", "-")
+
+
+class Snap(BaseModel):
+    """Pydantic model for the Snap object in an ImageDefinition."""
+
+    name: str | None
+
+
+class Package(BaseModel):
+    """Pydantic model for the Package object in an ImageDefinition."""
+
+    name: str | None
+
+
+class Customization(BaseModel):
+    """Pydantic model for the Customization object in an ImageDefinition."""
+
+    extra_snaps: list[Snap] | None
+    extra_packages: list[Package] | None
+
+    class Config:
+        """Pydantic model configuration."""
+
+        validate_assignment = True
+        allow_mutation = True
+        allow_population_by_field_name = True
+        alias_generator = _alias_generator
+
+
+class Seed(BaseModel):
+    """Pydantic model for the Seed object in an ImageDefinition."""
+
+    urls: list[str]
+    branch: str
+    names: list[str]
+    pocket: str
+
+    class Config:
+        """Pydantic model configuration."""
+
+        validate_assignment = True
+        allow_mutation = True
+        allow_population_by_field_name = True
+        alias_generator = _alias_generator
+
+
+class Rootfs(BaseModel):
+    """Pydantic model for the Rootfs object in an ImageDefinition."""
+
+    components: list[str]
+    seed: Seed
+
+    class Config:
+        """Pydantic model configuration."""
+
+        validate_assignment = True
+        allow_mutation = True
+        allow_population_by_field_name = True
+        alias_generator = _alias_generator
+
+
+class ImageDefinition(BaseModel):
+    """Pydantic model for the ImageDefinition."""
+
+    name: str
+    display_name: str
+    revision: str
+    class_: str = Field(alias="class")
+    architecture: str
+    series: str
+    kernel: str | None
+    rootfs: Rootfs
+    customization: Customization | None = None
+
+    class Config:
+        """Pydantic model configuration."""
+
+        validate_assignment = True
+        allow_mutation = True
+        allow_population_by_field_name = True
+        alias_generator = _alias_generator
 
 
 def generate_legacy_def_rootfs(  # noqa: PLR0913
@@ -37,42 +124,48 @@ def generate_legacy_def_rootfs(  # noqa: PLR0913
     extra_packages: list[str] | None = None,
 ) -> str:
     """Generate a definition yaml file for rootfs creation."""
-    components = ", ".join(components_list)
-    seed_urls = ", ".join(f'"{w}"' for w in sources)
-    seed_names = ", ".join(f'"{w}"' for w in seeds)
-    kernel_line = f"kernel: {kernel}" if kernel else ""
-    customization = ""
+    image_definition = ImageDefinition(
+        name="craft-driver",
+        display_name="Craft Driver",
+        class_="preinstalled",  # type: ignore[call-arg]
+        revision=revision,
+        architecture=arch,
+        series=series,
+        kernel=kernel,
+        rootfs=Rootfs(
+            components=components_list,
+            seed=Seed(
+                urls=sources,
+                branch=seed_branch,
+                names=seeds,
+                pocket=pocket,
+            ),
+        ),
+    )
+
+    extra_snaps_obj = None
+    extra_packages_obj = None
+
+    if extra_snaps:
+        extra_snaps_obj = [Snap(name=s) for s in extra_snaps]
+
+    if extra_packages:
+        extra_packages_obj = [Package(name=p) for p in extra_packages]
 
     if extra_snaps or extra_packages:
-        extra_snaps_list = "\n".join(f"    - name: {snap}" for snap in extra_snaps)
-        extra_packages_list = "\n".join(f"    - name: {pkg}" for pkg in extra_packages)
-        customization = f"""
-customization:
-  extra-snaps:
-{extra_snaps_list}
-  extra-packages:
-{extra_packages_list}
-"""
+        image_definition.customization = Customization(
+            extra_snaps=extra_snaps_obj,
+            extra_packages=extra_packages_obj,
+        )
 
-    return f"""
-name: craft-driver
-display-name: Craft Driver
-revision: {revision}
-class: preinstalled
-architecture: {arch}
-series: {series}
-{kernel_line}
-
-rootfs:
-  components: [{components}]
-  seed:
-    urls: [{seed_urls}]
-    branch: {seed_branch}
-    names: [{seed_names}]
-    pocket: {pocket}
-
-{customization}
-"""
+    return yaml.dump(
+        image_definition.dict(
+            exclude_unset=True,
+            exclude_none=True,
+            by_alias=True,
+        ),
+        sort_keys=False,
+    )
 
 
 def ubuntu_image_cmds_build_rootfs(  # noqa: PLR0913
