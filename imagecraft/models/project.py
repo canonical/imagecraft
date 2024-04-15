@@ -126,6 +126,22 @@ class Project(ProjectModel):
     series: str
     platforms: dict[str, Platform]
 
+    @validator("platforms", pre=True) # pyright: ignore[reportUntypedFunctionDecorator]
+    @classmethod
+    def preprocess_all_platforms(cls, platforms: dict[str, Any]) -> dict[str, Any]:
+        """Convert the simplified form of platform to the full one."""
+        for platform_label, platform in platforms.items():
+            if platform is None:
+                if platform_label not in SUPPORTED_ARCHS:
+                    raise CraftValidationError(
+                        f"Invalid platform {platform_label}.",
+                        details="A platform name must either be a valid architecture name or the "
+                        "platform must specify one or more build-on and build-for architectures.",
+                    )
+                platforms[platform_label] = {"build_on":platform_label, "build_for": platform_label}
+
+        return platforms
+
     @validator("platforms") # pyright: ignore[reportUntypedFunctionDecorator]
     @classmethod
     def _validate_all_platforms(cls, platforms: dict[str, Any]) -> dict[str, Platform]:
@@ -185,7 +201,7 @@ class Project(ProjectModel):
         return bases.BaseName(name, channel)
 
     def get_build_plan(self) -> list[BuildInfo]:
-        """Obtain the list of architectures and bases from the project file."""
+        """Obtain the list of architectures from the project file."""
         build_infos: list[BuildInfo] = []
         base = self.effective_base
 

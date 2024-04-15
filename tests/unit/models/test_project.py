@@ -72,6 +72,33 @@ parts:
     source-branch: classic
 """
 
+IMAGECRAFT_YAML_MINIMAL_PLATFORM = """
+name: ubuntu-server-amd64
+version: "22.04"
+series: jammy
+platforms:
+  amd64:
+parts:
+  gadget:
+    plugin: gadget
+    source: https://github.com/snapcore/pc-gadget.git
+    source-branch: classic
+"""
+
+IMAGECRAFT_YAML_NO_BUILD_FOR_PLATFORM = """
+name: ubuntu-server-amd64
+version: "22.04"
+series: jammy
+platforms:
+  amd64:
+    build-on: amd64
+parts:
+  gadget:
+    plugin: gadget
+    source: https://github.com/snapcore/pc-gadget.git
+    source-branch: classic
+"""
+
 
 @pytest.fixture()
 def yaml_loaded_data():
@@ -87,6 +114,8 @@ def load_project_yaml(yaml_loaded_data) -> Project:
     [
         IMAGECRAFT_YAML_GENERIC,
         IMAGECRAFT_YAML_SIMPLE_PLATFORM,
+        IMAGECRAFT_YAML_MINIMAL_PLATFORM,
+        IMAGECRAFT_YAML_NO_BUILD_FOR_PLATFORM,
     ],
 )
 def test_project_unmarshal(yaml_data):
