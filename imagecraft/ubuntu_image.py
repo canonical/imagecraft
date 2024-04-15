@@ -18,7 +18,7 @@
 
 import subprocess
 
-import yaml
+from craft_application.util import dump_yaml
 from craft_cli import emit
 from pydantic import BaseModel, Field
 
@@ -158,13 +158,12 @@ def generate_image_def_yaml(  # noqa: PLR0913
             extra_packages=extra_packages_obj,
         )
 
-    return yaml.dump(
+    return dump_yaml(
         image_definition.dict(
             exclude_unset=True,
             exclude_none=True,
             by_alias=True,
         ),
-        sort_keys=False,
     )
 
 
