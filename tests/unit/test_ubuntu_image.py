@@ -19,15 +19,15 @@ import subprocess
 import pytest
 from imagecraft.errors import UbuntuImageError
 from imagecraft.ubuntu_image import (
-    generate_legacy_def_rootfs,
+    generate_image_def_yaml,
     ubuntu_image_cmds_build_rootfs,
     ubuntu_image_pack,
 )
 
 
-def test_generate_legacy_def_rootfs():
+def test_generate_image_def_yaml():
     assert (
-        generate_legacy_def_rootfs(
+        generate_image_def_yaml(
             series="mantic",
             revision="22.04",
             arch="amd64",
@@ -71,7 +71,7 @@ customization:
     )
 
     assert (
-        generate_legacy_def_rootfs(
+        generate_image_def_yaml(
             series="mantic",
             revision="22.04",
             arch="amd64",
@@ -111,7 +111,7 @@ customization:
     )
 
     assert (
-        generate_legacy_def_rootfs(
+        generate_image_def_yaml(
             series="mantic",
             revision="22.04",
             arch="amd64",
@@ -141,7 +141,7 @@ rootfs:
 
 def test_ubuntu_image_cmds_build_rootfs(mocker):
     mocker.patch(
-        "imagecraft.ubuntu_image.generate_legacy_def_rootfs",
+        "imagecraft.ubuntu_image.generate_image_def_yaml",
         return_value="test",
     )
 

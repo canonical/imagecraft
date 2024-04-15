@@ -110,7 +110,7 @@ class ImageDefinition(BaseModel):
         alias_generator = _alias_generator
 
 
-def generate_legacy_def_rootfs(  # noqa: PLR0913
+def generate_image_def_yaml(  # noqa: PLR0913
     series: str,
     revision: str,
     arch: str,
@@ -181,7 +181,7 @@ def ubuntu_image_cmds_build_rootfs(  # noqa: PLR0913
     extra_snaps: list[str] | None = None,
 ) -> list[str]:
     """List commands to ubuntu-image to generate a rootfs."""
-    definition_yaml = generate_legacy_def_rootfs(
+    definition_yaml = generate_image_def_yaml(
         series,
         version,
         arch,
