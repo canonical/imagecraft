@@ -1,6 +1,6 @@
 [project]
 name = "imagecraft"
-dynamic = ["version", "readme"]
+dynamic = ["version", "readme", "description", "license", "authors", "urls"]
 dependencies = [
     "craft-archives==1.1.3",
     "craft-application==1.2.1",
