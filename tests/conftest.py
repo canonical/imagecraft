@@ -115,3 +115,19 @@ def lifecycle_service(default_project, default_factory):
         work_dir=Path("work/"),
         cache_dir=Path("cache/"),
     )
+
+
+@pytest.fixture()
+def lifecycle_service_no_platform(default_project, default_factory):
+    from imagecraft.application import APP_METADATA
+    from imagecraft.services import ImagecraftLifecycleService
+
+    return ImagecraftLifecycleService(
+        app=APP_METADATA,
+        build_for="amd64",
+        platform=None,
+        project=default_project,
+        services=default_factory,
+        work_dir=Path("work/"),
+        cache_dir=Path("cache/"),
+    )

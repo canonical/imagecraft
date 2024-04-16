@@ -16,6 +16,7 @@
 
 from pathlib import Path
 
+from craft_application import util
 from craft_parts import (
     LifecycleManager,
 )
@@ -38,9 +39,32 @@ def test_lifecycle_args(
         work_dir=Path("work"),
         ignore_local_sources=[],
         platform="amd64",
-        base=None,
-
+        base="ubuntu@22.04",
         project_name="default",
         project_vars={"version": "1.0"},
     )
 
+
+def test_lifecycle_args_no_platform(
+    lifecycle_service_no_platform, mocker, monkeypatch,
+):
+    mock_lifecycle = mocker.patch.object(
+        LifecycleManager, "__init__", return_value=None,
+    )
+
+    lifecycle_service_no_platform.setup()
+
+    mock_lifecycle.assert_called_once_with(
+        {"parts": {}},
+        application_name="imagecraft",
+        arch="x86_64",
+        cache_dir=Path("cache"),
+        work_dir=Path("work"),
+        ignore_local_sources=[],
+        platform=None,
+        base="ubuntu@22.04",
+        project_name="default",
+        project_vars={"version": "1.0"},
+    )
+
+    assert lifecycle_service_no_platform._platform == util.get_host_architecture()
