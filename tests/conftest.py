@@ -12,6 +12,7 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 import types
+from pathlib import Path
 
 import pytest
 from craft_application.models.constraints import ProjectName, SummaryStr
@@ -77,6 +78,12 @@ def default_project(extra_project_params):
 
 
 @pytest.fixture()
+def default_build_plan(default_project):
+    from imagecraft.models.project import BuildPlanner
+
+    return BuildPlanner.unmarshal(default_project.marshal()).get_build_plan()
+
+@pytest.fixture()
 def default_factory(default_project):
     from imagecraft.application import APP_METADATA
     from imagecraft.services import ImagecraftServiceFactory
@@ -92,3 +99,19 @@ def default_application(default_factory):
     from imagecraft.application import APP_METADATA, Imagecraft
 
     return Imagecraft(APP_METADATA, default_factory)
+
+
+@pytest.fixture()
+def lifecycle_service(default_project, default_factory):
+    from imagecraft.application import APP_METADATA
+    from imagecraft.services import ImagecraftLifecycleService
+
+    return ImagecraftLifecycleService(
+        app=APP_METADATA,
+        build_for="amd64",
+        platform="amd64",
+        project=default_project,
+        services=default_factory,
+        work_dir=Path("work/"),
+        cache_dir=Path("cache/"),
+    )
