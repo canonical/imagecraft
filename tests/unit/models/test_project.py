@@ -168,8 +168,7 @@ def test_project_platform_invalid():
 
 def test_project_all_platforms_invalid(yaml_loaded_data):
     def reload_project_platforms(new_platforms=None):
-        if new_platforms:
-            yaml_loaded_data["platforms"] = mock_platforms
+        yaml_loaded_data["platforms"] = mock_platforms
         with pytest.raises(CraftValidationError) as err:
             Project.unmarshal(yaml_loaded_data)
 
@@ -206,5 +205,10 @@ def test_project_all_platforms_invalid(yaml_loaded_data):
         "unsupported": None,
     }
     assert "Invalid platform unsupported" in reload_project_platforms(
+        mock_platforms,
+    )
+
+    mock_platforms = None
+    assert "No platforms were specified." in reload_project_platforms(
         mock_platforms,
     )
