@@ -201,3 +201,10 @@ def test_project_all_platforms_invalid(yaml_loaded_data):
     assert "build image for target architecture noarch" in reload_project_platforms(
         mock_platforms,
     )
+
+    mock_platforms = {
+        "unsupported": None,
+    }
+    assert "Invalid platform unsupported" in reload_project_platforms(
+        mock_platforms,
+    )
