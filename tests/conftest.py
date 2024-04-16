@@ -78,12 +78,6 @@ def default_project(extra_project_params):
 
 
 @pytest.fixture()
-def default_build_plan(default_project):
-    from imagecraft.models.project import BuildPlanner
-
-    return BuildPlanner.unmarshal(default_project.marshal()).get_build_plan()
-
-@pytest.fixture()
 def default_factory(default_project):
     from imagecraft.application import APP_METADATA
     from imagecraft.services import ImagecraftServiceFactory
@@ -130,4 +124,18 @@ def lifecycle_service_no_platform(default_project, default_factory):
         services=default_factory,
         work_dir=Path("work/"),
         cache_dir=Path("cache/"),
+    )
+
+
+@pytest.fixture()
+def pack_service(default_project, default_factory):
+    from imagecraft.application import APP_METADATA
+    from imagecraft.services import ImagecraftPackService
+
+    return ImagecraftPackService(
+        app=APP_METADATA,
+        build_for="amd64",
+        platform="amd64",
+        project=default_project,
+        services=default_factory,
     )
