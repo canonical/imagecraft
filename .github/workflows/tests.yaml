@@ -1,4 +1,4 @@
-name: test
+name: tests
 on:
   push:
     branches:
@@ -41,10 +41,7 @@ jobs:
         run: tox run --skip-pkg-install --no-list-dependencies -m lint
 
   unit:
-    strategy:
-      matrix:
-        platform: [ubuntu-22.04]
-    runs-on: ${{ matrix.platform }}
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
         with:
@@ -66,7 +63,7 @@ jobs:
       - name: Setup Tox environments
         run: tox run -m tests --notest
       - name: Test with tox
-        run: tox run --skip-pkg-install --no-list-dependencies --result-json results/tox-${{ matrix.platform }}.json -m unit-tests
+        run: tox run --skip-pkg-install --no-list-dependencies --result-json results/tox.json -m unit-tests
         env:
           PYTEST_ADDOPTS: "--no-header -vv -rN"
       - name: Upload code coverage
@@ -81,14 +78,11 @@ jobs:
         if: success() || failure()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-${{ matrix.platform }}
+          name: test-results-unit
           path: results/
 
   integration:
-    strategy:
-      matrix:
-        platform: [ubuntu-22.04]
-    runs-on: ${{ matrix.platform }}
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
         with:
@@ -110,12 +104,46 @@ jobs:
       - name: Setup Tox environments
         run: tox run -m tests --notest
       - name: Test with tox
-        run: tox run --skip-pkg-install --no-list-dependencies --result-json results/tox-${{ matrix.platform }}.json -m integration-tests
+        run: tox run --skip-pkg-install --no-list-dependencies --result-json results/tox.json -m integration-tests
         env:
           PYTEST_ADDOPTS: "--no-header -vv -rN"
       - name: Upload test results
         if: success() || failure()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-${{ matrix.platform }}
+          name: test-results-integration
           path: results/
+
+  tics-report:
+    runs-on: ubuntu-latest
+    needs: [lint,unit,integration]
+    if: ${{ github.event_name == 'push' || github.ref == 'refs/heads/main' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Download coverage report artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-*
+          merge-multiple: true
+          path: .coverage
+
+      - name: TICS analysis and report
+        run: |
+          export TICSAUTHTOKEN=${{ secrets.TICSAUTHTOKEN }}
+
+          set -x
+          # Install the TICS and staticcheck
+          curl --silent --show-error "https://canonical.tiobe.com/tiobeweb/TICS/api/public/v1/fapi/installtics/Script?cfg=default&platform=linux&url=https://canonical.tiobe.com/tiobeweb/TICS/" > install_tics.sh
+          . ./install_tics.sh
+          TICSQServer -project imagecraft -tmpdir /tmp/tics -branchdir .
+
+      - name: Upload TICS report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tics-report
+          path: /tmp/tics/ticstmpdir
+          retention-days: 7
