@@ -14,13 +14,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Fetch tag annotations
         run: |
           git fetch --force --tags --depth 1
           git describe --dirty --long --match '[0-9]*.[0-9]*.[0-9]*' --exclude '*[^0-9.]*'
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           check-latest: true
@@ -30,7 +30,7 @@ jobs:
           python3 -m build
           twine check dist/*
       - name: Upload pypi packages artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: pypi-packages
           path: dist/
@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Get packages
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: pypi-packages
           path: dist/
@@ -52,7 +52,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Get pypi artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
