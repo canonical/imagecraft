@@ -93,9 +93,3 @@ class ImagecraftLifecycleService(LifecycleService):
 
         super().setup()
 
-    @override
-    def run(self, step_name: str | None, part_names: list[str] | None = None) -> None:
-        """Run the lifecycle manager for the parts."""
-        # TODO: Add overriding package repositories here.
-
-        super().run(step_name, part_names)
