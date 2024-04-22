@@ -92,4 +92,3 @@ class ImagecraftLifecycleService(LifecycleService):
         )
 
         super().setup()
-

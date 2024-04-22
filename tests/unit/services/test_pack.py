@@ -23,7 +23,7 @@ def test_pack(pack_service, default_factory, mocker):
     mocker.patch.object(pathlib.Path, "mkdir", return_value=True)
 
     prime = "prime"
-    prime_dir=Path(prime)
+    prime_dir = Path(prime)
     dest_path = Path()
 
     pack_service.pack(prime_dir, dest=dest_path)

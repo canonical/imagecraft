@@ -23,10 +23,14 @@ from craft_parts import (
 
 
 def test_lifecycle_args(
-    lifecycle_service, mocker, monkeypatch,
+    lifecycle_service,
+    mocker,
+    monkeypatch,
 ):
     mock_lifecycle = mocker.patch.object(
-        LifecycleManager, "__init__", return_value=None,
+        LifecycleManager,
+        "__init__",
+        return_value=None,
     )
 
     lifecycle_service.setup()
@@ -46,10 +50,14 @@ def test_lifecycle_args(
 
 
 def test_lifecycle_args_no_platform(
-    lifecycle_service_no_platform, mocker, monkeypatch,
+    lifecycle_service_no_platform,
+    mocker,
+    monkeypatch,
 ):
     mock_lifecycle = mocker.patch.object(
-        LifecycleManager, "__init__", return_value=None,
+        LifecycleManager,
+        "__init__",
+        return_value=None,
     )
 
     lifecycle_service_no_platform.setup()
