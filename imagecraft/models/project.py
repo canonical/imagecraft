@@ -130,7 +130,7 @@ class Project(ProjectModel):
     @classmethod
     def preprocess_all_platforms(cls, platforms: dict[str, Any]) -> dict[str, Any]:
         """Convert the simplified form of platform to the full one."""
-        if platforms is None:
+        if platforms is None: # pyright: ignore[reportUnnecessaryComparison] false positive
             raise CraftValidationError(
                 "No platforms were specified.",
                 details="At least one platform must be given when using this configuration key.",
