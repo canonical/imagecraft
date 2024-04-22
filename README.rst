@@ -1,6 +1,12 @@
-********
+**********
 imagecraft
-********
+**********
+
+.. |testBadge| image:: https://github.com/canonical/imagecraft/actions/workflows/tests.yaml/badge.svg?branch=main
+.. |coverageBadge| image:: https://codecov.io/gh/canonical/imagecraft/branch/main/graph/badge.svg?token=dZifVsQDUG
+  :target: https://codecov.io/gh/canonical/imagecraft
+
+|testBadge| |coverageBadge|
 
 Craft tool to create Ubuntu bootable images.
 
