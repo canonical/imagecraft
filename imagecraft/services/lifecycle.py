@@ -16,6 +16,7 @@
 
 """Imagecraft Lifecycle service."""
 
+from pathlib import Path
 from typing import cast
 
 from craft_application import AppMetadata, LifecycleService, ServiceFactory, util
@@ -37,8 +38,8 @@ class ImagecraftLifecycleService(LifecycleService):
         app: AppMetadata,
         services: ServiceFactory,
         *,
-        cache_dir: str,
-        work_dir: str,
+        cache_dir: Path | str,
+        work_dir: Path | str,
         project: Project,
         build_for: str,
         platform: str | None,
