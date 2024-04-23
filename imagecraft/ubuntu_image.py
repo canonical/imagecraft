@@ -18,13 +18,101 @@
 
 import subprocess
 
+from craft_application.util import dump_yaml
 from craft_cli import emit
+from pydantic import BaseModel, Field
 
 from imagecraft.errors import UbuntuImageError
 
 
-def generate_legacy_def_rootfs(  # noqa: PLR0913
+def _alias_generator(s: str) -> str:
+    return s.replace("_", "-")
+
+
+class Snap(BaseModel):
+    """Pydantic model for the Snap object in an ImageDefinition."""
+
+    name: str | None
+
+
+class Package(BaseModel):
+    """Pydantic model for the Package object in an ImageDefinition."""
+
+    name: str | None
+
+
+class Customization(BaseModel):
+    """Pydantic model for the Customization object in an ImageDefinition."""
+
+    extra_snaps: list[Snap] | None
+    extra_packages: list[Package] | None
+
+    class Config:
+        """Pydantic model configuration."""
+
+        validate_assignment = True
+        allow_mutation = True
+        allow_population_by_field_name = True
+        alias_generator = _alias_generator
+
+
+class Seed(BaseModel):
+    """Pydantic model for the Seed object in an ImageDefinition."""
+
+    urls: list[str]
+    branch: str
+    names: list[str]
+    pocket: str
+
+    class Config:
+        """Pydantic model configuration."""
+
+        validate_assignment = True
+        allow_mutation = True
+        allow_population_by_field_name = True
+        alias_generator = _alias_generator
+
+
+class Rootfs(BaseModel):
+    """Pydantic model for the Rootfs object in an ImageDefinition."""
+
+    components: list[str]
+    seed: Seed
+
+    class Config:
+        """Pydantic model configuration."""
+
+        validate_assignment = True
+        allow_mutation = True
+        allow_population_by_field_name = True
+        alias_generator = _alias_generator
+
+
+class ImageDefinition(BaseModel):
+    """Pydantic model for the ImageDefinition."""
+
+    name: str
+    display_name: str
+    revision: str
+    class_: str = Field(alias="class")
+    architecture: str
+    series: str
+    kernel: str | None
+    rootfs: Rootfs
+    customization: Customization | None = None
+
+    class Config:
+        """Pydantic model configuration."""
+
+        validate_assignment = True
+        allow_mutation = True
+        allow_population_by_field_name = True
+        alias_generator = _alias_generator
+
+
+def generate_image_def_yaml(  # noqa: PLR0913
     series: str,
+    revision: str,
     arch: str,
     sources: list[str],
     seed_branch: str,
@@ -33,45 +121,55 @@ def generate_legacy_def_rootfs(  # noqa: PLR0913
     pocket: str,
     kernel: str | None = None,
     extra_snaps: list[str] | None = None,
+    extra_packages: list[str] | None = None,
 ) -> str:
     """Generate a definition yaml file for rootfs creation."""
-    components = ", ".join(components_list)
-    seed_urls = ", ".join(f'"{w}"' for w in sources)
-    seed_names = ", ".join(f'"{w}"' for w in seeds)
-    kernel_line = f"kernel: {kernel}" if kernel else ""
-    customization = ""
+    image_definition = ImageDefinition(
+        name="craft-driver",
+        display_name="Craft Driver",
+        class_="preinstalled",  # type: ignore[call-arg]
+        revision=revision,
+        architecture=arch,
+        series=series,
+        kernel=kernel,
+        rootfs=Rootfs(
+            components=components_list,
+            seed=Seed(
+                urls=sources,
+                branch=seed_branch,
+                names=seeds,
+                pocket=pocket,
+            ),
+        ),
+    )
+
+    extra_snaps_obj = None
+    extra_packages_obj = None
 
     if extra_snaps:
-        extra_snaps_list = "\n".join(f"    - name: {snap}" for snap in extra_snaps)
-        customization = f"""
-customization:
-  extra-snaps:
-{extra_snaps_list}
-"""
+        extra_snaps_obj = [Snap(name=s) for s in extra_snaps]
 
-    return f"""
-name: craft-driver
-display-name: Craft Driver
-revision: 1
-class: preinstalled
-architecture: {arch}
-series: {series}
-{kernel_line}
+    if extra_packages:
+        extra_packages_obj = [Package(name=p) for p in extra_packages]
 
-rootfs:
-  components: [{components}]
-  seed:
-    urls: [{seed_urls}]
-    branch: {seed_branch}
-    names: [{seed_names}]
-    pocket: {pocket}
+    if extra_snaps or extra_packages:
+        image_definition.customization = Customization(
+            extra_snaps=extra_snaps_obj,
+            extra_packages=extra_packages_obj,
+        )
 
-{customization}
-"""
+    return dump_yaml(
+        image_definition.dict(
+            exclude_unset=True,
+            exclude_none=True,
+            by_alias=True,
+        ),
+    )
 
 
 def ubuntu_image_cmds_build_rootfs(  # noqa: PLR0913
     series: str,
+    version: str,
     arch: str,
     sources: list[str],
     seed_branch: str,
@@ -81,9 +179,10 @@ def ubuntu_image_cmds_build_rootfs(  # noqa: PLR0913
     kernel: str | None = None,
     extra_snaps: list[str] | None = None,
 ) -> list[str]:
-    """Call ubuntu-image to generate a rootfs."""
-    definition_yaml = generate_legacy_def_rootfs(
+    """List commands to ubuntu-image to generate a rootfs."""
+    definition_yaml = generate_image_def_yaml(
         series,
+        version,
         arch,
         sources,
         seed_branch,
@@ -93,9 +192,11 @@ def ubuntu_image_cmds_build_rootfs(  # noqa: PLR0913
         kernel,
         extra_snaps,
     )
+    image_definition_file = "craft.yaml"
+
     return [
-        f"cat << EOF > craft.yaml\n{definition_yaml}\nEOF",
-        "ubuntu-image classic --workdir work -O output/ craft.yaml",
+        f"cat << EOF > {image_definition_file}\n{definition_yaml}\nEOF",
+        f"ubuntu-image classic --workdir work -O output/ {image_definition_file}",
         "mv work/chroot/* $CRAFT_PART_INSTALL/",
     ]
 
@@ -108,7 +209,7 @@ def ubuntu_image_pack(
 ) -> None:
     """Pack the primed image contents into an image file."""
     cmd: list[str] = [
-        "./ubuntu-image",
+        "ubuntu-image",
         "pack",
         "--gadget-dir",
         gadget_path,

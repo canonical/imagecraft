@@ -19,7 +19,7 @@
 from typing import TYPE_CHECKING, Any, cast
 
 from craft_parts import plugins
-from pydantic import conlist
+from pydantic import AnyUrl, conlist
 from typing_extensions import Self
 
 from imagecraft.errors import NoValidSeriesError
@@ -34,18 +34,29 @@ if TYPE_CHECKING:
 else:
     UniqueStrList = conlist(str, unique_items=True, min_items=1)
 
+if TYPE_CHECKING:
+    UniqueUrlList = list[str]
+else:
+    UniqueUrlList = conlist(AnyUrl, unique_items=True, min_items=1)
+
+class GerminateProperties(plugins.PluginProperties):
+    """Supported attributes for the 'Germinate' section of the UbuntuSeedPlugin plugin."""
+
+    urls: UniqueUrlList
+    branch: str | None
+    names: UniqueStrList
+    vcs: bool | None = True
 
 class UbuntuSeedPluginProperties(plugins.PluginProperties):
     """Supported attributes for the 'UbuntuSeedPlugin' plugin."""
 
-    ubuntu_seed_sources: UniqueStrList
-    ubuntu_seed_source_branch: str | None
-    ubuntu_seed_seeds: UniqueStrList
     ubuntu_seed_components: UniqueStrList
     ubuntu_seed_pocket: str = "updates"
 
+    ubuntu_seed_germinate: GerminateProperties
     ubuntu_seed_extra_snaps: UniqueStrList | None = None
-    ubuntu_seed_active_kernel: str | None = None
+    ubuntu_seed_extra_packages: UniqueStrList | None = None
+    ubuntu_seed_kernel: str | None = None
 
     @classmethod
     def unmarshal(cls, data: dict[str, Any]) -> Self:
@@ -90,19 +101,22 @@ class UbuntuSeedPlugin(plugins.Plugin):
         if not series:
             raise NoValidSeriesError
 
-        source_branch = options.ubuntu_seed_source_branch
+        source_branch = options.ubuntu_seed_germinate.branch
         if not source_branch:
             source_branch = series
 
+        version = self._part_info.project_info.get_project_var("version", raw_read=True)
+
         ubuntu_seed_cmd = ubuntu_image_cmds_build_rootfs(
             series,
+            version,
             arch,
-            options.ubuntu_seed_sources,
+            options.ubuntu_seed_germinate.urls,
             source_branch,
-            options.ubuntu_seed_seeds,
+            options.ubuntu_seed_germinate.names,
             options.ubuntu_seed_components,
             options.ubuntu_seed_pocket,
-            options.ubuntu_seed_active_kernel,
+            options.ubuntu_seed_kernel,
             options.ubuntu_seed_extra_snaps,
         )
 

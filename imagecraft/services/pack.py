@@ -46,7 +46,9 @@ class ImagecraftPackService(PackageService):
     def pack(self, prime_dir: pathlib.Path, dest: pathlib.Path) -> list[pathlib.Path]:
         """Pack the image.
 
-        :param dest: Directory into which to write the gadget
+        :param prime_dir: Directory path to the prime directory.
+        :param dest: Directory into which to write the package(s).
+        :returns: A list of paths to created packages.
         """
         gadget_path = "$CRAFT_PART_INSTALL/install"
 
