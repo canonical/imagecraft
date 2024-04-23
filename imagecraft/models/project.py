@@ -214,10 +214,8 @@ class PackageRepositoryPPA(BasePackageRepositoryAptPPA): # type:ignore[misc]
 class PackageRepositoryApt(BasePackageRepositoryApt): # type:ignore[misc]
     """Imagecraft APT package repository definition."""
 
-    url: AnyUrl | FileUrl | None = None # pyright: ignore[reportUnnecessaryIsInstance]
-    # override url to make it optional
-    key_id: KeyIdStr | None = pydantic.Field(alias="key-id") # pyright: ignore[reportUnnecessaryIsInstance]
-    # override key_id to make it optional
+    url: AnyUrl | FileUrl | None # pyright: ignore[reportIncompatibleVariableOverride]
+    key_id: KeyIdStr | None = pydantic.Field(alias="key-id") # pyright: ignore[reportIncompatibleVariableOverride]
     used_for: UsedForEnum = UsedForEnum.ALWAYS
 
     pocket: str | None
