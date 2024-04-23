@@ -36,6 +36,8 @@ package-repositories:
     components: [main,restricted]
     suites: [jammy]
     url: http://archive.ubuntu.com/ubuntu/
+    flavor: ubuntu
+    pocket: proposed
     used-for: build
   - type: apt
     components: [main,restricted]

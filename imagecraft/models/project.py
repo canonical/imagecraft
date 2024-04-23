@@ -86,6 +86,14 @@ class UsedForEnum(enum.Enum):
     RUN = "run"
     ALWAYS = "always"
 
+class PocketEnum(enum.Enum):
+    """Enum values that represent possible pocket values."""
+
+    RELEASE = "release"
+    UPDATES = "updates"
+    PROPOSED = "proposed"
+    SECURITY = "security"
+
 class ProjectValidationError(CraftError):
     """Error validating imagecraft.yaml."""
 
@@ -218,7 +226,7 @@ class PackageRepositoryApt(BasePackageRepositoryApt): # type:ignore[misc]
     key_id: KeyIdStr | None = pydantic.Field(alias="key-id") # pyright: ignore[reportIncompatibleVariableOverride]
     used_for: UsedForEnum = UsedForEnum.ALWAYS
 
-    pocket: str | None
+    pocket: PocketEnum | None = PocketEnum.RELEASE
     flavor: str | None
 
     @classmethod
