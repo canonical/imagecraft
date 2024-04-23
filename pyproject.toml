@@ -33,7 +33,7 @@ lint = [
 ]
 types = [
     "mypy[reports]==1.9.0",
-    "pyright==1.1.356",
+    "pyright==1.1.359",
     "types-requests",
     "types-urllib3",
 ]
