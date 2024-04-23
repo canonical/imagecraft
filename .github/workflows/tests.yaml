@@ -134,7 +134,7 @@ jobs:
         with:
           name: test-results-unit
           path: results/unit/
-          
+
       - name: TICS analysis and report
         run: |
           export TICSAUTHTOKEN=${{ secrets.TICSAUTHTOKEN }}
