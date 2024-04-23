@@ -22,9 +22,7 @@ from craft_parts import plugins
 from pydantic import AnyUrl, conlist
 from typing_extensions import Self
 
-from imagecraft.errors import NoValidSeriesError
 from imagecraft.ubuntu_image import ubuntu_image_cmds_build_rootfs
-from imagecraft.utils import craft_base_to_ubuntu_series
 
 # A workaround for mypy false positives
 # see https://github.com/samuelcolvin/pydantic/issues/975#issuecomment-551147305
@@ -96,10 +94,8 @@ class UbuntuSeedPlugin(plugins.Plugin):
         options = cast(UbuntuSeedPluginProperties, self._options)
 
         arch = self._part_info.target_arch
-        series = craft_base_to_ubuntu_series(
-            self._part_info.project_info.base)
-        if not series:
-            raise NoValidSeriesError
+
+        series = self._part_info.project_info.series
 
         source_branch = options.ubuntu_seed_germinate.branch
         if not source_branch:

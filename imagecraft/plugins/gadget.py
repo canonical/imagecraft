@@ -21,8 +21,6 @@ from typing import Any, cast
 from craft_parts import plugins
 from typing_extensions import Self
 
-from imagecraft.utils import craft_base_to_ubuntu_series
-
 
 class GadgetPluginProperties(plugins.PluginProperties):
     """Supported attributes for the 'gadget' plugin."""
@@ -55,7 +53,7 @@ class GadgetPlugin(plugins.Plugin):
     def get_build_environment(self) -> dict[str, Any]:
         """Return a dictionary with the environment to use in the build step."""
         gadget_arch = self._part_info.target_arch
-        gadget_series = craft_base_to_ubuntu_series(self._part_info.project_info.base)
+        gadget_series = self._part_info.project_info.series
         return {"ARCH": gadget_arch, "SERIES": gadget_series}
 
     def get_build_commands(self) -> list[str]:

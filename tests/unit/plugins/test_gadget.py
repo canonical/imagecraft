@@ -60,6 +60,7 @@ def prepare_gadget_plugin(tmp_path, spec):
         application_name="test",
         project_dirs=project_dirs,
         cache_dir=tmp_path,
+        series="jammy",
     )
     part_info = craft_parts.PartInfo(project_info=project_info, part=part)
 
@@ -79,11 +80,7 @@ def test_get_build_packages(gadget_plugin):
     assert gadget_plugin.get_build_packages() == {"make"}
 
 
-def test_get_build_environment(gadget_plugin, mocker):
-    mocker.patch(
-        "imagecraft.plugins.gadget.craft_base_to_ubuntu_series",
-        return_value="jammy",
-    )
+def test_get_build_environment(gadget_plugin):
     assert gadget_plugin.get_build_environment() == {"ARCH": "amd64", "SERIES": "jammy"}
 
 

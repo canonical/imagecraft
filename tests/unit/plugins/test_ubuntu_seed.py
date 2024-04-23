@@ -20,7 +20,6 @@ import craft_parts
 import pydantic
 import pytest
 from craft_parts import plugins
-from imagecraft.errors import NoValidSeriesError
 from imagecraft.plugins import ubuntu_seed
 
 UBUNTU_SEED_BASIC_SPEC = {
@@ -76,6 +75,7 @@ def ubuntu_seed_plugin():
             project_dirs=project_dirs,
             cache_dir=tmp_path,
             project_vars=project_vars,
+            series="jammy",
         )
         part_info = craft_parts.PartInfo(project_info=project_info, part=part)
 
@@ -131,10 +131,6 @@ def test_get_build_environment(ubuntu_seed_plugin, tmp_path):
 
 def test_get_build_commands(ubuntu_seed_plugin, mocker, tmp_path):
     plugin = ubuntu_seed_plugin(UBUNTU_SEED_BASIC_SPEC, tmp_path)
-    mocker.patch(
-        "imagecraft.plugins.ubuntu_seed.craft_base_to_ubuntu_series",
-        return_value="jammy",
-    )
 
     with patch(
         "imagecraft.plugins.ubuntu_seed.ubuntu_image_cmds_build_rootfs",
@@ -184,11 +180,3 @@ def test_get_build_commands(ubuntu_seed_plugin, mocker, tmp_path):
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-kernel"],
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-extra-snaps"],
         )
-
-        # test without valid series
-        mocker.patch(
-            "imagecraft.plugins.ubuntu_seed.craft_base_to_ubuntu_series",
-            return_value=None,
-        )
-        with pytest.raises(NoValidSeriesError):
-            plugin.get_build_commands()
