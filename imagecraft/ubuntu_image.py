@@ -178,6 +178,7 @@ def ubuntu_image_cmds_build_rootfs(  # noqa: PLR0913
     pocket: str,
     kernel: str | None = None,
     extra_snaps: list[str] | None = None,
+    extra_packages: list[str] | None = None,
 ) -> list[str]:
     """List commands to ubuntu-image to generate a rootfs."""
     definition_yaml = generate_image_def_yaml(
@@ -191,6 +192,7 @@ def ubuntu_image_cmds_build_rootfs(  # noqa: PLR0913
         pocket,
         kernel,
         extra_snaps,
+        extra_packages,
     )
     image_definition_file = "craft.yaml"
 

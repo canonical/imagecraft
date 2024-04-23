@@ -97,9 +97,10 @@ class UbuntuSeedPlugin(plugins.Plugin):
 
         series = self._part_info.project_info.series
 
-        source_branch = options.ubuntu_seed_germinate.branch
-        if not source_branch:
-            source_branch = series
+        source_branch = series
+        branch = options.ubuntu_seed_germinate.branch
+        if branch:
+            source_branch = branch
 
         version = self._part_info.project_info.get_project_var("version", raw_read=True)
 
@@ -114,6 +115,7 @@ class UbuntuSeedPlugin(plugins.Plugin):
             options.ubuntu_seed_pocket,
             options.ubuntu_seed_kernel,
             options.ubuntu_seed_extra_snaps,
+            options.ubuntu_seed_extra_packages,
         )
 
         # We also need to make sure to prepare a proper fstab entry

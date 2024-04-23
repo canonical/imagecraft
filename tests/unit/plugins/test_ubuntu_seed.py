@@ -42,6 +42,7 @@ UBUNTU_SEED_NO_SOURCE_BRANCH = {
     "ubuntu-seed-components": ["main", "restricted"],
     "ubuntu-seed-pocket": "updates",
     "ubuntu-seed-extra-snaps": ["core20", "snapd"],
+    "ubuntu-seed-extra-packages": ["apt"],
     "ubuntu-seed-kernel": "linux-generic",
     "ubuntu-seed-germinate": {
         "urls": ["git://git.launchpad.net/~ubuntu-core-dev/ubuntu-seeds/+git/"],
@@ -143,7 +144,7 @@ def test_get_build_commands(ubuntu_seed_plugin, mocker, tmp_path):
         ]
 
         build_rootfs_patcher.assert_called_with(
-            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("branch"),
+            "jammy",
             "22.04",
             "amd64",
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("urls"),
@@ -153,6 +154,7 @@ def test_get_build_commands(ubuntu_seed_plugin, mocker, tmp_path):
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-pocket"],
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-kernel"],
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-extra-snaps"],
+            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-extra-packages"],
         )
 
     with patch(
@@ -172,11 +174,12 @@ def test_get_build_commands(ubuntu_seed_plugin, mocker, tmp_path):
             "jammy",
             "22.04",
             "amd64",
-            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("urls"),
-            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("branch"),
-            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("names"),
-            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-components"],
-            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-pocket"],
-            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-kernel"],
-            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-extra-snaps"],
+            UBUNTU_SEED_NO_SOURCE_BRANCH["ubuntu-seed-germinate"].get("urls"),
+            "jammy",
+            UBUNTU_SEED_NO_SOURCE_BRANCH["ubuntu-seed-germinate"].get("names"),
+            UBUNTU_SEED_NO_SOURCE_BRANCH["ubuntu-seed-components"],
+            UBUNTU_SEED_NO_SOURCE_BRANCH["ubuntu-seed-pocket"],
+            UBUNTU_SEED_NO_SOURCE_BRANCH["ubuntu-seed-kernel"],
+            UBUNTU_SEED_NO_SOURCE_BRANCH["ubuntu-seed-extra-snaps"],
+            UBUNTU_SEED_NO_SOURCE_BRANCH["ubuntu-seed-extra-packages"],
         )

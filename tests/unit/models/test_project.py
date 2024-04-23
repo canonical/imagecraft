@@ -247,8 +247,8 @@ def test_project_package_repositories_invalid():
         return str(err.value)
 
     mock_package_repositories = {
-      "type": "apt",
-      "pocket": "invalid",
+        "type": "apt",
+        "pocket": "invalid",
     }
     assert "is not a valid enumeration member" in load_package_repositories(
         mock_package_repositories,
@@ -256,8 +256,8 @@ def test_project_package_repositories_invalid():
     )
 
     mock_package_repositories = {
-      "type": "apt",
-      "used-for": "test",
+        "type": "apt",
+        "used-for": "test",
     }
     assert "is not a valid enumeration member" in load_package_repositories(
         mock_package_repositories,
@@ -266,9 +266,9 @@ def test_project_package_repositories_invalid():
 
     ## Test PPA
     mock_package_repositories = {
-      "type": "apt",
-      "ppa": "test",
-      "used-for": "test",
+        "type": "apt",
+        "ppa": "test",
+        "used-for": "test",
     }
     assert "is not a valid enumeration member" in load_package_repositories(
         mock_package_repositories,
@@ -277,9 +277,9 @@ def test_project_package_repositories_invalid():
 
     ## Test invalid key-id
     mock_package_repositories = {
-      "type": "apt",
-      "ppa": "test",
-      "key-id": "tooshort",
+        "type": "apt",
+        "ppa": "test",
+        "key-id": "tooshort",
     }
     assert "ensure this value has at least 40 characters" in load_package_repositories(
         mock_package_repositories,
@@ -288,9 +288,9 @@ def test_project_package_repositories_invalid():
 
     ## Test invalid auth
     mock_package_repositories = {
-      "type": "apt",
-      "ppa": "test",
-      "auth": "invalid",
+        "type": "apt",
+        "ppa": "test",
+        "auth": "invalid",
     }
     assert "string does not match regex" in load_package_repositories(
         mock_package_repositories,
