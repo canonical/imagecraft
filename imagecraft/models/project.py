@@ -43,6 +43,7 @@ from imagecraft.models.package_repository import (
     PackageRepository,
     PackageRepositoryApt,
     PackageRepositoryPPA,
+    validate_package_repositories,
 )
 
 # A workaround for mypy false positives
@@ -153,6 +154,7 @@ class Project(ProjectModel):
 
             repositories.append(PackageRepository.unmarshal(data))
 
+        validate_package_repositories(repositories)
         return repositories
 
 

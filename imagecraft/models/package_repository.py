@@ -43,6 +43,8 @@ from pydantic import (
     FileUrl,
 )
 
+from imagecraft.models.errors import ProjectValidationError
+
 
 class AuthStr(ConstrainedStr):
     """A constrained string for an auth string."""
@@ -152,18 +154,54 @@ class PackageRepositoryApt(BasePackageRepositoryApt):  # type:ignore[misc]
             raise TypeError("Package repository data is not a dictionary")
 
         return cls(**data)
-def is_main_package_repository(repo: PackageRepositoryPPA | PackageRepositoryApt) -> bool:
+
+
+def validate_package_repositories(
+    project_repositories: list[PackageRepositoryPPA | PackageRepositoryApt],
+) -> None:
+    """Validate package repositories list."""
+    repo_build_for_found = False
+
+    for repo in project_repositories:
+        if is_main_package_repository(repo):
+            if repo_build_for_found:
+                raise ProjectValidationError(
+                    "More than one package repository was defined to build the image.",
+                    details="At most one APT package-repository entry can be set to build the image.",
+                )
+            repo_build_for_found = True
+
+    if not repo_build_for_found:
+        raise ProjectValidationError(
+            "Missing a package repository to build the image.",
+            details="One APT package-repository entry with used-for set to 'build' or 'always' must be set to build the image.",
+        )
+
+
+def is_main_package_repository(
+    repo: PackageRepositoryPPA | PackageRepositoryApt,
+) -> bool:
     """Check if the package repository is the 'main' one, used to configure tools to build the image."""
-    return isinstance(repo, PackageRepositoryApt) and repo.used_for in {UsedForEnum.BUILD, UsedForEnum.ALWAYS}
+    return isinstance(repo, PackageRepositoryApt) and repo.used_for in {
+        UsedForEnum.BUILD,
+        UsedForEnum.ALWAYS,
+    }
 
 
-def get_main_package_repository(project_repositories: list[PackageRepositoryPPA | PackageRepositoryApt]) -> PackageRepositoryApt | None:
+def get_main_package_repository(
+    project_repositories: list[PackageRepositoryPPA | PackageRepositoryApt],
+) -> PackageRepositoryApt:
     """Get the 'main' package repository from a list.
 
-    This function works under the assumption the list was previously validated.
+    This function works under the assumption the list was previously validated and will
+    raise an exception if no 'main' configuration is found.
     """
     for repo in project_repositories:
         if is_main_package_repository(repo):
-            return repo
+            return repo  # pyright: ignore[reportReturnType]
+            # Due to the previous check we know repo is of type PackageRepositoryApt
 
-    return None
+    raise ProjectValidationError(
+        "No 'main' package repository defined.",
+        details="At least one 'main' package repository must be defined.",
+    )
