@@ -27,68 +27,61 @@ from imagecraft.models.package_repository import (
 from pydantic import ValidationError
 
 
-def test_project_package_repositories_invalid():
+@pytest.mark.parametrize(
+    ("error_value", "error_class", "package_repositories"),
+    [
+        ("invalid object.", errors.PackageRepositoryValidationError, "test-not-a-dict"),
+        (
+            "is not a valid enumeration member",
+            ValidationError,
+            {
+                "type": "apt",
+                "pocket": "invalid",
+            },
+        ),
+        (
+            "is not a valid enumeration member",
+            ValidationError,
+            {
+                "type": "apt",
+                "ppa": "test",
+                "used-for": "test",
+            },
+        ),
+        (
+            "ensure this value has at least 40 characters",
+            ValidationError,
+            {
+                "type": "apt",
+                "ppa": "test",
+                "key-id": "tooshort",
+            },
+        ),
+        (
+            "string does not match regex",
+            ValidationError,
+            {
+                "type": "apt",
+                "ppa": "test",
+                "auth": "invalid",
+            },
+        ),
+    ],
+)
+def test_project_package_repositories_invalid(
+    error_value,
+    error_class,
+    package_repositories,
+):
     def load_package_repositories(data, raises):
         with pytest.raises(raises) as err:
             PackageRepository.unmarshal(data)
 
         return str(err.value)
 
-    mock_package_repositories = "test-not-a-dict"
-    assert "invalid object." in load_package_repositories(
-        mock_package_repositories,
-        errors.PackageRepositoryValidationError,
-    )
-
-    mock_package_repositories = {
-        "type": "apt",
-        "pocket": "invalid",
-    }
-    assert "is not a valid enumeration member" in load_package_repositories(
-        mock_package_repositories,
-        ValidationError,
-    )
-
-    mock_package_repositories = {
-        "type": "apt",
-        "used-for": "test",
-    }
-    assert "is not a valid enumeration member" in load_package_repositories(
-        mock_package_repositories,
-        ValidationError,
-    )
-
-    ## Test PPA
-    mock_package_repositories = {
-        "type": "apt",
-        "ppa": "test",
-        "used-for": "test",
-    }
-    assert "is not a valid enumeration member" in load_package_repositories(
-        mock_package_repositories,
-        ValidationError,
-    )
-
-    ## Test invalid key-id
-    mock_package_repositories = {
-        "type": "apt",
-        "ppa": "test",
-        "key-id": "tooshort",
-    }
-    assert "ensure this value has at least 40 characters" in load_package_repositories(
-        mock_package_repositories,
-        ValidationError,
-    )
-
-    ## Test invalid auth
-    mock_package_repositories = {
-        "type": "apt",
-        "ppa": "test",
-        "auth": "invalid",
-    }
-    assert "string does not match regex" in load_package_repositories(
-        mock_package_repositories,
-        ValidationError,
+    assert error_value in load_package_repositories(
+        package_repositories,
+        error_class,
     )
 
 
@@ -134,37 +127,41 @@ def test_get_main_package_repository_error():
         get_main_package_repository(package_repositories)
 
 
-def test_validate_package_repositories():
+@pytest.mark.parametrize(
+    ("error_value", "error_class", "package_repositories"),
+    [
+        (
+            "More than one package repository was defined to build the image.",
+            PackageRepositoryValidationError,
+            [
+                PackageRepositoryApt.unmarshal({"type": "apt", "used-for": "build"}),
+                PackageRepositoryApt.unmarshal({"type": "apt", "used-for": "build"}),
+            ],
+        ),
+        (
+            "Missing a package repository to build the image.",
+            PackageRepositoryValidationError,
+            [
+                PackageRepositoryApt.unmarshal({"type": "apt", "used_for": "run"}),
+                PackageRepositoryPPA.unmarshal(
+                    {"type": "apt", "ppa": "test/test", "used-for": "build"},
+                ),
+            ],
+        ),
+    ],
+)
+def test_validate_package_repositories(
+    error_value,
+    error_class,
+    package_repositories,
+):
     def call_validate_package_repositories(data, raises):
         with pytest.raises(raises) as err:
             validate_package_repositories(data)
 
         return str(err.value)
 
-    # Test 2 package repositories to build
-    mock_package_repositories = [
-        PackageRepositoryApt.unmarshal({"type": "apt", "used-for": "build"}),
-        PackageRepositoryApt.unmarshal({"type": "apt", "used-for": "build"}),
-    ]
-    assert (
-        "More than one package repository was defined to build the image."
-        in call_validate_package_repositories(
-            mock_package_repositories,
-            PackageRepositoryValidationError,
-        )
-    )
-
-    # Test no package repository to build
-    mock_package_repositories = [
-        PackageRepositoryApt.unmarshal({"type": "apt", "used_for": "run"}),
-        PackageRepositoryPPA.unmarshal(
-            {"type": "apt", "ppa": "test/test", "used-for": "build"},
-        ),
-    ]
-    assert (
-        "Missing a package repository to build the image."
-        in call_validate_package_repositories(
-            mock_package_repositories,
-            PackageRepositoryValidationError,
-        )
+    assert error_value in call_validate_package_repositories(
+        package_repositories,
+        error_class,
     )

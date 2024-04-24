@@ -25,25 +25,25 @@ from imagecraft.ubuntu_image import (
 )
 
 
-def test_image_deinition_dump_yaml():
-    image_def = ImageDefinition(
-        series="mantic",
-        revision="22.04",
-        architecture="amd64",
-        pocket="release",
-        kernel="linux-image-generic",
-        components_list=["main", "restricted"],
-        seed_urls=["source1", "source2"],
-        seed_branch="mantic",
-        seed_names=["server", "minimal"],
-        seed_pocket="updates",
-        extra_snaps=["lxd", "snapd"],
-        extra_packages=["apt", "dpkg"],
-    )
-
-    assert (
-        image_def.dump_yaml()
-        == """name: craft-driver
+@pytest.mark.parametrize(
+    ("image_definition", "resulting_yaml"),
+    [
+        (
+            ImageDefinition(
+                series="mantic",
+                revision="22.04",
+                architecture="amd64",
+                pocket="release",
+                kernel="linux-image-generic",
+                components_list=["main", "restricted"],
+                seed_urls=["source1", "source2"],
+                seed_branch="mantic",
+                seed_names=["server", "minimal"],
+                seed_pocket="updates",
+                extra_snaps=["lxd", "snapd"],
+                extra_packages=["apt", "dpkg"],
+            ),
+            """name: craft-driver
 display-name: Craft Driver
 revision: '22.04'
 class: preinstalled
@@ -71,26 +71,23 @@ customization:
   extra-packages:
   - name: apt
   - name: dpkg
-"""
-    )
-
-    image_def = ImageDefinition(
-        series="mantic",
-        revision="22.04",
-        architecture="amd64",
-        pocket="proposed",
-        kernel="linux-image-generic",
-        components_list=["main", "restricted"],
-        seed_urls=["source1", "source2"],
-        seed_branch="mantic",
-        seed_names=["server", "minimal"],
-        seed_pocket="updates",
-        extra_packages=["apt", "dpkg"],
-    )
-
-    assert (
-        image_def.dump_yaml()
-        == """name: craft-driver
+""",
+        ),
+        (
+            ImageDefinition(
+                series="mantic",
+                revision="22.04",
+                architecture="amd64",
+                pocket="proposed",
+                kernel="linux-image-generic",
+                components_list=["main", "restricted"],
+                seed_urls=["source1", "source2"],
+                seed_branch="mantic",
+                seed_names=["server", "minimal"],
+                seed_pocket="updates",
+                extra_packages=["apt", "dpkg"],
+            ),
+            """name: craft-driver
 display-name: Craft Driver
 revision: '22.04'
 class: preinstalled
@@ -115,26 +112,23 @@ customization:
   extra-packages:
   - name: apt
   - name: dpkg
-"""
-    )
-
-    image_def = ImageDefinition(
-        series="mantic",
-        revision="22.04",
-        architecture="amd64",
-        pocket="proposed",
-        kernel=None,
-        components_list=[],
-        seed_urls=[],
-        seed_branch="mantic",
-        seed_names=[],
-        seed_pocket="updates",
-        extra_snaps=[],
-    )
-
-    assert (
-        image_def.dump_yaml()
-        == """name: craft-driver
+""",
+        ),
+        (
+            ImageDefinition(
+                series="mantic",
+                revision="22.04",
+                architecture="amd64",
+                pocket="proposed",
+                kernel=None,
+                components_list=[],
+                seed_urls=[],
+                seed_branch="mantic",
+                seed_names=[],
+                seed_pocket="updates",
+                extra_snaps=[],
+            ),
+            """name: craft-driver
 display-name: Craft Driver
 revision: '22.04'
 class: preinstalled
@@ -148,8 +142,12 @@ rootfs:
     branch: mantic
     names: []
     pocket: updates
-"""
-    )
+""",
+        ),
+    ],
+)
+def test_image_deinition_dump_yaml(image_definition, resulting_yaml):
+    assert image_definition.dump_yaml() == resulting_yaml
 
 
 def test_ubuntu_image_cmds_build_rootfs(mocker):
