@@ -148,11 +148,7 @@ class Project(ProjectModel):
         cls, project_repositories: list[dict[str, Any]],
     ) -> list[PackageRepositoryPPA | PackageRepositoryApt]:
         repositories: list[PackageRepositoryPPA | PackageRepositoryApt] = []
-        for data in project_repositories:
-            if not isinstance(data, dict):  # pyright: ignore[reportUnnecessaryIsInstance]
-                raise TypeError("value must be a dictionary but is not")
-
-            repositories.append(PackageRepository.unmarshal(data))
+        repositories = [ PackageRepository.unmarshal(data) for data in project_repositories ]
 
         validate_package_repositories(repositories)
         return repositories
