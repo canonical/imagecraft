@@ -21,3 +21,7 @@ from craft_cli import CraftError
 
 class ProjectValidationError(CraftError):
     """Error validating imagecraft.yaml."""
+
+
+class PackageRepositoryValidationError(CraftError):
+    """Error validating the package-repositories sections of the imagecraft.yaml."""

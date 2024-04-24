@@ -43,7 +43,7 @@ from pydantic import (
     FileUrl,
 )
 
-from imagecraft.models.errors import ProjectValidationError
+from imagecraft.models.errors import PackageRepositoryValidationError
 
 
 class AuthStr(ConstrainedStr):
@@ -165,14 +165,14 @@ def validate_package_repositories(
     for repo in project_repositories:
         if is_main_package_repository(repo):
             if repo_build_for_found:
-                raise ProjectValidationError(
+                raise PackageRepositoryValidationError(
                     "More than one package repository was defined to build the image.",
                     details="At most one APT package-repository entry can be set to build the image.",
                 )
             repo_build_for_found = True
 
     if not repo_build_for_found:
-        raise ProjectValidationError(
+        raise PackageRepositoryValidationError(
             "Missing a package repository to build the image.",
             details="One APT package-repository entry with used-for set to 'build' or 'always' must be set to build the image.",
         )
@@ -201,7 +201,7 @@ def get_main_package_repository(
             return repo  # pyright: ignore[reportReturnType]
             # Due to the previous check we know repo is of type PackageRepositoryApt
 
-    raise ProjectValidationError(
+    raise PackageRepositoryValidationError(
         "No 'main' package repository defined.",
         details="At least one 'main' package repository must be defined.",
     )
