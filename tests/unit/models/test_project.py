@@ -42,14 +42,11 @@ package-repositories:
   - type: apt
     components: [main,restricted]
     suites: [jammy]
-  - type: apt
-    components: [main,restricted]
-    suites: [jammy]
     url: http://archive.ubuntu.com/ubuntu/
     used-for: run
   - type: apt
     ppa: canonical-foundations/ubuntu-image
-    used-for: run
+    used-for: always
   - type: apt
     ppa: canonical-foundations/ubuntu-image-private-test
     auth: "sil2100:vVg74j6SM8WVltwpxDRJ"
@@ -123,6 +120,30 @@ parts:
     source-branch: classic
 """
 
+IMAGECRAFT_YAML_SIMPLE_PACKAGE_REPO = """
+name: ubuntu-server-amd64
+version: "22.04"
+series: jammy
+platforms:
+  amd64:
+    build-for: amd64
+    build-on: amd64
+
+package-repositories:
+  - type: apt
+    components: [main,restricted]
+    suites: [jammy]
+    url: http://archive.ubuntu.com/ubuntu/
+    flavor: ubuntu
+    pocket: proposed
+
+parts:
+  gadget:
+    plugin: gadget
+    source: https://github.com/snapcore/pc-gadget.git
+    source-branch: classic
+"""
+
 
 @pytest.fixture()
 def yaml_loaded_data():
@@ -140,6 +161,7 @@ def load_project_yaml(yaml_loaded_data) -> Project:
         IMAGECRAFT_YAML_SIMPLE_PLATFORM,
         IMAGECRAFT_YAML_MINIMAL_PLATFORM,
         IMAGECRAFT_YAML_NO_BUILD_FOR_PLATFORM,
+        IMAGECRAFT_YAML_SIMPLE_PACKAGE_REPO,
     ],
 )
 def test_project_unmarshal(yaml_data):

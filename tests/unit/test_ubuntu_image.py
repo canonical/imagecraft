@@ -30,6 +30,7 @@ def test_image_deinition_dump_yaml():
         series="mantic",
         revision="22.04",
         architecture="amd64",
+        pocket="release",
         kernel="linux-image-generic",
         components_list=["main", "restricted"],
         seed_urls=["source1", "source2"],
@@ -53,6 +54,7 @@ rootfs:
   components:
   - main
   - restricted
+  pocket: release
   seed:
     urls:
     - source1
@@ -76,6 +78,7 @@ customization:
         series="mantic",
         revision="22.04",
         architecture="amd64",
+        pocket="proposed",
         kernel="linux-image-generic",
         components_list=["main", "restricted"],
         seed_urls=["source1", "source2"],
@@ -98,6 +101,7 @@ rootfs:
   components:
   - main
   - restricted
+  pocket: proposed
   seed:
     urls:
     - source1
@@ -118,6 +122,7 @@ customization:
         series="mantic",
         revision="22.04",
         architecture="amd64",
+        pocket="proposed",
         kernel=None,
         components_list=[],
         seed_urls=[],
@@ -137,6 +142,7 @@ architecture: amd64
 series: mantic
 rootfs:
   components: []
+  pocket: proposed
   seed:
     urls: []
     branch: mantic
@@ -156,11 +162,12 @@ def test_ubuntu_image_cmds_build_rootfs(mocker):
         series="mantic",
         version="22.04",
         arch="amd64",
+        pocket="proposed",
         sources=["source1", "source2"],
         seed_branch="mantic",
         seeds=["server", "minimal"],
         components_list=["main", "restricted"],
-        pocket="updates",
+        seed_pocket="updates",
         kernel="linux-image-generic",
         extra_snaps=["lxd", "snapd"],
     ) == [

@@ -20,6 +20,11 @@ import craft_parts
 import pydantic
 import pytest
 from craft_parts import plugins
+from imagecraft.models.package_repository import (
+    PackageRepositoryApt,
+    PocketEnum,
+    UsedForEnum,
+)
 from imagecraft.plugins import ubuntu_seed
 
 UBUNTU_SEED_BASIC_SPEC = {
@@ -71,12 +76,23 @@ def ubuntu_seed_plugin():
         project_vars = {
             "version": "22.04",
         }
+        package_repositories = [
+            PackageRepositoryApt.unmarshal(
+                {
+                    "type": "apt",
+                    "used_for": UsedForEnum.BUILD,
+                    "pocket": PocketEnum.RELEASE,
+                },
+            ),
+        ]
+
         project_info = craft_parts.ProjectInfo(
             application_name="test",
             project_dirs=project_dirs,
             cache_dir=tmp_path,
             project_vars=project_vars,
             series="jammy",
+            package_repositories=package_repositories,
         )
         part_info = craft_parts.PartInfo(project_info=project_info, part=part)
 
@@ -147,6 +163,7 @@ def test_get_build_commands(ubuntu_seed_plugin, mocker, tmp_path):
             "jammy",
             "22.04",
             "amd64",
+            "release",
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("urls"),
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("branch"),
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("names"),
@@ -174,6 +191,7 @@ def test_get_build_commands(ubuntu_seed_plugin, mocker, tmp_path):
             "jammy",
             "22.04",
             "amd64",
+            "release",
             UBUNTU_SEED_NO_SOURCE_BRANCH["ubuntu-seed-germinate"].get("urls"),
             "jammy",
             UBUNTU_SEED_NO_SOURCE_BRANCH["ubuntu-seed-germinate"].get("names"),

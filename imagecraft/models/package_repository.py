@@ -132,7 +132,7 @@ class PackageRepositoryApt(BasePackageRepositoryApt):  # type:ignore[misc]
     )
     used_for: UsedForEnum = UsedForEnum.ALWAYS
 
-    pocket: PocketEnum | None = PocketEnum.RELEASE
+    pocket: PocketEnum = PocketEnum.RELEASE
     flavor: str | None
 
     @classmethod
@@ -152,3 +152,18 @@ class PackageRepositoryApt(BasePackageRepositoryApt):  # type:ignore[misc]
             raise TypeError("Package repository data is not a dictionary")
 
         return cls(**data)
+def is_main_package_repository(repo: PackageRepositoryPPA | PackageRepositoryApt) -> bool:
+    """Check if the package repository is the 'main' one, used to configure tools to build the image."""
+    return isinstance(repo, PackageRepositoryApt) and repo.used_for in {UsedForEnum.BUILD, UsedForEnum.ALWAYS}
+
+
+def get_main_package_repository(project_repositories: list[PackageRepositoryPPA | PackageRepositoryApt]) -> PackageRepositoryApt | None:
+    """Get the 'main' package repository from a list.
+
+    This function works under the assumption the list was previously validated.
+    """
+    for repo in project_repositories:
+        if is_main_package_repository(repo):
+            return repo
+
+    return None

@@ -22,6 +22,7 @@ from craft_parts import plugins
 from pydantic import AnyUrl, conlist
 from typing_extensions import Self
 
+from imagecraft.models.package_repository import get_main_package_repository
 from imagecraft.ubuntu_image import ubuntu_image_cmds_build_rootfs
 
 # A workaround for mypy false positives
@@ -104,10 +105,13 @@ class UbuntuSeedPlugin(plugins.Plugin):
 
         version = self._part_info.project_info.get_project_var("version", raw_read=True)
 
+        main_repo = get_main_package_repository(self._part_info.project_info.package_repositories)
+
         ubuntu_seed_cmd = ubuntu_image_cmds_build_rootfs(
             series,
             version,
             arch,
+            main_repo.pocket.value,
             options.ubuntu_seed_germinate.urls,
             source_branch,
             options.ubuntu_seed_germinate.names,
