@@ -20,6 +20,8 @@
 from craft_application.util import dump_yaml
 from pydantic import BaseModel, Field
 
+from imagecraft.models.package_repository import PackageRepositoryPPA, UsedForEnum
+
 
 def _alias_generator(s: str) -> str:
     return s.replace("_", "-")
@@ -28,13 +30,36 @@ def _alias_generator(s: str) -> str:
 class Snap(BaseModel):
     """Pydantic model for the Snap object in an ImageDefinition."""
 
-    name: str | None
+    name: str
 
 
 class Package(BaseModel):
     """Pydantic model for the Package object in an ImageDefinition."""
 
-    name: str | None
+    name: str
+
+
+class PPA(BaseModel):
+    """Pydantic model for the PPA object in an ImageDefinition."""
+
+    name: str
+    fingerprint: str | None
+    auth: str | None
+    keep_enabled: bool
+
+
+def init_ppa_from_craft_ppa(craft_ppa: PackageRepositoryPPA) -> PPA:
+    """Convert a craft PPA to a ubuntu-image PPA."""
+    keep_enabled = False
+    if craft_ppa.used_for in {UsedForEnum.ALWAYS, UsedForEnum.RUN}:
+        keep_enabled = True
+
+    return PPA(
+        name=craft_ppa.ppa,
+        fingerprint=craft_ppa.key_id,
+        auth=craft_ppa.auth,
+        keep_enabled=keep_enabled,
+    )
 
 
 class Customization(BaseModel):
@@ -42,6 +67,7 @@ class Customization(BaseModel):
 
     extra_snaps: list[Snap] | None
     extra_packages: list[Package] | None
+    extra_ppas: list[PPA] | None
 
     class Config:
         """Pydantic model configuration."""
@@ -125,6 +151,7 @@ class ImageDefinition(BaseModel):
         seed_pocket: str,
         extra_snaps: list[str] | None = None,
         extra_packages: list[str] | None = None,
+        extra_ppas: list[PackageRepositoryPPA] | None = None,
     ):
         super().__init__(
             name="craft-driver",
@@ -150,6 +177,7 @@ class ImageDefinition(BaseModel):
 
         extra_snaps_obj = None
         extra_packages_obj = None
+        extra_ppas_obj = None
 
         if extra_snaps:
             extra_snaps_obj = [Snap(name=s) for s in extra_snaps]
@@ -157,10 +185,14 @@ class ImageDefinition(BaseModel):
         if extra_packages:
             extra_packages_obj = [Package(name=p) for p in extra_packages]
 
+        if extra_ppas:
+            extra_ppas_obj = [init_ppa_from_craft_ppa(p) for p in extra_ppas]
+
         if extra_snaps or extra_packages:
             self.customization = Customization(
                 extra_snaps=extra_snaps_obj,
                 extra_packages=extra_packages_obj,
+                extra_ppas=extra_ppas_obj,
             )
 
     def dump_yaml(self) -> str | None:

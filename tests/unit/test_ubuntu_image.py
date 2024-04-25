@@ -19,6 +19,7 @@ import subprocess
 import pytest
 from imagecraft.errors import UbuntuImageError
 from imagecraft.image_definition import ImageDefinition
+from imagecraft.models.package_repository import PackageRepositoryPPA
 from imagecraft.ubuntu_image import (
     ubuntu_image_cmds_build_rootfs,
     ubuntu_image_pack,
@@ -44,6 +45,25 @@ from imagecraft.ubuntu_image import (
                 seed_pocket="updates",
                 extra_snaps=["lxd", "snapd"],
                 extra_packages=["apt", "dpkg"],
+                extra_ppas=[
+                    PackageRepositoryPPA.unmarshal(
+                        {"type": "apt", "ppa": "canonical-foundations/ubuntu-image"},
+                    ),
+                    PackageRepositoryPPA.unmarshal(
+                        {
+                            "type": "apt",
+                            "ppa": "canonical-foundations/ubuntu-image2",
+                            "used_for": "build",
+                        },
+                    ),
+                    PackageRepositoryPPA.unmarshal(
+                        {
+                            "type": "apt",
+                            "ppa": "canonical-foundations/ubuntu-image3",
+                            "auth": "sil2100:vVg74j6SM8WVltwpxDRJ",
+                        },
+                    ),
+                ],
             ),
             """name: craft-driver
 display-name: Craft Driver
@@ -75,6 +95,14 @@ customization:
   extra-packages:
   - name: apt
   - name: dpkg
+  extra-ppas:
+  - name: canonical-foundations/ubuntu-image
+    keep_enabled: true
+  - name: canonical-foundations/ubuntu-image2
+    keep_enabled: false
+  - name: canonical-foundations/ubuntu-image3
+    auth: sil2100:vVg74j6SM8WVltwpxDRJ
+    keep_enabled: true
 """,
         ),
         (
