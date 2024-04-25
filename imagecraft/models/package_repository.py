@@ -41,6 +41,7 @@ from pydantic import (
     AnyUrl,
     ConstrainedStr,
     FileUrl,
+    root_validator,  # pyright: ignore[reportUnknownVariableType]
 )
 
 from imagecraft.models.errors import PackageRepositoryValidationError
@@ -133,9 +134,22 @@ class PackageRepositoryApt(BasePackageRepositoryApt):  # type:ignore[misc]
         )
     )
     used_for: UsedForEnum = UsedForEnum.ALWAYS
-
     pocket: PocketEnum = PocketEnum.RELEASE
     flavor: str | None
+
+    @root_validator(pre=True)  # pyright: ignore[reportUntypedFunctionDecorator]
+    @classmethod
+    def _set_default_suites(cls, values: dict[str, Any]) -> dict[str, Any]:
+        """Set a default suites value when needed until this is fixed in craft-archives."""
+        components = values.get("components")
+        if (
+            components is not None
+            and len(components) > 0
+            and values.get("suites") is None
+        ):
+            values["suites"] = ["placeholder"]
+
+        return values
 
     @classmethod
     def unmarshal(cls, data: Mapping[str, Any]) -> "PackageRepositoryApt":

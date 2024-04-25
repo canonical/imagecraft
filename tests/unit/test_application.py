@@ -39,9 +39,6 @@ parts:
         - minimal
         - standard
         - cloud-image
-    ubuntu-seed-components:
-      - main
-      - restricted
     ubuntu-seed-pocket: updates
     ubuntu-seed-extra-snaps: [core20, snapd]
     ubuntu-seed-kernel: linux-generic
@@ -70,9 +67,6 @@ parts:
       urls:
         - "git://git.launchpad.net/~ubuntu-core-dev/ubuntu-seeds/+git/"
       branch: jammy
-    ubuntu-seed-components:
-      - main
-      - restricted
     ubuntu-seed-pocket: updates
     ubuntu-seed-extra-snaps: [core20, snapd]
     ubuntu-seed-kernel: linux-generic

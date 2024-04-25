@@ -69,9 +69,6 @@ parts:
         - minimal
         - standard
         - cloud-image
-    ubuntu-seed-components:
-      - main
-      - restricted
     ubuntu-seed-pocket: updates
     ubuntu-seed-extra-snaps: [core20, snapd]
     ubuntu-seed-kernel: linux-generic

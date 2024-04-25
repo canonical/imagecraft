@@ -49,9 +49,7 @@ class GerminateProperties(plugins.PluginProperties):
 class UbuntuSeedPluginProperties(plugins.PluginProperties):
     """Supported attributes for the 'UbuntuSeedPlugin' plugin."""
 
-    ubuntu_seed_components: UniqueStrList
     ubuntu_seed_pocket: str = "updates"
-
     ubuntu_seed_germinate: GerminateProperties
     ubuntu_seed_extra_snaps: UniqueStrList | None = None
     ubuntu_seed_extra_packages: UniqueStrList | None = None
@@ -107,6 +105,11 @@ class UbuntuSeedPlugin(plugins.Plugin):
 
         main_repo = get_main_package_repository(self._part_info.project_info.package_repositories)
 
+        components: list[str] = []
+        main_repo_components = main_repo.components
+        if main_repo_components:
+            components = main_repo_components
+
         ubuntu_seed_cmd = ubuntu_image_cmds_build_rootfs(
             series,
             version,
@@ -115,7 +118,7 @@ class UbuntuSeedPlugin(plugins.Plugin):
             options.ubuntu_seed_germinate.urls,
             source_branch,
             options.ubuntu_seed_germinate.names,
-            options.ubuntu_seed_components,
+            components,
             options.ubuntu_seed_pocket,
             options.ubuntu_seed_kernel,
             options.ubuntu_seed_extra_snaps,

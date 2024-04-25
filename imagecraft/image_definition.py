@@ -114,7 +114,7 @@ class ImageDefinition(BaseModel):
         architecture: str,
         pocket: str,
         kernel: str | None,
-        components_list: list[str],
+        components: list[str],
         seed_urls: list[str],
         seed_branch: str,
         seed_names: list[str],
@@ -131,7 +131,7 @@ class ImageDefinition(BaseModel):
             series=series,
             kernel=kernel,
             rootfs=Rootfs(
-                components=components_list,
+                components=components,
                 pocket=pocket,
                 seed=Seed(
                     urls=seed_urls,
