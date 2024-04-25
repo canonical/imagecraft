@@ -73,6 +73,7 @@ class Rootfs(BaseModel):
     """Pydantic model for the Rootfs object in an ImageDefinition."""
 
     components: list[str]
+    flavor: str | None
     pocket: str
     mirror: str | None
     seed: Seed
@@ -116,6 +117,7 @@ class ImageDefinition(BaseModel):
         pocket: str,
         kernel: str | None,
         components: list[str],
+        flavor: str | None,
         mirror: str | None,
         seed_urls: list[str],
         seed_branch: str,
@@ -134,6 +136,7 @@ class ImageDefinition(BaseModel):
             kernel=kernel,
             rootfs=Rootfs(
                 components=components,
+                flavor=flavor,
                 mirror=mirror,
                 pocket=pocket,
                 seed=Seed(

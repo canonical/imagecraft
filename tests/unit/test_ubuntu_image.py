@@ -36,6 +36,7 @@ from imagecraft.ubuntu_image import (
                 pocket="release",
                 kernel="linux-image-generic",
                 components=["main", "restricted"],
+                flavor="kubuntu",
                 mirror="http://archive.ubuntu.com/ubuntu/",
                 seed_urls=["source1", "source2"],
                 seed_branch="mantic",
@@ -55,6 +56,7 @@ rootfs:
   components:
   - main
   - restricted
+  flavor: kubuntu
   pocket: release
   mirror: http://archive.ubuntu.com/ubuntu/
   seed:
@@ -83,6 +85,7 @@ customization:
                 pocket="proposed",
                 kernel="linux-image-generic",
                 components=["main", "restricted"],
+                flavor=None,
                 mirror="http://archive.ubuntu.com/ubuntu/",
                 seed_urls=["source1", "source2"],
                 seed_branch="mantic",
@@ -126,6 +129,7 @@ customization:
                 pocket="proposed",
                 kernel=None,
                 components=[],
+                flavor=None,
                 mirror=None,
                 seed_urls=[],
                 seed_branch="mantic",
@@ -151,7 +155,7 @@ rootfs:
         ),
     ],
 )
-def test_image_deinition_dump_yaml(image_definition, resulting_yaml):
+def test_image_definition_dump_yaml(image_definition, resulting_yaml):
     assert image_definition.dump_yaml() == resulting_yaml
 
 
@@ -170,6 +174,7 @@ def test_ubuntu_image_cmds_build_rootfs(mocker):
         seed_branch="mantic",
         seeds=["server", "minimal"],
         components=["main", "restricted"],
+        flavor=None,
         mirror="http://archive.ubuntu.com/ubuntu/",
         seed_pocket="updates",
         kernel="linux-image-generic",
