@@ -64,6 +64,8 @@ from imagecraft.ubuntu_image import (
                         },
                     ),
                 ],
+                custom_components=["restricted", "universe"],
+                custom_pocket="proposed",
             ),
             """name: craft-driver
 display-name: Craft Driver
@@ -89,6 +91,10 @@ rootfs:
     - minimal
     pocket: updates
 customization:
+  components:
+  - restricted
+  - universe
+  pocket: proposed
   extra-snaps:
   - name: lxd
   - name: snapd
@@ -156,7 +162,7 @@ customization:
                 architecture="amd64",
                 pocket="proposed",
                 kernel=None,
-                components=[],
+                components=None,
                 flavor=None,
                 mirror=None,
                 seed_urls=[],
@@ -172,7 +178,6 @@ class: preinstalled
 architecture: amd64
 series: mantic
 rootfs:
-  components: []
   pocket: proposed
   seed:
     urls: []

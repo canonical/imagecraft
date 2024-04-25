@@ -174,18 +174,26 @@ def validate_package_repositories(
     project_repositories: list[PackageRepositoryPPA | PackageRepositoryApt],
 ) -> None:
     """Validate package repositories list."""
-    repo_build_for_found = False
+    repo_build_with_found = False
+    repo_run_with_found = False
 
     for repo in project_repositories:
         if is_main_package_repository(repo):
-            if repo_build_for_found:
+            if repo_build_with_found:
                 raise PackageRepositoryValidationError(
-                    "More than one package repository was defined to build the image.",
+                    "More than one APT package repository was defined to build the image.",
                     details="At most one APT package-repository entry can be set to build the image.",
                 )
-            repo_build_for_found = True
+            repo_build_with_found = True
+        if is_customization_package_repository(repo):
+            if repo_run_with_found:
+                raise PackageRepositoryValidationError(
+                    "More than one APT package repository was defined to customize the image.",
+                    details="At most one APT package-repository entry can be set to customize the image.",
+                )
+            repo_run_with_found = True
 
-    if not repo_build_for_found:
+    if not repo_build_with_found:
         raise PackageRepositoryValidationError(
             "Missing a package repository to build the image.",
             details="One APT package-repository entry with used-for set to 'build' or 'always' must be set to build the image.",
@@ -198,6 +206,16 @@ def is_main_package_repository(
     """Check if the package repository is the 'main' one, used to configure tools to build the image."""
     return isinstance(repo, PackageRepositoryApt) and repo.used_for in {
         UsedForEnum.BUILD,
+        UsedForEnum.ALWAYS,
+    }
+
+
+def is_customization_package_repository(
+    repo: PackageRepositoryPPA | PackageRepositoryApt,
+) -> bool:
+    """Check if the package repository is the customization repo, used to configure the image (but not used to build the image)."""
+    return isinstance(repo, PackageRepositoryApt) and repo.used_for in {
+        UsedForEnum.RUN,
         UsedForEnum.ALWAYS,
     }
 
@@ -219,3 +237,15 @@ def get_main_package_repository(
         "No 'main' package repository defined.",
         details="At least one 'main' package repository must be defined.",
     )
+
+
+def get_customization_package_repository(
+    project_repositories: list[PackageRepositoryPPA | PackageRepositoryApt],
+) -> PackageRepositoryApt | None:
+    """Get the customization package repository from a list."""
+    for repo in project_repositories:
+        if is_customization_package_repository(repo):
+            return repo  # pyright: ignore[reportReturnType]
+            # Due to the previous check we know repo is of type PackageRepositoryApt
+
+    return None

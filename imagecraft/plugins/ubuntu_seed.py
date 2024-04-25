@@ -22,7 +22,10 @@ from craft_parts import plugins
 from pydantic import AnyUrl, conlist
 from typing_extensions import Self
 
-from imagecraft.models.package_repository import get_main_package_repository
+from imagecraft.models.package_repository import (
+    get_customization_package_repository,
+    get_main_package_repository,
+)
 from imagecraft.ubuntu_image import ubuntu_image_cmds_build_rootfs
 
 # A workaround for mypy false positives
@@ -105,10 +108,13 @@ class UbuntuSeedPlugin(plugins.Plugin):
 
         main_repo = get_main_package_repository(self._part_info.project_info.package_repositories)
 
-        components: list[str] = []
-        main_repo_components = main_repo.components
-        if main_repo_components:
-            components = main_repo_components
+        customize_repo = get_customization_package_repository(self._part_info.project_info.package_repositories)
+
+        custom_components = None
+        custom_pocket = None
+        if customize_repo:
+            custom_components = customize_repo.components
+            custom_pocket = customize_repo.pocket.value
 
         ubuntu_seed_cmd = ubuntu_image_cmds_build_rootfs(
             series,
@@ -118,13 +124,15 @@ class UbuntuSeedPlugin(plugins.Plugin):
             options.ubuntu_seed_germinate.urls,
             source_branch,
             options.ubuntu_seed_germinate.names,
-            components,
+            main_repo.components,
             main_repo.flavor,
             main_repo.url,
             options.ubuntu_seed_pocket,
             options.ubuntu_seed_kernel,
             options.ubuntu_seed_extra_snaps,
             options.ubuntu_seed_extra_packages,
+            custom_components,
+            custom_pocket,
         )
 
         # We also need to make sure to prepare a proper fstab entry

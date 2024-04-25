@@ -32,13 +32,15 @@ def ubuntu_image_cmds_build_rootfs(  # noqa: PLR0913
     sources: list[str],
     seed_branch: str,
     seeds: list[str],
-    components: list[str],
+    components: list[str] | None,
     flavor: str | None,
     mirror: str | None,
     seed_pocket: str,
     kernel: str | None = None,
     extra_snaps: list[str] | None = None,
     extra_packages: list[str] | None = None,
+    custom_components: list[str] | None = None,
+    custom_pocket: str | None = None,
 ) -> list[str]:
     """List commands to ubuntu-image to generate a rootfs."""
     image_def = ImageDefinition(
@@ -56,6 +58,8 @@ def ubuntu_image_cmds_build_rootfs(  # noqa: PLR0913
         seed_pocket=seed_pocket,
         extra_snaps=extra_snaps,
         extra_packages=extra_packages,
+        custom_components=custom_components,
+        custom_pocket=custom_pocket,
     )
 
     definition_yaml = image_def.dump_yaml()

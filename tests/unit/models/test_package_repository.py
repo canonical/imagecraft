@@ -131,7 +131,7 @@ def test_get_main_package_repository_error():
     ("error_value", "error_class", "package_repositories"),
     [
         (
-            "More than one package repository was defined to build the image.",
+            "More than one APT package repository was defined to build the image.",
             PackageRepositoryValidationError,
             [
                 PackageRepositoryApt.unmarshal({"type": "apt", "used-for": "build"}),
@@ -146,6 +146,14 @@ def test_get_main_package_repository_error():
                 PackageRepositoryPPA.unmarshal(
                     {"type": "apt", "ppa": "test/test", "used-for": "build"},
                 ),
+            ],
+        ),
+        (
+            "More than one APT package repository was defined to customize the image.",
+            PackageRepositoryValidationError,
+            [
+                PackageRepositoryApt.unmarshal({"type": "apt", "used-for": "always"}),
+                PackageRepositoryApt.unmarshal({"type": "apt", "used-for": "run"}),
             ],
         ),
     ],

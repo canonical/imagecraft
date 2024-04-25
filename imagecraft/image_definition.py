@@ -65,6 +65,9 @@ def init_ppa_from_craft_ppa(craft_ppa: PackageRepositoryPPA) -> PPA:
 class Customization(BaseModel):
     """Pydantic model for the Customization object in an ImageDefinition."""
 
+    components: list[str] | None
+    pocket: str | None
+
     extra_snaps: list[Snap] | None
     extra_packages: list[Package] | None
     extra_ppas: list[PPA] | None
@@ -98,7 +101,7 @@ class Seed(BaseModel):
 class Rootfs(BaseModel):
     """Pydantic model for the Rootfs object in an ImageDefinition."""
 
-    components: list[str]
+    components: list[str] | None
     flavor: str | None
     pocket: str
     mirror: str | None
@@ -142,7 +145,7 @@ class ImageDefinition(BaseModel):
         architecture: str,
         pocket: str,
         kernel: str | None,
-        components: list[str],
+        components: list[str] | None,
         flavor: str | None,
         mirror: str | None,
         seed_urls: list[str],
@@ -152,6 +155,8 @@ class ImageDefinition(BaseModel):
         extra_snaps: list[str] | None = None,
         extra_packages: list[str] | None = None,
         extra_ppas: list[PackageRepositoryPPA] | None = None,
+        custom_components: list[str] | None = None,
+        custom_pocket: str | None = None,
     ):
         super().__init__(
             name="craft-driver",
@@ -193,6 +198,8 @@ class ImageDefinition(BaseModel):
                 extra_snaps=extra_snaps_obj,
                 extra_packages=extra_packages_obj,
                 extra_ppas=extra_ppas_obj,
+                components=custom_components,
+                pocket=custom_pocket,
             )
 
     def dump_yaml(self) -> str | None:

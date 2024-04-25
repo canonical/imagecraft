@@ -172,6 +172,8 @@ def test_get_build_commands(ubuntu_seed_plugin, mocker, tmp_path):
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-kernel"],
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-extra-snaps"],
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-extra-packages"],
+            None,
+            None,
         )
 
     with patch(
@@ -202,4 +204,57 @@ def test_get_build_commands(ubuntu_seed_plugin, mocker, tmp_path):
             UBUNTU_SEED_NO_SOURCE_BRANCH["ubuntu-seed-kernel"],
             UBUNTU_SEED_NO_SOURCE_BRANCH["ubuntu-seed-extra-snaps"],
             UBUNTU_SEED_NO_SOURCE_BRANCH["ubuntu-seed-extra-packages"],
+            None,
+            None,
+        )
+
+    # Test with a customization package repository
+    with patch(
+        "imagecraft.plugins.ubuntu_seed.ubuntu_image_cmds_build_rootfs",
+        return_value=["build_rootfs_cmd1", "build_rootfs_cmd2"],
+    ) as build_rootfs_patcher:
+        plugin._part_info.project_info.package_repositories = [
+            PackageRepositoryApt.unmarshal(
+                {
+                    "type": "apt",
+                    "used_for": UsedForEnum.BUILD,
+                    "pocket": PocketEnum.RELEASE,
+                    "components": ["main", "restricted"],
+                    "flavor": "ubuntu",
+                    "url": "http://archive.ubuntu.com/ubuntu/",
+                },
+            ),
+            PackageRepositoryApt.unmarshal(
+                {
+                    "type": "apt",
+                    "used_for": UsedForEnum.RUN,
+                    "pocket": PocketEnum.PROPOSED,
+                    "components": ["universe", "restricted"],
+                },
+            ),
+        ]
+
+        assert plugin.get_build_commands() == [
+            "build_rootfs_cmd1",
+            "build_rootfs_cmd2",
+            'echo "LABEL=writable   /    ext4   defaults    0 0\n" >$CRAFT_PART_BUILD/work/chroot/etc/fstab',
+        ]
+
+        build_rootfs_patcher.assert_called_with(
+            "jammy",
+            "22.04",
+            "amd64",
+            "release",
+            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("urls"),
+            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("branch"),
+            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("names"),
+            ["main", "restricted"],
+            "ubuntu",
+            "http://archive.ubuntu.com/ubuntu/",
+            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-pocket"],
+            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-kernel"],
+            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-extra-snaps"],
+            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-extra-packages"],
+            ["universe", "restricted"],
+            "proposed",
         )

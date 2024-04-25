@@ -30,6 +30,10 @@ package-repositories:
     flavor: ubuntu
     pocket: proposed
     used-for: build
+  - type: apt
+    components: [restricted,universe]
+    pocket: updates
+    used-for: run
 parts:
   gadget:
     plugin: gadget
