@@ -36,6 +36,7 @@ from imagecraft.ubuntu_image import (
                 pocket="release",
                 kernel="linux-image-generic",
                 components=["main", "restricted"],
+                mirror="http://archive.ubuntu.com/ubuntu/",
                 seed_urls=["source1", "source2"],
                 seed_branch="mantic",
                 seed_names=["server", "minimal"],
@@ -55,6 +56,7 @@ rootfs:
   - main
   - restricted
   pocket: release
+  mirror: http://archive.ubuntu.com/ubuntu/
   seed:
     urls:
     - source1
@@ -81,6 +83,7 @@ customization:
                 pocket="proposed",
                 kernel="linux-image-generic",
                 components=["main", "restricted"],
+                mirror="http://archive.ubuntu.com/ubuntu/",
                 seed_urls=["source1", "source2"],
                 seed_branch="mantic",
                 seed_names=["server", "minimal"],
@@ -99,6 +102,7 @@ rootfs:
   - main
   - restricted
   pocket: proposed
+  mirror: http://archive.ubuntu.com/ubuntu/
   seed:
     urls:
     - source1
@@ -122,6 +126,7 @@ customization:
                 pocket="proposed",
                 kernel=None,
                 components=[],
+                mirror=None,
                 seed_urls=[],
                 seed_branch="mantic",
                 seed_names=[],
@@ -165,6 +170,7 @@ def test_ubuntu_image_cmds_build_rootfs(mocker):
         seed_branch="mantic",
         seeds=["server", "minimal"],
         components=["main", "restricted"],
+        mirror="http://archive.ubuntu.com/ubuntu/",
         seed_pocket="updates",
         kernel="linux-image-generic",
         extra_snaps=["lxd", "snapd"],

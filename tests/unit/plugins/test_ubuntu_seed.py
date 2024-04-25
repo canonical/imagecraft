@@ -81,6 +81,7 @@ def ubuntu_seed_plugin():
                     "used_for": UsedForEnum.BUILD,
                     "pocket": PocketEnum.RELEASE,
                     "components": ["main", "restricted"],
+                    "url": "http://archive.ubuntu.com/ubuntu/",
                 },
             ),
         ]
@@ -164,6 +165,7 @@ def test_get_build_commands(ubuntu_seed_plugin, mocker, tmp_path):
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("branch"),
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("names"),
             ["main", "restricted"],
+            "http://archive.ubuntu.com/ubuntu/",
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-pocket"],
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-kernel"],
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-extra-snaps"],
@@ -192,6 +194,7 @@ def test_get_build_commands(ubuntu_seed_plugin, mocker, tmp_path):
             "jammy",
             UBUNTU_SEED_NO_SOURCE_BRANCH["ubuntu-seed-germinate"].get("names"),
             ["main", "restricted"],
+            "http://archive.ubuntu.com/ubuntu/",
             UBUNTU_SEED_NO_SOURCE_BRANCH["ubuntu-seed-pocket"],
             UBUNTU_SEED_NO_SOURCE_BRANCH["ubuntu-seed-kernel"],
             UBUNTU_SEED_NO_SOURCE_BRANCH["ubuntu-seed-extra-snaps"],

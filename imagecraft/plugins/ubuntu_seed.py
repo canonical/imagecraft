@@ -119,6 +119,7 @@ class UbuntuSeedPlugin(plugins.Plugin):
             source_branch,
             options.ubuntu_seed_germinate.names,
             components,
+            main_repo.url,
             options.ubuntu_seed_pocket,
             options.ubuntu_seed_kernel,
             options.ubuntu_seed_extra_snaps,

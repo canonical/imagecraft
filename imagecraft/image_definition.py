@@ -74,6 +74,7 @@ class Rootfs(BaseModel):
 
     components: list[str]
     pocket: str
+    mirror: str | None
     seed: Seed
 
     class Config:
@@ -115,6 +116,7 @@ class ImageDefinition(BaseModel):
         pocket: str,
         kernel: str | None,
         components: list[str],
+        mirror: str | None,
         seed_urls: list[str],
         seed_branch: str,
         seed_names: list[str],
@@ -132,6 +134,7 @@ class ImageDefinition(BaseModel):
             kernel=kernel,
             rootfs=Rootfs(
                 components=components,
+                mirror=mirror,
                 pocket=pocket,
                 seed=Seed(
                     urls=seed_urls,
