@@ -139,7 +139,7 @@ jobs:
       - name: Install python tools
         run: |
           python -m pip install flake8 pylint
-          
+
       - name: TICS analysis and report
         run: |
           export TICSAUTHTOKEN=${{ secrets.TICSAUTHTOKEN }}
