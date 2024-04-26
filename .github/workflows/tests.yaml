@@ -136,6 +136,10 @@ jobs:
           cp /tmp/coverage/*integration-py3.11.xml results/integration
           cp /tmp/coverage/*unit-py3.11.xml results/unit
 
+      - name: Install python tools
+        run: |
+          python -m pip install flake8 pylint
+          
       - name: TICS analysis and report
         run: |
           export TICSAUTHTOKEN=${{ secrets.TICSAUTHTOKEN }}
