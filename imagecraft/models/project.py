@@ -18,15 +18,19 @@
 
 This module defines a imagecraft.yaml file, exportable to a JSON schema.
 """
+
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any
 
+import pydantic
 from craft_application.errors import CraftValidationError
 from craft_application.models import BuildInfo
 from craft_application.models import Project as BaseProject
+from craft_application.util.error_formatting import format_pydantic_errors
 from craft_providers import bases
 from pydantic import (
     BaseModel,
+    ValidationError,
     conlist,
     root_validator,  # pyright: ignore[reportUnknownVariableType]
     validator,  # pyright: ignore[reportUnknownVariableType]
@@ -34,6 +38,13 @@ from pydantic import (
 from pydantic_yaml import YamlModelMixin
 
 from imagecraft.architectures import SUPPORTED_ARCHS
+from imagecraft.models.errors import ProjectValidationError
+from imagecraft.models.package_repository import (
+    PackageRepository,
+    PackageRepositoryApt,
+    PackageRepositoryPPA,
+    validate_package_repositories,
+)
 
 # A workaround for mypy false positives
 # see https://github.com/samuelcolvin/pydantic/issues/975#issuecomment-551147305
@@ -43,6 +54,11 @@ if TYPE_CHECKING:
 else:
     UniqueStrList = conlist(str, unique_items=True, min_items=1)
 
+file_name = "imagecraft.yaml"
+
+def _alias_generator(s: str) -> str:
+    return s.replace("_", "-")
+
 
 class ProjectModel(YamlModelMixin, BaseProject):
     """Base model for the imagecraft project class."""
@@ -51,10 +67,10 @@ class ProjectModel(YamlModelMixin, BaseProject):
         """Pydantic model configuration."""
 
         validate_assignment = True
-        extra = "forbid"
+        extra = pydantic.Extra.forbid
         allow_mutation = True
         allow_population_by_field_name = True
-        alias_generator = lambda s: s.replace("_", "-")  # noqa: E731 # type: ignore[reportUnknownLambdaType,reportUnknownVariableType,reportUnknownMemberType]
+        alias_generator = _alias_generator
 
 
 class ElementModel(YamlModelMixin, BaseModel):
@@ -64,10 +80,10 @@ class ElementModel(YamlModelMixin, BaseModel):
         """Pydantic model configuration."""
 
         validate_assignment = True
-        extra = "forbid"
+        extra = pydantic.Extra.forbid
         allow_mutation = True
         allow_population_by_field_name = True
-        alias_generator = lambda s: s.replace("_", "-")  # noqa: E731 # type: ignore[reportUnknownLambdaType,reportUnknownVariableType,reportUnknownMemberType]
+        alias_generator = _alias_generator
 
 
 class Platform(ElementModel):
@@ -119,12 +135,24 @@ class Platform(ElementModel):
 
         return values
 
-
 class Project(ProjectModel):
     """Definition of imagecraft.yaml configuration."""
 
     series: str
+    package_repositories: list[dict[str,Any]] | list[PackageRepositoryPPA | PackageRepositoryApt] | None
     platforms: dict[str, Platform]
+
+    @validator("package_repositories") # pyright: ignore[reportUntypedFunctionDecorator]
+    @classmethod
+    def _validate_package_repositories(
+        cls, project_repositories: list[dict[str, Any]],
+    ) -> list[PackageRepositoryPPA | PackageRepositoryApt]:
+        repositories: list[PackageRepositoryPPA | PackageRepositoryApt] = []
+        repositories = [ PackageRepository.unmarshal(data) for data in project_repositories ]
+
+        validate_package_repositories(repositories)
+        return repositories
+
 
     @validator("platforms", pre=True) # pyright: ignore[reportUntypedFunctionDecorator]
     @classmethod
@@ -198,6 +226,26 @@ class Project(ProjectModel):
             platforms[platform_label] = platform
 
         return platforms
+
+    @classmethod
+    def unmarshal(cls, data: dict[str, Any]) -> "Project":
+        """Unmarshal object with necessary translations and error handling.
+
+        (1) Perform any necessary translations.
+
+        (2) Standardize error reporting.
+
+        :returns: valid Project.
+
+        :raises CraftError: On failure to unmarshal object.
+        """
+        try:
+            return cls.parse_obj({**data})
+        except ValidationError as error:
+            raise ProjectValidationError(
+                format_pydantic_errors(error.errors(), file_name=file_name),
+            ) from error
+
 
     @property
     def effective_base(self) -> bases.BaseName:

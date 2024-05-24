@@ -20,6 +20,7 @@ import pytest
 import yaml
 from craft_application.errors import CraftValidationError
 from imagecraft.models import Platform, Project
+from imagecraft.models.errors import ProjectValidationError
 from pydantic import ValidationError
 
 IMAGECRAFT_YAML_GENERIC = """
@@ -30,6 +31,27 @@ platforms:
   amd64:
     build-for: [amd64]
     build-on: [amd64]
+
+package-repositories:
+  - type: apt
+    components: [main,restricted]
+    suites: [jammy]
+    url: http://archive.ubuntu.com/ubuntu/
+    flavor: ubuntu
+    pocket: proposed
+    used-for: build
+  - type: apt
+    components: [main,restricted]
+    suites: [jammy]
+    url: http://archive.ubuntu.com/ubuntu/
+    used-for: run
+  - type: apt
+    ppa: canonical-foundations/ubuntu-image
+    used-for: always
+  - type: apt
+    ppa: canonical-foundations/ubuntu-image-private-test
+    auth: "sil2100:vVg74j6SM8WVltwpxDRJ"
+    used-for: run
 
 parts:
   gadget:
@@ -47,9 +69,6 @@ parts:
         - minimal
         - standard
         - cloud-image
-    ubuntu-seed-components:
-      - main
-      - restricted
     ubuntu-seed-pocket: updates
     ubuntu-seed-extra-snaps: [core20, snapd]
     ubuntu-seed-kernel: linux-generic
@@ -99,6 +118,30 @@ parts:
     source-branch: classic
 """
 
+IMAGECRAFT_YAML_SIMPLE_PACKAGE_REPO = """
+name: ubuntu-server-amd64
+version: "22.04"
+series: jammy
+platforms:
+  amd64:
+    build-for: amd64
+    build-on: amd64
+
+package-repositories:
+  - type: apt
+    components: [main,restricted]
+    suites: [jammy]
+    url: http://archive.ubuntu.com/ubuntu/
+    flavor: ubuntu
+    pocket: proposed
+
+parts:
+  gadget:
+    plugin: gadget
+    source: https://github.com/snapcore/pc-gadget.git
+    source-branch: classic
+"""
+
 
 @pytest.fixture()
 def yaml_loaded_data():
@@ -106,7 +149,7 @@ def yaml_loaded_data():
 
 
 def load_project_yaml(yaml_loaded_data) -> Project:
-    return Project.from_yaml_data(yaml_loaded_data, Path("rockcraft.yaml"))
+    return Project.from_yaml_data(yaml_loaded_data, Path("imagecraft.yaml"))
 
 
 @pytest.mark.parametrize(
@@ -116,6 +159,7 @@ def load_project_yaml(yaml_loaded_data) -> Project:
         IMAGECRAFT_YAML_SIMPLE_PLATFORM,
         IMAGECRAFT_YAML_MINIMAL_PLATFORM,
         IMAGECRAFT_YAML_NO_BUILD_FOR_PLATFORM,
+        IMAGECRAFT_YAML_SIMPLE_PACKAGE_REPO,
     ],
 )
 def test_project_unmarshal(yaml_data):
@@ -126,89 +170,120 @@ def test_project_unmarshal(yaml_data):
         if attr == "platforms":
             assert getattr(project, attr).keys() == v.keys()
             continue
-
+        if attr == "package-repositories":
+            continue
         assert getattr(project, attr.replace("-", "_")) == v
 
 
-def test_project_platform_invalid():
+@pytest.mark.parametrize(
+    ("error_value", "error_class", "platforms"),
+    [
+        (
+            "duplicated",
+            ValidationError,
+            {"build-on": ["amd64", "amd64"]},
+        ),
+        (
+            "duplicated",
+            ValidationError,
+            {"build-for": ["amd64", "amd64"], "build-on": ["amd64"]},
+        ),
+        (
+            "multiple target architectures",
+            CraftValidationError,
+            {"build-on": ["amd64"], "build-for": ["amd64", "arm64"]},
+        ),
+        (
+            "multiple architectures",
+            CraftValidationError,
+            {"build-on": ["amd64", "arm64"]},
+        ),
+        (
+            "'build_for' expects 'build_on' to also be provided.",
+            CraftValidationError,
+            {"build-for": ["arm64"]},
+        ),
+    ],
+)
+def test_project_platform_invalid(
+    error_value,
+    error_class,
+    platforms,
+):
     def load_platform(platform, raises):
         with pytest.raises(raises) as err:
             Platform(**platform)
 
         return str(err.value)
 
-    # lists must be unique
-    mock_platform = {"build-on": ["amd64", "amd64"]}
-    assert "duplicated" in load_platform(mock_platform, ValidationError)
-
-    mock_platform = {"build-for": ["amd64", "amd64"], "build-on": ["amd64"]}
-    assert "duplicated" in load_platform(mock_platform, ValidationError)
-
-    # build-for must be only 1 element
-    mock_platform = {"build-on": ["amd64"], "build-for": ["amd64", "arm64"]}
-    assert "multiple target architectures" in load_platform(
-        mock_platform,
-        CraftValidationError,
-    )
-
-    # build-on must be only 1 element
-    mock_platform = {"build-on": ["amd64", "arm64"]}
-    assert "multiple architectures" in load_platform(
-        mock_platform,
-        CraftValidationError,
-    )
-
-    # If build_for is provided, then build_on must also be
-    mock_platform = {"build-for": ["arm64"]}
-    assert "'build_for' expects 'build_on' to also be provided." in load_platform(
-        mock_platform,
-        CraftValidationError,
-    )
+    assert error_value in load_platform(platforms, error_class)
 
 
-def test_project_all_platforms_invalid(yaml_loaded_data):
-    def reload_project_platforms(new_platforms=None):
-        yaml_loaded_data["platforms"] = mock_platforms
+@pytest.mark.parametrize(
+    ("error_value", "platforms"),
+    [
+        # A platform validation error must have an explicit prefix indicating
+        # the platform entry for which the validation has failed
+        (
+            "'build_for' expects 'build_on'",
+            {"foo": {"build-for": ["amd64"]}},
+        ),
+        # If the label maps to a valid architecture and
+        # `build-for` is present, then both need to have the same value    mock_platforms = {"mock": {"build-on": "amd64"}}
+        (
+            "arm64 != amd64",
+            {"arm64": {"build-on": ["arm64"], "build-for": ["amd64"]}},
+        ),
+        # Both build and target architectures must be supported
+        (
+            "none of these build architectures is supported",
+            {
+                "mock": {"build-on": ["noarch"], "build-for": ["amd64"]},
+            },
+        ),
+        (
+            "build image for target architecture noarch",
+            {
+                "mock": {"build-on": ["arm64"], "build-for": ["noarch"]},
+            },
+        ),
+        (
+            "Invalid platform unsupported",
+            {
+                "unsupported": None,
+            },
+        ),
+        (
+            "No platforms were specified.",
+            None,
+        ),
+    ],
+)
+def test_project_all_platforms_invalid(yaml_loaded_data, error_value, platforms):
+    def reload_project_platforms(mock_platforms=None):
+        yaml_loaded_data["platforms"] = platforms
         with pytest.raises(CraftValidationError) as err:
+            Project.unmarshal(yaml_loaded_data)
+
+        return str(err.value)
+
+    assert error_value in reload_project_platforms(
+        platforms,
+    )
+
+
+def test_project_package_repositories_invalid(yaml_loaded_data):
+    def reload_project_package_repositories(mock_package_repositories, raises):
+        yaml_loaded_data["package-repositories"] = mock_package_repositories
+        with pytest.raises(raises) as err:
             Project.unmarshal(yaml_loaded_data)
 
         return str(err.value)
 
     # A platform validation error must have an explicit prefix indicating
     # the platform entry for which the validation has failed
-    mock_platforms = {"foo": {"build-for": ["amd64"]}}
-    assert "'build_for' expects 'build_on'" in reload_project_platforms(
-        mock_platforms,
-    )
-
-    # If the label maps to a valid architecture and
-    # `build-for` is present, then both need to have the same value    mock_platforms = {"mock": {"build-on": "amd64"}}
-    mock_platforms = {"arm64": {"build-on": ["arm64"], "build-for": ["amd64"]}}
-    assert "arm64 != amd64" in reload_project_platforms(mock_platforms)
-
-    # Both build and target architectures must be supported
-    mock_platforms = {
-        "mock": {"build-on": ["noarch"], "build-for": ["amd64"]},
-    }
-    assert "none of these build architectures is supported" in reload_project_platforms(
-        mock_platforms,
-    )
-
-    mock_platforms = {
-        "mock": {"build-on": ["arm64"], "build-for": ["noarch"]},
-    }
-    assert "build image for target architecture noarch" in reload_project_platforms(
-        mock_platforms,
-    )
-
-    mock_platforms = {
-        "unsupported": None,
-    }
-    assert "Invalid platform unsupported" in reload_project_platforms(
-        mock_platforms,
-    )
-
-    mock_platforms = None
-    assert "No platforms were specified." in reload_project_platforms(
-        mock_platforms,
+    mock_package_repositories = [{"test"}]
+    assert "value is not a valid dict" in reload_project_package_repositories(
+        mock_package_repositories,
+        ProjectValidationError,
     )

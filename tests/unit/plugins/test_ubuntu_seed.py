@@ -20,12 +20,15 @@ import craft_parts
 import pydantic
 import pytest
 from craft_parts import plugins
-from imagecraft.errors import NoValidSeriesError
+from imagecraft.models.package_repository import (
+    PackageRepositoryApt,
+    PocketEnum,
+    UsedForEnum,
+)
 from imagecraft.plugins import ubuntu_seed
 
 UBUNTU_SEED_BASIC_SPEC = {
     "plugin": "ubuntu-seed",
-    "ubuntu-seed-components": ["main", "restricted"],
     "ubuntu-seed-pocket": "updates",
     "ubuntu-seed-extra-snaps": ["core20", "snapd"],
     "ubuntu-seed-extra-packages": ["apt"],
@@ -40,9 +43,9 @@ UBUNTU_SEED_BASIC_SPEC = {
 
 UBUNTU_SEED_NO_SOURCE_BRANCH = {
     "plugin": "ubuntu-seed",
-    "ubuntu-seed-components": ["main", "restricted"],
     "ubuntu-seed-pocket": "updates",
     "ubuntu-seed-extra-snaps": ["core20", "snapd"],
+    "ubuntu-seed-extra-packages": ["apt"],
     "ubuntu-seed-kernel": "linux-generic",
     "ubuntu-seed-germinate": {
         "urls": ["git://git.launchpad.net/~ubuntu-core-dev/ubuntu-seeds/+git/"],
@@ -71,11 +74,26 @@ def ubuntu_seed_plugin():
         project_vars = {
             "version": "22.04",
         }
+        package_repositories = [
+            PackageRepositoryApt.unmarshal(
+                {
+                    "type": "apt",
+                    "used_for": UsedForEnum.BUILD,
+                    "pocket": PocketEnum.RELEASE,
+                    "components": ["main", "restricted"],
+                    "flavor": "ubuntu",
+                    "url": "http://archive.ubuntu.com/ubuntu/",
+                },
+            ),
+        ]
+
         project_info = craft_parts.ProjectInfo(
             application_name="test",
             project_dirs=project_dirs,
             cache_dir=tmp_path,
             project_vars=project_vars,
+            series="jammy",
+            package_repositories=package_repositories,
         )
         part_info = craft_parts.PartInfo(project_info=project_info, part=part)
 
@@ -106,12 +124,9 @@ def test_missing_properties():
             {"gadget-something-invalid": True},
         )
     err = raised.value.errors()
-    assert len(err) == 2
-    assert err[0]["loc"] == ("ubuntu-seed-components",)
+    assert len(err) == 1
+    assert err[0]["loc"] == ("ubuntu-seed-germinate",)
     assert err[0]["type"] == "value_error.missing"
-
-    assert err[1]["loc"] == ("ubuntu-seed-germinate",)
-    assert err[1]["type"] == "value_error.missing"
 
 
 def test_get_build_snaps(ubuntu_seed_plugin, tmp_path):
@@ -131,10 +146,6 @@ def test_get_build_environment(ubuntu_seed_plugin, tmp_path):
 
 def test_get_build_commands(ubuntu_seed_plugin, mocker, tmp_path):
     plugin = ubuntu_seed_plugin(UBUNTU_SEED_BASIC_SPEC, tmp_path)
-    mocker.patch(
-        "imagecraft.plugins.ubuntu_seed.craft_base_to_ubuntu_series",
-        return_value="jammy",
-    )
 
     with patch(
         "imagecraft.plugins.ubuntu_seed.ubuntu_image_cmds_build_rootfs",
@@ -147,16 +158,22 @@ def test_get_build_commands(ubuntu_seed_plugin, mocker, tmp_path):
         ]
 
         build_rootfs_patcher.assert_called_with(
-            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("branch"),
+            "jammy",
             "22.04",
             "amd64",
+            "release",
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("urls"),
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("branch"),
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("names"),
-            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-components"],
+            ["main", "restricted"],
+            "ubuntu",
+            "http://archive.ubuntu.com/ubuntu/",
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-pocket"],
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-kernel"],
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-extra-snaps"],
+            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-extra-packages"],
+            None,
+            None,
         )
 
     with patch(
@@ -176,19 +193,68 @@ def test_get_build_commands(ubuntu_seed_plugin, mocker, tmp_path):
             "jammy",
             "22.04",
             "amd64",
+            "release",
+            UBUNTU_SEED_NO_SOURCE_BRANCH["ubuntu-seed-germinate"].get("urls"),
+            "jammy",
+            UBUNTU_SEED_NO_SOURCE_BRANCH["ubuntu-seed-germinate"].get("names"),
+            ["main", "restricted"],
+            "ubuntu",
+            "http://archive.ubuntu.com/ubuntu/",
+            UBUNTU_SEED_NO_SOURCE_BRANCH["ubuntu-seed-pocket"],
+            UBUNTU_SEED_NO_SOURCE_BRANCH["ubuntu-seed-kernel"],
+            UBUNTU_SEED_NO_SOURCE_BRANCH["ubuntu-seed-extra-snaps"],
+            UBUNTU_SEED_NO_SOURCE_BRANCH["ubuntu-seed-extra-packages"],
+            None,
+            None,
+        )
+
+    # Test with a customization package repository
+    with patch(
+        "imagecraft.plugins.ubuntu_seed.ubuntu_image_cmds_build_rootfs",
+        return_value=["build_rootfs_cmd1", "build_rootfs_cmd2"],
+    ) as build_rootfs_patcher:
+        plugin._part_info.project_info.package_repositories = [
+            PackageRepositoryApt.unmarshal(
+                {
+                    "type": "apt",
+                    "used_for": UsedForEnum.BUILD,
+                    "pocket": PocketEnum.RELEASE,
+                    "components": ["main", "restricted"],
+                    "flavor": "ubuntu",
+                    "url": "http://archive.ubuntu.com/ubuntu/",
+                },
+            ),
+            PackageRepositoryApt.unmarshal(
+                {
+                    "type": "apt",
+                    "used_for": UsedForEnum.RUN,
+                    "pocket": PocketEnum.PROPOSED,
+                    "components": ["universe", "restricted"],
+                },
+            ),
+        ]
+
+        assert plugin.get_build_commands() == [
+            "build_rootfs_cmd1",
+            "build_rootfs_cmd2",
+            'echo "LABEL=writable   /    ext4   defaults    0 0\n" >$CRAFT_PART_BUILD/work/chroot/etc/fstab',
+        ]
+
+        build_rootfs_patcher.assert_called_with(
+            "jammy",
+            "22.04",
+            "amd64",
+            "release",
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("urls"),
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("branch"),
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("names"),
-            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-components"],
+            ["main", "restricted"],
+            "ubuntu",
+            "http://archive.ubuntu.com/ubuntu/",
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-pocket"],
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-kernel"],
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-extra-snaps"],
+            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-extra-packages"],
+            ["universe", "restricted"],
+            "proposed",
         )
-
-        # test without valid series
-        mocker.patch(
-            "imagecraft.plugins.ubuntu_seed.craft_base_to_ubuntu_series",
-            return_value=None,
-        )
-        with pytest.raises(NoValidSeriesError):
-            plugin.get_build_commands()

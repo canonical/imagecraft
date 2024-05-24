@@ -22,9 +22,11 @@ from craft_parts import plugins
 from pydantic import AnyUrl, conlist
 from typing_extensions import Self
 
-from imagecraft.errors import NoValidSeriesError
+from imagecraft.models.package_repository import (
+    get_customization_package_repository,
+    get_main_package_repository,
+)
 from imagecraft.ubuntu_image import ubuntu_image_cmds_build_rootfs
-from imagecraft.utils import craft_base_to_ubuntu_series
 
 # A workaround for mypy false positives
 # see https://github.com/samuelcolvin/pydantic/issues/975#issuecomment-551147305
@@ -50,9 +52,7 @@ class GerminateProperties(plugins.PluginProperties):
 class UbuntuSeedPluginProperties(plugins.PluginProperties):
     """Supported attributes for the 'UbuntuSeedPlugin' plugin."""
 
-    ubuntu_seed_components: UniqueStrList
     ubuntu_seed_pocket: str = "updates"
-
     ubuntu_seed_germinate: GerminateProperties
     ubuntu_seed_extra_snaps: UniqueStrList | None = None
     ubuntu_seed_extra_packages: UniqueStrList | None = None
@@ -96,28 +96,43 @@ class UbuntuSeedPlugin(plugins.Plugin):
         options = cast(UbuntuSeedPluginProperties, self._options)
 
         arch = self._part_info.target_arch
-        series = craft_base_to_ubuntu_series(
-            self._part_info.project_info.base)
-        if not series:
-            raise NoValidSeriesError
 
-        source_branch = options.ubuntu_seed_germinate.branch
-        if not source_branch:
-            source_branch = series
+        series = self._part_info.project_info.series
+
+        source_branch = series
+        branch = options.ubuntu_seed_germinate.branch
+        if branch:
+            source_branch = branch
 
         version = self._part_info.project_info.get_project_var("version", raw_read=True)
+
+        main_repo = get_main_package_repository(self._part_info.project_info.package_repositories)
+
+        customize_repo = get_customization_package_repository(self._part_info.project_info.package_repositories)
+
+        custom_components = None
+        custom_pocket = None
+        if customize_repo:
+            custom_components = customize_repo.components
+            custom_pocket = customize_repo.pocket.value
 
         ubuntu_seed_cmd = ubuntu_image_cmds_build_rootfs(
             series,
             version,
             arch,
+            main_repo.pocket.value,
             options.ubuntu_seed_germinate.urls,
             source_branch,
             options.ubuntu_seed_germinate.names,
-            options.ubuntu_seed_components,
+            main_repo.components,
+            main_repo.flavor,
+            main_repo.url,
             options.ubuntu_seed_pocket,
             options.ubuntu_seed_kernel,
             options.ubuntu_seed_extra_snaps,
+            options.ubuntu_seed_extra_packages,
+            custom_components,
+            custom_pocket,
         )
 
         # We also need to make sure to prepare a proper fstab entry

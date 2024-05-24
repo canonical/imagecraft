@@ -22,7 +22,18 @@ platforms:
   amd64:
     build-for: [amd64]
     build-on: [amd64]
-
+package-repositories:
+  - type: apt
+    components: [main,restricted]
+    suites: [jammy]
+    url: http://archive.ubuntu.com/ubuntu/
+    flavor: ubuntu
+    pocket: proposed
+    used-for: build
+  - type: apt
+    components: [restricted,universe]
+    pocket: updates
+    used-for: run
 parts:
   gadget:
     plugin: gadget
@@ -39,9 +50,6 @@ parts:
         - minimal
         - standard
         - cloud-image
-    ubuntu-seed-components:
-      - main
-      - restricted
     ubuntu-seed-pocket: updates
     ubuntu-seed-extra-snaps: [core20, snapd]
     ubuntu-seed-kernel: linux-generic
@@ -70,9 +78,6 @@ parts:
       urls:
         - "git://git.launchpad.net/~ubuntu-core-dev/ubuntu-seeds/+git/"
       branch: jammy
-    ubuntu-seed-components:
-      - main
-      - restricted
     ubuntu-seed-pocket: updates
     ubuntu-seed-extra-snaps: [core20, snapd]
     ubuntu-seed-kernel: linux-generic

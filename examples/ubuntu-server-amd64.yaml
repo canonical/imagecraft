@@ -1,11 +1,30 @@
 name: ubuntu-server-amd64
 version: 22.04
-base: ubuntu@22.04
 series: jammy
 platforms:
   amd64:
     build-for: [amd64]
     build-on: [amd64]
+
+package-repositories:
+  - type: apt
+    components: [main, restricted]
+    suites: [jammy]
+    url: http://archive.ubuntu.com/ubuntu/
+    flavor: ubuntu
+    pocket: proposed
+    used-for: build
+  - type: apt
+    components: [main, multiverse]
+    suites: [jammy]
+    used-for: run
+  - type: apt
+    ppa: canonical-foundations/ubuntu-image
+    used-for: build
+  - type: apt
+    ppa: canonical-foundations/ubuntu-image-private-test
+    auth: "sil2100:vVg74j6SM8WVltwpxDRJ"
+    used-for: run
 
 parts:
   gadget:
@@ -24,9 +43,6 @@ parts:
       - minimal
       - standard
       - cloud-image
-    ubuntu-seed-components:
-      - main
-      - restricted
     ubuntu-seed-pocket: updates
     ubuntu-seed-germinate:
       urls:
@@ -40,7 +56,6 @@ parts:
     ubuntu-seed-kernel: linux-image-generic
     ubuntu-seed-extra-snaps: [core20, snapd]
     ubuntu-seed-extra-packages: [hello-ubuntu-image-public]
-    ubuntu-seed-active-kernel: linux-generic
     stage:
       - -etc/cloud/cloud.cfg.d/90_dpkg.cfg
   cloud-init:

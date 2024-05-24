@@ -46,6 +46,7 @@ def test_lifecycle_args(
         base="ubuntu@22.04",
         project_name="default",
         project_vars={"version": "1.0"},
+        package_repositories=None,
     )
 
 
@@ -73,6 +74,7 @@ def test_lifecycle_args_no_platform(
         base="ubuntu@22.04",
         project_name="default",
         project_vars={"version": "1.0"},
+        package_repositories=None,
     )
 
     assert lifecycle_service_no_platform._platform == util.get_host_architecture()
