@@ -14,7 +14,7 @@ pydantic==1.10.15
 pydantic-yaml==0.11.2
 pyxdg==0.28
 PyYAML==6.0.1
-requests==2.31.0
+requests==2.32.2
 requests-unixsocket==0.3.0
 types-Deprecated==1.2.9.20240311
 types-PyYAML==6.0.12.20240311
