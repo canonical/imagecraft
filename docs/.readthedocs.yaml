@@ -11,8 +11,10 @@ build:
   tools:
     python: "3.11"
   jobs:
-    post_checkout:
-      - python3 docs/build_requirements.py
+    pre_install:
+      - cd docs && pip install craft-parts
+      - cd docs && python3 .sphinx/build_requirements.py
+      - git fetch --unshallow || true
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:

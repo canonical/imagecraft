@@ -124,7 +124,8 @@ venv.bak/
 
 # mkdocs documentation
 /site
-/docs/common
+/docs/common/*
+!/docs/common/.gitkeep
 
 # mypy
 .mypy_cache/

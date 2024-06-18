@@ -1,6 +1,4 @@
 import sys
-import os
-import re
 
 sys.path.append("./")
 from custom_conf import *
@@ -67,8 +65,8 @@ def IsMyStParserUsed():
     )
 
 
-def DeduplicateExtensions(extensionNames: list[str]):
-    extensionNames = list(dict.fromkeys(extensionNames))
+def DeduplicateExtensions(extensionNames: [str]):
+    extensionNames = dict.fromkeys(extensionNames)
     resultList = []
     encounteredCanonicalExtensions = []
 
@@ -95,6 +93,8 @@ if __name__ == "__main__":
         "sphinx-copybutton",
         "sphinx-design",
         "sphinxcontrib-jquery",
+        "watchfiles",
+        "GitPython",
     ]
 
     requirements.extend(custom_required_modules)
@@ -122,12 +122,7 @@ if __name__ == "__main__":
     requirements = list(dict.fromkeys(requirements))
     requirements.sort()
 
-    on_rtd = os.environ.get("READTHEDOCS") == "True"
-    if on_rtd:
-        reqs_location = re.sub("^/?", "", html_context["github_folder"])
-    else:
-        reqs_location = ""
-    with open(reqs_location + ".sphinx/requirements.txt", "w") as requirements_file:
+    with open(".sphinx/requirements.txt", 'w') as requirements_file:
         requirements_file.write(
             "# DO NOT MODIFY THIS FILE DIRECTLY!\n"
             "#\n"

@@ -1,8 +1,14 @@
 import sys
 import os
+import requests
+from urllib.parse import urlparse
+from git import Repo, InvalidGitRepositoryError
+import time
 
 sys.path.append("./")
 from custom_conf import *
+
+sys.path.append(".sphinx/")
 from build_requirements import *
 
 # Configuration file for the Sphinx documentation builder.
@@ -124,7 +130,11 @@ linkcheck_anchors_ignore_for_url.extend(custom_linkcheck_anchors_ignore_for_url)
 
 # Tags cannot be added directly in custom_conf.py, so add them here
 for tag in custom_tags:
-    tags.add(tag)  # type: ignore
+    tags.add(tag)
+
+# html_context['get_contribs'] is a function and cannot be
+# cached (see https://github.com/sphinx-doc/sphinx/issues/12300)
+suppress_warnings = ["config.cache"]
 
 ############################################################
 ### Styling
@@ -159,10 +169,11 @@ html_css_files = [
     "header.css",
     "github_issue_links.css",
     "furo_colors.css",
+    "footer.css",
 ]
 html_css_files.extend(custom_html_css_files)
 
-html_js_files = ["header-nav.js"]
+html_js_files = ["header-nav.js", "footer.js"]
 if (
     "github_issues" in html_context
     and html_context["github_issues"]
@@ -170,3 +181,59 @@ if (
 ):
     html_js_files.append("github_issue_links.js")
 html_js_files.extend(custom_html_js_files)
+
+#############################################################
+# Display the contributors
+
+
+def get_contributors_for_file(
+    github_url,
+    github_folder,
+    pagename,
+    page_source_suffix,
+    display_contributors_since=None,
+):
+    filename = f"{pagename}{page_source_suffix}"
+    paths = html_context["github_folder"][1:] + filename
+
+    try:
+        repo = Repo(".")
+    except InvalidGitRepositoryError:
+        cwd = os.getcwd()
+        ghfolder = html_context["github_folder"][:-1]
+        if ghfolder and cwd.endswith(ghfolder):
+            repo = Repo(cwd.rpartition(ghfolder)[0])
+        else:
+            print("The local Git repository could not be found.")
+            return
+
+    since = (
+        display_contributors_since
+        if display_contributors_since and display_contributors_since.strip()
+        else None
+    )
+
+    commits = repo.iter_commits(paths=paths, since=since)
+
+    contributors_dict = {}
+    for commit in commits:
+        contributor = commit.author.name
+        if (
+            contributor not in contributors_dict
+            or commit.committed_date > contributors_dict[contributor]["date"]
+        ):
+            contributors_dict[contributor] = {
+                "date": commit.committed_date,
+                "sha": commit.hexsha,
+            }
+    # The github_page contains the link to the contributor's latest commit.
+    contributors_list = [
+        {"name": name, "github_page": f"{github_url}/commit/{data['sha']}"}
+        for name, data in contributors_dict.items()
+    ]
+    sorted_contributors_list = sorted(contributors_list, key=lambda x: x["name"])
+    return sorted_contributors_list
+
+
+html_context["get_contribs"] = get_contributors_for_file
+#############################################################

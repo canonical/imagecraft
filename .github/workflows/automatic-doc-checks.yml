@@ -1,15 +1,9 @@
 name: Main Documentation Checks
 
 on:
-  pull_request:
-    paths:
-      - 'docs/**'
-  push:
-    paths:
-      - 'docs/**'
-  workflow_dispatch:
-    paths:
-      - 'docs/**'
+  - push
+  - pull_request
+  - workflow_dispatch
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
