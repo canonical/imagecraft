@@ -1,13 +1,13 @@
 .. _reference:
 
 Reference
-*********
+=========
+
+This section of the documentation contains an in-depth description of
+Imagecraft's components, commands and keywords.
 
 .. toctree::
    :maxdepth: 1
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
+   
+   imagecraft.yaml <imagecraft.yaml>
+   plugins
