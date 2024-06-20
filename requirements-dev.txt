@@ -10,6 +10,8 @@ craft-providers==1.23.1
 Deprecated==1.2.14
 distro==1.9.0
 exceptiongroup==1.2.1
+gitdb==4.0.11
+GitPython==3.1.43
 httplib2==0.22.0
 idna==3.7
 importlib_metadata==7.1.0
@@ -34,6 +36,7 @@ PyYAML==6.0.1
 requests==2.32.3
 requests-unixsocket==0.3.0
 six==1.16.0
+smmap==5.0.1
 tomli==2.0.1
 types-Deprecated==1.2.9.20240311
 types-PyYAML==6.0.12.20240311

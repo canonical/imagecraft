@@ -139,11 +139,13 @@ custom_myst_extensions: list[str] = []
 # sphinx_reredirects, sphinxcontrib.jquery, sphinxext.opengraph
 custom_extensions = [
     "sphinx_tabs.tabs",
+    "sphinx.ext.ifconfig",
     "canonical.youtube-links",
     "canonical.related-links",
     "canonical.custom-rst-roles",
     "canonical.terminal-output",
     "notfound.extension",
+    "sphinxcontrib.details.directive",
 ]
 
 # Add custom required Python modules that must be added to the
@@ -155,6 +157,7 @@ custom_extensions = [
 # sphinxext-opengraph
 custom_required_modules: list[str] = [
     "craft-parts==1.31.0",
+    "sphinxcontrib-details-directive==0.1.0",
 ]
 
 # Add files or directories that should be excluded from processing.
@@ -164,18 +167,14 @@ custom_excludes = [
     # documents (so they generate "duplicate label" errors) or they aren't
     # used in this documentation at all (so they generate "unreferenced"
     # errors).
-    "common/craft-parts/explanation/filesets.rst",
-    "common/craft-parts/explanation/lifecycle.rst",
     "common/craft-parts/explanation/overlay_parameters.rst",
     "common/craft-parts/explanation/overlays.rst",
-    "common/craft-parts/explanation/parts.rst",
     "common/craft-parts/explanation/how_parts_are_built.rst",
     "common/craft-parts/explanation/overlay_step.rst",
     "common/craft-parts/explanation/dump_plugin.rst",
     "common/craft-parts/how-to/craftctl.rst",
     "common/craft-parts/how-to/include_files.rst",
     "common/craft-parts/how-to/override_build.rst",
-    "common/craft-parts/reference/parts_steps.rst",
     "common/craft-parts/reference/step_execution_environment.rst",
     "common/craft-parts/reference/step_output_directories.rst",
     "common/craft-parts/reference/plugins/ant_plugin.rst",
@@ -205,7 +204,9 @@ custom_html_js_files: list[str] = []
 # Specify a reST string that is included at the end of each file.
 # If commented out, use the default (which pulls the reuse/links.txt
 # file into each reST file).
-custom_rst_epilog = ""
+custom_rst_epilog = """
+.. include:: /reuse/links.txt
+"""
 
 # By default, the documentation includes a feedback button at the top.
 # You can disable it by setting the following configuration to True.

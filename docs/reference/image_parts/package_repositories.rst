@@ -183,7 +183,7 @@ The following properties are supported for Personal Package Archives:
 **Format:** ``<user>:<password>``
 
 **Examples:**
-  - auth: "username:vVg74j6SM8WVltwpxDRJ"
+  - auth: "username:password"
 
 .. warning::
    If you use this key, either make sure your configuration file is not exposed, or the actual value of the key is only injected at runtime to avoid storing/versioning secrets.
@@ -204,7 +204,7 @@ The following properties are supported for Personal Package Archives:
 **Format:** 40 characters long string
 
 **Examples:**
-  - key-id: CDE5112BD4104F975FC8A53FD4C0B668FD4C9139
+  - key-id: ABC5112AB4104F975AB8A53FD4C0B668FD4C9139
 
 Examples
 --------
@@ -226,6 +226,6 @@ Examples
       used-for: build
     - type: apt
       ppa: canonical-foundations/ubuntu-image-private-test
-      auth: "user:vVg74j6SM8WVltwpxDRJ"
-      key-id: "CDE5112BD4104F975FC8A53FD4C0B668FD4C9139"
+      auth: "user:password"
+      key-id: "ABC5112AB4104F975AB8A53FD4C0B668FD4C9139"
       used-for: run

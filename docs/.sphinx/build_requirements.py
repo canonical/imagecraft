@@ -19,7 +19,7 @@ legacyCanonicalSphinxExtensionNames = [
 ]
 
 
-def IsAnyCanonicalSphinxExtensionUsed():
+def IsAnyCanonicalSphinxExtensionUsed() -> bool:
     for extension in custom_extensions:
         if (
             extension.startswith("canonical.")
@@ -30,11 +30,11 @@ def IsAnyCanonicalSphinxExtensionUsed():
     return False
 
 
-def IsNotFoundExtensionUsed():
+def IsNotFoundExtensionUsed() -> bool:
     return "notfound.extension" in custom_extensions
 
 
-def IsSphinxTabsUsed():
+def IsSphinxTabsUsed() -> bool:
     for extension in custom_extensions:
         if extension.startswith("sphinx_tabs."):
             return True
@@ -42,13 +42,13 @@ def IsSphinxTabsUsed():
     return False
 
 
-def AreRedirectsDefined():
+def AreRedirectsDefined() -> bool:
     return ("sphinx_reredirects" in custom_extensions) or (
         ("redirects" in globals()) and (redirects is not None) and (len(redirects) > 0)
     )
 
 
-def IsOpenGraphConfigured():
+def IsOpenGraphConfigured() -> bool:
     if "sphinxext.opengraph" in custom_extensions:
         return True
 
@@ -59,13 +59,13 @@ def IsOpenGraphConfigured():
     return False
 
 
-def IsMyStParserUsed():
+def IsMyStParserUsed() -> bool:
     return ("myst_parser" in custom_extensions) or (
         "custom_myst_extensions" in globals()
     )
 
 
-def DeduplicateExtensions(extensionNames: [str]):
+def DeduplicateExtensions(extensionNames: [str]) -> list[str]:
     extensionNames = dict.fromkeys(extensionNames)
     resultList = []
     encounteredCanonicalExtensions = []
@@ -122,7 +122,7 @@ if __name__ == "__main__":
     requirements = list(dict.fromkeys(requirements))
     requirements.sort()
 
-    with open(".sphinx/requirements.txt", 'w') as requirements_file:
+    with open(".sphinx/requirements.txt", "w") as requirements_file:
         requirements_file.write(
             "# DO NOT MODIFY THIS FILE DIRECTLY!\n"
             "#\n"
