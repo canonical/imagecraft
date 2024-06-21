@@ -9,21 +9,19 @@ platforms:
 package-repositories:
   - type: apt
     components: [main, restricted]
-    suites: [jammy]
     url: http://archive.ubuntu.com/ubuntu/
     flavor: ubuntu
     pocket: proposed
     used-for: build
   - type: apt
     components: [main, multiverse]
-    suites: [jammy]
     used-for: run
   - type: apt
     ppa: canonical-foundations/ubuntu-image
     used-for: build
   - type: apt
     ppa: canonical-foundations/ubuntu-image-private-test
-    auth: "sil2100:vVg74j6SM8WVltwpxDRJ"
+    auth: "username:password"
     used-for: run
 
 parts:
@@ -35,14 +33,6 @@ parts:
     gadget-target: server
   rootfs:
     plugin: ubuntu-seed
-    ubuntu-seed-sources:
-      - "git://git.launchpad.net/~ubuntu-core-dev/ubuntu-seeds/+git/"
-    ubuntu-seed-source-branch: jammy
-    ubuntu-seed-seeds:
-      - server
-      - minimal
-      - standard
-      - cloud-image
     ubuntu-seed-pocket: updates
     ubuntu-seed-germinate:
       urls:

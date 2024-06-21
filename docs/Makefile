@@ -11,6 +11,7 @@ BUILDDIR      = _build
 VENVDIR       = $(SPHINXDIR)/venv
 PA11Y         = $(SPHINXDIR)/node_modules/pa11y/bin/pa11y.js --config $(SPHINXDIR)/pa11y.json
 VENV          = $(VENVDIR)/bin/activate
+ADDPREREQS    ?= craft-parts==1.31.0
 
 .PHONY: help full-help woke-install pa11y-install install run html epub serve \
         clean clean-doc spelling linkcheck woke pa11y Makefile
@@ -39,8 +40,14 @@ full-help: $(VENVDIR)
 # Shouldn't assume that venv is available on Ubuntu by default; discussion here:
 # https://bugs.launchpad.net/ubuntu/+source/python3.4/+bug/1290847
 $(SPHINXDIR)/requirements.txt:
-	python3 build_requirements.py
-	python3 -c "import venv" || sudo apt install python3-venv
+	@python3 -c "import venv" || \
+        (echo "You must install python3-venv before you can build the documentation."; exit 1)
+	python3 -m venv $(VENVDIR)
+	@if [ ! -z "$(ADDPREREQS)" ]; then \
+          . $(VENV); pip install \
+                         $(PIPOPTS) --require-virtualenv $(ADDPREREQS); \
+        fi
+	. $(VENV); python3 $(SPHINXDIR)/build_requirements.py
 
 # If requirements are updated, venv should be rebuilt and timestamped.
 $(VENVDIR): $(SPHINXDIR)/requirements.txt
