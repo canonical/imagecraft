@@ -25,6 +25,7 @@ import pydantic
 from craft_archives.repo import errors  # type: ignore[import-untyped]
 from craft_archives.repo.package_repository import (  # type: ignore[import-untyped]
     KeyIdStr,
+    PocketEnum,
 )
 
 # pyright: reportMissingTypeStubs=false
@@ -40,8 +41,7 @@ from craft_archives.repo.package_repository import (
 from pydantic import (
     AnyUrl,
     ConstrainedStr,
-    FileUrl,
-    root_validator,  # pyright: ignore[reportUnknownVariableType]
+    FileUrl,  # pyright: ignore[reportUnknownVariableType]
 )
 
 from imagecraft.models.errors import PackageRepositoryValidationError
@@ -59,15 +59,6 @@ class UsedForEnum(enum.Enum):
     BUILD = "build"  # use the package repository only when building the image.
     RUN = "run"  # use the package repository only in the final image.
     ALWAYS = "always"  # use the package repository when building the image and keep it in the final image.
-
-
-class PocketEnum(enum.Enum):
-    """Enum values that represent possible pocket values."""
-
-    RELEASE = "release"
-    UPDATES = "updates"
-    PROPOSED = "proposed"
-    SECURITY = "security"
 
 
 class PackageRepository(BasePackageRepository):  # type:ignore[misc]
@@ -127,29 +118,13 @@ class PackageRepositoryPPA(BasePackageRepositoryAptPPA):  # type:ignore[misc]
 class PackageRepositoryApt(BasePackageRepositoryApt):  # type:ignore[misc]
     """Imagecraft APT package repository definition."""
 
-    url: AnyUrl | FileUrl | None  # pyright: ignore[reportIncompatibleVariableOverride]
-    key_id: KeyIdStr | None = (  # pyright: ignore[reportIncompatibleVariableOverride]
-        pydantic.Field(
-            alias="key-id",
-        )
+    url: AnyUrl | FileUrl | None  # type: ignore[assignment] # pyright: ignore[reportIncompatibleVariableOverride]
+    key_id: KeyIdStr | None = pydantic.Field(  # type: ignore[assignment]
+        alias="key-id",
     )
     used_for: UsedForEnum = UsedForEnum.ALWAYS
-    pocket: PocketEnum = PocketEnum.RELEASE
+    pocket: PocketEnum  # type: ignore[assignment] # pyright: ignore[reportIncompatibleVariableOverride]
     flavor: str | None
-
-    @root_validator(pre=True)  # pyright: ignore[reportUntypedFunctionDecorator]
-    @classmethod
-    def _set_default_suites(cls, values: dict[str, Any]) -> dict[str, Any]:
-        """Set a default suites value when needed until this is fixed in craft-archives."""
-        components = values.get("components")
-        if (
-            components is not None
-            and len(components) > 0
-            and values.get("suites") is None
-        ):
-            values["suites"] = ["placeholder"]
-
-        return values
 
     @classmethod
     def unmarshal(cls, data: Mapping[str, Any]) -> "PackageRepositoryApt":
@@ -230,7 +205,7 @@ def get_main_package_repository(
     """
     for repo in project_repositories:
         if is_main_package_repository(repo):
-            return repo  # pyright: ignore[reportReturnType]
+            return repo  # type: ignore[return-value] # pyright: ignore[reportReturnType]
             # Due to the previous check we know repo is of type PackageRepositoryApt
 
     raise PackageRepositoryValidationError(
@@ -245,7 +220,7 @@ def get_customization_package_repository(
     """Get the customization package repository from a list."""
     for repo in project_repositories:
         if is_customization_package_repository(repo):
-            return repo  # pyright: ignore[reportReturnType]
+            return repo  # type: ignore[return-value] # pyright: ignore[reportReturnType]
             # Due to the previous check we know repo is of type PackageRepositoryApt
 
     return None

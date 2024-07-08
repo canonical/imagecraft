@@ -35,14 +35,15 @@ platforms:
 package-repositories:
   - type: apt
     components: [main,restricted]
-    suites: [jammy]
     url: http://archive.ubuntu.com/ubuntu/
     flavor: ubuntu
+    series: jammy
     pocket: proposed
     used-for: build
   - type: apt
     components: [main,restricted]
-    suites: [jammy]
+    series: jammy
+    pocket: release
     url: http://archive.ubuntu.com/ubuntu/
     used-for: run
   - type: apt
@@ -130,9 +131,9 @@ platforms:
 package-repositories:
   - type: apt
     components: [main,restricted]
-    suites: [jammy]
     url: http://archive.ubuntu.com/ubuntu/
     flavor: ubuntu
+    series: jammy
     pocket: proposed
 
 parts:
