@@ -156,7 +156,7 @@ custom_extensions = [
 # sphinx-notfound-page, sphinx-reredirects, sphinx-tabs, sphinxcontrib-jquery,
 # sphinxext-opengraph
 custom_required_modules: list[str] = [
-    "craft-parts==1.31.0",
+    "craft-parts==1.33.0",
     "sphinxcontrib-details-directive==0.1.0",
 ]
 
