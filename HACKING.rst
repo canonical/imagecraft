@@ -18,7 +18,7 @@ Tooling
 We use a large number of tools for our project. Most of these are installed for
 you with tox, but you'll need to install:
 
-- Python 3.10 (default on Ubuntu 22.04) with setuptools.
+- Python 3.12 (default on Ubuntu 24.04) with setuptools.
 - tox_ version 4.6 or later
 - ShellCheck_  (also available via snap: ``snap install shellcheck``)
 
@@ -51,9 +51,9 @@ If you want to install the environments but not run the tests, you can run::
 
 If you'd like to run the tests with a newer version of Python, you can pass a
 specific environment. You must have an appropriately versioned Python
-interpreter installed. For example, to run with Python 3.10, run::
+interpreter installed. For example, to run with Python 3.12, run::
 
-    tox -e test-py3.10
+    tox -e test-py3.12
 
 While the use of pre-commit_ is optional, it is highly encouraged, as it runs
 automatic fixes for files when ``git commit`` is called, including code

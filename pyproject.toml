@@ -1,6 +1,6 @@
 [project]
 name = "imagecraft"
-dynamic = ["version", "readme", "description", "license", "authors", "urls"]
+dynamic = ["version", "readme", "description", "license", "authors", "urls", "scripts"]
 dependencies = [
     "craft-archives==1.2.0",
     "craft-application==1.2.1",
@@ -12,7 +12,7 @@ classifiers = [
     "Development Status :: 1 - Planning",
     "License :: OSI Approved :: GNU General Public License (GPL)",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.12",
 ]
 requires-python = ">=3.10"
 
@@ -145,7 +145,7 @@ include = ["*craft*"]
 namespaces = false
 
 [tool.black]
-target-version = ["py310"]
+target-version = ["py312"]
 
 [tool.codespell]
 ignore-words-list = "buildd,crate,keyserver,comandos,ro,dedent,dedented"
@@ -177,7 +177,7 @@ exclude_also = ["if (typing\\.)?TYPE_CHECKING:"]
 
 [tool.pyright]
 strict = ["imagecraft"]
-pythonVersion = "3.10"
+pythonVersion = "3.12"
 pythonPlatform = "Linux"
 exclude = [
     "**/.*",
@@ -192,7 +192,7 @@ exclude = [
 ]
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.12"
 exclude = ["build", "tests", "results", "setup.py"]
 warn_unused_configs = true
 warn_redundant_casts = true
@@ -219,7 +219,7 @@ ignore_missing_imports = true
 
 [tool.ruff]
 line-length = 88
-target-version = "py310"
+target-version = "py312"
 src = ["imagecraft", "tests"]
 extend-exclude = ["docs", "__pycache__"]
 # Follow ST063 - Maintaining and updating linting specifications for updating these.
