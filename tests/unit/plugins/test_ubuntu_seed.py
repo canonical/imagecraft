@@ -19,10 +19,12 @@ from unittest.mock import patch
 import craft_parts
 import pydantic
 import pytest
+from craft_archives.repo.package_repository import (  # type: ignore[import-untyped]
+    PocketEnum,
+)
 from craft_parts import plugins
 from imagecraft.models.package_repository import (
     PackageRepositoryApt,
-    PocketEnum,
     UsedForEnum,
 )
 from imagecraft.plugins import ubuntu_seed

@@ -156,7 +156,7 @@ custom_extensions = [
 # sphinx-notfound-page, sphinx-reredirects, sphinx-tabs, sphinxcontrib-jquery,
 # sphinxext-opengraph
 custom_required_modules: list[str] = [
-    "craft-parts==1.31.0",
+    "craft-parts==1.33.0",
     "sphinxcontrib-details-directive==0.1.0",
 ]
 
@@ -177,6 +177,7 @@ custom_excludes = [
     "common/craft-parts/how-to/override_build.rst",
     "common/craft-parts/reference/step_execution_environment.rst",
     "common/craft-parts/reference/step_output_directories.rst",
+    "common/craft-parts/reference/partition_specific_output_directory_variables.rst",
     "common/craft-parts/reference/plugins/ant_plugin.rst",
     "common/craft-parts/reference/plugins/autotools_plugin.rst",
     "common/craft-parts/reference/plugins/cmake_plugin.rst",
@@ -189,6 +190,7 @@ custom_excludes = [
     "common/craft-parts/reference/plugins/nil_plugin.rst",
     "common/craft-parts/reference/plugins/npm_plugin.rst",
     "common/craft-parts/reference/plugins/python_plugin.rst",
+    "common/craft-parts/reference/plugins/qmake_plugin.rst",
     "common/craft-parts/reference/plugins/rust_plugin.rst",
     "common/craft-parts/reference/plugins/scons_plugin.rst",
 ]

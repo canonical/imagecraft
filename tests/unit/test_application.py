@@ -25,9 +25,9 @@ platforms:
 package-repositories:
   - type: apt
     components: [main,restricted]
-    suites: [jammy]
     url: http://archive.ubuntu.com/ubuntu/
     flavor: ubuntu
+    series: jammy
     pocket: proposed
     used-for: build
   - type: apt

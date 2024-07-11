@@ -121,7 +121,9 @@ def test_project_package_repositories_ppa_invalid():
 
 def test_get_main_package_repository_error():
     package_repositories: list[PackageRepositoryPPA | PackageRepositoryApt] = [
-        PackageRepositoryApt.unmarshal({"type": "apt", "used-for": "run"}),
+        PackageRepositoryApt.unmarshal(
+            {"type": "apt", "used-for": "run", "pocket": "release"},
+        ),
     ]
     with pytest.raises(PackageRepositoryValidationError):
         get_main_package_repository(package_repositories)
@@ -134,15 +136,21 @@ def test_get_main_package_repository_error():
             "More than one APT package repository was defined to build the image.",
             PackageRepositoryValidationError,
             [
-                PackageRepositoryApt.unmarshal({"type": "apt", "used-for": "build"}),
-                PackageRepositoryApt.unmarshal({"type": "apt", "used-for": "build"}),
+                PackageRepositoryApt.unmarshal(
+                    {"type": "apt", "used-for": "build", "pocket": "release"},
+                ),
+                PackageRepositoryApt.unmarshal(
+                    {"type": "apt", "used-for": "build", "pocket": "release"},
+                ),
             ],
         ),
         (
             "Missing a package repository to build the image.",
             PackageRepositoryValidationError,
             [
-                PackageRepositoryApt.unmarshal({"type": "apt", "used_for": "run"}),
+                PackageRepositoryApt.unmarshal(
+                    {"type": "apt", "used_for": "run", "pocket": "release"},
+                ),
                 PackageRepositoryPPA.unmarshal(
                     {"type": "apt", "ppa": "test/test", "used-for": "build"},
                 ),
@@ -152,8 +160,12 @@ def test_get_main_package_repository_error():
             "More than one APT package repository was defined to customize the image.",
             PackageRepositoryValidationError,
             [
-                PackageRepositoryApt.unmarshal({"type": "apt", "used-for": "always"}),
-                PackageRepositoryApt.unmarshal({"type": "apt", "used-for": "run"}),
+                PackageRepositoryApt.unmarshal(
+                    {"type": "apt", "used-for": "always", "pocket": "release"},
+                ),
+                PackageRepositoryApt.unmarshal(
+                    {"type": "apt", "used-for": "run", "pocket": "release"},
+                ),
             ],
         ),
     ],
