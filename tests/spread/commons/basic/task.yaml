@@ -1,0 +1,3 @@
+summary: Run imagecraft smoke test
+execute: |
+    imagecraft --help | MATCH '^Usage:'

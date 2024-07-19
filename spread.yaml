@@ -1,0 +1,132 @@
+project: imagecraft
+
+environment:
+  LANG: "C.UTF-8"
+  LANGUAGE: "en"
+  # build the snap with lxd
+  SNAPCRAFT_BUILD_ENVIRONMENT: lxd
+
+exclude:
+  - .github
+  - .tox
+  - .venv
+  - .*_cache
+
+backends:
+  google:
+    key: '$(HOST: echo "$SPREAD_GOOGLE_KEY")'
+    location: snapd-spread/us-east1-b
+    plan: n2-standard-2
+    halt-timeout: 2h
+    systems:
+      - ubuntu-20.04-64:
+          storage: 45G
+          workers: 1
+      - ubuntu-22.04-64:
+          storage: 45G
+          workers: 1
+      - ubuntu-24.04-64:
+          storage: 45G
+          workers: 1
+  google-arm:
+    type: google
+    key: '$(HOST: echo "$SPREAD_GOOGLE_KEY")'
+    location: snapd-spread/us-central1-a
+    plan: t2a-standard-1
+    halt-timeout: 2h
+    systems:
+      - ubuntu-20.04-arm-64:
+          image: ubuntu-os-cloud/ubuntu-2004-lts-arm64
+          workers: 1
+          storage: 45G
+      - ubuntu-22.04-arm-64:
+          image: ubuntu-os-cloud/ubuntu-2204-lts-arm64
+          workers: 1
+          storage: 45G
+  qemu:
+    memory: 4G
+    systems:
+      - ubuntu-20.04-64:
+          username: ubuntu
+          password: ubuntu
+      - ubuntu-22.04-64:
+          username: ubuntu
+          password: ubuntu
+      - ubuntu-24.04-64:
+          username: ubuntu
+          password: ubuntu
+
+path: /home/imagecraft
+
+prepare: |
+  # Make sure there is a hostname file because it could be missing
+  # We will need it to have debootstrap properly run
+  if [ ! -f /etc/hostname ]; then
+      echo "hostname" > /etc/hostname
+  fi
+  # NOTE: This part of the code needs to be in spread.yaml as it runs before
+  # the rest of the source code (including the tests/lib directory) is
+  # around. The purpose of this code is to fix some connectivity issues and
+  # then apply the delta of the git repository.
+
+  # apt update is hanging on security.ubuntu.com with IPv6, prefer IPv4 over IPv6
+  cat <<EOF > gai.conf
+  precedence  ::1/128       50
+  precedence  ::/0          40
+  precedence  2002::/16     30
+  precedence ::/96          20
+  precedence ::ffff:0:0/96 100
+  EOF
+  if ! mv gai.conf /etc/gai.conf; then
+      echo "/etc/gai.conf is not writable, ubuntu-core system? apt update won't be affected in that case"
+      rm -f gai.conf
+  fi
+  if command -v restorecon ; then
+      # restore proper context otherwise SELinux may complain
+      restorecon -v /etc/gai.conf
+  fi
+
+  if systemctl is-enabled unattended-upgrades.service; then
+    systemctl stop unattended-upgrades.service
+    systemctl mask unattended-upgrades.service
+  fi
+
+  # Make sure ssh service is restarted after it is killed by spread (pkill -o -HUP sshd)
+  # during the machine setup in google systems. For more details see lp:2011458
+  if [ "$SPREAD_BACKEND" = "google" ] && [[ "$SPREAD_SYSTEM" == ubuntu-2* ]] && ! systemctl is-active ssh; then
+      systemctl restart ssh
+  fi
+
+  apt update
+  apt install -y snapd libc6-dev git
+  if [[ ! "$SPREAD_BACKEND" == *-arm ]]; then
+      apt install -y gcc-multilib binfmt-support qemu-user-static
+  fi
+
+  snap install core24
+  snap install yq
+  snap install snapcraft --classic
+
+  # Setup lxd
+  # Make sure we use the snap version
+  apt remove -y lxd
+  snap install lxd
+  lxd init --auto
+
+  # Build and install the snap except for series older than 20.04
+  # In this case we expect to find an already built snap in the current dir
+  if [[ "$SPREAD_SYSTEM" != ubuntu-1* ]]; then
+    rm -rf imagecraft_*.snap || true
+    snapcraft
+  fi
+
+  snap install --classic --dangerous imagecraft_*.snap
+
+debug: |
+  cat /root/.local/state/snapcraft/log/snapcraft-*.log
+
+suites:
+  tests/spread/commons/:
+    summary: Common integration tests for imagecraft
+
+kill-timeout: 30m
