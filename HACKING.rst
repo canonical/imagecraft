@@ -85,6 +85,14 @@ You can also see all the environments by simply running ``tox list``
 Running ``tox run -m format`` and ``tox run -m lint`` before committing code is
 recommended.
 
+Maintaining test helpers
+########################
+
+Spread tests rely on [snapd-testing-tools](https://github.com/snapcore/snapd-testing-tools). To update the subtree of this project, run::
+
+    git subtree pull --prefix tests/lib/external/snapd-testing-tools/ https://github.com/snapcore/snapd-testing-tools.git main --squash
+
+
 .. _Black: https://black.readthedocs.io
 .. _`Canonical contributor licence agreement`: http://www.ubuntu.com/legal/contributors/
 .. _deadsnakes: https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa
