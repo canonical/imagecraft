@@ -1,5 +1,5 @@
 ---
-ignore-from-file: [.gitignore]
+ignore-from-file: [.gitignore, .yamlignore]
 
 extends: default
 

@@ -146,10 +146,11 @@ namespaces = false
 
 [tool.black]
 target-version = ["py312"]
+extend-exclude = "tests/lib/external/"
 
 [tool.codespell]
 ignore-words-list = "buildd,crate,keyserver,comandos,ro,dedent,dedented"
-skip = ".tox,.git,build,.*_cache,__pycache__,*.tar,*.snap,*.png,./node_modules,./docs/_build,./docs/env,.direnv,.venv,venv,.vscode,results"
+skip = ".tox,.git,build,.*_cache,__pycache__,*.tar,*.snap,*.png,./node_modules,./docs/_build,./docs/env,.direnv,.venv,venv,.vscode,results,tests/lib/"
 quiet-level = 3
 check-filenames = true
 
@@ -189,6 +190,7 @@ exclude = [
     "build",
     "setup.py",
     "results",
+    "tests/lib/",
 ]
 
 [tool.mypy]
@@ -221,7 +223,7 @@ ignore_missing_imports = true
 line-length = 88
 target-version = "py312"
 src = ["imagecraft", "tests"]
-extend-exclude = ["docs", "__pycache__"]
+extend-exclude = ["docs", "__pycache__", "tests/lib/"]
 # Follow ST063 - Maintaining and updating linting specifications for updating these.
 lint.select = [ # Base linting rule selections.
     # See the internal document for discussion:
