@@ -4,7 +4,7 @@
 pack
 ====
 
-Process parts and create the final artefact.
+Process parts and create the final artifact.
 
 
 Usage

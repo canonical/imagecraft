@@ -4,7 +4,7 @@
 pull
 ====
 
-Download or retrieve artefacts defined for a part. If part names
+Download or retrieve artifacts defined for a part. If part names
 are specified only those parts will be pulled, otherwise all parts
 will be pulled.
 

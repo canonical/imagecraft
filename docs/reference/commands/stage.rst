@@ -4,7 +4,7 @@
 stage
 =====
 
-Stage built artefacts into a common staging area. If part names are
+Stage built artifacts into a common staging area. If part names are
 specified only those parts will be staged. The default is to stage
 all parts.
 

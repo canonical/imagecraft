@@ -11,7 +11,7 @@ BUILDDIR      = _build
 VENVDIR       = $(SPHINXDIR)/venv
 PA11Y         = $(SPHINXDIR)/node_modules/pa11y/bin/pa11y.js --config $(SPHINXDIR)/pa11y.json
 VENV          = $(VENVDIR)/bin/activate
-ADDPREREQS    ?= craft-parts==1.33.0
+ADDPREREQS    ?= craft-parts==1.33.0 craft-application==1.2.1 craft-archives==1.2.0
 
 .PHONY: help full-help woke-install pa11y-install install run html epub serve \
         clean clean-doc spelling linkcheck woke pa11y Makefile
@@ -75,7 +75,7 @@ pa11y-install:
 install: $(VENVDIR)
 
 run: install
-	. $(VENV); sphinx-autobuild -b dirhtml "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS)
+	. $(VENV); sphinx-autobuild -b dirhtml "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) --ignore=**/reference/commands/*.rst
 
 # Doesn't depend on $(BUILDDIR) to rebuild properly at every run.
 html: install

@@ -4,7 +4,7 @@
 clean
 =====
 
-Clean up artefacts belonging to parts. If no parts are specified,
+Clean up artifacts belonging to parts. If no parts are specified,
 remove the packing environment.
 
 

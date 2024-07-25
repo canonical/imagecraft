@@ -4,7 +4,7 @@
 build
 =====
 
-Build artefacts defined for a part. If part names are specified only
+Build artifacts defined for a part. If part names are specified only
 those parts will be built, otherwise all parts will be built.
 
 

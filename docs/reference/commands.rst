@@ -12,3 +12,8 @@ name is provided, the command applies to the specific part. When no part name is
 provided, the command applies to all parts.
 
 .. include:: commands/lifecycle-commands.rst
+
+Other commands
+--------------
+
+.. include:: commands/other-commands.rst
