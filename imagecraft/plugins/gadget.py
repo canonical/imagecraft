@@ -16,10 +16,9 @@
 
 """Gadget plugin."""
 
-from typing import Any, cast
+from typing import Any, Self, cast
 
 from craft_parts import plugins
-from typing_extensions import Self
 
 
 class GadgetPluginProperties(plugins.PluginProperties):

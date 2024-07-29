@@ -16,11 +16,10 @@
 
 """UbuntuSeed plugin."""
 
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Self, cast
 
 from craft_parts import plugins
 from pydantic import AnyUrl, conlist
-from typing_extensions import Self
 
 from imagecraft.models.package_repository import (
     get_customization_package_repository,

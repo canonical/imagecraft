@@ -1,5 +1,5 @@
 name: imagecraft
-base: core22
+base: core24
 summary: Imagecraft is a craft tool used to create Ubuntu bootable images.
 description: |
     Imagecraft is a craft tool used to create Ubuntu bootable images. It follows
@@ -11,18 +11,30 @@ grade: devel
 license: GPL-3.0
 source-code: https://github.com/canonical/imagecraft
 
+environment:
+  PYTHONPATH: "$SNAP/lib/python3.12/site-packages:${PYTHONPATH}"
+
 apps:
   imagecraft:
-    command: bin/python3 $SNAP/bin/imagecraft
+    command: bin/python $SNAP/bin/imagecraft
     environment:
       PATH: "/snap/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$SNAP/usr/bin:$SNAP/bin"
+      PYTHONHOME: "/usr/"
 
 build-packages:
   - git
   - libapt-pkg-dev
   - libyaml-dev
-  - python3.10-dev
+  - python3.12-dev
+  - python3.12-venv
   - pkg-config
+  - python3-pip
+  - python3-setuptools
+  - python3-wheel
+  - python3-venv
+  - python3-minimal
+  - python3-pkg-resources
+  - python3.12-minimal
 
 parts:
   imagecraft-libs:
@@ -30,23 +42,23 @@ parts:
     build-attributes:
       - enable-patchelf
     stage-snaps:
-      - ubuntu-image
+      # For now use the latest/edge to make sure we use a core24 based ubuntu-image
+      # With python3.12
+      - ubuntu-image/latest/edge
     stage-packages:
       - apt
       - apt-transport-https
       - apt-utils
       - gpgv
       - libpython3-stdlib
-      - libpython3.10-stdlib
-      - libpython3.10-minimal
+      - libpython3.12-stdlib
+      - libpython3.12-minimal
       - python3-pip
       - python3-setuptools
       - python3-wheel
-      - python3-venv
-      - python3-minimal
-      - python3-distutils
       - python3-pkg-resources
-      - python3.10-minimal
+      - python3.12-venv
+      - python3.12-minimal
 
   imagecraft:
     after: [imagecraft-libs]
@@ -61,9 +73,11 @@ parts:
     python-requirements:
       - requirements.txt
     build-environment:
-      - "CFLAGS": "$(pkg-config python-3.10 yaml-0.1 --cflags)"
+      - "PARTS_PYTHON_INTERPRETER": "python3.12"
+      - "CFLAGS": "$(pkg-config python-3.12 yaml-0.1 --cflags)"
     override-build: |
+      python3 --version
       craftctl default
 
-      version="$(python3 setup.py --version)"
-      ${SNAP}/libexec/snapcraft/craftctl set version="$version"
+      version="$(python3.12 setup.py --version)"
+      craftctl set version="$version"
