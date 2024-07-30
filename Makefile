@@ -12,5 +12,10 @@ freeze-requirements:  ## Re-freeze requirements.
 #------------------------------------------------
 
 .PHONY: snap
-snap:  ## Create a Imagecraft snap
+snap:  ## Create a clean Imagecraft snap
 	@snapcraft clean --use-lxd && snapcraft --use-lxd
+
+
+.PHONY: snap-imagecraft-only
+snap-imagecraft-only:  ## Create a Imagecraft snap while only cleaning the imagecraft part
+	@snapcraft clean imagecraft --use-lxd && snapcraft --use-lxd
