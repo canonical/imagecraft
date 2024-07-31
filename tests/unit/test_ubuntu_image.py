@@ -215,7 +215,28 @@ def test_ubuntu_image_cmds_build_rootfs(mocker):
     ) == [
         "cat << EOF > craft.yaml\ntest\nEOF",
         "ubuntu-image classic --workdir work -O output/ craft.yaml",
-        "mv work/chroot/* $CRAFT_PART_INSTALL/",
+        "mv work/rootfs/* $CRAFT_PART_INSTALL/",
+    ]
+
+    assert ubuntu_image_cmds_build_rootfs(
+        series="mantic",
+        version=1,
+        arch="amd64",
+        pocket="proposed",
+        sources=["source1", "source2"],
+        seed_branch="mantic",
+        seeds=["server", "minimal"],
+        components=["main", "restricted"],
+        flavor=None,
+        mirror="http://archive.ubuntu.com/ubuntu/",
+        seed_pocket="updates",
+        kernel="linux-image-generic",
+        extra_snaps=["lxd", "snapd"],
+        debug=True,
+    ) == [
+        "cat << EOF > craft.yaml\ntest\nEOF",
+        "ubuntu-image classic --debug --workdir work -O output/ craft.yaml",
+        "mv work/root $CRAFT_PART_INSTALL/rootfs",
     ]
 
 
@@ -239,6 +260,32 @@ def test_ubuntu_image_pack(mocker):
             "rootfs/path/test",
             "-O",
             "output/path/test",
+        ],
+        universal_newlines=True,
+    )
+
+    ubuntu_image_pack(
+        rootfs_path="rootfs/path/test",
+        gadget_path="gadget/test",
+        output_path="output/path/test",
+        workdir_path="workdir/path/test",
+        image_type="",
+        debug=True,
+    )
+
+    subprocess_patcher.assert_called_with(
+        [
+            "ubuntu-image",
+            "pack",
+            "--workdir",
+            "workdir/path/test",
+            "--gadget-dir",
+            "gadget/test",
+            "--rootfs-dir",
+            "rootfs/path/test",
+            "-O",
+            "output/path/test",
+            "--debug",
         ],
         universal_newlines=True,
     )
