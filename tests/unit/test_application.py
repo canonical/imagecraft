@@ -16,7 +16,7 @@ from pathlib import Path
 
 IMAGECRAFT_YAML = """
 name: ubuntu-server-amd64
-version: "22.04"
+version: "1"
 series: jammy
 platforms:
   amd64:
@@ -59,7 +59,7 @@ parts:
 
 IMAGECRAFT_YAML_NO_GADGET = """
 name: ubuntu-server-amd64
-version: "22.04"
+version: "1"
 series: jammy
 platforms:
   amd64:

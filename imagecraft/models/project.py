@@ -153,6 +153,17 @@ class Project(ProjectModel):
         validate_package_repositories(repositories)
         return repositories
 
+    @validator("version") # pyright: ignore[reportUntypedFunctionDecorator]
+    @classmethod
+    def _validate_version(cls, version: str) -> str:
+        try:
+            int(version)
+        except ValueError as e:
+            raise CraftValidationError(
+                "Invalid version",
+                details="value is not an integer.",
+            ) from e
+        return version
 
     @validator("platforms", pre=True) # pyright: ignore[reportUntypedFunctionDecorator]
     @classmethod

@@ -26,7 +26,7 @@ from imagecraft.image_definition import ImageDefinition
 
 def ubuntu_image_cmds_build_rootfs(  # noqa: PLR0913
     series: str,
-    version: str,
+    version: int,
     arch: str,
     pocket: str,
     sources: list[str],

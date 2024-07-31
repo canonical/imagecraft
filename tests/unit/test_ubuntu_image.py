@@ -32,7 +32,7 @@ from imagecraft.ubuntu_image import (
         (
             ImageDefinition(
                 series="mantic",
-                revision="22.04",
+                revision=1,
                 architecture="amd64",
                 pocket="release",
                 kernel="linux-image-generic",
@@ -69,7 +69,7 @@ from imagecraft.ubuntu_image import (
             ),
             """name: craft-driver
 display-name: Craft Driver
-revision: '22.04'
+revision: 1
 class: preinstalled
 architecture: amd64
 series: mantic
@@ -114,7 +114,7 @@ customization:
         (
             ImageDefinition(
                 series="mantic",
-                revision="22.04",
+                revision=2,
                 architecture="amd64",
                 pocket="proposed",
                 kernel="linux-image-generic",
@@ -129,7 +129,7 @@ customization:
             ),
             """name: craft-driver
 display-name: Craft Driver
-revision: '22.04'
+revision: 2
 class: preinstalled
 architecture: amd64
 series: mantic
@@ -158,7 +158,7 @@ customization:
         (
             ImageDefinition(
                 series="mantic",
-                revision="22.04",
+                revision=1,
                 architecture="amd64",
                 pocket="proposed",
                 kernel=None,
@@ -173,7 +173,7 @@ customization:
             ),
             """name: craft-driver
 display-name: Craft Driver
-revision: '22.04'
+revision: 1
 class: preinstalled
 architecture: amd64
 series: mantic
@@ -200,7 +200,7 @@ def test_ubuntu_image_cmds_build_rootfs(mocker):
 
     assert ubuntu_image_cmds_build_rootfs(
         series="mantic",
-        version="22.04",
+        version=1,
         arch="amd64",
         pocket="proposed",
         sources=["source1", "source2"],

@@ -121,7 +121,7 @@ class ImageDefinition(BaseModel):
 
     name: str
     display_name: str
-    revision: str
+    revision: int
     class_: str = Field(alias="class")
     architecture: str
     series: str
@@ -141,7 +141,7 @@ class ImageDefinition(BaseModel):
     def __init__(  # noqa: PLR0913
         self,
         series: str,
-        revision: str,
+        revision: int,
         architecture: str,
         pocket: str,
         kernel: str | None,
