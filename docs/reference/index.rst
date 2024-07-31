@@ -10,4 +10,6 @@ Imagecraft's components, commands and keywords.
    :maxdepth: 1
    
    imagecraft.yaml <imagecraft.yaml>
+   commands
    plugins
+   parts_steps

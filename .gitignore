@@ -148,7 +148,6 @@ imagecraft_*.snap
 # sphinx
 docs/warnings.txt
 docs/.sphinx/.wordlist.dic
-docs/reference/commands
 .DS_Store
 __pycache__
 .idea/

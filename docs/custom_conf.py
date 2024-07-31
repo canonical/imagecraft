@@ -1,7 +1,10 @@
+import os
 import datetime
 import pathlib
 
 import craft_parts_docs
+
+from gen_cli_docs import gen_docs
 
 # Custom configuration for the Sphinx documentation builder.
 # All configuration specific to your project should be done in this file.
@@ -157,6 +160,7 @@ custom_extensions = [
 # sphinxext-opengraph
 custom_required_modules: list[str] = [
     "craft-parts==1.33.0",
+    "craft-application==1.2.1",
     "sphinxcontrib-details-directive==0.1.0",
 ]
 
@@ -177,6 +181,7 @@ custom_excludes = [
     "common/craft-parts/how-to/override_build.rst",
     "common/craft-parts/reference/step_execution_environment.rst",
     "common/craft-parts/reference/step_output_directories.rst",
+    "common/craft-parts/reference/parts_steps.rst",
     "common/craft-parts/reference/partition_specific_output_directory_variables.rst",
     "common/craft-parts/reference/plugins/ant_plugin.rst",
     "common/craft-parts/reference/plugins/autotools_plugin.rst",
@@ -229,6 +234,15 @@ rst_prolog = """
 .. role:: center
    :class: align-center
 """
+
+
+def generate_cli_docs(nil):
+    gen_docs(pathlib.Path("./"))
+
+
+def setup(app):
+    app.connect("builder-inited", generate_cli_docs)
+
 
 # Setup libraries documentation snippets for use in imagecraft docs.
 common_docs_path = pathlib.Path(__file__).parent / "common"

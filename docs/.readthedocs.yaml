@@ -12,7 +12,7 @@ build:
     python: "3.11"
   jobs:
     pre_install:
-      - cd docs && pip install craft-parts==1.33.0
+      - cd docs && pip install craft-parts==1.33.0 craft-application==1.2.1 craft-archives==1.2.0
       - cd docs && python3 .sphinx/build_requirements.py
       - git fetch --unshallow || true
 
