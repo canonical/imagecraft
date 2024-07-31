@@ -33,7 +33,7 @@ pytest-cov==4.1.0
 pytest-mock==3.14.0
 pyxdg==0.28
 PyYAML==6.0.1
-requests==2.31.0
+requests==2.32.2
 requests-unixsocket==0.3.0
 six==1.16.0
 smmap==5.0.1
