@@ -47,6 +47,8 @@ classmethod
 classvar
 cli
 CLI
+cloud-init
+Cloud-init
 cls
 cmake
 CMake
@@ -148,6 +150,7 @@ implementers
 IncompatibleSourceOptions
 infos
 ing
+init
 initialized
 InvalidAction
 InvalidActionException
@@ -318,6 +321,7 @@ PythonPlugin
 PythonPluginProperties
 PyYAML
 PyYAML's
+qemu
 qmake
 QmakePlugin
 QmakePluginProperties
@@ -365,6 +369,7 @@ SnapInstallError
 SnapPackage
 SnapRefreshError
 SnapSource
+Snapstore
 SnapUnavailable
 SourceError
 SourceHandler
@@ -397,6 +402,7 @@ Subpackages
 subprocess
 Subtractive
 subtree
+sudo
 summarized
 svn
 symlink
@@ -411,6 +417,7 @@ Tox
 txt
 TypeError
 ubuntu
+UEFI
 umount
 Umount
 unbuilt
@@ -428,8 +435,8 @@ unregistering
 uri
 URI
 url
-urls
 URL's
+urls
 utilizing
 utils
 ValidationError
