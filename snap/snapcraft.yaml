@@ -11,15 +11,11 @@ grade: devel
 license: GPL-3.0
 source-code: https://github.com/canonical/imagecraft
 
-environment:
-  PYTHONPATH: "$SNAP/lib/python3.12/site-packages:${PYTHONPATH}"
-
 apps:
   imagecraft:
     command: bin/python $SNAP/bin/imagecraft
     environment:
       PATH: "/snap/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$SNAP/usr/bin:$SNAP/bin"
-      PYTHONHOME: "/usr/"
 
 build-packages:
   - git
@@ -78,6 +74,11 @@ parts:
     override-build: |
       python3 --version
       craftctl default
+      version="$(python3 setup.py --version)"
+      # Fix pyvenv.cfg until it is fixed in craft libs
+      sed -i "${CRAFT_PART_INSTALL}/pyvenv.cfg" \
+          -e 's@^home = '"${CRAFT_STAGE}"'/usr/bin$@home = /snap/imagecraft/current/usr/bin@g'
+      sed -i '\,^executable = ,d' "${CRAFT_PART_INSTALL}/pyvenv.cfg"
+      sed -i '\,^command = ,d' "${CRAFT_PART_INSTALL}/pyvenv.cfg"
 
-      version="$(python3.12 setup.py --version)"
       craftctl set version="$version"
