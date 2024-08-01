@@ -218,7 +218,7 @@ def test_ubuntu_image_cmds_build_rootfs(mocker):
     ) == [
         "cat << EOF > craft.yaml\ntest\nEOF",
         "ubuntu-image classic --workdir work -O output/ craft.yaml",
-        "mv work/rootfs/* $CRAFT_PART_INSTALL/",
+        "mv work/root $CRAFT_PART_INSTALL/rootfs",
     ]
 
     assert ubuntu_image_cmds_build_rootfs(

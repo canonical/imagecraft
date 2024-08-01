@@ -178,7 +178,7 @@ class ImageDefinition(BaseModel):
                     names=seed_names,
                     pocket=seed_pocket,
                 ),
-                sources_list_deb822=True, # Always set it to true for now
+                sources_list_deb822=True,  # Always set it to true for now
             ),
         )
 

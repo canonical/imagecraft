@@ -50,13 +50,14 @@ class ImagecraftPackService(PackageService):
         :param dest: Directory into which to write the package(s).
         :returns: A list of paths to created packages.
         """
-        gadget_path = "$CRAFT_PART_INSTALL/install"
+        gadget_path = f"{prime_dir}/gadget/"
+        rootfs_path = f"{prime_dir}/rootfs/"
 
         # Create per-platform output directories
         platform_output = pathlib.Path(dest, self._platform if self._platform else "")
         platform_output.mkdir(parents=True, exist_ok=True)
 
-        ubuntu_image_pack(str(prime_dir), gadget_path, str(dest))
+        ubuntu_image_pack(rootfs_path, gadget_path, str(dest))
 
         return []
 

@@ -31,7 +31,7 @@ def test_pack(pack_service, default_factory, mocker):
     # Check that ubuntu_image_pack() was called with the correct
     # parameters.
     mock_inner_ubuntu_image_pack.assert_called_once_with(
-        prime,
-        "$CRAFT_PART_INSTALL/install",
+        "prime/rootfs/",
+        "prime/gadget/",
         str(dest_path),
     )
