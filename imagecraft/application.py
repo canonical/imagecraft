@@ -16,9 +16,6 @@
 
 """Main Imagecraft Application."""
 
-from copy import deepcopy
-from typing import Any
-
 from craft_application import Application, AppMetadata, util
 from overrides import override  # type: ignore[reportUnknownVariableType]
 
@@ -52,19 +49,3 @@ class Imagecraft(Application):
             platform=platform,
             build_for=build_for,
         )
-
-    @override
-    def _extra_yaml_transform(self, yaml_data: dict[str, Any]) -> dict[str, Any]:
-        # TODO: Apply extensions to the yaml
-
-        # The method documentation says to return a new yaml dict
-        new_yaml = deepcopy(yaml_data)
-
-        # Make sure not to stage or prime the gadget, as it should not be
-        # part of the rootfs - if the gadget is defined in the project.
-        if "gadget" in new_yaml["parts"]:
-            gadget = new_yaml["parts"]["gadget"]
-            gadget["override-stage"] = "true"
-            gadget["override-prime"] = "true"
-
-        return new_yaml
