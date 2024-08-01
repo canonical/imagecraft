@@ -54,7 +54,7 @@ class ImagecraftPackService(PackageService):
 
         # Create per-platform output directories
         platform_output = pathlib.Path(dest, self._platform if self._platform else "")
-        platform_output.mkdir(parents=True)
+        platform_output.mkdir(parents=True, exist_ok=True)
 
         ubuntu_image_pack(str(prime_dir), gadget_path, str(dest))
 
