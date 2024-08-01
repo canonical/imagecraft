@@ -72,9 +72,8 @@ def ubuntu_image_cmds_build_rootfs(  # noqa: PLR0913
 
     return [
         f"cat << EOF > {image_definition_file}\n{definition_yaml}\nEOF",
-        f"cat {image_definition_file}",
         f"ubuntu-image classic {debug_flag}--workdir work -O output/ {image_definition_file}",
-        "mv work/rootfs/* $CRAFT_PART_INSTALL/",
+        "mv work/root/* $CRAFT_PART_INSTALL/",
     ]
 
 
