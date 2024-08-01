@@ -18,6 +18,7 @@ apps:
       PATH: $SNAP/usr/sbin:$SNAP/usr/bin:$SNAP/sbin:$SNAP/bin:$PATH
       DEBOOTSTRAP_DIR: $SNAP/usr/share/debootstrap
       PERL5LIB: $SNAP/usr/share/perl5:$SNAP/usr/share/perl:$PERL5LIB
+      PYTHONPATH: $SNAP/usr/lib/python3/dist-packages:$PYTHONPATH
 
 build-packages:
   - git
