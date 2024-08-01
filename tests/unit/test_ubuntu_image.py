@@ -90,6 +90,7 @@ rootfs:
     - server
     - minimal
     pocket: updates
+  sources-list-deb822: true
 customization:
   components:
   - restricted
@@ -149,6 +150,7 @@ rootfs:
     - server
     - minimal
     pocket: updates
+  sources-list-deb822: true
 customization:
   extra-packages:
   - name: apt
@@ -184,6 +186,7 @@ rootfs:
     branch: mantic
     names: []
     pocket: updates
+  sources-list-deb822: true
 """,
         ),
     ],
