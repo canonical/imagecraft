@@ -120,7 +120,7 @@ redirects: dict[str, str] = {}
 ############################################################
 
 # Links to ignore when checking links
-linkcheck_ignore = ["http://127.0.0.1:8000"]
+linkcheck_ignore = ["http://127.0.0.1:8000", "https://apt-repo.com"]
 
 # Pages on which to ignore anchors
 # (This list will be appended to linkcheck_anchors_ignore_for_url)
