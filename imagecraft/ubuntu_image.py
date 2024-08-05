@@ -16,6 +16,8 @@
 
 """Ubuntu-image related helpers."""
 
+import json
+import pathlib
 import subprocess
 
 from craft_cli import emit
@@ -81,6 +83,7 @@ def ubuntu_image_pack(
     rootfs_path: str,
     gadget_path: str,
     output_path: str,
+    workdir_path: str,
     image_type: str | None = None,
     *,
     debug: bool = False,
@@ -89,6 +92,8 @@ def ubuntu_image_pack(
     cmd: list[str] = [
         "ubuntu-image",
         "pack",
+        "--workdir",
+        workdir_path,
         "--gadget-dir",
         gadget_path,
         "--rootfs-dir",
@@ -106,7 +111,7 @@ def ubuntu_image_pack(
     try:
         subprocess.check_call(cmd, universal_newlines=True)
     except subprocess.CalledProcessError as err:
-        message = f"Cannot make (pack) image: {err!s}"
+        message = f"Cannot pack image: {err!s}"
         details = f"Error output: {err.stderr.strip()!s}"
         resolution = "Please check the error output for resolution guidance."
 
@@ -115,3 +120,12 @@ def ubuntu_image_pack(
             details=details,
             resolution=resolution,
         ) from err
+
+
+def list_image_paths(workdir_path: str) -> list[str]:
+    """Extract the list of images from a ubuntu-image.json file."""
+    p = pathlib.Path(workdir_path) / "ubuntu-image.json"
+    f = p.open("r")
+    ui_state = json.load(f)
+
+    return list(ui_state["VolumeNames"].values())

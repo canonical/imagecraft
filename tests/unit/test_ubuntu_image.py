@@ -21,6 +21,7 @@ from imagecraft.errors import UbuntuImageError
 from imagecraft.image_definition import ImageDefinition
 from imagecraft.models.package_repository import PackageRepositoryPPA
 from imagecraft.ubuntu_image import (
+    list_image_paths,
     ubuntu_image_cmds_build_rootfs,
     ubuntu_image_pack,
 )
@@ -250,6 +251,7 @@ def test_ubuntu_image_pack(mocker):
         rootfs_path="rootfs/path/test",
         gadget_path="gadget/test",
         output_path="output/path/test",
+        workdir_path="workdir/path/test",
         image_type="",
     )
 
@@ -257,6 +259,8 @@ def test_ubuntu_image_pack(mocker):
         [
             "ubuntu-image",
             "pack",
+            "--workdir",
+            "workdir/path/test",
             "--gadget-dir",
             "gadget/test",
             "--rootfs-dir",
@@ -297,6 +301,7 @@ def test_ubuntu_image_pack(mocker):
         rootfs_path="rootfs/path/test",
         gadget_path="gadget/test",
         output_path="output/path/test",
+        workdir_path="workdir/path/test",
         image_type="raw",
     )
 
@@ -304,6 +309,8 @@ def test_ubuntu_image_pack(mocker):
         [
             "ubuntu-image",
             "pack",
+            "--workdir",
+            "workdir/path/test",
             "--gadget-dir",
             "gadget/test",
             "--rootfs-dir",
@@ -327,10 +334,33 @@ def test_ubuntu_image_pack(mocker):
             rootfs_path="rootfs/path/test",
             gadget_path="gadget/test",
             output_path="output/path/test",
+            workdir_path="workdir/path/test",
             image_type="raw",
         )
 
     assert (
         str(raised.value)
-        == "Cannot make (pack) image: Command 'some command' returned non-zero exit status 1."
+        == "Cannot pack image: Command 'some command' returned non-zero exit status 1."
     )
+
+
+@pytest.mark.parametrize(
+    ("workdir_path", "img_paths"),
+    [
+        (
+            "testsdata/valid",
+            ["pc.img"],
+        ),
+        (
+            "testsdata/multiple_volumes",
+            ["pc.img", "pc2.img"],
+        ),
+        (
+            "testsdata/no_volume",
+            [],
+        ),
+    ],
+)
+def test_list_image_paths(workdir_path, img_paths):
+    paths = list_image_paths(workdir_path)
+    assert paths == img_paths

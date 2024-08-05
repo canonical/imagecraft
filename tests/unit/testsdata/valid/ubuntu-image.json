@@ -1,0 +1,196 @@
+{
+    "CurrentStep": "update_bootloader",
+    "StepsTaken": 9,
+    "ConfDefPath": "",
+    "YamlFilePath": "/home/ubuntu/prime/gadget/meta/gadget.yaml",
+    "IsSeeded": false,
+    "RootfsVolName": "pc",
+    "RootfsPartNum": 3,
+    "SectorSize": 512,
+    "RootfsSize": 3024625664,
+    "GadgetInfo": {
+      "Volumes": {
+        "pc": {
+          "schema": "gpt",
+          "bootloader": "grub",
+          "id": "",
+          "structure": [
+            {
+              "name": "mbr",
+              "filesystem-label": "",
+              "offset": 0,
+              "offset-write": null,
+              "min-size": 440,
+              "size": 440,
+              "type": "mbr",
+              "role": "mbr",
+              "id": "",
+              "filesystem": "",
+              "content": [
+                {
+                  "source": "",
+                  "target": "",
+                  "image": "pc-boot.img",
+                  "offset": null,
+                  "size": 0,
+                  "unpack": false
+                }
+              ],
+              "update": {
+                "edition": 0,
+                "preserve": null
+              }
+            },
+            {
+              "name": "BIOS Boot",
+              "filesystem-label": "",
+              "offset": 1048576,
+              "offset-write": {
+                "relative-to": "mbr",
+                "offset": 92
+              },
+              "min-size": 1048576,
+              "size": 1048576,
+              "type": "DA,21686148-6449-6E6F-744E-656564454649",
+              "role": "",
+              "id": "",
+              "filesystem": "",
+              "content": [
+                {
+                  "source": "",
+                  "target": "",
+                  "image": "pc-core.img",
+                  "offset": null,
+                  "size": 0,
+                  "unpack": false
+                }
+              ],
+              "update": {
+                "edition": 0,
+                "preserve": null
+              }
+            },
+            {
+              "name": "EFI System",
+              "filesystem-label": "system-boot",
+              "offset": 2097152,
+              "offset-write": null,
+              "min-size": 268435456,
+              "size": 268435456,
+              "type": "EF,C12A7328-F81F-11D2-BA4B-00A0C93EC93B",
+              "role": "",
+              "id": "",
+              "filesystem": "vfat",
+              "content": [
+                {
+                  "source": "shimx64.efi",
+                  "target": "EFI/BOOT/BOOTX64.EFI",
+                  "image": "",
+                  "offset": null,
+                  "size": 0,
+                  "unpack": false
+                },
+                {
+                  "source": "fbx64.efi",
+                  "target": "EFI/BOOT/fbx64.efi",
+                  "image": "",
+                  "offset": null,
+                  "size": 0,
+                  "unpack": false
+                },
+                {
+                  "source": "mmx64.efi",
+                  "target": "EFI/BOOT/mmx64.efi",
+                  "image": "",
+                  "offset": null,
+                  "size": 0,
+                  "unpack": false
+                },
+                {
+                  "source": "BOOTX64.CSV",
+                  "target": "EFI/ubuntu/BOOTX64.CSV",
+                  "image": "",
+                  "offset": null,
+                  "size": 0,
+                  "unpack": false
+                },
+                {
+                  "source": "grub.cfg",
+                  "target": "EFI/ubuntu/grub.cfg",
+                  "image": "",
+                  "offset": null,
+                  "size": 0,
+                  "unpack": false
+                },
+                {
+                  "source": "grubx64.efi",
+                  "target": "EFI/ubuntu/grubx64.efi",
+                  "image": "",
+                  "offset": null,
+                  "size": 0,
+                  "unpack": false
+                },
+                {
+                  "source": "mmx64.efi",
+                  "target": "EFI/ubuntu/mmx64.efi",
+                  "image": "",
+                  "offset": null,
+                  "size": 0,
+                  "unpack": false
+                },
+                {
+                  "source": "shimx64.efi",
+                  "target": "EFI/ubuntu/shimx64.efi",
+                  "image": "",
+                  "offset": null,
+                  "size": 0,
+                  "unpack": false
+                }
+              ],
+              "update": {
+                "edition": 0,
+                "preserve": null
+              }
+            },
+            {
+              "name": "",
+              "filesystem-label": "writable",
+              "offset": 270532608,
+              "offset-write": null,
+              "min-size": 0,
+              "size": 3024625664,
+              "type": "83,0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+              "role": "system-data",
+              "id": "",
+              "filesystem": "ext4",
+              "content": [],
+              "update": {
+                "edition": 0,
+                "preserve": null
+              }
+            }
+          ]
+        }
+      },
+      "Defaults": null,
+      "Connections": null,
+      "KernelCmdline": {
+        "Allow": null,
+        "Append": null,
+        "Remove": null
+      }
+    },
+    "ImageSizes": {
+      "pc": 288358400
+    },
+    "VolumeOrder": [
+      "pc"
+    ],
+    "VolumeNames": {
+      "pc": "pc.img"
+    },
+    "MainVolumeName": "",
+    "Packages": null,
+    "Snaps": null
+  }
+  
