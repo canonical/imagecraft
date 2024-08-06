@@ -40,4 +40,4 @@ parts:
     plugin: dump
     source: cloud-init/
     organize:
-      - '*': rootfs/
+      '*': rootfs/
