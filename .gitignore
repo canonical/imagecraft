@@ -154,3 +154,6 @@ __pycache__
 
 # build-generated version file
 imagecraft/_version.py
+
+!tests/spread/**/var/
+!tests/spread/**/var/lib/
