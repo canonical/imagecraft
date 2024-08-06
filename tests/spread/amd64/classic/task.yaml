@@ -1,0 +1,52 @@
+summary: Build classic Ubuntu server image
+
+kill-timeout: 3h
+
+execute: |
+    mkdir -p /tmp/${SPREAD_VARIANT}/mount
+    pushd ${SPREAD_VARIANT}
+
+    imagecraft --verbosity debug pack --destructive-mode
+
+    IMG_NAME=pc.img
+    losetup --find --show --partscan pc.img
+    losetup -a | grep pc.img |cut -f1 -d: >> loop.txt
+    LOOP="$(cat loop.txt)"
+
+    for l in `ls -d "$LOOP"p*`
+    do
+        p=${l#"$LOOP"}
+        mkdir /tmp/${SPREAD_VARIANT}/mount/$p
+        mount $l /tmp/${SPREAD_VARIANT}/mount/$p || true
+        ls /tmp/${SPREAD_VARIANT}/mount/$p/ || true
+    done
+
+restore: |
+    pushd ${SPREAD_VARIANT}
+
+    if [ -f loop.txt ]; then
+        LOOP="$(cat loop.txt)"
+
+        for l in `ls -d "$LOOP"p*`
+        do
+            p=${l#"$LOOP"}
+            mount --make-rprivate /tmp/${SPREAD_VARIANT}/mount/$p || true
+            umount --recursive /tmp/${SPREAD_VARIANT}/mount/$p || true
+        done
+
+        losetup -d "$LOOP"
+        sync
+        losetup -l | NOMATCH "$LOOP"
+        rm loop.txt
+    fi
+    imagecraft clean --destructive-mode
+    rm -rf pc.img || true
+
+debug: |
+    df -h
+    du -h -d 1 /tmp/
+    mount  -l
+    if [ -f loop.txt ]; then
+        cat loop.txt
+    fi
+    losetup -l

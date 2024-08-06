@@ -1,0 +1,47 @@
+name: ubuntu-server-arm64
+version: 1
+base: ubuntu@24.04
+series: noble
+platforms:
+  arm64:
+    build-for: [arm64]
+    build-on: [arm64]
+
+package-repositories:
+  - type: apt
+    components: [main, restricted]
+    url: http://ports.ubuntu.com/ubuntu-ports/
+    pocket: updates
+    used-for: build
+
+parts:
+  gadget:
+    plugin: gadget
+    source: https://github.com/snapcore/pc-gadget.git
+    source-branch: classic
+  rootfs:
+    plugin: ubuntu-seed
+    ubuntu-seed-pocket: updates
+    ubuntu-seed-germinate:
+      urls:
+        - "git://git.launchpad.net/~ubuntu-core-dev/ubuntu-seeds/+git/"
+      branch: noble
+      vcs: true
+      names:
+        - server
+        - minimal
+        - standard
+        - cloud-image
+    ubuntu-seed-kernel: linux-image-generic
+    ubuntu-seed-extra-snaps: [snapd]
+    ubuntu-seed-extra-packages: [grub-efi-arm64-signed, shim-signed, grub2-common]
+    stage:
+      - -rootfs/etc/cloud/cloud.cfg.d/90_dpkg.cfg
+      - -rootfs/dev/stderr # workaround until u-i cleans it
+      - -rootfs/dev/stdin # workaround until u-i cleans it
+      - -rootfs/dev/stdout # workaround until u-i cleans it
+  cloud-init:
+    plugin: dump
+    source: cloud-init/
+    organize:
+      '*': rootfs/

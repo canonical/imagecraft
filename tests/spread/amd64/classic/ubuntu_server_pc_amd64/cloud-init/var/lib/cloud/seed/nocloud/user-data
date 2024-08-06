@@ -1,0 +1,7 @@
+#cloud-config
+chpasswd:
+  expire: true
+  users:
+    - name: ubuntu
+      password: ubuntu
+      type: text

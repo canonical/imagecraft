@@ -43,6 +43,10 @@ backends:
           image: ubuntu-os-cloud/ubuntu-2204-lts-arm64
           workers: 1
           storage: 45G
+      - ubuntu-24.04-arm-64:
+          image: ubuntu-os-cloud/ubuntu-2404-lts-arm64
+          workers: 1
+          storage: 45G
   qemu:
     memory: 4G
     systems:
@@ -128,5 +132,13 @@ debug: |
 suites:
   tests/spread/commons/:
     summary: Common integration tests for imagecraft
+  tests/spread/amd64/:
+    summary: Integration tests for imagecraft on amd64
+    backends: [google, qemu]
+    variants: [ubuntu_server_pc_amd64]
+  tests/spread/arm64/:
+    summary: Integration tests for imagecraft on arm64
+    backends: [google-arm, qemu]
+    variants: [ubuntu_server_pc_arm64]
 
 kill-timeout: 30m
