@@ -19,6 +19,7 @@ import shutil
 import typing
 
 from craft_application import AppMetadata, PackageService, models
+from craft_application.models import BuildInfo
 from overrides import override  # type: ignore[reportUnknownVariableType]
 
 from imagecraft.ubuntu_image import list_image_paths, ubuntu_image_pack
@@ -36,12 +37,10 @@ class ImagecraftPackService(PackageService):
         services: "ImagecraftServiceFactory",
         *,
         project: models.Project,
-        platform: str | None,
-        build_for: str,
+        build_plan: list[BuildInfo],
     ) -> None:
         super().__init__(app, services, project=project)
-        self._platform = platform
-        self._build_for = build_for
+        self._build_plan = build_plan
 
     @override
     def pack(self, prime_dir: pathlib.Path, dest: pathlib.Path) -> list[pathlib.Path]:
@@ -56,7 +55,10 @@ class ImagecraftPackService(PackageService):
         workdir_path = f"{prime_dir}/workdir/"
 
         # Create per-platform output directories
-        platform_output = pathlib.Path(dest, self._platform if self._platform else "")
+        platform_output = pathlib.Path(
+            dest,
+            self._build_plan[0].platform if self._build_plan[0].platform else "",
+        )
         platform_output.mkdir(parents=True, exist_ok=True)
 
         ubuntu_image_pack(rootfs_path, gadget_path, str(dest), workdir_path)

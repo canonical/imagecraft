@@ -22,14 +22,13 @@ This module defines a imagecraft.yaml file, exportable to a JSON schema.
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any
 
+import craft_application
 import pydantic
 from craft_application.errors import CraftValidationError
-from craft_application.models import BuildInfo
+from craft_application.models import BuildPlanner as BaseBuildPlanner
 from craft_application.models import Project as BaseProject
 from craft_application.util.error_formatting import format_pydantic_errors
-from craft_providers import bases
 from pydantic import (
-    BaseModel,
     ValidationError,
     conlist,
     root_validator,  # pyright: ignore[reportUnknownVariableType]
@@ -59,38 +58,21 @@ file_name = "imagecraft.yaml"
 def _alias_generator(s: str) -> str:
     return s.replace("_", "-")
 
-
-class ProjectModel(YamlModelMixin, BaseProject):
-    """Base model for the imagecraft project class."""
-
-    class Config:
-        """Pydantic model configuration."""
-
-        validate_assignment = True
-        extra = pydantic.Extra.forbid
-        allow_mutation = True
-        allow_population_by_field_name = True
-        alias_generator = _alias_generator
-
-
-class ElementModel(YamlModelMixin, BaseModel):
-    """Base model for project elements (subentries)."""
-
-    class Config:
-        """Pydantic model configuration."""
-
-        validate_assignment = True
-        extra = pydantic.Extra.forbid
-        allow_mutation = True
-        allow_population_by_field_name = True
-        alias_generator = _alias_generator
-
-
-class Platform(ElementModel):
+class Platform(craft_application.models.Platform):
     """Imagecraft project platform definition."""
+
+    class Config:
+        """Pydantic model configuration."""
+
+        validate_assignment = True
+        extra = pydantic.Extra.forbid
+        allow_mutation = True
+        allow_population_by_field_name = True
+        alias_generator = _alias_generator
 
     build_on: UniqueStrList | None
     build_for: UniqueStrList | None
+
 
     @validator("build_on", "build_for", pre=True, always=True) # pyright: ignore[reportUntypedFunctionDecorator]
     @classmethod
@@ -98,6 +80,14 @@ class Platform(ElementModel):
         """Implement a hook to vectorise."""
         if isinstance(val, str):
             val = [val]
+        return val
+
+    @validator("build_for", pre=True, always=True) # pyright: ignore[reportUntypedFunctionDecorator]
+    @classmethod
+    def _preprocess_build_for(cls, val: UniqueStrList | None | str, values: dict[str, Any]) -> UniqueStrList | None | str:
+        build_on = values.get("build_on")
+        if not val or len(val) == 0:
+            return build_on
         return val
 
     @root_validator(skip_on_failure=True) # pyright: ignore[reportUntypedFunctionDecorator]
@@ -127,50 +117,21 @@ class Platform(ElementModel):
                 ),
             )
 
-        # If build_for is provided, then build_on must also be
-        if not build_on and build_for:
-            raise CraftValidationError(
-                "'build_for' expects 'build_on' to also be provided.",
-            )
-
         return values
 
-class Project(ProjectModel):
-    """Definition of imagecraft.yaml configuration."""
+class BuildPlanner(BaseBuildPlanner):
+    """BuildPlanner for Imagecraft projects."""
 
-    series: str
-    package_repositories: list[dict[str,Any]] | list[PackageRepositoryPPA | PackageRepositoryApt] | None
-    platforms: dict[str, Platform]
-
-    @validator("package_repositories") # pyright: ignore[reportUntypedFunctionDecorator]
-    @classmethod
-    def _validate_package_repositories(
-        cls, project_repositories: list[dict[str, Any]],
-    ) -> list[PackageRepositoryPPA | PackageRepositoryApt]:
-        repositories: list[PackageRepositoryPPA | PackageRepositoryApt] = []
-        repositories = [ PackageRepository.unmarshal(data) for data in project_repositories ]
-
-        validate_package_repositories(repositories)
-        return repositories
+    platforms: dict[str, Platform]  # type: ignore[assignment]
+    base: str | None
+    build_base: str | None
 
     @validator("platforms", pre=True) # pyright: ignore[reportUntypedFunctionDecorator]
     @classmethod
-    def preprocess_all_platforms(cls, platforms: dict[str, Any]) -> dict[str, Any]:
+    def _preprocess_all_platforms(cls, platforms: dict[str, Any]) -> dict[str, Any]:
         """Convert the simplified form of platform to the full one."""
-        if platforms is None: # pyright: ignore[reportUnnecessaryComparison] false positive
-            raise CraftValidationError(
-                "No platforms were specified.",
-                details="At least one platform must be given when using this configuration key.",
-            )
-
         for platform_label, platform in platforms.items():
             if platform is None:
-                if platform_label not in SUPPORTED_ARCHS:
-                    raise CraftValidationError(
-                        f"Invalid platform {platform_label}.",
-                        details="A platform name must either be a valid architecture name or the "
-                        "platform must specify one or more build-on and build-for architectures.",
-                    )
                 platforms[platform_label] = {"build_on":platform_label, "build_for": platform_label}
 
         return platforms
@@ -226,16 +187,52 @@ class Project(ProjectModel):
 
         return platforms
 
+class Project(YamlModelMixin, BuildPlanner, BaseProject):
+    """Definition of imagecraft.yaml configuration."""
+
+    series: str
+    package_repositories: list[dict[str,Any]] | list[PackageRepositoryPPA | PackageRepositoryApt] | None  # type: ignore[assignment]
+    platforms: dict[str, Platform]  # type: ignore[assignment]
+
+    class Config:
+        """Pydantic model configuration."""
+
+        validate_assignment = True
+        extra = pydantic.Extra.forbid
+        allow_mutation = True
+        allow_population_by_field_name = True
+        alias_generator = _alias_generator
+
+    @validator("package_repositories") # pyright: ignore[reportUntypedFunctionDecorator]
+    @classmethod
+    def _validate_all_package_repositories(
+        cls, project_repositories: list[dict[str, Any]],
+    ) -> list[PackageRepositoryPPA | PackageRepositoryApt]:
+        repositories: list[PackageRepositoryPPA | PackageRepositoryApt] = []
+        repositories = [ PackageRepository.unmarshal(data) for data in project_repositories ]
+
+        validate_package_repositories(repositories)
+        return repositories
+
+    @pydantic.validator(  # pyright: ignore[reportUnknownMemberType,reportUntypedFunctionDecorator]
+        "package_repositories", each_item=True,
+    )
+    def _validate_package_repositories(
+        cls, repository: dict[str, Any],
+    ) -> dict[str, Any]:
+        # Override _validate_package_repositories defined in craft-application
+        # Do nothing because at this point the package-repositories are not dicts anymore
+        # but PackageRepository* objects and so _validate_package_repositories fails.
+        return repository
+
+
     @classmethod
     def unmarshal(cls, data: dict[str, Any]) -> "Project":
         """Unmarshal object with necessary translations and error handling.
 
         (1) Perform any necessary translations.
-
         (2) Standardize error reporting.
-
         :returns: valid Project.
-
         :raises CraftError: On failure to unmarshal object.
         """
         try:
@@ -244,29 +241,3 @@ class Project(ProjectModel):
             raise ProjectValidationError(
                 format_pydantic_errors(error.errors(), file_name=file_name),
             ) from error
-
-
-    @property
-    def effective_base(self) -> bases.BaseName:
-        """Get the Base name for craft-providers."""
-        base = super().effective_base
-        name, channel = base.split("@")
-        return bases.BaseName(name, channel)
-
-    def get_build_plan(self) -> list[BuildInfo]:
-        """Obtain the list of architectures from the project file."""
-        build_infos: list[BuildInfo] = []
-        base = self.effective_base
-
-        for platform_entry, platform in self.platforms.items():
-            for build_for in platform.build_for or [platform_entry]:
-                build_infos.extend(
-                    BuildInfo(
-                            platform=platform_entry,
-                            build_on=build_on,
-                            build_for=build_for,
-                            base=base,
-                    ) for build_on in platform.build_on or [platform_entry]
-                )
-
-        return build_infos

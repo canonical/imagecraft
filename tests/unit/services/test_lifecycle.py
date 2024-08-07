@@ -16,9 +16,13 @@
 
 from pathlib import Path
 
-from craft_application import util
 from craft_parts import (
     LifecycleManager,
+)
+from imagecraft.models.package_repository import (
+    PackageRepositoryApt,
+    PocketEnum,
+    UsedForEnum,
 )
 
 
@@ -42,41 +46,30 @@ def test_lifecycle_args(
         cache_dir=Path("cache"),
         work_dir=Path("work"),
         ignore_local_sources=[],
+        parallel_build_count=16,
+        project_vars_part_name=None,
+        project_vars={"version": "1"},
+        track_stage_packages=True,
+        partitions=None,
+        build_for="amd64",
         platform="amd64",
         base="ubuntu@22.04",
         project_name="default",
-        project_vars={"version": "1"},
-        package_repositories=None,
+        package_repositories=[
+            PackageRepositoryApt(  # pyright: ignore[reportCallIssue]
+                type="apt",
+                priority=None,
+                url=None,
+                architectures=None,
+                formats=None,
+                path=None,
+                components=["main", "restricted"],
+                suites=None,
+                pocket=PocketEnum.PROPOSED,
+                series="jammy",
+                used_for=UsedForEnum.ALWAYS,
+                flavor=None,
+            ),
+        ],
         series="jammy",
     )
-
-
-def test_lifecycle_args_no_platform(
-    lifecycle_service_no_platform,
-    mocker,
-    monkeypatch,
-):
-    mock_lifecycle = mocker.patch.object(
-        LifecycleManager,
-        "__init__",
-        return_value=None,
-    )
-
-    lifecycle_service_no_platform.setup()
-
-    mock_lifecycle.assert_called_once_with(
-        {"parts": {}},
-        application_name="imagecraft",
-        arch="x86_64",
-        cache_dir=Path("cache"),
-        work_dir=Path("work"),
-        ignore_local_sources=[],
-        platform=None,
-        base="ubuntu@22.04",
-        project_name="default",
-        project_vars={"version": "1"},
-        package_repositories=None,
-        series="jammy",
-    )
-
-    assert lifecycle_service_no_platform._platform == util.get_host_architecture()
