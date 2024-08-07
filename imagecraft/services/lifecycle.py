@@ -16,14 +16,12 @@
 
 """Imagecraft Lifecycle service."""
 
-from pathlib import Path
 from typing import cast
 
-from craft_application import AppMetadata, LifecycleService, ServiceFactory, util
+from craft_application import LifecycleService
 from craft_parts import Features
 from overrides import override  # type: ignore[reportUnknownVariableType]
 
-from imagecraft.errors import ImagecraftError
 from imagecraft.models.project import Project
 
 # Enable the craft-parts features that we use
@@ -33,63 +31,15 @@ Features(enable_overlay=True)
 class ImagecraftLifecycleService(LifecycleService):
     """Imagecraft-specific lifecycle service."""
 
-    def __init__(
-        self,
-        app: AppMetadata,
-        services: ServiceFactory,
-        *,
-        cache_dir: Path | str,
-        work_dir: Path | str,
-        project: Project,
-        build_for: str,
-        platform: str | None,
-    ) -> None:
-        super().__init__(
-            app,
-            services,
-            project=project,
-            build_for=build_for,
-            platform=platform,
-            cache_dir=cache_dir,
-            work_dir=work_dir,
-        )
-        self._platform = platform
-        self._build_for = build_for
-
     @override
     def setup(self) -> None:
         """Initialize the LifecycleManager with previously-set arguments."""
-        if self._platform is None:
-            build_on = util.get_host_architecture()
-            base_build_plan = self._project.get_build_plan()
-            build_plan = [
-                plan for plan in base_build_plan if plan.build_for == self._build_for
-            ]
-            build_plan = [plan for plan in build_plan if plan.build_on == build_on]
-
-            if len(build_plan) != 1:
-                message = "Unable to determine which platform to build."
-                details = (
-                    f"Possible values are: "
-                    f"{[info.platform for info in base_build_plan]}."
-                )
-                resolution = 'Choose a platform with the "--platform" parameter.'
-                raise ImagecraftError(
-                    message=message,
-                    details=details,
-                    resolution=resolution,
-                )
-
-            self._platform = build_plan[0].platform
-
         # Configure extra args to the LifecycleManager
         project = cast(Project, self._project)
-        project_vars = {"version": project.version}
 
         self._manager_kwargs.update(
             base=project.base,
             project_name=project.name,
-            project_vars=project_vars,
             package_repositories=project.package_repositories,
             series=project.series,
         )
