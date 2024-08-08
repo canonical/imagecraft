@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from pathlib import Path
+from unittest.mock import ANY
 
 from craft_parts import (
     LifecycleManager,
@@ -46,7 +47,7 @@ def test_lifecycle_args(
         cache_dir=Path("cache"),
         work_dir=Path("work"),
         ignore_local_sources=[],
-        parallel_build_count=16,
+        parallel_build_count=ANY,  # Value will vary when tests run locally or in CI
         project_vars_part_name=None,
         project_vars={"version": "1"},
         track_stage_packages=True,
