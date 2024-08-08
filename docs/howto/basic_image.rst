@@ -22,7 +22,7 @@ Imagecraft is only available as a snap in the `latest/edge` channel `from the Sn
 
 .. code-block::
 
-    sudo snap --classic --edge imagecraft
+    sudo snap install --classic --edge imagecraft
 
 Verify that ``imagecraft`` is properly installed:
 
