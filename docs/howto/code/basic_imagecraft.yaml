@@ -36,6 +36,9 @@ parts:
     ubuntu-seed-extra-snaps: [snapd]
     stage:
       - -rootfs/etc/cloud/cloud.cfg.d/90_dpkg.cfg
+      - -rootfs/dev/stderr  # workaround until u-i cleans it
+      - -rootfs/dev/stdin  # workaround until u-i cleans it
+      - -rootfs/dev/stdout  # workaround until u-i cleans it
   cloud-init:
     plugin: dump
     source: cloud-init/
