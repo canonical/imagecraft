@@ -288,17 +288,3 @@ def test_project_package_repositories_invalid(yaml_loaded_data):
         mock_package_repositories,
         ProjectValidationError,
     )
-
-
-def test_project_version_invalid(yaml_loaded_data):
-    def reload_project_version(mock_version):
-        yaml_loaded_data["version"] = mock_version
-        with pytest.raises(CraftValidationError) as err:
-            Project.unmarshal(yaml_loaded_data)
-
-        return str(err.value)
-
-    mock_version = "24.04"
-    assert "Invalid version" in reload_project_version(
-        mock_version,
-    )

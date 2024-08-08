@@ -1,5 +1,5 @@
 name: ubuntu-server-amd64
-version: 1
+version: "1"
 base: ubuntu@24.04
 series: noble
 platforms:

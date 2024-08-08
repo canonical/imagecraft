@@ -104,8 +104,6 @@ class UbuntuSeedPlugin(plugins.Plugin):
         if branch:
             source_branch = branch
 
-        version = int(self._part_info.project_info.get_project_var("version", raw_read=True))
-
         main_repo = get_main_package_repository(self._part_info.project_info.package_repositories)
 
         customize_repo = get_customization_package_repository(self._part_info.project_info.package_repositories)
@@ -120,7 +118,6 @@ class UbuntuSeedPlugin(plugins.Plugin):
 
         return ubuntu_image_cmds_build_rootfs(
             series,
-            version,
             arch,
             main_repo.pocket.value,
             options.ubuntu_seed_germinate.urls,

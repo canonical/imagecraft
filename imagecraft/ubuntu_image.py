@@ -28,7 +28,6 @@ from imagecraft.image_definition import ImageDefinition
 
 def ubuntu_image_cmds_build_rootfs(  # noqa: PLR0913
     series: str,
-    version: int,
     arch: str,
     pocket: str,
     sources: list[str],
@@ -49,7 +48,7 @@ def ubuntu_image_cmds_build_rootfs(  # noqa: PLR0913
     """List commands to ubuntu-image to generate a rootfs."""
     image_def = ImageDefinition(
         series=series,
-        revision=version,
+        revision=1,
         architecture=arch,
         pocket=pocket,
         kernel=kernel,

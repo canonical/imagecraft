@@ -204,7 +204,6 @@ def test_ubuntu_image_cmds_build_rootfs(mocker):
 
     assert ubuntu_image_cmds_build_rootfs(
         series="mantic",
-        version=1,
         arch="amd64",
         pocket="proposed",
         sources=["source1", "source2"],
@@ -224,7 +223,6 @@ def test_ubuntu_image_cmds_build_rootfs(mocker):
 
     assert ubuntu_image_cmds_build_rootfs(
         series="mantic",
-        version=1,
         arch="amd64",
         pocket="proposed",
         sources=["source1", "source2"],
