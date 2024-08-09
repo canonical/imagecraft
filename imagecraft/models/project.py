@@ -153,7 +153,6 @@ class Project(ProjectModel):
         validate_package_repositories(repositories)
         return repositories
 
-
     @validator("platforms", pre=True) # pyright: ignore[reportUntypedFunctionDecorator]
     @classmethod
     def preprocess_all_platforms(cls, platforms: dict[str, Any]) -> dict[str, Any]:

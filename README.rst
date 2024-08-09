@@ -1,5 +1,5 @@
 **********
-imagecraft
+Imagecraft
 **********
 
 .. |testBadge| image:: https://github.com/canonical/imagecraft/actions/workflows/tests.yaml/badge.svg?branch=main
@@ -15,12 +15,6 @@ Description
 Imagecraft is a craft tool used to create Ubuntu bootable images. It follows
 the same principles as snapcraft, but is focused on creating bootable images
 instead.
-
-Usage
------
-
-#. TODO
-
 
 ---------
 
@@ -59,3 +53,4 @@ Point your web browser to address ``127.0.0.1:8000``.
 
 .. LINKS
 .. _Imagecraft repository: https://github.com/canonical/imagecraft
+.. _product website: https://canonical-imagecraft.readthedocs-hosted.com

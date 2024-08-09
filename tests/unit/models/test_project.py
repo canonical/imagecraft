@@ -25,7 +25,7 @@ from pydantic import ValidationError
 
 IMAGECRAFT_YAML_GENERIC = """
 name: ubuntu-server-amd64
-version: "22.04"
+version: "1"
 series: jammy
 platforms:
   amd64:
@@ -79,7 +79,7 @@ parts:
 
 IMAGECRAFT_YAML_SIMPLE_PLATFORM = """
 name: ubuntu-server-amd64
-version: "22.04"
+version: "1"
 series: jammy
 platforms:
   amd64:
@@ -94,7 +94,7 @@ parts:
 
 IMAGECRAFT_YAML_MINIMAL_PLATFORM = """
 name: ubuntu-server-amd64
-version: "22.04"
+version: "1"
 series: jammy
 platforms:
   amd64:
@@ -107,7 +107,7 @@ parts:
 
 IMAGECRAFT_YAML_NO_BUILD_FOR_PLATFORM = """
 name: ubuntu-server-amd64
-version: "22.04"
+version: "1"
 series: jammy
 platforms:
   amd64:
@@ -121,7 +121,7 @@ parts:
 
 IMAGECRAFT_YAML_SIMPLE_PACKAGE_REPO = """
 name: ubuntu-server-amd64
-version: "22.04"
+version: "1"
 series: jammy
 platforms:
   amd64:

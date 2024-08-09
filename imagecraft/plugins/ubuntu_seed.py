@@ -18,6 +18,7 @@
 
 from typing import TYPE_CHECKING, Any, Self, cast
 
+from craft_cli import EmitterMode, emit
 from craft_parts import plugins
 from pydantic import AnyUrl, conlist
 
@@ -103,8 +104,6 @@ class UbuntuSeedPlugin(plugins.Plugin):
         if branch:
             source_branch = branch
 
-        version = self._part_info.project_info.get_project_var("version", raw_read=True)
-
         main_repo = get_main_package_repository(self._part_info.project_info.package_repositories)
 
         customize_repo = get_customization_package_repository(self._part_info.project_info.package_repositories)
@@ -115,9 +114,10 @@ class UbuntuSeedPlugin(plugins.Plugin):
             custom_components = customize_repo.components
             custom_pocket = customize_repo.pocket.value
 
-        ubuntu_seed_cmd = ubuntu_image_cmds_build_rootfs(
+        debug = emit.get_mode() == EmitterMode.DEBUG
+
+        return ubuntu_image_cmds_build_rootfs(
             series,
-            version,
             arch,
             main_repo.pocket.value,
             options.ubuntu_seed_germinate.urls,
@@ -132,12 +132,5 @@ class UbuntuSeedPlugin(plugins.Plugin):
             options.ubuntu_seed_extra_packages,
             custom_components,
             custom_pocket,
+            debug=debug,
         )
-
-        # We also need to make sure to prepare a proper fstab entry
-        # as ubuntu-image doesn't do that for us in this case.
-        ubuntu_seed_cmd.append(
-            'echo "LABEL=writable   /    ext4   defaults    0 0\n"'
-            " >$CRAFT_PART_BUILD/work/chroot/etc/fstab")
-
-        return ubuntu_seed_cmd

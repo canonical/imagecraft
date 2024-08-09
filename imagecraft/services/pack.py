@@ -15,12 +15,13 @@
 """Imagecraft Package service."""
 
 import pathlib
+import shutil
 import typing
 
 from craft_application import AppMetadata, PackageService, models
 from overrides import override  # type: ignore[reportUnknownVariableType]
 
-from imagecraft.ubuntu_image import ubuntu_image_pack
+from imagecraft.ubuntu_image import list_image_paths, ubuntu_image_pack
 
 if typing.TYPE_CHECKING:
     from imagecraft.services import ImagecraftServiceFactory
@@ -50,15 +51,21 @@ class ImagecraftPackService(PackageService):
         :param dest: Directory into which to write the package(s).
         :returns: A list of paths to created packages.
         """
-        gadget_path = "$CRAFT_PART_INSTALL/install"
+        gadget_path = f"{prime_dir}/gadget/"
+        rootfs_path = f"{prime_dir}/rootfs/"
+        workdir_path = f"{prime_dir}/workdir/"
 
         # Create per-platform output directories
         platform_output = pathlib.Path(dest, self._platform if self._platform else "")
-        platform_output.mkdir(parents=True)
+        platform_output.mkdir(parents=True, exist_ok=True)
 
-        ubuntu_image_pack(str(prime_dir), gadget_path, str(dest))
+        ubuntu_image_pack(rootfs_path, gadget_path, str(dest), workdir_path)
 
-        return []
+        img_paths = list_image_paths(workdir_path)
+
+        shutil.rmtree(workdir_path)
+
+        return [pathlib.Path(dest) / img for img in img_paths]
 
     @property
     def metadata(self) -> models.BaseMetadata:

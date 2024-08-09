@@ -91,6 +91,7 @@ class ImagecraftLifecycleService(LifecycleService):
             project_name=project.name,
             project_vars=project_vars,
             package_repositories=project.package_repositories,
+            series=project.series,
         )
 
         super().setup()

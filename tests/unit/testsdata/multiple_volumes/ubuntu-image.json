@@ -1,0 +1,103 @@
+{
+    "CurrentStep": "update_bootloader",
+    "StepsTaken": 9,
+    "ConfDefPath": "",
+    "YamlFilePath": "/home/ubuntu/prime/gadget/meta/gadget.yaml",
+    "IsSeeded": false,
+    "RootfsVolName": "pc",
+    "RootfsPartNum": 3,
+    "SectorSize": 512,
+    "RootfsSize": 3024625664,
+    "GadgetInfo": {
+      "Volumes": {
+        "pc": {
+          "schema": "gpt",
+          "bootloader": "grub",
+          "id": "",
+          "structure": [
+            {
+              "name": "mbr",
+              "filesystem-label": "",
+              "offset": 0,
+              "offset-write": null,
+              "min-size": 440,
+              "size": 440,
+              "type": "mbr",
+              "role": "mbr",
+              "id": "",
+              "filesystem": "",
+              "content": [
+                {
+                  "source": "",
+                  "target": "",
+                  "image": "pc-boot.img",
+                  "offset": null,
+                  "size": 0,
+                  "unpack": false
+                }
+              ],
+              "update": {
+                "edition": 0,
+                "preserve": null
+              }
+            }
+          ]
+        },
+        "pc2": {
+          "schema": "gpt",
+          "bootloader": "grub",
+          "id": "",
+          "structure": [
+            {
+              "name": "mbr",
+              "filesystem-label": "",
+              "offset": 0,
+              "offset-write": null,
+              "min-size": 440,
+              "size": 440,
+              "type": "mbr",
+              "role": "mbr",
+              "id": "",
+              "filesystem": "",
+              "content": [
+                {
+                  "source": "",
+                  "target": "",
+                  "image": "pc-boot.img",
+                  "offset": null,
+                  "size": 0,
+                  "unpack": false
+                }
+              ],
+              "update": {
+                "edition": 0,
+                "preserve": null
+              }
+            }
+          ]
+        }
+      },
+      "Defaults": null,
+      "Connections": null,
+      "KernelCmdline": {
+        "Allow": null,
+        "Append": null,
+        "Remove": null
+      }
+    },
+    "ImageSizes": {
+      "pc": 288358400
+    },
+    "VolumeOrder": [
+      "pc",
+      "pc2"
+    ],
+    "VolumeNames": {
+      "pc": "pc.img",
+      "pc2": "pc2.img"
+    },
+    "MainVolumeName": "",
+    "Packages": null,
+    "Snaps": null
+  }
+  

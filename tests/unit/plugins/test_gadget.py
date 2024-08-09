@@ -14,6 +14,8 @@
 #
 # For further info, check https://github.com/canonical/kerncraft
 
+import re
+
 import craft_parts
 import pydantic
 import pytest
@@ -96,16 +98,20 @@ def test_invalid_properties():
 
 
 def test_get_build_commands(gadget_plugin):
-    assert gadget_plugin.get_build_commands() == [
-        "make ",
-        "cp -a $CRAFT_PART_BUILD/install/* $CRAFT_PART_INSTALL/",
-        "ln -s $CRAFT_PART_INSTALL/ $CRAFT_PART_INSTALL/install",
-    ]
+    cmds = gadget_plugin.get_build_commands()
+    assert len(cmds) == 2
+    assert cmds[0] == "make "
+    assert re.match(
+        "mv .*/parts/gadget/build/install .*/parts/gadget/install/gadget",
+        cmds[1],
+    )
 
 
 def test_get_build_commands_with_target(gadget_plugin_with_target):
-    assert gadget_plugin_with_target.get_build_commands() == [
-        "make test_target",
-        "cp -a $CRAFT_PART_BUILD/install/* $CRAFT_PART_INSTALL/",
-        "ln -s $CRAFT_PART_INSTALL/ $CRAFT_PART_INSTALL/install",
-    ]
+    cmds = gadget_plugin_with_target.get_build_commands()
+    assert len(cmds) == 2
+    assert cmds[0] == "make test_target"
+    assert re.match(
+        "mv .*/parts/gadget/build/install .*/parts/gadget/install/gadget",
+        cmds[1],
+    )

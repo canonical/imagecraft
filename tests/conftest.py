@@ -66,7 +66,7 @@ def default_project(extra_project_params):
 
     return Project(
         name=ProjectName("default"),
-        version=VersionStr("1.0"),
+        version=VersionStr("1"),
         summary=SummaryStr("default project"),
         description="default project",
         base="ubuntu@22.04",

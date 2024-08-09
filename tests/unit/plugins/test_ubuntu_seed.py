@@ -74,7 +74,7 @@ def ubuntu_seed_plugin():
             plugin_properties=plugin_properties,
         )
         project_vars = {
-            "version": "22.04",
+            "version": "1",
         }
         package_repositories = [
             PackageRepositoryApt.unmarshal(
@@ -156,12 +156,10 @@ def test_get_build_commands(ubuntu_seed_plugin, mocker, tmp_path):
         assert plugin.get_build_commands() == [
             "build_rootfs_cmd1",
             "build_rootfs_cmd2",
-            'echo "LABEL=writable   /    ext4   defaults    0 0\n" >$CRAFT_PART_BUILD/work/chroot/etc/fstab',
         ]
 
         build_rootfs_patcher.assert_called_with(
             "jammy",
-            "22.04",
             "amd64",
             "release",
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("urls"),
@@ -176,6 +174,7 @@ def test_get_build_commands(ubuntu_seed_plugin, mocker, tmp_path):
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-extra-packages"],
             None,
             None,
+            debug=False,
         )
 
     with patch(
@@ -188,12 +187,10 @@ def test_get_build_commands(ubuntu_seed_plugin, mocker, tmp_path):
         assert plugin.get_build_commands() == [
             "build_rootfs_cmd1",
             "build_rootfs_cmd2",
-            'echo "LABEL=writable   /    ext4   defaults    0 0\n" >$CRAFT_PART_BUILD/work/chroot/etc/fstab',
         ]
 
         build_rootfs_patcher.assert_called_with(
             "jammy",
-            "22.04",
             "amd64",
             "release",
             UBUNTU_SEED_NO_SOURCE_BRANCH["ubuntu-seed-germinate"].get("urls"),
@@ -208,6 +205,7 @@ def test_get_build_commands(ubuntu_seed_plugin, mocker, tmp_path):
             UBUNTU_SEED_NO_SOURCE_BRANCH["ubuntu-seed-extra-packages"],
             None,
             None,
+            debug=False,
         )
 
     # Test with a customization package repository
@@ -239,12 +237,10 @@ def test_get_build_commands(ubuntu_seed_plugin, mocker, tmp_path):
         assert plugin.get_build_commands() == [
             "build_rootfs_cmd1",
             "build_rootfs_cmd2",
-            'echo "LABEL=writable   /    ext4   defaults    0 0\n" >$CRAFT_PART_BUILD/work/chroot/etc/fstab',
         ]
 
         build_rootfs_patcher.assert_called_with(
             "jammy",
-            "22.04",
             "amd64",
             "release",
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("urls"),
@@ -259,4 +255,5 @@ def test_get_build_commands(ubuntu_seed_plugin, mocker, tmp_path):
             UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-extra-packages"],
             ["universe", "restricted"],
             "proposed",
+            debug=False,
         )

@@ -106,6 +106,7 @@ class Rootfs(BaseModel):
     pocket: str
     mirror: str | None
     seed: Seed
+    sources_list_deb822: bool
 
     class Config:
         """Pydantic model configuration."""
@@ -121,7 +122,7 @@ class ImageDefinition(BaseModel):
 
     name: str
     display_name: str
-    revision: str
+    revision: int
     class_: str = Field(alias="class")
     architecture: str
     series: str
@@ -141,7 +142,7 @@ class ImageDefinition(BaseModel):
     def __init__(  # noqa: PLR0913
         self,
         series: str,
-        revision: str,
+        revision: int,
         architecture: str,
         pocket: str,
         kernel: str | None,
@@ -177,6 +178,7 @@ class ImageDefinition(BaseModel):
                     names=seed_names,
                     pocket=seed_pocket,
                 ),
+                sources_list_deb822=True,  # Always set it to true for now
             ),
         )
 

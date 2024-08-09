@@ -16,6 +16,8 @@
 
 """Ubuntu-image related helpers."""
 
+import json
+import pathlib
 import subprocess
 
 from craft_cli import emit
@@ -26,7 +28,6 @@ from imagecraft.image_definition import ImageDefinition
 
 def ubuntu_image_cmds_build_rootfs(  # noqa: PLR0913
     series: str,
-    version: str,
     arch: str,
     pocket: str,
     sources: list[str],
@@ -41,11 +42,13 @@ def ubuntu_image_cmds_build_rootfs(  # noqa: PLR0913
     extra_packages: list[str] | None = None,
     custom_components: list[str] | None = None,
     custom_pocket: str | None = None,
+    *,
+    debug: bool = False,
 ) -> list[str]:
     """List commands to ubuntu-image to generate a rootfs."""
     image_def = ImageDefinition(
         series=series,
-        revision=version,
+        revision=1,
         architecture=arch,
         pocket=pocket,
         kernel=kernel,
@@ -64,11 +67,14 @@ def ubuntu_image_cmds_build_rootfs(  # noqa: PLR0913
 
     definition_yaml = image_def.dump_yaml()
     image_definition_file = "craft.yaml"
+    debug_flag = ""
+    if debug:
+        debug_flag = "--debug "
 
     return [
         f"cat << EOF > {image_definition_file}\n{definition_yaml}\nEOF",
-        f"ubuntu-image classic --workdir work -O output/ {image_definition_file}",
-        "mv work/chroot/* $CRAFT_PART_INSTALL/",
+        f"ubuntu-image classic {debug_flag}--workdir work -O output/ {image_definition_file}",
+        "mv work/root $CRAFT_PART_INSTALL/rootfs",
     ]
 
 
@@ -76,12 +82,17 @@ def ubuntu_image_pack(
     rootfs_path: str,
     gadget_path: str,
     output_path: str,
+    workdir_path: str,
     image_type: str | None = None,
+    *,
+    debug: bool = False,
 ) -> None:
     """Pack the primed image contents into an image file."""
     cmd: list[str] = [
         "ubuntu-image",
         "pack",
+        "--workdir",
+        workdir_path,
         "--gadget-dir",
         gadget_path,
         "--rootfs-dir",
@@ -92,12 +103,14 @@ def ubuntu_image_pack(
 
     if image_type:
         cmd.extend(["--artifact-type", str(image_type)])
+    if debug:
+        cmd.extend(["--debug"])
 
     emit.debug(f"Pack command: {cmd}")
     try:
         subprocess.check_call(cmd, universal_newlines=True)
     except subprocess.CalledProcessError as err:
-        message = f"Cannot make (pack) image: {err!s}"
+        message = f"Cannot pack image: {err!s}"
         details = f"Error output: {err.stderr.strip()!s}"
         resolution = "Please check the error output for resolution guidance."
 
@@ -106,3 +119,12 @@ def ubuntu_image_pack(
             details=details,
             resolution=resolution,
         ) from err
+
+
+def list_image_paths(workdir_path: str) -> list[str]:
+    """Extract the list of images from a ubuntu-image.json file."""
+    p = pathlib.Path(workdir_path) / "ubuntu-image.json"
+    f = p.open("r")
+    ui_state = json.load(f)
+
+    return list(ui_state["VolumeNames"].values())

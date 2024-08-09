@@ -21,6 +21,7 @@ from imagecraft.errors import UbuntuImageError
 from imagecraft.image_definition import ImageDefinition
 from imagecraft.models.package_repository import PackageRepositoryPPA
 from imagecraft.ubuntu_image import (
+    list_image_paths,
     ubuntu_image_cmds_build_rootfs,
     ubuntu_image_pack,
 )
@@ -32,7 +33,7 @@ from imagecraft.ubuntu_image import (
         (
             ImageDefinition(
                 series="mantic",
-                revision="22.04",
+                revision=1,
                 architecture="amd64",
                 pocket="release",
                 kernel="linux-image-generic",
@@ -69,7 +70,7 @@ from imagecraft.ubuntu_image import (
             ),
             """name: craft-driver
 display-name: Craft Driver
-revision: '22.04'
+revision: 1
 class: preinstalled
 architecture: amd64
 series: mantic
@@ -90,6 +91,7 @@ rootfs:
     - server
     - minimal
     pocket: updates
+  sources-list-deb822: true
 customization:
   components:
   - restricted
@@ -114,7 +116,7 @@ customization:
         (
             ImageDefinition(
                 series="mantic",
-                revision="22.04",
+                revision=2,
                 architecture="amd64",
                 pocket="proposed",
                 kernel="linux-image-generic",
@@ -129,7 +131,7 @@ customization:
             ),
             """name: craft-driver
 display-name: Craft Driver
-revision: '22.04'
+revision: 2
 class: preinstalled
 architecture: amd64
 series: mantic
@@ -149,6 +151,7 @@ rootfs:
     - server
     - minimal
     pocket: updates
+  sources-list-deb822: true
 customization:
   extra-packages:
   - name: apt
@@ -158,7 +161,7 @@ customization:
         (
             ImageDefinition(
                 series="mantic",
-                revision="22.04",
+                revision=1,
                 architecture="amd64",
                 pocket="proposed",
                 kernel=None,
@@ -173,7 +176,7 @@ customization:
             ),
             """name: craft-driver
 display-name: Craft Driver
-revision: '22.04'
+revision: 1
 class: preinstalled
 architecture: amd64
 series: mantic
@@ -184,6 +187,7 @@ rootfs:
     branch: mantic
     names: []
     pocket: updates
+  sources-list-deb822: true
 """,
         ),
     ],
@@ -200,7 +204,6 @@ def test_ubuntu_image_cmds_build_rootfs(mocker):
 
     assert ubuntu_image_cmds_build_rootfs(
         series="mantic",
-        version="22.04",
         arch="amd64",
         pocket="proposed",
         sources=["source1", "source2"],
@@ -215,7 +218,27 @@ def test_ubuntu_image_cmds_build_rootfs(mocker):
     ) == [
         "cat << EOF > craft.yaml\ntest\nEOF",
         "ubuntu-image classic --workdir work -O output/ craft.yaml",
-        "mv work/chroot/* $CRAFT_PART_INSTALL/",
+        "mv work/root $CRAFT_PART_INSTALL/rootfs",
+    ]
+
+    assert ubuntu_image_cmds_build_rootfs(
+        series="mantic",
+        arch="amd64",
+        pocket="proposed",
+        sources=["source1", "source2"],
+        seed_branch="mantic",
+        seeds=["server", "minimal"],
+        components=["main", "restricted"],
+        flavor=None,
+        mirror="http://archive.ubuntu.com/ubuntu/",
+        seed_pocket="updates",
+        kernel="linux-image-generic",
+        extra_snaps=["lxd", "snapd"],
+        debug=True,
+    ) == [
+        "cat << EOF > craft.yaml\ntest\nEOF",
+        "ubuntu-image classic --debug --workdir work -O output/ craft.yaml",
+        "mv work/root $CRAFT_PART_INSTALL/rootfs",
     ]
 
 
@@ -226,6 +249,7 @@ def test_ubuntu_image_pack(mocker):
         rootfs_path="rootfs/path/test",
         gadget_path="gadget/test",
         output_path="output/path/test",
+        workdir_path="workdir/path/test",
         image_type="",
     )
 
@@ -233,6 +257,8 @@ def test_ubuntu_image_pack(mocker):
         [
             "ubuntu-image",
             "pack",
+            "--workdir",
+            "workdir/path/test",
             "--gadget-dir",
             "gadget/test",
             "--rootfs-dir",
@@ -247,6 +273,33 @@ def test_ubuntu_image_pack(mocker):
         rootfs_path="rootfs/path/test",
         gadget_path="gadget/test",
         output_path="output/path/test",
+        workdir_path="workdir/path/test",
+        image_type="",
+        debug=True,
+    )
+
+    subprocess_patcher.assert_called_with(
+        [
+            "ubuntu-image",
+            "pack",
+            "--workdir",
+            "workdir/path/test",
+            "--gadget-dir",
+            "gadget/test",
+            "--rootfs-dir",
+            "rootfs/path/test",
+            "-O",
+            "output/path/test",
+            "--debug",
+        ],
+        universal_newlines=True,
+    )
+
+    ubuntu_image_pack(
+        rootfs_path="rootfs/path/test",
+        gadget_path="gadget/test",
+        output_path="output/path/test",
+        workdir_path="workdir/path/test",
         image_type="raw",
     )
 
@@ -254,6 +307,8 @@ def test_ubuntu_image_pack(mocker):
         [
             "ubuntu-image",
             "pack",
+            "--workdir",
+            "workdir/path/test",
             "--gadget-dir",
             "gadget/test",
             "--rootfs-dir",
@@ -277,10 +332,33 @@ def test_ubuntu_image_pack(mocker):
             rootfs_path="rootfs/path/test",
             gadget_path="gadget/test",
             output_path="output/path/test",
+            workdir_path="workdir/path/test",
             image_type="raw",
         )
 
     assert (
         str(raised.value)
-        == "Cannot make (pack) image: Command 'some command' returned non-zero exit status 1."
+        == "Cannot pack image: Command 'some command' returned non-zero exit status 1."
     )
+
+
+@pytest.mark.parametrize(
+    ("workdir_path", "img_paths"),
+    [
+        (
+            "testsdata/valid",
+            ["pc.img"],
+        ),
+        (
+            "testsdata/multiple_volumes",
+            ["pc.img", "pc2.img"],
+        ),
+        (
+            "testsdata/no_volume",
+            [],
+        ),
+    ],
+)
+def test_list_image_paths(workdir_path, img_paths):
+    paths = list_image_paths(workdir_path)
+    assert paths == img_paths

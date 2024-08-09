@@ -1,5 +1,8 @@
 #!/bin/bash -eux
 
+PYTHON3_APT="https://launchpad.net/ubuntu/+archive/primary/+sourcefiles/python-apt/2.7.0/python-apt_2.7.0.tar.xz; sys_platform == 'linux'"
+
+
 requirements_fixups() {
   req_file="$1"
 
@@ -31,5 +34,8 @@ requirements_fixups "requirements.txt"
 pip install -e .[dev]
 pip freeze --exclude-editable > requirements-dev.txt
 requirements_fixups "requirements-dev.txt"
+
+# Add python3-apt from Canonical
+echo -e "\n# Requirements from launchpad.net\n\n$PYTHON3_APT" >> "requirements.txt"
 
 rm -rf "$venv_dir"
