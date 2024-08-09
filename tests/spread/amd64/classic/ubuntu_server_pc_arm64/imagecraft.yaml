@@ -1,16 +1,16 @@
-name: ubuntu-server-amd64
-version: "1"
+name: ubuntu-server-arm64
+version: 1
 base: ubuntu@24.04
 series: noble
 platforms:
-  amd64:
-    build-for: [amd64]
-    build-on: [amd64]
+  arm64:
+    build-for: [arm64]
+    build-on: [arm64]
 
 package-repositories:
   - type: apt
-    components: [main, restricted, universe, multiverse]
-    url: http://archive.ubuntu.com/ubuntu/
+    components: [main, restricted]
+    url: http://ports.ubuntu.com/ubuntu-ports/
     pocket: updates
     used-for: build
 
@@ -34,11 +34,12 @@ parts:
         - cloud-image
     ubuntu-seed-kernel: linux-image-generic
     ubuntu-seed-extra-snaps: [snapd]
+    ubuntu-seed-extra-packages: [grub-efi-arm64-signed, shim-signed, grub2-common]
     stage:
       - -rootfs/etc/cloud/cloud.cfg.d/90_dpkg.cfg
-      - -rootfs/dev/stderr  # workaround until u-i cleans it
-      - -rootfs/dev/stdin  # workaround until u-i cleans it
-      - -rootfs/dev/stdout  # workaround until u-i cleans it
+      - -rootfs/dev/stderr # workaround until u-i cleans it
+      - -rootfs/dev/stdin # workaround until u-i cleans it
+      - -rootfs/dev/stdout # workaround until u-i cleans it
   cloud-init:
     plugin: dump
     source: cloud-init/
