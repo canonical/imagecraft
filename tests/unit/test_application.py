@@ -17,6 +17,7 @@ from pathlib import Path
 IMAGECRAFT_YAML = """
 name: ubuntu-server-amd64
 version: "1"
+base: ubuntu@22.04
 series: jammy
 platforms:
   amd64:
@@ -60,12 +61,12 @@ parts:
 IMAGECRAFT_YAML_NO_GADGET = """
 name: ubuntu-server-amd64
 version: "1"
+base: ubuntu@22.04
 series: jammy
 platforms:
   amd64:
     build-for: [amd64]
     build-on: [amd64]
-
 parts:
   rootfs:
     plugin: ubuntu-seed
@@ -84,7 +85,7 @@ parts:
 """
 
 
-def test_application(default_application, new_dir):
+def test_application(new_dir, default_application):
     project_file = Path(new_dir) / "imagecraft.yaml"
     project_file.write_text(IMAGECRAFT_YAML)
 
@@ -94,9 +95,10 @@ def test_application(default_application, new_dir):
         project.parts["gadget"].get("source")
         == "https://github.com/snapcore/pc-gadget.git"
     )
+    assert project.base == "ubuntu@22.04"
 
 
-def test_application_no_gadget(default_application, new_dir):
+def test_application_no_gadget(new_dir, default_application):
     project_file = Path(new_dir) / "imagecraft.yaml"
     project_file.write_text(IMAGECRAFT_YAML_NO_GADGET)
 
