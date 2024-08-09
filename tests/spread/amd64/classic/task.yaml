@@ -9,8 +9,8 @@ execute: |
     imagecraft --verbosity debug pack --destructive-mode
 
     IMG_NAME=pc.img
-    losetup --find --show --partscan pc.img
-    losetup -a | grep pc.img |cut -f1 -d: >> loop.txt
+    losetup --find --show --partscan $IMG_NAME
+    losetup -a | grep $IMG_NAME |cut -f1 -d: >> loop.txt
     LOOP="$(cat loop.txt)"
 
     for l in `ls -d "$LOOP"p*`
