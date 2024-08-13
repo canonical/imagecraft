@@ -40,7 +40,7 @@ class ImagecraftLifecycleService(LifecycleService):
         self._manager_kwargs.update(
             base=project.base,
             project_name=project.name,
-            package_repositories=project.package_repositories,
+            package_repositories_=project.package_repositories_,
             series=project.series,
         )
 

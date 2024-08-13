@@ -56,7 +56,7 @@ def test_lifecycle_args(
         platform="amd64",
         base="ubuntu@22.04",
         project_name="default",
-        package_repositories=[
+        package_repositories_=[
             PackageRepositoryApt(  # pyright: ignore[reportCallIssue]
                 type="apt",
                 priority=None,

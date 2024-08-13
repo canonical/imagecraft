@@ -79,7 +79,7 @@ def default_project(extra_project_params):
         base="ubuntu@22.04",
         platforms={"amd64": Platform(build_for=["amd64"], build_on=["amd64"])},
         series="jammy",
-        package_repositories=[
+        package_repositories_=[  # pyright: ignore[reportCallIssue]
             {
                 "type": "apt",
                 "components": ["main", "restricted"],

@@ -191,7 +191,10 @@ class Project(YamlModelMixin, BuildPlanner, BaseProject):
     """Definition of imagecraft.yaml configuration."""
 
     series: str
-    package_repositories: list[dict[str,Any]] | list[PackageRepositoryPPA | PackageRepositoryApt] | None  # type: ignore[assignment]
+    package_repositories_: list[dict[str,Any]] | list[PackageRepositoryPPA | PackageRepositoryApt] | None = pydantic.Field(alias="package-repositories") # type: ignore[assignment]
+    # Override package_repositories alias from BaseProject to prevent pydantic trying to parse
+    # the received package-repositories in it.
+    package_repositories: list[dict[str, Any]] | None = pydantic.Field(alias="unused")
     platforms: dict[str, Platform]  # type: ignore[assignment]
 
     class Config:
@@ -203,7 +206,7 @@ class Project(YamlModelMixin, BuildPlanner, BaseProject):
         allow_population_by_field_name = True
         alias_generator = _alias_generator
 
-    @validator("package_repositories") # pyright: ignore[reportUntypedFunctionDecorator]
+    @validator("package_repositories_") # pyright: ignore[reportUntypedFunctionDecorator]
     @classmethod
     def _validate_all_package_repositories(
         cls, project_repositories: list[dict[str, Any]],
@@ -215,7 +218,7 @@ class Project(YamlModelMixin, BuildPlanner, BaseProject):
         return repositories
 
     @pydantic.validator(  # pyright: ignore[reportUnknownMemberType,reportUntypedFunctionDecorator]
-        "package_repositories", each_item=True,
+        "package_repositories_", each_item=True,
     )
     def _validate_package_repositories(
         cls, repository: dict[str, Any],

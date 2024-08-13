@@ -94,7 +94,7 @@ def ubuntu_seed_plugin():
             cache_dir=tmp_path,
             project_vars=project_vars,
             series="jammy",
-            package_repositories=package_repositories,
+            package_repositories_=package_repositories,
         )
         part_info = craft_parts.PartInfo(project_info=project_info, part=part)
 
@@ -212,7 +212,7 @@ def test_get_build_commands(ubuntu_seed_plugin, mocker, tmp_path):
         "imagecraft.plugins.ubuntu_seed.ubuntu_image_cmds_build_rootfs",
         return_value=["build_rootfs_cmd1", "build_rootfs_cmd2"],
     ) as build_rootfs_patcher:
-        plugin._part_info.project_info.package_repositories = [
+        plugin._part_info.project_info.package_repositories_ = [
             PackageRepositoryApt.unmarshal(
                 {
                     "type": "apt",
