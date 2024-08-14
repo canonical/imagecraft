@@ -35,6 +35,8 @@ Options
    Shell into the environment in lieu of the step to run.
 ``--shell-after``
    Shell into the environment after the step has run.
+``--use-lxd``
+   Build in a LXD container.
 
 Global options
 --------------

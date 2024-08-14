@@ -30,7 +30,7 @@ Verify that ``imagecraft`` is properly installed:
 
     imagecraft
 
-.. important:: ``imagecraft`` requires **elevated permissions**. Run it with **root** privileges or using ``sudo``.
+.. important:: ``imagecraft`` requires **elevated permissions**. Run it with **root** privileges or using ``sudo`` if you plan on using the executing system as the build system ("destructive mode").
 
 
 Prepare the configuration
@@ -78,13 +78,26 @@ Write the following files in the ``cloud-init`` directory:
 Build the image
 ------------------------
 
-.. code-block::
+The build can be run in 2 different environments:
 
-    sudo imagecraft pack --destructive-mode
+- in a ``multipass`` VM:
+
+  .. code-block::
+
+    CRAFT_BUILD_ENVIRONMENT=multipass imagecraft --verbosity debug pack
+        
+- on the local machine, with destructive mode. In this case the machine should be of the series of the ``base`` declared in the ``imagecraft.yaml`` file.
+
+  .. code-block::
+
+    sudo imagecraft --verbosity debug pack --destructive-mode
+
 
 The resulting image file, ``pc.img``, is available in the current directory.
 
+.. note:: Without any specific option imagecraft will rely by default on ``LXD`` to build the image. However this mode of operation is not working yet due to a bug in ubuntu-image.
 
+    
 Run the image
 --------------
 

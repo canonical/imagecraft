@@ -24,6 +24,8 @@ Options
 
 ``--destructive-mode``
    Build in the current host.
+``--use-lxd``
+   Build in a LXD container.
 
 Global options
 --------------
