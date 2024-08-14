@@ -1,6 +1,6 @@
 name: ubuntu-server-amd64
 version: 1
-base: ubuntu@24.04
+base: ubuntu@@BUILDER_SERIES@
 series: noble
 platforms:
   amd64:
