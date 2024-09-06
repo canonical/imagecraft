@@ -104,9 +104,9 @@ class UbuntuSeedPlugin(plugins.Plugin):
         if branch:
             source_branch = branch
 
-        main_repo = get_main_package_repository(self._part_info.project_info.package_repositories)
+        main_repo = get_main_package_repository(self._part_info.project_info.package_repositories_)
 
-        customize_repo = get_customization_package_repository(self._part_info.project_info.package_repositories)
+        customize_repo = get_customization_package_repository(self._part_info.project_info.package_repositories_)
 
         custom_components = None
         custom_pocket = None

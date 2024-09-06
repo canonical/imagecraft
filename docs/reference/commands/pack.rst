@@ -10,13 +10,8 @@ Process parts and create the final artifact.
 Usage
 -----
 
-:command:`imagecraft pack [options] <part-name>`
+:command:`imagecraft pack [options]`
 
-Required
---------
-
-``part-name``
-   Optional list of parts to process.
 
 Options
 -------
@@ -31,6 +26,8 @@ Options
    Output directory for created packages.
 ``--platform``
    Set platform to build for.
+``--use-lxd``
+   Build in a LXD container.
 
 Global options
 --------------

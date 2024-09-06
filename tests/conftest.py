@@ -11,6 +11,8 @@
 #
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+import os
 import types
 from pathlib import Path
 
@@ -45,10 +47,15 @@ def _setup_parts():
 
 
 @pytest.fixture()
-def new_dir(monkeypatch, tmpdir):
+def new_dir(tmpdir):
     """Change to a new temporary directory."""
-    monkeypatch.chdir(tmpdir)
-    return tmpdir
+
+    cwd = Path.cwd()
+    os.chdir(tmpdir)
+
+    yield tmpdir
+
+    os.chdir(cwd)
 
 
 @pytest.fixture()
@@ -70,22 +77,41 @@ def default_project(extra_project_params):
         summary=SummaryStr("default project"),
         description="default project",
         base="ubuntu@22.04",
-        series="jammy",
-        parts=parts,
         platforms={"amd64": Platform(build_for=["amd64"], build_on=["amd64"])},
+        series="jammy",
+        package_repositories_=[  # pyright: ignore[reportCallIssue]
+            {
+                "type": "apt",
+                "components": ["main", "restricted"],
+                "series": "jammy",
+                "pocket": "proposed",
+            },
+        ],
+        parts=parts,
         **extra_project_params,
     )
 
 
 @pytest.fixture()
-def default_factory(default_project):
+def default_build_plan(default_project):
+    from imagecraft.models.project import BuildPlanner
+
+    return BuildPlanner.unmarshal(default_project.marshal()).get_build_plan()
+
+
+@pytest.fixture()
+def default_factory(default_project, default_build_plan):
     from imagecraft.application import APP_METADATA
     from imagecraft.services import ImagecraftServiceFactory
 
-    return ImagecraftServiceFactory(
+    factory = ImagecraftServiceFactory(
         app=APP_METADATA,
         project=default_project,
     )
+
+    factory.set_kwargs("lifecycle", build_plan=default_build_plan)
+    factory.set_kwargs("package", build_plan=default_build_plan)
+    return factory
 
 
 @pytest.fixture()
@@ -96,7 +122,7 @@ def default_application(default_factory):
 
 
 @pytest.fixture()
-def lifecycle_service(default_project, default_factory):
+def lifecycle_service(default_project, default_factory, default_build_plan):
     from imagecraft.application import APP_METADATA
     from imagecraft.services import ImagecraftLifecycleService
 
@@ -108,34 +134,18 @@ def lifecycle_service(default_project, default_factory):
         services=default_factory,
         work_dir=Path("work/"),
         cache_dir=Path("cache/"),
+        build_plan=default_build_plan,
     )
 
 
 @pytest.fixture()
-def lifecycle_service_no_platform(default_project, default_factory):
-    from imagecraft.application import APP_METADATA
-    from imagecraft.services import ImagecraftLifecycleService
-
-    return ImagecraftLifecycleService(
-        app=APP_METADATA,
-        build_for="amd64",
-        platform=None,
-        project=default_project,
-        services=default_factory,
-        work_dir=Path("work/"),
-        cache_dir=Path("cache/"),
-    )
-
-
-@pytest.fixture()
-def pack_service(default_project, default_factory):
+def pack_service(default_project, default_factory, default_build_plan):
     from imagecraft.application import APP_METADATA
     from imagecraft.services import ImagecraftPackService
 
     return ImagecraftPackService(
         app=APP_METADATA,
-        build_for="amd64",
-        platform="amd64",
         project=default_project,
         services=default_factory,
+        build_plan=default_build_plan,
     )

@@ -85,6 +85,13 @@ platforms:
   amd64:
     build-for: amd64
     build-on: amd64
+package-repositories:
+  - type: apt
+    components: [main,restricted]
+    url: http://archive.ubuntu.com/ubuntu/
+    flavor: ubuntu
+    series: jammy
+    pocket: proposed
 parts:
   gadget:
     plugin: gadget
@@ -98,6 +105,13 @@ version: "1"
 series: jammy
 platforms:
   amd64:
+package-repositories:
+  - type: apt
+    components: [main,restricted]
+    url: http://archive.ubuntu.com/ubuntu/
+    flavor: ubuntu
+    series: jammy
+    pocket: proposed
 parts:
   gadget:
     plugin: gadget
@@ -112,22 +126,6 @@ series: jammy
 platforms:
   amd64:
     build-on: amd64
-parts:
-  gadget:
-    plugin: gadget
-    source: https://github.com/snapcore/pc-gadget.git
-    source-branch: classic
-"""
-
-IMAGECRAFT_YAML_SIMPLE_PACKAGE_REPO = """
-name: ubuntu-server-amd64
-version: "1"
-series: jammy
-platforms:
-  amd64:
-    build-for: amd64
-    build-on: amd64
-
 package-repositories:
   - type: apt
     components: [main,restricted]
@@ -135,7 +133,6 @@ package-repositories:
     flavor: ubuntu
     series: jammy
     pocket: proposed
-
 parts:
   gadget:
     plugin: gadget
@@ -160,7 +157,6 @@ def load_project_yaml(yaml_loaded_data) -> Project:
         IMAGECRAFT_YAML_SIMPLE_PLATFORM,
         IMAGECRAFT_YAML_MINIMAL_PLATFORM,
         IMAGECRAFT_YAML_NO_BUILD_FOR_PLATFORM,
-        IMAGECRAFT_YAML_SIMPLE_PACKAGE_REPO,
     ],
 )
 def test_project_unmarshal(yaml_data):
@@ -197,12 +193,7 @@ def test_project_unmarshal(yaml_data):
         (
             "multiple architectures",
             CraftValidationError,
-            {"build-on": ["amd64", "arm64"]},
-        ),
-        (
-            "'build_for' expects 'build_on' to also be provided.",
-            CraftValidationError,
-            {"build-for": ["arm64"]},
+            {"build-on": ["amd64", "arm64"], "build-for": ["arm64"]},
         ),
     ],
 )
@@ -223,12 +214,6 @@ def test_project_platform_invalid(
 @pytest.mark.parametrize(
     ("error_value", "platforms"),
     [
-        # A platform validation error must have an explicit prefix indicating
-        # the platform entry for which the validation has failed
-        (
-            "'build_for' expects 'build_on'",
-            {"foo": {"build-for": ["amd64"]}},
-        ),
         # If the label maps to a valid architecture and
         # `build-for` is present, then both need to have the same value    mock_platforms = {"mock": {"build-on": "amd64"}}
         (
@@ -237,26 +222,22 @@ def test_project_platform_invalid(
         ),
         # Both build and target architectures must be supported
         (
-            "none of these build architectures is supported",
+            "Invalid architecture: 'noarch' must be a valid debian architecture.",
             {
                 "mock": {"build-on": ["noarch"], "build-for": ["amd64"]},
             },
         ),
         (
-            "build image for target architecture noarch",
+            "Invalid architecture: 'noarch' must be a valid debian architecture.",
             {
                 "mock": {"build-on": ["arm64"], "build-for": ["noarch"]},
             },
         ),
         (
-            "Invalid platform unsupported",
+            "trying to build image in one of ['powerpc']",
             {
-                "unsupported": None,
+                "powerpc": None,
             },
-        ),
-        (
-            "No platforms were specified.",
-            None,
         ),
     ],
 )
@@ -281,8 +262,6 @@ def test_project_package_repositories_invalid(yaml_loaded_data):
 
         return str(err.value)
 
-    # A platform validation error must have an explicit prefix indicating
-    # the platform entry for which the validation has failed
     mock_package_repositories = [{"test"}]
     assert "value is not a valid dict" in reload_project_package_repositories(
         mock_package_repositories,

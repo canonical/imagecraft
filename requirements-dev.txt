@@ -1,10 +1,12 @@
 build==1.2.1
 certifi==2024.7.4
+cffi==1.16.0
 charset-normalizer==3.3.2
 coverage==7.4.4
-craft-application==1.2.1
+craft-application==3.2.0
 craft-archives==1.2.0
 craft-cli==2.6.0
+craft-grammar==1.2.0
 craft-parts==1.33.0
 craft-providers==1.25.0
 Deprecated==1.2.14
@@ -24,8 +26,10 @@ overrides==7.7.0
 packaging==24.1
 platformdirs==4.2.2
 pluggy==1.5.0
+pycparser==2.22
 pydantic==1.10.17
 pydantic-yaml==0.11.2
+pygit2==1.14.1
 pyparsing==3.1.2
 pyproject_hooks==1.1.0
 pytest==7.4.4
@@ -37,6 +41,7 @@ requests==2.31.0
 requests-unixsocket==0.3.0
 six==1.16.0
 smmap==5.0.1
+snap-helpers==0.4.2
 tomli==2.0.1
 types-Deprecated==1.2.9.20240311
 types-PyYAML==6.0.12.20240724

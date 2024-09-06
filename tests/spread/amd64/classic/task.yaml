@@ -6,6 +6,10 @@ execute: |
     mkdir -p /tmp/${SPREAD_VARIANT}/mount
     pushd ${SPREAD_VARIANT}
 
+    # Adapt the conf file to the building env
+    BUILDER_SERIES=`lsb_release -sr`
+    sed -i "s:@BUILDER_SERIES@:$BUILDER_SERIES:g" imagecraft.yaml
+
     imagecraft --verbosity debug pack --destructive-mode
 
     IMG_NAME=pc.img

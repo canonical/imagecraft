@@ -16,15 +16,16 @@
 
 """Main Imagecraft Application."""
 
-from craft_application import Application, AppMetadata, util
+from craft_application import Application, AppMetadata
 from overrides import override  # type: ignore[reportUnknownVariableType]
 
-from imagecraft.models import Project
+from imagecraft.models import project
 
 APP_METADATA = AppMetadata(
     name="imagecraft",
     summary="A tool to create Ubuntu bootable images",
-    ProjectClass=Project,
+    ProjectClass=project.Project,
+    BuildPlannerClass=project.BuildPlanner,
 )
 
 
@@ -32,20 +33,15 @@ class Imagecraft(Application):
     """Imagecraft application definition."""
 
     @override
-    def _configure_services(self, platform: str | None, build_for: str | None) -> None:
-        super()._configure_services(platform, build_for)
-        if build_for is None:
-            build_for = util.get_host_architecture()
-
+    def _configure_services(self, provider_name: str | None) -> None:
         self.services.set_kwargs(
             "package",
-            platform=platform,
-            build_for=build_for,
+            build_plan=self._build_plan,
         )
         self.services.set_kwargs(
             "lifecycle",
             cache_dir=self.cache_dir,
             work_dir=self._work_dir,
-            platform=platform,
-            build_for=build_for,
+            build_plan=self._build_plan,
         )
+        super()._configure_services(provider_name)

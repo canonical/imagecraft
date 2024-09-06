@@ -112,7 +112,7 @@ class PackageRepositoryPPA(BasePackageRepositoryAptPPA):  # type:ignore[misc]
         if not isinstance(data, dict):  # pyright: ignore[reportUnnecessaryIsInstance]
             raise TypeError("Package repository PPA data is not a dictionary")
 
-        return cls(**data)
+        return cls.parse_obj({**data})
 
 
 class PackageRepositoryApt(BasePackageRepositoryApt):  # type:ignore[misc]
@@ -142,7 +142,7 @@ class PackageRepositoryApt(BasePackageRepositoryApt):  # type:ignore[misc]
         if not isinstance(data, dict):  # pyright: ignore[reportUnnecessaryIsInstance]
             raise TypeError("Package repository data is not a dictionary")
 
-        return cls(**data)
+        return cls.parse_obj({**data})
 
 
 def validate_package_repositories(

@@ -170,7 +170,7 @@ def test_get_main_package_repository_error():
         ),
     ],
 )
-def test_validate_package_repositories(
+def test_validate_all_package_repositories(
     error_value,
     error_class,
     package_repositories,
