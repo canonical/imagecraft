@@ -5,6 +5,8 @@ Imagecraft
 
 Imagecraft is a tool for creating bootable Ubuntu images. It is a craft tool, which means it is based on the `Snapcraft framework`_.
 
+.. important:: ``imagecraft`` is **not production ready**. Please only use it to experiment building images and provide feedback.
+
 .. toctree::
    :maxdepth: 1
    :hidden:
