@@ -11,4 +11,4 @@ Imagecraft.
    :maxdepth: 1
 
    plugins/gadget_plugin
-   plugins/ubuntu_seed_plugin
+   plugins/ubuntu_bootstrap_plugin

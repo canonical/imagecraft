@@ -26,15 +26,15 @@ from imagecraft.models.package_repository import (
     PackageRepositoryApt,
     UsedForEnum,
 )
-from imagecraft.plugins import ubuntu_seed
+from imagecraft.plugins import ubuntu_bootstrap
 
-UBUNTU_SEED_BASIC_SPEC = {
-    "plugin": "ubuntu-seed",
-    "ubuntu-seed-pocket": "updates",
-    "ubuntu-seed-extra-snaps": ["core20", "snapd"],
-    "ubuntu-seed-extra-packages": ["apt"],
-    "ubuntu-seed-kernel": "linux-generic",
-    "ubuntu-seed-germinate": {
+UBUNTU_BOOTSTRAP_BASIC_SPEC = {
+    "plugin": "ubuntu-bootstrap",
+    "ubuntu-bootstrap-pocket": "updates",
+    "ubuntu-bootstrap-extra-snaps": ["core20", "snapd"],
+    "ubuntu-bootstrap-extra-packages": ["apt"],
+    "ubuntu-bootstrap-kernel": "linux-generic",
+    "ubuntu-bootstrap-germinate": {
         "urls": ["git://git.launchpad.net/~ubuntu-core-dev/ubuntu-seeds/+git/"],
         "branch": "jammy",
         "names": ["server", "minimal", "standard", "cloud-image"],
@@ -42,13 +42,13 @@ UBUNTU_SEED_BASIC_SPEC = {
 }
 
 
-UBUNTU_SEED_NO_SOURCE_BRANCH = {
-    "plugin": "ubuntu-seed",
-    "ubuntu-seed-pocket": "updates",
-    "ubuntu-seed-extra-snaps": ["core20", "snapd"],
-    "ubuntu-seed-extra-packages": ["apt"],
-    "ubuntu-seed-kernel": "linux-generic",
-    "ubuntu-seed-germinate": {
+UBUNTU_BOOTSTRAP_NO_SOURCE_BRANCH = {
+    "plugin": "ubuntu-bootstrap",
+    "ubuntu-bootstrap-pocket": "updates",
+    "ubuntu-bootstrap-extra-snaps": ["core20", "snapd"],
+    "ubuntu-bootstrap-extra-packages": ["apt"],
+    "ubuntu-bootstrap-kernel": "linux-generic",
+    "ubuntu-bootstrap-germinate": {
         "urls": ["git://git.launchpad.net/~ubuntu-core-dev/ubuntu-seeds/+git/"],
         "names": ["server", "minimal", "standard", "cloud-image"],
     },
@@ -56,15 +56,15 @@ UBUNTU_SEED_NO_SOURCE_BRANCH = {
 
 
 @pytest.fixture()
-def ubuntu_seed_plugin():
-    def _ubuntu_seed_plugin(spec, tmp_path):
+def ubuntu_bootstrap_plugin():
+    def _ubuntu_bootstrap_plugin(spec, tmp_path):
         project_dirs = craft_parts.ProjectDirs(work_dir=tmp_path)
-        plugin_properties = ubuntu_seed.UbuntuSeedPluginProperties.unmarshal(
+        plugin_properties = ubuntu_bootstrap.UbuntuBootstrapPluginProperties.unmarshal(
             spec,
         )
         part_spec = plugins.extract_part_properties(
             spec,
-            plugin_name="ubuntu-seed",
+            plugin_name="ubuntu-bootstrap",
         )
         part = craft_parts.Part(
             "rootfs",
@@ -105,51 +105,51 @@ def ubuntu_seed_plugin():
             properties=plugin_properties,
         )
 
-    return _ubuntu_seed_plugin
+    return _ubuntu_bootstrap_plugin
 
 
 def test_invalid_properties():
-    spec = UBUNTU_SEED_BASIC_SPEC.copy()
-    spec.update({"ubuntu-seed-something-invalid": True})
+    spec = UBUNTU_BOOTSTRAP_BASIC_SPEC.copy()
+    spec.update({"ubuntu-bootstrap-something-invalid": True})
     with pytest.raises(pydantic.ValidationError) as raised:
-        ubuntu_seed.UbuntuSeedPlugin.properties_class.unmarshal(spec)
+        ubuntu_bootstrap.UbuntuBootstrapPlugin.properties_class.unmarshal(spec)
     err = raised.value.errors()
     assert len(err) == 1
-    assert err[0]["loc"] == ("ubuntu-seed-something-invalid",)
+    assert err[0]["loc"] == ("ubuntu-bootstrap-something-invalid",)
     assert err[0]["type"] == "value_error.extra"
 
 
 def test_missing_properties():
     with pytest.raises(pydantic.ValidationError) as raised:
-        ubuntu_seed.UbuntuSeedPlugin.properties_class.unmarshal(
+        ubuntu_bootstrap.UbuntuBootstrapPlugin.properties_class.unmarshal(
             {"gadget-something-invalid": True},
         )
     err = raised.value.errors()
     assert len(err) == 1
-    assert err[0]["loc"] == ("ubuntu-seed-germinate",)
+    assert err[0]["loc"] == ("ubuntu-bootstrap-germinate",)
     assert err[0]["type"] == "value_error.missing"
 
 
-def test_get_build_snaps(ubuntu_seed_plugin, tmp_path):
-    plugin = ubuntu_seed_plugin(UBUNTU_SEED_BASIC_SPEC, tmp_path)
+def test_get_build_snaps(ubuntu_bootstrap_plugin, tmp_path):
+    plugin = ubuntu_bootstrap_plugin(UBUNTU_BOOTSTRAP_BASIC_SPEC, tmp_path)
     assert plugin.get_build_snaps() == set("ubuntu-image")
 
 
-def test_get_build_packages(ubuntu_seed_plugin, tmp_path):
-    plugin = ubuntu_seed_plugin(UBUNTU_SEED_BASIC_SPEC, tmp_path)
+def test_get_build_packages(ubuntu_bootstrap_plugin, tmp_path):
+    plugin = ubuntu_bootstrap_plugin(UBUNTU_BOOTSTRAP_BASIC_SPEC, tmp_path)
     assert plugin.get_build_packages() == set()
 
 
-def test_get_build_environment(ubuntu_seed_plugin, tmp_path):
-    plugin = ubuntu_seed_plugin(UBUNTU_SEED_BASIC_SPEC, tmp_path)
+def test_get_build_environment(ubuntu_bootstrap_plugin, tmp_path):
+    plugin = ubuntu_bootstrap_plugin(UBUNTU_BOOTSTRAP_BASIC_SPEC, tmp_path)
     assert plugin.get_build_environment() == {}
 
 
-def test_get_build_commands(ubuntu_seed_plugin, mocker, tmp_path):
-    plugin = ubuntu_seed_plugin(UBUNTU_SEED_BASIC_SPEC, tmp_path)
+def test_get_build_commands(ubuntu_bootstrap_plugin, mocker, tmp_path):
+    plugin = ubuntu_bootstrap_plugin(UBUNTU_BOOTSTRAP_BASIC_SPEC, tmp_path)
 
     with patch(
-        "imagecraft.plugins.ubuntu_seed.ubuntu_image_cmds_build_rootfs",
+        "imagecraft.plugins.ubuntu_bootstrap.ubuntu_image_cmds_build_rootfs",
         return_value=["build_rootfs_cmd1", "build_rootfs_cmd2"],
     ) as build_rootfs_patcher:
         assert plugin.get_build_commands() == [
@@ -161,27 +161,27 @@ def test_get_build_commands(ubuntu_seed_plugin, mocker, tmp_path):
             "jammy",
             "amd64",
             "release",
-            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("urls"),
-            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("branch"),
-            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("names"),
+            UBUNTU_BOOTSTRAP_BASIC_SPEC["ubuntu-bootstrap-germinate"].get("urls"),
+            UBUNTU_BOOTSTRAP_BASIC_SPEC["ubuntu-bootstrap-germinate"].get("branch"),
+            UBUNTU_BOOTSTRAP_BASIC_SPEC["ubuntu-bootstrap-germinate"].get("names"),
             ["main", "restricted"],
             "ubuntu",
             "http://archive.ubuntu.com/ubuntu/",
-            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-pocket"],
-            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-kernel"],
-            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-extra-snaps"],
-            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-extra-packages"],
+            UBUNTU_BOOTSTRAP_BASIC_SPEC["ubuntu-bootstrap-pocket"],
+            UBUNTU_BOOTSTRAP_BASIC_SPEC["ubuntu-bootstrap-kernel"],
+            UBUNTU_BOOTSTRAP_BASIC_SPEC["ubuntu-bootstrap-extra-snaps"],
+            UBUNTU_BOOTSTRAP_BASIC_SPEC["ubuntu-bootstrap-extra-packages"],
             None,
             None,
             debug=False,
         )
 
     with patch(
-        "imagecraft.plugins.ubuntu_seed.ubuntu_image_cmds_build_rootfs",
+        "imagecraft.plugins.ubuntu_bootstrap.ubuntu_image_cmds_build_rootfs",
         return_value=["build_rootfs_cmd1", "build_rootfs_cmd2"],
     ) as build_rootfs_patcher:
         # test without source_branch
-        plugin = ubuntu_seed_plugin(UBUNTU_SEED_NO_SOURCE_BRANCH, tmp_path)
+        plugin = ubuntu_bootstrap_plugin(UBUNTU_BOOTSTRAP_NO_SOURCE_BRANCH, tmp_path)
 
         assert plugin.get_build_commands() == [
             "build_rootfs_cmd1",
@@ -192,16 +192,18 @@ def test_get_build_commands(ubuntu_seed_plugin, mocker, tmp_path):
             "jammy",
             "amd64",
             "release",
-            UBUNTU_SEED_NO_SOURCE_BRANCH["ubuntu-seed-germinate"].get("urls"),
+            UBUNTU_BOOTSTRAP_NO_SOURCE_BRANCH["ubuntu-bootstrap-germinate"].get("urls"),
             "jammy",
-            UBUNTU_SEED_NO_SOURCE_BRANCH["ubuntu-seed-germinate"].get("names"),
+            UBUNTU_BOOTSTRAP_NO_SOURCE_BRANCH["ubuntu-bootstrap-germinate"].get(
+                "names",
+            ),
             ["main", "restricted"],
             "ubuntu",
             "http://archive.ubuntu.com/ubuntu/",
-            UBUNTU_SEED_NO_SOURCE_BRANCH["ubuntu-seed-pocket"],
-            UBUNTU_SEED_NO_SOURCE_BRANCH["ubuntu-seed-kernel"],
-            UBUNTU_SEED_NO_SOURCE_BRANCH["ubuntu-seed-extra-snaps"],
-            UBUNTU_SEED_NO_SOURCE_BRANCH["ubuntu-seed-extra-packages"],
+            UBUNTU_BOOTSTRAP_NO_SOURCE_BRANCH["ubuntu-bootstrap-pocket"],
+            UBUNTU_BOOTSTRAP_NO_SOURCE_BRANCH["ubuntu-bootstrap-kernel"],
+            UBUNTU_BOOTSTRAP_NO_SOURCE_BRANCH["ubuntu-bootstrap-extra-snaps"],
+            UBUNTU_BOOTSTRAP_NO_SOURCE_BRANCH["ubuntu-bootstrap-extra-packages"],
             None,
             None,
             debug=False,
@@ -209,7 +211,7 @@ def test_get_build_commands(ubuntu_seed_plugin, mocker, tmp_path):
 
     # Test with a customization package repository
     with patch(
-        "imagecraft.plugins.ubuntu_seed.ubuntu_image_cmds_build_rootfs",
+        "imagecraft.plugins.ubuntu_bootstrap.ubuntu_image_cmds_build_rootfs",
         return_value=["build_rootfs_cmd1", "build_rootfs_cmd2"],
     ) as build_rootfs_patcher:
         plugin._part_info.project_info.package_repositories_ = [
@@ -242,16 +244,16 @@ def test_get_build_commands(ubuntu_seed_plugin, mocker, tmp_path):
             "jammy",
             "amd64",
             "release",
-            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("urls"),
-            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("branch"),
-            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-germinate"].get("names"),
+            UBUNTU_BOOTSTRAP_BASIC_SPEC["ubuntu-bootstrap-germinate"].get("urls"),
+            UBUNTU_BOOTSTRAP_BASIC_SPEC["ubuntu-bootstrap-germinate"].get("branch"),
+            UBUNTU_BOOTSTRAP_BASIC_SPEC["ubuntu-bootstrap-germinate"].get("names"),
             ["main", "restricted"],
             "ubuntu",
             "http://archive.ubuntu.com/ubuntu/",
-            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-pocket"],
-            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-kernel"],
-            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-extra-snaps"],
-            UBUNTU_SEED_BASIC_SPEC["ubuntu-seed-extra-packages"],
+            UBUNTU_BOOTSTRAP_BASIC_SPEC["ubuntu-bootstrap-pocket"],
+            UBUNTU_BOOTSTRAP_BASIC_SPEC["ubuntu-bootstrap-kernel"],
+            UBUNTU_BOOTSTRAP_BASIC_SPEC["ubuntu-bootstrap-extra-snaps"],
+            UBUNTU_BOOTSTRAP_BASIC_SPEC["ubuntu-bootstrap-extra-packages"],
             ["universe", "restricted"],
             "proposed",
             debug=False,
