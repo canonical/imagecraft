@@ -20,7 +20,7 @@ This module defines a imagecraft.yaml file, exportable to a JSON schema.
 """
 
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import craft_application
 import pydantic
@@ -29,12 +29,11 @@ from craft_application.models import BuildPlanner as BaseBuildPlanner
 from craft_application.models import Project as BaseProject
 from craft_application.util.error_formatting import format_pydantic_errors
 from pydantic import (
+    ConfigDict,
     ValidationError,
-    conlist,
-    root_validator,  # pyright: ignore[reportUnknownVariableType]
-    validator,  # pyright: ignore[reportUnknownVariableType]
+    field_validator,
+    model_validator,
 )
-from pydantic_yaml import YamlModelMixin
 
 from imagecraft.architectures import SUPPORTED_ARCHS
 from imagecraft.models.errors import ProjectValidationError
@@ -45,13 +44,6 @@ from imagecraft.models.package_repository import (
     validate_package_repositories,
 )
 
-# A workaround for mypy false positives
-# see https://github.com/samuelcolvin/pydantic/issues/975#issuecomment-551147305
-# fmt: off
-if TYPE_CHECKING:
-    UniqueStrList = list[str]
-else:
-    UniqueStrList = conlist(str, unique_items=True, min_items=1)
 
 file_name = "imagecraft.yaml"
 
@@ -61,36 +53,30 @@ def _alias_generator(s: str) -> str:
 class Platform(craft_application.models.Platform):
     """Imagecraft project platform definition."""
 
-    class Config:
-        """Pydantic model configuration."""
+    model_config = ConfigDict(validate_assignment=True, extra=pydantic.Extra.forbid, frozen=True, populate_by_name=True, alias_generator=_alias_generator)
 
-        validate_assignment = True
-        extra = pydantic.Extra.forbid
-        allow_mutation = True
-        allow_population_by_field_name = True
-        alias_generator = _alias_generator
-
-    build_on: UniqueStrList | None
-    build_for: UniqueStrList | None
+    build_on: set[str] | None = pydantic.Field(validate_default=True)
+    build_for: set[str] | None = pydantic.Field(validate_default=True)
 
 
-    @validator("build_on", "build_for", pre=True, always=True) # pyright: ignore[reportUntypedFunctionDecorator]
+    @field_validator("build_on", "build_for", mode="before") # pyright: ignore[reportUntypedFunctionDecorator]
     @classmethod
-    def _apply_vectorise(cls, val: UniqueStrList | None | str) -> UniqueStrList | None | str:
+    def _apply_vectorise(cls, val: set[str] | None | str) -> set[str] | None | str:
         """Implement a hook to vectorise."""
         if isinstance(val, str):
             val = [val]
         return val
 
-    @validator("build_for", pre=True, always=True) # pyright: ignore[reportUntypedFunctionDecorator]
+    @field_validator("build_for", mode="before") # pyright: ignore[reportUntypedFunctionDecorator]
     @classmethod
-    def _preprocess_build_for(cls, val: UniqueStrList | None | str, values: dict[str, Any]) -> UniqueStrList | None | str:
+    def _preprocess_build_for(cls, val: set[str] | None | str, values: dict[str, Any]) -> set[str] | None | str:
         build_on = values.get("build_on")
         if not val or len(val) == 0:
             return build_on
         return val
 
-    @root_validator(skip_on_failure=True) # pyright: ignore[reportUntypedFunctionDecorator]
+    # @model_validator(skip_on_failure=True) # pyright: ignore[reportUntypedFunctionDecorator]
+    @model_validator(mode="after") # pyright: ignore[reportUntypedFunctionDecorator]
     @classmethod
     def _validate_platform_set(cls, values: Mapping[str, Any]) -> Mapping[str, Any]:
         """Validate the build_on build_for combination."""
@@ -126,7 +112,8 @@ class BuildPlanner(BaseBuildPlanner):
     base: str | None
     build_base: str | None
 
-    @validator("platforms", pre=True) # pyright: ignore[reportUntypedFunctionDecorator]
+    @field_validator("platforms", mode="before") # pyright: ignore[reportUntypedFunctionDecorator]
+    @classmethod
     @classmethod
     def _preprocess_all_platforms(cls, platforms: dict[str, Any]) -> dict[str, Any]:
         """Convert the simplified form of platform to the full one."""
@@ -136,7 +123,8 @@ class BuildPlanner(BaseBuildPlanner):
 
         return platforms
 
-    @validator("platforms") # pyright: ignore[reportUntypedFunctionDecorator]
+    @field_validator("platforms") # pyright: ignore[reportUntypedFunctionDecorator]
+    @classmethod
     @classmethod
     def _validate_all_platforms(cls, platforms: dict[str, Any]) -> dict[str, Platform]:
         """Make sure all provided platforms are tangible and sane."""
@@ -187,7 +175,7 @@ class BuildPlanner(BaseBuildPlanner):
 
         return platforms
 
-class Project(YamlModelMixin, BuildPlanner, BaseProject):
+class Project(BuildPlanner, BaseProject):
     """Definition of imagecraft.yaml configuration."""
 
     series: str
@@ -196,17 +184,9 @@ class Project(YamlModelMixin, BuildPlanner, BaseProject):
     # the received package-repositories in it.
     package_repositories: list[dict[str, Any]] | None = pydantic.Field(alias="unused")
     platforms: dict[str, Platform]  # type: ignore[assignment]
+    model_config = ConfigDict(validate_assignment=True, extra=pydantic.Extra.forbid, frozen=True, populate_by_name=True, alias_generator=_alias_generator)
 
-    class Config:
-        """Pydantic model configuration."""
-
-        validate_assignment = True
-        extra = pydantic.Extra.forbid
-        allow_mutation = True
-        allow_population_by_field_name = True
-        alias_generator = _alias_generator
-
-    @validator("package_repositories_") # pyright: ignore[reportUntypedFunctionDecorator]
+    @field_validator("package_repositories_") # pyright: ignore[reportUntypedFunctionDecorator]
     @classmethod
     def _validate_all_package_repositories(
         cls, project_repositories: list[dict[str, Any]],
@@ -217,11 +197,8 @@ class Project(YamlModelMixin, BuildPlanner, BaseProject):
         validate_package_repositories(repositories)
         return repositories
 
-    @pydantic.validator(  # pyright: ignore[reportUnknownMemberType,reportUntypedFunctionDecorator]
-        "package_repositories_", each_item=True,
-    )
-    def _validate_package_repositories(
-        cls, repository: dict[str, Any],
+    def _validate_package_repository(
+        repository: dict[str, Any],
     ) -> dict[str, Any]:
         # Override _validate_package_repositories defined in craft-application
         # Do nothing because at this point the package-repositories are not dicts anymore

@@ -40,14 +40,14 @@ from craft_archives.repo.package_repository import (
 )
 from pydantic import (
     AnyUrl,
-    ConstrainedStr,
     FileUrl,  # pyright: ignore[reportUnknownVariableType]
 )
+from pydantic.types import StringConstraints
 
 from imagecraft.models.errors import PackageRepositoryValidationError
 
 
-class AuthStr(ConstrainedStr):
+class AuthStr(StringConstraints):
     """A constrained string for an auth string."""
 
     regex = re.compile(r".*:.*")

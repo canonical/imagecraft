@@ -18,7 +18,7 @@
 """Ubuntu-image image definition model."""
 
 from craft_application.util import dump_yaml
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from imagecraft.models.package_repository import PackageRepositoryPPA, UsedForEnum
 
@@ -43,8 +43,8 @@ class PPA(BaseModel):
     """Pydantic model for the PPA object in an ImageDefinition."""
 
     name: str
-    fingerprint: str | None
-    auth: str | None
+    fingerprint: str | None = None
+    auth: str | None = None
     keep_enabled: bool
 
 
@@ -65,20 +65,13 @@ def init_ppa_from_craft_ppa(craft_ppa: PackageRepositoryPPA) -> PPA:
 class Customization(BaseModel):
     """Pydantic model for the Customization object in an ImageDefinition."""
 
-    components: list[str] | None
-    pocket: str | None
+    components: list[str] | None = None
+    pocket: str | None = None
 
-    extra_snaps: list[Snap] | None
-    extra_packages: list[Package] | None
-    extra_ppas: list[PPA] | None
-
-    class Config:
-        """Pydantic model configuration."""
-
-        validate_assignment = True
-        allow_mutation = True
-        allow_population_by_field_name = True
-        alias_generator = _alias_generator
+    extra_snaps: list[Snap] | None = None
+    extra_packages: list[Package] | None = None
+    extra_ppas: list[PPA] | None = None
+    model_config = ConfigDict(validate_assignment=True, frozen=True, populate_by_name=True, alias_generator=_alias_generator)
 
 
 class Seed(BaseModel):
@@ -88,33 +81,19 @@ class Seed(BaseModel):
     branch: str
     names: list[str]
     pocket: str
-
-    class Config:
-        """Pydantic model configuration."""
-
-        validate_assignment = True
-        allow_mutation = True
-        allow_population_by_field_name = True
-        alias_generator = _alias_generator
+    model_config = ConfigDict(validate_assignment=True, frozen=True, populate_by_name=True, alias_generator=_alias_generator)
 
 
 class Rootfs(BaseModel):
     """Pydantic model for the Rootfs object in an ImageDefinition."""
 
-    components: list[str] | None
-    flavor: str | None
+    components: list[str] | None = None
+    flavor: str | None = None
     pocket: str
-    mirror: str | None
+    mirror: str | None = None
     seed: Seed
     sources_list_deb822: bool
-
-    class Config:
-        """Pydantic model configuration."""
-
-        validate_assignment = True
-        allow_mutation = True
-        allow_population_by_field_name = True
-        alias_generator = _alias_generator
+    model_config = ConfigDict(validate_assignment=True, frozen=True, populate_by_name=True, alias_generator=_alias_generator)
 
 
 class ImageDefinition(BaseModel):
@@ -126,17 +105,10 @@ class ImageDefinition(BaseModel):
     class_: str = Field(alias="class")
     architecture: str
     series: str
-    kernel: str | None
+    kernel: str | None = None
     rootfs: Rootfs
     customization: Customization | None = None
-
-    class Config:
-        """Pydantic model configuration."""
-
-        validate_assignment = True
-        allow_mutation = True
-        allow_population_by_field_name = True
-        alias_generator = _alias_generator
+    model_config = ConfigDict(validate_assignment=True, frozen=True, populate_by_name=True, alias_generator=_alias_generator)
 
     # pylint: disable=too-many-arguments
     def __init__(  # noqa: PLR0913
@@ -207,9 +179,5 @@ class ImageDefinition(BaseModel):
     def dump_yaml(self) -> str | None:
         """Generate a definition yaml file for rootfs creation."""
         return dump_yaml(
-            self.dict(
-                exclude_unset=True,
-                exclude_none=True,
-                by_alias=True,
-            ),
+            self.model_dump(by_alias=True, exclude_unset=True),
         )

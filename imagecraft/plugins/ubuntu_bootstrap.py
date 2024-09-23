@@ -16,11 +16,12 @@
 
 """UbuntuBootstrap plugin."""
 
-from typing import TYPE_CHECKING, Any, Self, cast
+from typing import List, TYPE_CHECKING, Any, cast
 
 from craft_cli import EmitterMode, emit
 from craft_parts import plugins
-from pydantic import AnyUrl, conlist
+from pydantic import Field, AnyUrl
+from typing_extensions import Annotated, Self
 
 from imagecraft.models.package_repository import (
     get_customization_package_repository,
@@ -28,25 +29,13 @@ from imagecraft.models.package_repository import (
 )
 from imagecraft.ubuntu_image import ubuntu_image_cmds_build_rootfs
 
-# A workaround for mypy false positives
-# see https://github.com/samuelcolvin/pydantic/issues/975#issuecomment-551147305
-# fmt: off
-if TYPE_CHECKING:
-    UniqueStrList = list[str]
-else:
-    UniqueStrList = conlist(str, unique_items=True, min_items=1)
-
-if TYPE_CHECKING:
-    UniqueUrlList = list[str]
-else:
-    UniqueUrlList = conlist(AnyUrl, unique_items=True, min_items=1)
 
 class GerminateProperties(plugins.PluginProperties):
     """Supported attributes for the 'Germinate' section of the UbuntuBootstrapPlugin plugin."""
 
-    urls: UniqueUrlList
+    urls: set[str]
     branch: str | None
-    names: UniqueStrList
+    names: set[str]
     vcs: bool | None = True
 
 class UbuntuBootstrapPluginProperties(plugins.PluginProperties):
@@ -54,8 +43,8 @@ class UbuntuBootstrapPluginProperties(plugins.PluginProperties):
 
     ubuntu_bootstrap_pocket: str = "updates"
     ubuntu_bootstrap_germinate: GerminateProperties
-    ubuntu_bootstrap_extra_snaps: UniqueStrList | None = None
-    ubuntu_bootstrap_extra_packages: UniqueStrList | None = None
+    ubuntu_bootstrap_extra_snaps: set[str] | None = None
+    ubuntu_bootstrap_extra_packages: set[str] | None = None
     ubuntu_bootstrap_kernel: str | None = None
 
     @classmethod
