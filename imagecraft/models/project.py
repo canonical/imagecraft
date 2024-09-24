@@ -20,7 +20,7 @@ This module defines a imagecraft.yaml file, exportable to a JSON schema.
 """
 
 from collections.abc import Mapping
-from typing import Any
+from typing import Any, Optional
 
 import craft_application
 import pydantic
@@ -44,7 +44,6 @@ from imagecraft.models.package_repository import (
     validate_package_repositories,
 )
 
-
 file_name = "imagecraft.yaml"
 
 def _alias_generator(s: str) -> str:
@@ -53,7 +52,13 @@ def _alias_generator(s: str) -> str:
 class Platform(craft_application.models.Platform):
     """Imagecraft project platform definition."""
 
-    model_config = ConfigDict(validate_assignment=True, extra=pydantic.Extra.forbid, frozen=True, populate_by_name=True, alias_generator=_alias_generator)
+    model_config = ConfigDict(
+        validate_assignment=True,
+        extra="forbid",
+        frozen=False,
+        populate_by_name=True,
+        alias_generator=_alias_generator,
+    )
 
     build_on: set[str] | None = pydantic.Field(validate_default=True)
     build_for: set[str] | None = pydantic.Field(validate_default=True)
@@ -67,13 +72,15 @@ class Platform(craft_application.models.Platform):
             val = [val]
         return val
 
-    @field_validator("build_for", mode="before") # pyright: ignore[reportUntypedFunctionDecorator]
+    @pydantic.model_validator(mode="before")
+    # @field_validator("build_for", mode="before") # pyright: ignore[reportUntypedFunctionDecorator]
     @classmethod
-    def _preprocess_build_for(cls, val: set[str] | None | str, values: dict[str, Any]) -> set[str] | None | str:
-        build_on = values.get("build_on")
-        if not val or len(val) == 0:
-            return build_on
-        return val
+    def _preprocess_build_for(cls, values: Mapping[str, list[str]]) -> set[str] | None | str:
+        build_on = values.data.get("build_on")
+        build_for = values.data.get("build_for")
+        if not build_for or len(build_for) == 0:
+            values["build_for"] = build_on
+        return values
 
     # @model_validator(skip_on_failure=True) # pyright: ignore[reportUntypedFunctionDecorator]
     @model_validator(mode="after") # pyright: ignore[reportUntypedFunctionDecorator]
@@ -109,8 +116,8 @@ class BuildPlanner(BaseBuildPlanner):
     """BuildPlanner for Imagecraft projects."""
 
     platforms: dict[str, Platform]  # type: ignore[assignment]
-    base: str | None
-    build_base: str | None
+    base: Optional[str]
+    build_base: Optional[str]
 
     @field_validator("platforms", mode="before") # pyright: ignore[reportUntypedFunctionDecorator]
     @classmethod
@@ -184,7 +191,7 @@ class Project(BuildPlanner, BaseProject):
     # the received package-repositories in it.
     package_repositories: list[dict[str, Any]] | None = pydantic.Field(alias="unused")
     platforms: dict[str, Platform]  # type: ignore[assignment]
-    model_config = ConfigDict(validate_assignment=True, extra=pydantic.Extra.forbid, frozen=True, populate_by_name=True, alias_generator=_alias_generator)
+    model_config = ConfigDict(validate_assignment=True, extra="forbid", frozen=False, populate_by_name=True, alias_generator=_alias_generator)
 
     @field_validator("package_repositories_") # pyright: ignore[reportUntypedFunctionDecorator]
     @classmethod
@@ -216,7 +223,7 @@ class Project(BuildPlanner, BaseProject):
         :raises CraftError: On failure to unmarshal object.
         """
         try:
-            return cls.parse_obj({**data})
+            return cls.model_validate({**data})
         except ValidationError as error:
             raise ProjectValidationError(
                 format_pydantic_errors(error.errors(), file_name=file_name),

@@ -19,7 +19,7 @@
 import enum
 import re
 from collections.abc import Mapping
-from typing import Any
+from typing import Annotated, Any, Optional
 
 import pydantic
 from craft_archives.repo import errors  # type: ignore[import-untyped]
@@ -45,12 +45,6 @@ from pydantic import (
 from pydantic.types import StringConstraints
 
 from imagecraft.models.errors import PackageRepositoryValidationError
-
-
-class AuthStr(StringConstraints):
-    """A constrained string for an auth string."""
-
-    regex = re.compile(r".*:.*")
 
 
 class UsedForEnum(enum.Enum):
@@ -90,10 +84,7 @@ class PackageRepository(BasePackageRepository):  # type:ignore[misc]
 class PackageRepositoryPPA(BasePackageRepositoryAptPPA):  # type:ignore[misc]
     """Imagecraft PPA repository definition."""
 
-    auth: AuthStr | None
-    key_id: KeyIdStr | None = pydantic.Field(
-        alias="key-id",
-    )  # here until added to craft-archives
+    auth: Annotated[str, StringConstraints(pattern=".*:.*")] = None
     used_for: UsedForEnum = UsedForEnum.ALWAYS
 
     @classmethod
@@ -112,19 +103,20 @@ class PackageRepositoryPPA(BasePackageRepositoryAptPPA):  # type:ignore[misc]
         if not isinstance(data, dict):  # pyright: ignore[reportUnnecessaryIsInstance]
             raise TypeError("Package repository PPA data is not a dictionary")
 
-        return cls.parse_obj({**data})
+        return cls.model_validate({**data})
 
 
 class PackageRepositoryApt(BasePackageRepositoryApt):  # type:ignore[misc]
     """Imagecraft APT package repository definition."""
 
-    url: AnyUrl | FileUrl | None  # type: ignore[assignment] # pyright: ignore[reportIncompatibleVariableOverride]
-    key_id: KeyIdStr | None = pydantic.Field(  # type: ignore[assignment]
+    url: Optional[AnyUrl | FileUrl] = None  # type: ignore[assignment] # pyright: ignore[reportIncompatibleVariableOverride]
+    key_id: Optional[KeyIdStr] = pydantic.Field(  # type: ignore[assignment]
         alias="key-id",
+        default=None,
     )
     used_for: UsedForEnum = UsedForEnum.ALWAYS
     pocket: PocketEnum  # type: ignore[assignment] # pyright: ignore[reportIncompatibleVariableOverride]
-    flavor: str | None
+    flavor: Optional[str] = None
 
     @classmethod
     def unmarshal(cls, data: Mapping[str, Any]) -> "PackageRepositoryApt":
@@ -142,7 +134,7 @@ class PackageRepositoryApt(BasePackageRepositoryApt):  # type:ignore[misc]
         if not isinstance(data, dict):  # pyright: ignore[reportUnnecessaryIsInstance]
             raise TypeError("Package repository data is not a dictionary")
 
-        return cls.parse_obj({**data})
+        return cls.model_validate({**data})
 
 
 def validate_package_repositories(

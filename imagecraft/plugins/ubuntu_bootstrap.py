@@ -16,12 +16,10 @@
 
 """UbuntuBootstrap plugin."""
 
-from typing import List, TYPE_CHECKING, Any, cast
+from typing import Any, Optional, Self, cast
 
 from craft_cli import EmitterMode, emit
 from craft_parts import plugins
-from pydantic import Field, AnyUrl
-from typing_extensions import Annotated, Self
 
 from imagecraft.models.package_repository import (
     get_customization_package_repository,
@@ -34,33 +32,30 @@ class GerminateProperties(plugins.PluginProperties):
     """Supported attributes for the 'Germinate' section of the UbuntuBootstrapPlugin plugin."""
 
     urls: set[str]
-    branch: str | None
+    branch: Optional[str] = None
     names: set[str]
-    vcs: bool | None = True
+    vcs: Optional[bool] = True
 
 class UbuntuBootstrapPluginProperties(plugins.PluginProperties):
     """Supported attributes for the 'UbuntuBootstrapPlugin' plugin."""
 
     ubuntu_bootstrap_pocket: str = "updates"
     ubuntu_bootstrap_germinate: GerminateProperties
-    ubuntu_bootstrap_extra_snaps: set[str] | None = None
-    ubuntu_bootstrap_extra_packages: set[str] | None = None
-    ubuntu_bootstrap_kernel: str | None = None
+    ubuntu_bootstrap_extra_snaps: Optional[set[str]] = None
+    ubuntu_bootstrap_extra_packages: Optional[set[str]] = None
+    ubuntu_bootstrap_kernel: Optional[str] = None
 
-    @classmethod
-    def unmarshal(cls, data: dict[str, Any]) -> Self:
-        """Populate properties from the part specification.
+    # @classmethod
+    # def unmarshal(cls, data: dict[str, Any]) -> Self:
+    #     """Populate properties from the part specification.
 
-        :param data: A dictionary containing part properties.
+    #     :param data: A dictionary containing part properties.
 
-        :return: The populated plugin properties data object.
+    #     :return: The populated plugin properties data object.
 
-        :raise pydantic.ValidationError: If validation fails.
-        """
-        plugin_data = plugins.base.extract_plugin_properties(
-            data, plugin_name="ubuntu-bootstrap",
-        )
-        return cls(**plugin_data)
+    #     :raise pydantic.ValidationError: If validation fails.
+    #     """
+    #     return GerminateProperties.unmarshal(data)
 
 
 class UbuntuBootstrapPlugin(plugins.Plugin):

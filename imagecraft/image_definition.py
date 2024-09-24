@@ -17,6 +17,8 @@
 
 """Ubuntu-image image definition model."""
 
+from typing import Optional
+
 from craft_application.util import dump_yaml
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -43,8 +45,8 @@ class PPA(BaseModel):
     """Pydantic model for the PPA object in an ImageDefinition."""
 
     name: str
-    fingerprint: str | None = None
-    auth: str | None = None
+    fingerprint: Optional[str] = None
+    auth: Optional[str] = None
     keep_enabled: bool
 
 
@@ -66,12 +68,18 @@ class Customization(BaseModel):
     """Pydantic model for the Customization object in an ImageDefinition."""
 
     components: list[str] | None = None
-    pocket: str | None = None
+    pocket: Optional[str] = None
 
     extra_snaps: list[Snap] | None = None
     extra_packages: list[Package] | None = None
     extra_ppas: list[PPA] | None = None
-    model_config = ConfigDict(validate_assignment=True, frozen=True, populate_by_name=True, alias_generator=_alias_generator)
+    model_config = ConfigDict(
+        validate_assignment=True,
+        frozen=False,
+        extra="forbid",
+        populate_by_name=True,
+        alias_generator=_alias_generator,
+    )
 
 
 class Seed(BaseModel):
@@ -81,19 +89,31 @@ class Seed(BaseModel):
     branch: str
     names: list[str]
     pocket: str
-    model_config = ConfigDict(validate_assignment=True, frozen=True, populate_by_name=True, alias_generator=_alias_generator)
+    model_config = ConfigDict(
+        validate_assignment=True,
+        frozen=False,
+        extra="forbid",
+        populate_by_name=True,
+        alias_generator=_alias_generator,
+    )
 
 
 class Rootfs(BaseModel):
     """Pydantic model for the Rootfs object in an ImageDefinition."""
 
     components: list[str] | None = None
-    flavor: str | None = None
+    flavor: Optional[str] = None
     pocket: str
-    mirror: str | None = None
+    mirror: Optional[str] = None
     seed: Seed
     sources_list_deb822: bool
-    model_config = ConfigDict(validate_assignment=True, frozen=True, populate_by_name=True, alias_generator=_alias_generator)
+    model_config = ConfigDict(
+        validate_assignment=True,
+        frozen=False,
+        extra="forbid",
+        populate_by_name=True,
+        alias_generator=_alias_generator,
+    )
 
 
 class ImageDefinition(BaseModel):
@@ -105,10 +125,16 @@ class ImageDefinition(BaseModel):
     class_: str = Field(alias="class")
     architecture: str
     series: str
-    kernel: str | None = None
+    kernel: Optional[str] = None
     rootfs: Rootfs
     customization: Customization | None = None
-    model_config = ConfigDict(validate_assignment=True, frozen=True, populate_by_name=True, alias_generator=_alias_generator)
+    model_config = ConfigDict(
+        validate_assignment=True,
+        frozen=False,
+        extra="forbid",
+        populate_by_name=True,
+        alias_generator=_alias_generator,
+    )
 
     # pylint: disable=too-many-arguments
     def __init__(  # noqa: PLR0913
@@ -117,10 +143,10 @@ class ImageDefinition(BaseModel):
         revision: int,
         architecture: str,
         pocket: str,
-        kernel: str | None,
+        kernel: Optional[str],
         components: list[str] | None,
-        flavor: str | None,
-        mirror: str | None,
+        flavor: Optional[str],
+        mirror: Optional[str],
         seed_urls: list[str],
         seed_branch: str,
         seed_names: list[str],
@@ -129,7 +155,7 @@ class ImageDefinition(BaseModel):
         extra_packages: list[str] | None = None,
         extra_ppas: list[PackageRepositoryPPA] | None = None,
         custom_components: list[str] | None = None,
-        custom_pocket: str | None = None,
+        custom_pocket: Optional[str] = None,
     ):
         super().__init__(
             name="craft-driver",
@@ -176,7 +202,7 @@ class ImageDefinition(BaseModel):
                 pocket=custom_pocket,
             )
 
-    def dump_yaml(self) -> str | None:
+    def dump_yaml(self) -> Optional[str]:
         """Generate a definition yaml file for rootfs creation."""
         return dump_yaml(
             self.model_dump(by_alias=True, exclude_unset=True),

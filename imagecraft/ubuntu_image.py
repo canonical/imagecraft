@@ -19,6 +19,7 @@
 import json
 import pathlib
 import subprocess
+from typing import Optional
 
 from craft_cli import emit
 
@@ -34,14 +35,14 @@ def ubuntu_image_cmds_build_rootfs(  # noqa: PLR0913
     seed_branch: str,
     seeds: list[str],
     components: list[str] | None,
-    flavor: str | None,
-    mirror: str | None,
+    flavor: Optional[str],
+    mirror: Optional[str],
     seed_pocket: str,
-    kernel: str | None = None,
+    kernel: Optional[str] = None,
     extra_snaps: list[str] | None = None,
     extra_packages: list[str] | None = None,
     custom_components: list[str] | None = None,
-    custom_pocket: str | None = None,
+    custom_pocket: Optional[str] = None,
     *,
     debug: bool = False,
 ) -> list[str]:
@@ -83,7 +84,7 @@ def ubuntu_image_pack(
     gadget_path: str,
     output_path: str,
     workdir_path: str,
-    image_type: str | None = None,
+    image_type: Optional[str] = None,
     *,
     debug: bool = False,
 ) -> None:

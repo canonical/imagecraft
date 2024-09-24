@@ -16,6 +16,8 @@
 
 """Main Imagecraft Application."""
 
+from typing import Optional
+
 from craft_application import Application, AppMetadata
 from overrides import override  # type: ignore[reportUnknownVariableType]
 
@@ -33,7 +35,7 @@ class Imagecraft(Application):
     """Imagecraft application definition."""
 
     @override
-    def _configure_services(self, provider_name: str | None) -> None:
+    def _configure_services(self, provider_name: Optional[str]) -> None:
         self.services.set_kwargs(
             "package",
             build_plan=self._build_plan,
