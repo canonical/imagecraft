@@ -20,9 +20,9 @@ parts:
     source: https://github.com/snapcore/pc-gadget.git
     source-branch: classic
   rootfs:
-    plugin: ubuntu-seed
-    ubuntu-seed-pocket: updates
-    ubuntu-seed-germinate:
+    plugin: ubuntu-bootstrap
+    ubuntu-bootstrap-pocket: updates
+    ubuntu-bootstrap-germinate:
       urls:
         - "git://git.launchpad.net/~ubuntu-core-dev/ubuntu-seeds/+git/"
       branch: noble
@@ -32,8 +32,8 @@ parts:
         - minimal
         - standard
         - cloud-image
-    ubuntu-seed-kernel: linux-image-generic
-    ubuntu-seed-extra-snaps: [snapd]
+    ubuntu-bootstrap-kernel: linux-image-generic
+    ubuntu-bootstrap-extra-snaps: [snapd]
     stage:
       - -rootfs/etc/cloud/cloud.cfg.d/90_dpkg.cfg
   cloud-init:

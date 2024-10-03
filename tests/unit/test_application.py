@@ -41,8 +41,8 @@ parts:
     source: https://github.com/snapcore/pc-gadget.git
     source-branch: classic
   rootfs:
-    plugin: ubuntu-seed
-    ubuntu-seed-germinate:
+    plugin: ubuntu-bootstrap
+    ubuntu-bootstrap-germinate:
       urls:
         - "git://git.launchpad.net/~ubuntu-core-dev/ubuntu-seeds/+git/"
       branch: jammy
@@ -51,9 +51,9 @@ parts:
         - minimal
         - standard
         - cloud-image
-    ubuntu-seed-pocket: updates
-    ubuntu-seed-extra-snaps: [core20, snapd]
-    ubuntu-seed-kernel: linux-generic
+    ubuntu-bootstrap-pocket: updates
+    ubuntu-bootstrap-extra-snaps: [core20, snapd]
+    ubuntu-bootstrap-kernel: linux-generic
     stage:
       - -etc/cloud/cloud.cfg.d/90_dpkg.cfg
 """
@@ -69,8 +69,8 @@ platforms:
     build-on: [amd64]
 parts:
   rootfs:
-    plugin: ubuntu-seed
-    ubuntu-seed-germinate:
+    plugin: ubuntu-bootstrap
+    ubuntu-bootstrap-germinate:
       names:
         - server
         - minimal
@@ -79,9 +79,9 @@ parts:
       urls:
         - "git://git.launchpad.net/~ubuntu-core-dev/ubuntu-seeds/+git/"
       branch: jammy
-    ubuntu-seed-pocket: updates
-    ubuntu-seed-extra-snaps: [core20, snapd]
-    ubuntu-seed-kernel: linux-generic
+    ubuntu-bootstrap-pocket: updates
+    ubuntu-bootstrap-extra-snaps: [core20, snapd]
+    ubuntu-bootstrap-kernel: linux-generic
 """
 
 
@@ -104,4 +104,7 @@ def test_application_no_gadget(new_dir, default_application):
 
     project = default_application.project
 
-    assert project.parts["rootfs"].get("ubuntu-seed-germinate").get("branch") == "jammy"
+    assert (
+        project.parts["rootfs"].get("ubuntu-bootstrap-germinate").get("branch")
+        == "jammy"
+    )

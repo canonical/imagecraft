@@ -1,7 +1,7 @@
-Ubuntu Seed plugin
-==================
+Ubuntu Bootstrap plugin
+=======================
 
-The Ubuntu Seed plugin can be used to build define needed information to build a rootfs via ubuntu-image.
+The Ubuntu Bootstrap plugin can be used to build define needed information to build a rootfs via ubuntu-image.
 
 Keywords
 --------
@@ -11,8 +11,8 @@ This plugin uses the common :ref:`plugin <part-properties-plugin>` keywords.
 Additionally, this plugin provides the plugin-specific keywords defined in the
 following sections.
 
-ubuntu_seed_pocket
-~~~~~~~~~~~~~~~~~~
+ubuntu_bootstrap_pocket
+~~~~~~~~~~~~~~~~~~~~~~~
 **Type:** string
 
 **Default value:** "updates"
@@ -20,29 +20,29 @@ ubuntu_seed_pocket
 Pocket to use when configuring the sources list.
 
 
-ubuntu_seed_extra_snaps
-~~~~~~~~~~~~~~~~~~~~~~~
+ubuntu_bootstrap_extra_snaps
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 **Type:** list of strings
 
 List of snaps to add to the resulting image.
 
 
-ubuntu_seed_extra_packages
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+ubuntu_bootstrap_extra_packages
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 **Type:** list of strings
 
 List of packages to add to the resulting image.
 
-ubuntu_seed_kernel
-~~~~~~~~~~~~~~~~~~
+ubuntu_bootstrap_kernel
+~~~~~~~~~~~~~~~~~~~~~~~
 **Type:** string
 
 
 Kernel package to install explicitly.
 
 
-ubuntu_seed_germinate
-~~~~~~~~~~~~~~~~~~~~~
+ubuntu_bootstrap_germinate
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 **Type:** GerminateProperties
 
 
@@ -82,9 +82,9 @@ Example
 .. code-block:: yaml
     
   rootfs:
-    plugin: ubuntu-seed
-    ubuntu-seed-pocket: updates
-    ubuntu-seed-germinate:
+    plugin: ubuntu-bootstrap
+    ubuntu-bootstrap-pocket: updates
+    ubuntu-bootstrap-germinate:
       urls:
         - "git://git.launchpad.net/~ubuntu-core-dev/ubuntu-seeds/+git/"
       branch: jammy
@@ -93,6 +93,6 @@ Example
         - server
         - minimal
         - standard
-    ubuntu-seed-kernel: linux-image-generic
-    ubuntu-seed-extra-snaps: [core20, snapd]
-    ubuntu-seed-extra-packages: [hello-ubuntu-image-public]
+    ubuntu-bootstrap-kernel: linux-image-generic
+    ubuntu-bootstrap-extra-snaps: [core20, snapd]
+    ubuntu-bootstrap-extra-packages: [hello-ubuntu-image-public]

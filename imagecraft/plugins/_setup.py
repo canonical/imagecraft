@@ -16,7 +16,7 @@
 
 from craft_parts import plugins
 
-from imagecraft.plugins import gadget, ubuntu_seed
+from imagecraft.plugins import gadget, ubuntu_bootstrap
 
 
 def setup_plugins() -> None:
@@ -24,6 +24,6 @@ def setup_plugins() -> None:
     plugins.register(
         {
             "gadget": gadget.GadgetPlugin,
-            "ubuntu-seed": ubuntu_seed.UbuntuSeedPlugin,
+            "ubuntu-bootstrap": ubuntu_bootstrap.UbuntuBootstrapPlugin,
         },
     )

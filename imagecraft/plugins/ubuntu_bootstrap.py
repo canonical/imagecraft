@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""UbuntuSeed plugin."""
+"""UbuntuBootstrap plugin."""
 
 from typing import TYPE_CHECKING, Any, Self, cast
 
@@ -42,21 +42,21 @@ else:
     UniqueUrlList = conlist(AnyUrl, unique_items=True, min_items=1)
 
 class GerminateProperties(plugins.PluginProperties):
-    """Supported attributes for the 'Germinate' section of the UbuntuSeedPlugin plugin."""
+    """Supported attributes for the 'Germinate' section of the UbuntuBootstrapPlugin plugin."""
 
     urls: UniqueUrlList
     branch: str | None
     names: UniqueStrList
     vcs: bool | None = True
 
-class UbuntuSeedPluginProperties(plugins.PluginProperties):
-    """Supported attributes for the 'UbuntuSeedPlugin' plugin."""
+class UbuntuBootstrapPluginProperties(plugins.PluginProperties):
+    """Supported attributes for the 'UbuntuBootstrapPlugin' plugin."""
 
-    ubuntu_seed_pocket: str = "updates"
-    ubuntu_seed_germinate: GerminateProperties
-    ubuntu_seed_extra_snaps: UniqueStrList | None = None
-    ubuntu_seed_extra_packages: UniqueStrList | None = None
-    ubuntu_seed_kernel: str | None = None
+    ubuntu_bootstrap_pocket: str = "updates"
+    ubuntu_bootstrap_germinate: GerminateProperties
+    ubuntu_bootstrap_extra_snaps: UniqueStrList | None = None
+    ubuntu_bootstrap_extra_packages: UniqueStrList | None = None
+    ubuntu_bootstrap_kernel: str | None = None
 
     @classmethod
     def unmarshal(cls, data: dict[str, Any]) -> Self:
@@ -69,15 +69,15 @@ class UbuntuSeedPluginProperties(plugins.PluginProperties):
         :raise pydantic.ValidationError: If validation fails.
         """
         plugin_data = plugins.base.extract_plugin_properties(
-            data, plugin_name="ubuntu-seed",
+            data, plugin_name="ubuntu-bootstrap",
         )
         return cls(**plugin_data)
 
 
-class UbuntuSeedPlugin(plugins.Plugin):
+class UbuntuBootstrapPlugin(plugins.Plugin):
     """Builds a rootfs via ubuntu-image."""
 
-    properties_class = UbuntuSeedPluginProperties
+    properties_class = UbuntuBootstrapPluginProperties
 
     def get_build_snaps(self) -> set[str]:
         """Return a set of required snaps to install in the build environment."""
@@ -93,14 +93,14 @@ class UbuntuSeedPlugin(plugins.Plugin):
 
     def get_build_commands(self) -> list[str]:
         """Return a list of commands to run during the build step."""
-        options = cast(UbuntuSeedPluginProperties, self._options)
+        options = cast(UbuntuBootstrapPluginProperties, self._options)
 
         arch = self._part_info.target_arch
 
         series = self._part_info.project_info.series
 
         source_branch = series
-        branch = options.ubuntu_seed_germinate.branch
+        branch = options.ubuntu_bootstrap_germinate.branch
         if branch:
             source_branch = branch
 
@@ -120,16 +120,16 @@ class UbuntuSeedPlugin(plugins.Plugin):
             series,
             arch,
             main_repo.pocket.value,
-            options.ubuntu_seed_germinate.urls,
+            options.ubuntu_bootstrap_germinate.urls,
             source_branch,
-            options.ubuntu_seed_germinate.names,
+            options.ubuntu_bootstrap_germinate.names,
             main_repo.components,
             main_repo.flavor,
             main_repo.url,
-            options.ubuntu_seed_pocket,
-            options.ubuntu_seed_kernel,
-            options.ubuntu_seed_extra_snaps,
-            options.ubuntu_seed_extra_packages,
+            options.ubuntu_bootstrap_pocket,
+            options.ubuntu_bootstrap_kernel,
+            options.ubuntu_bootstrap_extra_snaps,
+            options.ubuntu_bootstrap_extra_packages,
             custom_components,
             custom_pocket,
             debug=debug,
