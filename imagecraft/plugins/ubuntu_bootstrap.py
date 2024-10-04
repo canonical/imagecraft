@@ -16,11 +16,12 @@
 
 """UbuntuBootstrap plugin."""
 
-from typing import Any, Optional, Self, cast
+from typing import cast
 
 from craft_cli import EmitterMode, emit
 from craft_parts import plugins
 
+from imagecraft.constraints import UniqueList
 from imagecraft.models.package_repository import (
     get_customization_package_repository,
     get_main_package_repository,
@@ -28,34 +29,23 @@ from imagecraft.models.package_repository import (
 from imagecraft.ubuntu_image import ubuntu_image_cmds_build_rootfs
 
 
-class GerminateProperties(plugins.PluginProperties):
+class GerminateProperties(plugins.PluginProperties, frozen=True):
     """Supported attributes for the 'Germinate' section of the UbuntuBootstrapPlugin plugin."""
 
-    urls: set[str]
-    branch: Optional[str] = None
-    names: set[str]
-    vcs: Optional[bool] = True
+    urls: UniqueList[str]
+    branch: str | None = None
+    names: UniqueList[str]
+    vcs: bool | None = True
 
-class UbuntuBootstrapPluginProperties(plugins.PluginProperties):
+
+class UbuntuBootstrapPluginProperties(plugins.PluginProperties, frozen=True):
     """Supported attributes for the 'UbuntuBootstrapPlugin' plugin."""
 
     ubuntu_bootstrap_pocket: str = "updates"
     ubuntu_bootstrap_germinate: GerminateProperties
-    ubuntu_bootstrap_extra_snaps: Optional[set[str]] = None
-    ubuntu_bootstrap_extra_packages: Optional[set[str]] = None
-    ubuntu_bootstrap_kernel: Optional[str] = None
-
-    # @classmethod
-    # def unmarshal(cls, data: dict[str, Any]) -> Self:
-    #     """Populate properties from the part specification.
-
-    #     :param data: A dictionary containing part properties.
-
-    #     :return: The populated plugin properties data object.
-
-    #     :raise pydantic.ValidationError: If validation fails.
-    #     """
-    #     return GerminateProperties.unmarshal(data)
+    ubuntu_bootstrap_extra_snaps: UniqueList[str] | None = None
+    ubuntu_bootstrap_extra_packages: UniqueList[str] | None = None
+    ubuntu_bootstrap_kernel: str | None = None
 
 
 class UbuntuBootstrapPlugin(plugins.Plugin):
@@ -88,9 +78,13 @@ class UbuntuBootstrapPlugin(plugins.Plugin):
         if branch:
             source_branch = branch
 
-        main_repo = get_main_package_repository(self._part_info.project_info.package_repositories_)
+        main_repo = get_main_package_repository(
+            self._part_info.project_info.package_repositories_,
+        )
 
-        customize_repo = get_customization_package_repository(self._part_info.project_info.package_repositories_)
+        customize_repo = get_customization_package_repository(
+            self._part_info.project_info.package_repositories_,
+        )
 
         custom_components = None
         custom_pocket = None

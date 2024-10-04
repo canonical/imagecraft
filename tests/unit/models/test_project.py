@@ -176,12 +176,12 @@ def test_project_unmarshal(yaml_data):
     ("error_value", "error_class", "platforms"),
     [
         (
-            "duplicated",
+            "duplicate values",
             ValidationError,
             {"build-on": ["amd64", "amd64"]},
         ),
         (
-            "duplicated",
+            "duplicate values",
             ValidationError,
             {"build-for": ["amd64", "amd64"], "build-on": ["amd64"]},
         ),

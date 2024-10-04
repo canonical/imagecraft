@@ -127,7 +127,7 @@ def test_missing_properties():
     err = raised.value.errors()
     assert len(err) == 1
     assert err[0]["loc"] == ("ubuntu-bootstrap-germinate",)
-    assert err[0]["type"] == "value_error.missing"
+    assert err[0]["type"] == "missing"
 
 
 def test_get_build_snaps(ubuntu_bootstrap_plugin, tmp_path):
@@ -166,7 +166,7 @@ def test_get_build_commands(ubuntu_bootstrap_plugin, mocker, tmp_path):
             UBUNTU_BOOTSTRAP_BASIC_SPEC["ubuntu-bootstrap-germinate"].get("names"),
             ["main", "restricted"],
             "ubuntu",
-            "http://archive.ubuntu.com/ubuntu/",
+            "http://archive.ubuntu.com/ubuntu",
             UBUNTU_BOOTSTRAP_BASIC_SPEC["ubuntu-bootstrap-pocket"],
             UBUNTU_BOOTSTRAP_BASIC_SPEC["ubuntu-bootstrap-kernel"],
             UBUNTU_BOOTSTRAP_BASIC_SPEC["ubuntu-bootstrap-extra-snaps"],
@@ -199,7 +199,7 @@ def test_get_build_commands(ubuntu_bootstrap_plugin, mocker, tmp_path):
             ),
             ["main", "restricted"],
             "ubuntu",
-            "http://archive.ubuntu.com/ubuntu/",
+            "http://archive.ubuntu.com/ubuntu",
             UBUNTU_BOOTSTRAP_NO_SOURCE_BRANCH["ubuntu-bootstrap-pocket"],
             UBUNTU_BOOTSTRAP_NO_SOURCE_BRANCH["ubuntu-bootstrap-kernel"],
             UBUNTU_BOOTSTRAP_NO_SOURCE_BRANCH["ubuntu-bootstrap-extra-snaps"],
@@ -249,7 +249,7 @@ def test_get_build_commands(ubuntu_bootstrap_plugin, mocker, tmp_path):
             UBUNTU_BOOTSTRAP_BASIC_SPEC["ubuntu-bootstrap-germinate"].get("names"),
             ["main", "restricted"],
             "ubuntu",
-            "http://archive.ubuntu.com/ubuntu/",
+            "http://archive.ubuntu.com/ubuntu",
             UBUNTU_BOOTSTRAP_BASIC_SPEC["ubuntu-bootstrap-pocket"],
             UBUNTU_BOOTSTRAP_BASIC_SPEC["ubuntu-bootstrap-kernel"],
             UBUNTU_BOOTSTRAP_BASIC_SPEC["ubuntu-bootstrap-extra-snaps"],

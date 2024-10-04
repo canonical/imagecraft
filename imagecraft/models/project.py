@@ -20,7 +20,7 @@ This module defines a imagecraft.yaml file, exportable to a JSON schema.
 """
 
 from collections.abc import Mapping
-from typing import Any, Optional
+from typing import Any, Self
 
 import craft_application
 import pydantic
@@ -36,6 +36,7 @@ from pydantic import (
 )
 
 from imagecraft.architectures import SUPPORTED_ARCHS
+from imagecraft.constraints import UniqueList
 from imagecraft.models.errors import ProjectValidationError
 from imagecraft.models.package_repository import (
     PackageRepository,
@@ -46,8 +47,10 @@ from imagecraft.models.package_repository import (
 
 file_name = "imagecraft.yaml"
 
+
 def _alias_generator(s: str) -> str:
     return s.replace("_", "-")
+
 
 class Platform(craft_application.models.Platform):
     """Imagecraft project platform definition."""
@@ -60,35 +63,44 @@ class Platform(craft_application.models.Platform):
         alias_generator=_alias_generator,
     )
 
-    build_on: set[str] | None = pydantic.Field(validate_default=True)
-    build_for: set[str] | None = pydantic.Field(validate_default=True)
+    build_on: UniqueList[str] | None = pydantic.Field(validate_default=True)
+    build_for: UniqueList[str] | None = pydantic.Field(
+        validate_default=True,
+        default=None,
+    )
 
+    # @field_validator(
+    #     "build_on",
+    #     "build_for",
+    #     mode="before",
+    # )  # pyright: ignore[reportUntypedFunctionDecorator]
+    # @classmethod
+    # def _apply_vectorise(cls, val: set[str] | None | str) -> set[str] | None | str:
+    #     """Implement a hook to vectorise."""
+    #     if isinstance(val, str):
+    #         val = [val]
+    #     return val
 
-    @field_validator("build_on", "build_for", mode="before") # pyright: ignore[reportUntypedFunctionDecorator]
-    @classmethod
-    def _apply_vectorise(cls, val: set[str] | None | str) -> set[str] | None | str:
-        """Implement a hook to vectorise."""
-        if isinstance(val, str):
-            val = [val]
-        return val
-
-    @pydantic.model_validator(mode="before")
+    @model_validator(mode="before")
     # @field_validator("build_for", mode="before") # pyright: ignore[reportUntypedFunctionDecorator]
     @classmethod
-    def _preprocess_build_for(cls, values: Mapping[str, list[str]]) -> set[str] | None | str:
-        build_on = values.data.get("build_on")
-        build_for = values.data.get("build_for")
+    def _preprocess_build_for(
+        cls,
+        values: dict[str, list[str]],
+    ) -> Mapping[str, Any]:
+        build_on = values.get("build_on")
+        build_for = values.get("build_for")
         if not build_for or len(build_for) == 0:
-            values["build_for"] = build_on
+            values.update(build_for=build_on)
         return values
 
     # @model_validator(skip_on_failure=True) # pyright: ignore[reportUntypedFunctionDecorator]
-    @model_validator(mode="after") # pyright: ignore[reportUntypedFunctionDecorator]
-    @classmethod
-    def _validate_platform_set(cls, values: Mapping[str, Any]) -> Mapping[str, Any]:
+    @model_validator(mode="after")  # pyright: ignore[reportUntypedFunctionDecorator]
+    # @classmethod
+    def _validate_platform_set(self) -> Self:
         """Validate the build_on build_for combination."""
-        build_for: list[str] = values["build_for"] if values.get("build_for") else []
-        build_on: list[str] = values["build_on"] if values.get("build_on") else []
+        build_for: list[str] = self.build_for if self.build_for else []
+        build_on: list[str] = self.build_on if self.build_on else []
 
         # We can only build for 1 arch at the moment
         if len(build_for) > 1:
@@ -110,28 +122,31 @@ class Platform(craft_application.models.Platform):
                 ),
             )
 
-        return values
+        return self
+
 
 class BuildPlanner(BaseBuildPlanner):
     """BuildPlanner for Imagecraft projects."""
 
     platforms: dict[str, Platform]  # type: ignore[assignment]
-    base: Optional[str]
-    build_base: Optional[str]
 
-    @field_validator("platforms", mode="before") # pyright: ignore[reportUntypedFunctionDecorator]
-    @classmethod
+    @field_validator(
+        "platforms",
+        mode="before",
+    )  # pyright: ignore[reportUntypedFunctionDecorator]
     @classmethod
     def _preprocess_all_platforms(cls, platforms: dict[str, Any]) -> dict[str, Any]:
         """Convert the simplified form of platform to the full one."""
         for platform_label, platform in platforms.items():
             if platform is None:
-                platforms[platform_label] = {"build_on":platform_label, "build_for": platform_label}
+                platforms[platform_label] = {
+                    "build_on": platform_label,
+                    "build_for": platform_label,
+                }
 
         return platforms
 
-    @field_validator("platforms") # pyright: ignore[reportUntypedFunctionDecorator]
-    @classmethod
+    @field_validator("platforms")  # pyright: ignore[reportUntypedFunctionDecorator]
     @classmethod
     def _validate_all_platforms(cls, platforms: dict[str, Any]) -> dict[str, Platform]:
         """Make sure all provided platforms are tangible and sane."""
@@ -182,36 +197,50 @@ class BuildPlanner(BaseBuildPlanner):
 
         return platforms
 
+
 class Project(BuildPlanner, BaseProject):
     """Definition of imagecraft.yaml configuration."""
 
     series: str
-    package_repositories_: list[dict[str,Any]] | list[PackageRepositoryPPA | PackageRepositoryApt] | None = pydantic.Field(alias="package-repositories") # type: ignore[assignment]
+    package_repositories_: list[dict[str, Any]] | list[PackageRepositoryPPA | PackageRepositoryApt] | None = pydantic.Field(alias="package-repositories")  # type: ignore[assignment]
     # Override package_repositories alias from BaseProject to prevent pydantic trying to parse
     # the received package-repositories in it.
-    package_repositories: list[dict[str, Any]] | None = pydantic.Field(alias="unused")
+    package_repositories: list[dict[str, Any]] | None = pydantic.Field(
+        alias="unused",
+        default=None,
+    )
     platforms: dict[str, Platform]  # type: ignore[assignment]
-    model_config = ConfigDict(validate_assignment=True, extra="forbid", frozen=False, populate_by_name=True, alias_generator=_alias_generator)
+    model_config = ConfigDict(
+        validate_assignment=True,
+        extra="forbid",
+        frozen=False,
+        populate_by_name=True,
+        alias_generator=_alias_generator,
+    )
 
-    @field_validator("package_repositories_") # pyright: ignore[reportUntypedFunctionDecorator]
+    @field_validator(
+        "package_repositories_",
+    )  # pyright: ignore[reportUntypedFunctionDecorator]
     @classmethod
     def _validate_all_package_repositories(
-        cls, project_repositories: list[dict[str, Any]],
+        cls,
+        project_repositories: list[dict[str, Any]],
     ) -> list[PackageRepositoryPPA | PackageRepositoryApt]:
         repositories: list[PackageRepositoryPPA | PackageRepositoryApt] = []
-        repositories = [ PackageRepository.unmarshal(data) for data in project_repositories ]
+        repositories = [
+            PackageRepository.unmarshal(data) for data in project_repositories
+        ]
 
         validate_package_repositories(repositories)
         return repositories
 
-    def _validate_package_repository(
-        repository: dict[str, Any],
-    ) -> dict[str, Any]:
-        # Override _validate_package_repositories defined in craft-application
-        # Do nothing because at this point the package-repositories are not dicts anymore
-        # but PackageRepository* objects and so _validate_package_repositories fails.
-        return repository
-
+    # def _validate_package_repository(
+    #     repository: dict[str, Any],
+    # ) -> dict[str, Any]:
+    #     # Override _validate_package_repositories defined in craft-application
+    #     # Do nothing because at this point the package-repositories are not dicts anymore
+    #     # but PackageRepository* objects and so _validate_package_repositories fails.
+    #     return repository
 
     @classmethod
     def unmarshal(cls, data: dict[str, Any]) -> "Project":

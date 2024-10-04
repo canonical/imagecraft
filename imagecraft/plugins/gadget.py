@@ -16,15 +16,16 @@
 
 """Gadget plugin."""
 
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 from craft_parts import plugins
 
 
-class GadgetPluginProperties(plugins.PluginProperties):
+class GadgetPluginProperties(plugins.PluginProperties, frozen=True):
     """Supported attributes for the 'gadget' plugin."""
 
-    gadget_target: Optional[str] = None
+    gadget_target: str | None = None
+
 
 class GadgetPlugin(plugins.Plugin):
     """Builds the gadget containing bootloader configuration."""

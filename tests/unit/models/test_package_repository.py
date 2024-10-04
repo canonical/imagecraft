@@ -32,7 +32,7 @@ from pydantic import ValidationError
     [
         ("invalid object.", errors.PackageRepositoryValidationError, "test-not-a-dict"),
         (
-            "is not a valid enumeration member",
+            "Input should be 'release', 'updates', 'proposed' or 'security'",
             ValidationError,
             {
                 "type": "apt",
@@ -40,7 +40,7 @@ from pydantic import ValidationError
             },
         ),
         (
-            "is not a valid enumeration member",
+            "Input should be 'build', 'run' or 'always'",
             ValidationError,
             {
                 "type": "apt",
@@ -49,7 +49,7 @@ from pydantic import ValidationError
             },
         ),
         (
-            "ensure this value has at least 40 characters",
+            "String should have at least 40 characters",
             ValidationError,
             {
                 "type": "apt",
@@ -58,7 +58,7 @@ from pydantic import ValidationError
             },
         ),
         (
-            "string does not match regex",
+            "String should match pattern",
             ValidationError,
             {
                 "type": "apt",

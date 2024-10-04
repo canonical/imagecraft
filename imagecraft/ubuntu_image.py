@@ -19,9 +19,12 @@
 import json
 import pathlib
 import subprocess
-from typing import Optional
 
 from craft_cli import emit
+from pydantic import (
+    AnyUrl,
+    FileUrl,
+)
 
 from imagecraft.errors import UbuntuImageError
 from imagecraft.image_definition import ImageDefinition
@@ -35,14 +38,14 @@ def ubuntu_image_cmds_build_rootfs(  # noqa: PLR0913
     seed_branch: str,
     seeds: list[str],
     components: list[str] | None,
-    flavor: Optional[str],
-    mirror: Optional[str],
+    flavor: str | None,
+    mirror: AnyUrl | FileUrl | None,
     seed_pocket: str,
-    kernel: Optional[str] = None,
+    kernel: str | None = None,
     extra_snaps: list[str] | None = None,
     extra_packages: list[str] | None = None,
     custom_components: list[str] | None = None,
-    custom_pocket: Optional[str] = None,
+    custom_pocket: str | None = None,
     *,
     debug: bool = False,
 ) -> list[str]:
@@ -84,7 +87,7 @@ def ubuntu_image_pack(
     gadget_path: str,
     output_path: str,
     workdir_path: str,
-    image_type: Optional[str] = None,
+    image_type: str | None = None,
     *,
     debug: bool = False,
 ) -> None:

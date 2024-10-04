@@ -17,11 +17,11 @@
 
 """Ubuntu-image image definition model."""
 
-from typing import Optional
 
 from craft_application.util import dump_yaml
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AnyUrl, BaseModel, ConfigDict, Field, field_serializer
 
+from imagecraft.constraints import UniqueList
 from imagecraft.models.package_repository import PackageRepositoryPPA, UsedForEnum
 
 
@@ -45,8 +45,8 @@ class PPA(BaseModel):
     """Pydantic model for the PPA object in an ImageDefinition."""
 
     name: str
-    fingerprint: Optional[str] = None
-    auth: Optional[str] = None
+    fingerprint: str | None = None
+    auth: str | None = None
     keep_enabled: bool
 
 
@@ -67,8 +67,8 @@ def init_ppa_from_craft_ppa(craft_ppa: PackageRepositoryPPA) -> PPA:
 class Customization(BaseModel):
     """Pydantic model for the Customization object in an ImageDefinition."""
 
-    components: list[str] | None = None
-    pocket: Optional[str] = None
+    components: UniqueList[str] | None = None
+    pocket: str | None = None
 
     extra_snaps: list[Snap] | None = None
     extra_packages: list[Package] | None = None
@@ -85,9 +85,9 @@ class Customization(BaseModel):
 class Seed(BaseModel):
     """Pydantic model for the Seed object in an ImageDefinition."""
 
-    urls: list[str]
+    urls: UniqueList[str]
     branch: str
-    names: list[str]
+    names: UniqueList[str]
     pocket: str
     model_config = ConfigDict(
         validate_assignment=True,
@@ -101,10 +101,10 @@ class Seed(BaseModel):
 class Rootfs(BaseModel):
     """Pydantic model for the Rootfs object in an ImageDefinition."""
 
-    components: list[str] | None = None
-    flavor: Optional[str] = None
+    components: UniqueList[str] | None = None
+    flavor: str | None = None
     pocket: str
-    mirror: Optional[str] = None
+    mirror: AnyUrl | None = None
     seed: Seed
     sources_list_deb822: bool
     model_config = ConfigDict(
@@ -114,6 +114,10 @@ class Rootfs(BaseModel):
         populate_by_name=True,
         alias_generator=_alias_generator,
     )
+
+    @field_serializer("mirror")
+    def _serialize_url_as_string(self, url: AnyUrl) -> str:
+        return str(url)
 
 
 class ImageDefinition(BaseModel):
@@ -125,7 +129,7 @@ class ImageDefinition(BaseModel):
     class_: str = Field(alias="class")
     architecture: str
     series: str
-    kernel: Optional[str] = None
+    kernel: str | None = None
     rootfs: Rootfs
     customization: Customization | None = None
     model_config = ConfigDict(
@@ -143,10 +147,10 @@ class ImageDefinition(BaseModel):
         revision: int,
         architecture: str,
         pocket: str,
-        kernel: Optional[str],
+        kernel: str | None,
         components: list[str] | None,
-        flavor: Optional[str],
-        mirror: Optional[str],
+        flavor: str | None,
+        mirror: str | None,
         seed_urls: list[str],
         seed_branch: str,
         seed_names: list[str],
@@ -155,7 +159,7 @@ class ImageDefinition(BaseModel):
         extra_packages: list[str] | None = None,
         extra_ppas: list[PackageRepositoryPPA] | None = None,
         custom_components: list[str] | None = None,
-        custom_pocket: Optional[str] = None,
+        custom_pocket: str | None = None,
     ):
         super().__init__(
             name="craft-driver",
@@ -202,8 +206,8 @@ class ImageDefinition(BaseModel):
                 pocket=custom_pocket,
             )
 
-    def dump_yaml(self) -> Optional[str]:
+    def dump_yaml(self) -> str | None:
         """Generate a definition yaml file for rootfs creation."""
         return dump_yaml(
-            self.model_dump(by_alias=True, exclude_unset=True),
+            self.model_dump(by_alias=True, exclude_unset=True, exclude_none=True),
         )
