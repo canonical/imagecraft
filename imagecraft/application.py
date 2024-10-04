@@ -16,6 +16,7 @@
 
 """Main Imagecraft Application."""
 
+
 from craft_application import Application, AppMetadata
 from overrides import override  # type: ignore[reportUnknownVariableType]
 

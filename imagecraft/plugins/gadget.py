@@ -16,21 +16,15 @@
 
 """Gadget plugin."""
 
-from typing import Any, Self, cast
+from typing import Any, cast
 
 from craft_parts import plugins
 
 
-class GadgetPluginProperties(plugins.PluginProperties):
+class GadgetPluginProperties(plugins.PluginProperties, frozen=True):
     """Supported attributes for the 'gadget' plugin."""
 
     gadget_target: str | None = None
-
-    @classmethod
-    def unmarshal(cls, data: dict[str, Any]) -> Self:
-        """Unmarshal."""
-        plugin_data = plugins.base.extract_plugin_properties(data, plugin_name="gadget")
-        return cls(**plugin_data)
 
 
 class GadgetPlugin(plugins.Plugin):
