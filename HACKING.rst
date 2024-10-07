@@ -1,12 +1,10 @@
-**********
-Imagecraft
-**********
+**************************
+Contributing to Imagecraft
+**************************
 
 Welcome to Imagecraft! We hope this document helps you get started. Before
 contributing any code, please sign the `Canonical contributor licence
 agreement`_.
-
-TBD
 
 Setting up a development environment
 ------------------------------------
@@ -15,6 +13,7 @@ TBD
 
 Tooling
 =======
+
 We use a large number of tools for our project. Most of these are installed for
 you with tox, but you'll need to install:
 
@@ -27,6 +26,7 @@ environments for this repository using tox.
 
 Other tools
 ###########
+
 Some other tools we use for code quality include:
 
 - Black_ for code formatting
@@ -93,13 +93,23 @@ Spread tests rely on [snapd-testing-tools](https://github.com/snapcore/snapd-tes
     git subtree pull --prefix tests/lib/external/snapd-testing-tools/ https://github.com/snapcore/snapd-testing-tools.git main --squash
 
 
+Rebuilding stable snaps
+=======================
+
+To fix vulnerabilities in dependencies pulled when building the snap, we have to rebuild the snap.
+
+To do so:
+1. Get the git tag associated to the published snap
+2. Update the `Source` on the `imagecraft-rebuild` snap recipe on Launchpad with the tag.
+3. Request a build.
+4. (optional) Check the build was triggered from the same commit as the snap you want to replace
+5. Promote the build from `latest/beta` to `latest/stable`.
+
 .. _Black: https://black.readthedocs.io
 .. _`Canonical contributor licence agreement`: http://www.ubuntu.com/legal/contributors/
-.. _deadsnakes: https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa
 .. _`git submodules`: https://git-scm.com/book/en/v2/Git-Tools-Submodules#_cloning_submodules
 .. _pre-commit: https://pre-commit.com/
 .. _pyproject.toml: ./pyproject.toml
-.. _Pyright: https://github.com/microsoft/pyright
 .. _pytest: https://pytest.org
 .. _ruff: https://github.com/charliermarsh/ruff
 .. _ShellCheck: https://www.shellcheck.net/
