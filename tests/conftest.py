@@ -109,8 +109,8 @@ def default_factory(default_project, default_build_plan):
         project=default_project,
     )
 
-    factory.set_kwargs("lifecycle", build_plan=default_build_plan)
-    factory.set_kwargs("package", build_plan=default_build_plan)
+    factory.update_kwargs("lifecycle", build_plan=default_build_plan)
+    factory.update_kwargs("package", build_plan=default_build_plan)
     return factory
 
 
