@@ -75,7 +75,7 @@ def ubuntu_bootstrap_plugin():
         project_vars = {
             "version": "1",
         }
-        package_repositories = [
+        package_repositories_ = [
             PackageRepositoryApt.unmarshal(
                 {
                     "type": "apt",
@@ -94,7 +94,7 @@ def ubuntu_bootstrap_plugin():
             cache_dir=tmp_path,
             project_vars=project_vars,
             series="jammy",
-            package_repositories_=package_repositories,
+            package_repositories_=package_repositories_,
         )
         part_info = craft_parts.PartInfo(project_info=project_info, part=part)
 
@@ -116,7 +116,7 @@ def test_invalid_properties():
     err = raised.value.errors()
     assert len(err) == 1
     assert err[0]["loc"] == ("ubuntu-bootstrap-something-invalid",)
-    assert err[0]["type"] == "value_error.extra"
+    assert err[0]["type"] == "extra_forbidden"
 
 
 def test_missing_properties():
@@ -127,7 +127,7 @@ def test_missing_properties():
     err = raised.value.errors()
     assert len(err) == 1
     assert err[0]["loc"] == ("ubuntu-bootstrap-germinate",)
-    assert err[0]["type"] == "value_error.missing"
+    assert err[0]["type"] == "missing"
 
 
 def test_get_build_snaps(ubuntu_bootstrap_plugin, tmp_path):
@@ -166,7 +166,7 @@ def test_get_build_commands(ubuntu_bootstrap_plugin, mocker, tmp_path):
             UBUNTU_BOOTSTRAP_BASIC_SPEC["ubuntu-bootstrap-germinate"].get("names"),
             ["main", "restricted"],
             "ubuntu",
-            "http://archive.ubuntu.com/ubuntu/",
+            "http://archive.ubuntu.com/ubuntu",
             UBUNTU_BOOTSTRAP_BASIC_SPEC["ubuntu-bootstrap-pocket"],
             UBUNTU_BOOTSTRAP_BASIC_SPEC["ubuntu-bootstrap-kernel"],
             UBUNTU_BOOTSTRAP_BASIC_SPEC["ubuntu-bootstrap-extra-snaps"],
@@ -199,7 +199,7 @@ def test_get_build_commands(ubuntu_bootstrap_plugin, mocker, tmp_path):
             ),
             ["main", "restricted"],
             "ubuntu",
-            "http://archive.ubuntu.com/ubuntu/",
+            "http://archive.ubuntu.com/ubuntu",
             UBUNTU_BOOTSTRAP_NO_SOURCE_BRANCH["ubuntu-bootstrap-pocket"],
             UBUNTU_BOOTSTRAP_NO_SOURCE_BRANCH["ubuntu-bootstrap-kernel"],
             UBUNTU_BOOTSTRAP_NO_SOURCE_BRANCH["ubuntu-bootstrap-extra-snaps"],
@@ -249,7 +249,7 @@ def test_get_build_commands(ubuntu_bootstrap_plugin, mocker, tmp_path):
             UBUNTU_BOOTSTRAP_BASIC_SPEC["ubuntu-bootstrap-germinate"].get("names"),
             ["main", "restricted"],
             "ubuntu",
-            "http://archive.ubuntu.com/ubuntu/",
+            "http://archive.ubuntu.com/ubuntu",
             UBUNTU_BOOTSTRAP_BASIC_SPEC["ubuntu-bootstrap-pocket"],
             UBUNTU_BOOTSTRAP_BASIC_SPEC["ubuntu-bootstrap-kernel"],
             UBUNTU_BOOTSTRAP_BASIC_SPEC["ubuntu-bootstrap-extra-snaps"],

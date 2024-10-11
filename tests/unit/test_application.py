@@ -67,6 +67,14 @@ platforms:
   amd64:
     build-for: [amd64]
     build-on: [amd64]
+package-repositories:
+  - type: apt
+    components: [main,restricted]
+    url: http://archive.ubuntu.com/ubuntu/
+    flavor: ubuntu
+    series: jammy
+    pocket: proposed
+    used-for: build
 parts:
   rootfs:
     plugin: ubuntu-bootstrap

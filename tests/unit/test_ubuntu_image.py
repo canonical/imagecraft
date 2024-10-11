@@ -39,7 +39,7 @@ from imagecraft.ubuntu_image import (
                 kernel="linux-image-generic",
                 components=["main", "restricted"],
                 flavor="kubuntu",
-                mirror="http://archive.ubuntu.com/ubuntu/",
+                mirror="http://archive.ubuntu.com/ubuntu/",  # pyright: ignore[reportArgumentType]
                 seed_urls=["source1", "source2"],
                 seed_branch="mantic",
                 seed_names=["server", "minimal"],
@@ -122,7 +122,7 @@ customization:
                 kernel="linux-image-generic",
                 components=["main", "restricted"],
                 flavor=None,
-                mirror="http://archive.ubuntu.com/ubuntu/",
+                mirror="http://archive.ubuntu.com/ubuntu/",  # pyright: ignore[reportArgumentType]
                 seed_urls=["source1", "source2"],
                 seed_branch="mantic",
                 seed_names=["server", "minimal"],
@@ -211,7 +211,7 @@ def test_ubuntu_image_cmds_build_rootfs(mocker):
         seeds=["server", "minimal"],
         components=["main", "restricted"],
         flavor=None,
-        mirror="http://archive.ubuntu.com/ubuntu/",
+        mirror="http://archive.ubuntu.com/ubuntu/",  # pyright: ignore[reportArgumentType]
         seed_pocket="updates",
         kernel="linux-image-generic",
         extra_snaps=["lxd", "snapd"],
@@ -230,7 +230,7 @@ def test_ubuntu_image_cmds_build_rootfs(mocker):
         seeds=["server", "minimal"],
         components=["main", "restricted"],
         flavor=None,
-        mirror="http://archive.ubuntu.com/ubuntu/",
+        mirror="http://archive.ubuntu.com/ubuntu/",  # pyright: ignore[reportArgumentType]
         seed_pocket="updates",
         kernel="linux-image-generic",
         extra_snaps=["lxd", "snapd"],

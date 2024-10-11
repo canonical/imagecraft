@@ -21,6 +21,10 @@ import pathlib
 import subprocess
 
 from craft_cli import emit
+from pydantic import (
+    AnyUrl,
+    FileUrl,
+)
 
 from imagecraft.errors import UbuntuImageError
 from imagecraft.image_definition import ImageDefinition
@@ -35,7 +39,7 @@ def ubuntu_image_cmds_build_rootfs(  # noqa: PLR0913
     seeds: list[str],
     components: list[str] | None,
     flavor: str | None,
-    mirror: str | None,
+    mirror: AnyUrl | FileUrl | None,
     seed_pocket: str,
     kernel: str | None = None,
     extra_snaps: list[str] | None = None,
