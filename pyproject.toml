@@ -253,10 +253,6 @@ allow-star-arg-any = true
 [tool.ruff.lint.pylint]
 max-args = 8
 
-[tool.ruff.lint.pep8-naming]
-# Allow Pydantic's `@validator` decorator to trigger class method treatment.
-classmethod-decorators = ["pydantic.validator", "pydantic.root_validator"]
-
 [tool.ruff.lint.per-file-ignores]
 "tests/**.py" = [ # Some things we want for the moin project are unnecessary in tests.
     "D",       # Ignore docstring rules in tests

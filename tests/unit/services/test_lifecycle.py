@@ -43,7 +43,7 @@ def test_lifecycle_args(
     mock_lifecycle.assert_called_once_with(
         {"parts": {}},
         application_name="imagecraft",
-        arch="x86_64",
+        arch="amd64",
         cache_dir=Path("cache"),
         work_dir=Path("work"),
         ignore_local_sources=[],
@@ -60,7 +60,6 @@ def test_lifecycle_args(
             PackageRepositoryApt(  # pyright: ignore[reportCallIssue]
                 type="apt",
                 priority=None,
-                url=None,
                 architectures=None,
                 formats=None,
                 path=None,
