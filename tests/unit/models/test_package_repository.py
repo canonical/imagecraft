@@ -23,6 +23,7 @@ from imagecraft.models.package_repository import (
     PackageRepositoryPPA,
     get_main_package_repository,
     validate_package_repositories,
+    validate_repository,
 )
 from pydantic import ValidationError
 
@@ -32,7 +33,7 @@ from pydantic import ValidationError
     [
         ("invalid object.", errors.PackageRepositoryValidationError, "test-not-a-dict"),
         (
-            "is not a valid enumeration member",
+            "Input should be 'release', 'updates', 'proposed' or 'security'",
             ValidationError,
             {
                 "type": "apt",
@@ -40,7 +41,7 @@ from pydantic import ValidationError
             },
         ),
         (
-            "is not a valid enumeration member",
+            "Input should be 'build', 'run' or 'always'",
             ValidationError,
             {
                 "type": "apt",
@@ -49,7 +50,7 @@ from pydantic import ValidationError
             },
         ),
         (
-            "ensure this value has at least 40 characters",
+            "String should have at least 40 characters",
             ValidationError,
             {
                 "type": "apt",
@@ -58,7 +59,7 @@ from pydantic import ValidationError
             },
         ),
         (
-            "string does not match regex",
+            "String should match pattern",
             ValidationError,
             {
                 "type": "apt",
@@ -129,6 +130,20 @@ def test_get_main_package_repository_error():
         get_main_package_repository(package_repositories)
 
 
+def test_validate_repository():
+    def load_package_repository(data, raises):
+        with pytest.raises(raises) as err:
+            validate_repository(data)
+
+        return str(err.value)
+
+    mock_package_repositories = "test-not-a-dict"
+    assert "value must be a dictionary" in load_package_repository(
+        mock_package_repositories,
+        TypeError,
+    )
+
+
 @pytest.mark.parametrize(
     ("error_value", "error_class", "package_repositories"),
     [
@@ -170,7 +185,7 @@ def test_get_main_package_repository_error():
         ),
     ],
 )
-def test_validate_all_package_repositories(
+def test_validate_package_repositories(
     error_value,
     error_class,
     package_repositories,

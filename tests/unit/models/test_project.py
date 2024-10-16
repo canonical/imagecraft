@@ -14,13 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import io
+import pathlib
 from pathlib import Path
 
 import pytest
 import yaml
+from craft_application import util
 from craft_application.errors import CraftValidationError
 from imagecraft.models import Platform, Project
-from imagecraft.models.errors import ProjectValidationError
 from pydantic import ValidationError
 
 IMAGECRAFT_YAML_GENERIC = """
@@ -143,7 +145,7 @@ parts:
 
 @pytest.fixture()
 def yaml_loaded_data():
-    return yaml.safe_load(IMAGECRAFT_YAML_GENERIC)
+    return util.safe_yaml_load(io.StringIO(IMAGECRAFT_YAML_GENERIC))
 
 
 def load_project_yaml(yaml_loaded_data) -> Project:
@@ -161,7 +163,8 @@ def load_project_yaml(yaml_loaded_data) -> Project:
 )
 def test_project_unmarshal(yaml_data):
     yaml_loaded = yaml.safe_load(yaml_data)
-    project = Project.unmarshal(yaml_loaded)
+    project_path = pathlib.Path("myproject.yaml")
+    project = Project.from_yaml_data(yaml_loaded, project_path)
 
     for attr, v in yaml_loaded.items():
         if attr == "platforms":
@@ -176,18 +179,18 @@ def test_project_unmarshal(yaml_data):
     ("error_value", "error_class", "platforms"),
     [
         (
-            "duplicated",
+            "duplicate values",
             ValidationError,
             {"build-on": ["amd64", "amd64"]},
         ),
         (
-            "duplicated",
+            "build-for\n  List should have at most 1 item after validation, not 2",
             ValidationError,
             {"build-for": ["amd64", "amd64"], "build-on": ["amd64"]},
         ),
         (
-            "multiple target architectures",
-            CraftValidationError,
+            "build-for\n  List should have at most 1 item after validation, not 2",
+            ValidationError,
             {"build-on": ["amd64"], "build-for": ["amd64", "arm64"]},
         ),
         (
@@ -244,8 +247,9 @@ def test_project_platform_invalid(
 def test_project_all_platforms_invalid(yaml_loaded_data, error_value, platforms):
     def reload_project_platforms(mock_platforms=None):
         yaml_loaded_data["platforms"] = platforms
+        project_path = pathlib.Path("myproject.yaml")
         with pytest.raises(CraftValidationError) as err:
-            Project.unmarshal(yaml_loaded_data)
+            Project.from_yaml_data(yaml_loaded_data, project_path)
 
         return str(err.value)
 
@@ -257,13 +261,14 @@ def test_project_all_platforms_invalid(yaml_loaded_data, error_value, platforms)
 def test_project_package_repositories_invalid(yaml_loaded_data):
     def reload_project_package_repositories(mock_package_repositories, raises):
         yaml_loaded_data["package-repositories"] = mock_package_repositories
+        project_path = pathlib.Path("myproject.yaml")
         with pytest.raises(raises) as err:
-            Project.unmarshal(yaml_loaded_data)
+            Project.from_yaml_data(yaml_loaded_data, project_path)
 
         return str(err.value)
 
-    mock_package_repositories = [{"test"}]
-    assert "value is not a valid dict" in reload_project_package_repositories(
+    mock_package_repositories = ["test"]
+    assert "input should be a valid dictionary" in reload_project_package_repositories(
         mock_package_repositories,
-        ProjectValidationError,
+        CraftValidationError,
     )

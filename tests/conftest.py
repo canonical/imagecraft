@@ -17,7 +17,6 @@ import types
 from pathlib import Path
 
 import pytest
-from craft_application.models.constraints import ProjectName, SummaryStr
 from imagecraft import plugins
 
 
@@ -66,15 +65,14 @@ def extra_project_params():
 
 @pytest.fixture()
 def default_project(extra_project_params):
-    from craft_application.models.constraints import VersionStr
     from imagecraft.models.project import Platform, Project
 
     parts = extra_project_params.pop("parts", {})
 
     return Project(
-        name=ProjectName("default"),
-        version=VersionStr("1"),
-        summary=SummaryStr("default project"),
+        name="default",
+        version="1",
+        summary="default project",
         description="default project",
         base="ubuntu@22.04",
         platforms={"amd64": Platform(build_for=["amd64"], build_on=["amd64"])},
@@ -109,8 +107,8 @@ def default_factory(default_project, default_build_plan):
         project=default_project,
     )
 
-    factory.set_kwargs("lifecycle", build_plan=default_build_plan)
-    factory.set_kwargs("package", build_plan=default_build_plan)
+    factory.update_kwargs("lifecycle", build_plan=default_build_plan)
+    factory.update_kwargs("package", build_plan=default_build_plan)
     return factory
 
 

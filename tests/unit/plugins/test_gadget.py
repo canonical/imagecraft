@@ -93,7 +93,7 @@ def test_invalid_properties():
     err = raised.value.errors()
     assert len(err) == 1
     assert err[0]["loc"] == ("gadget-something-invalid",)
-    assert err[0]["type"] == "value_error.extra"
+    assert err[0]["type"] == "extra_forbidden"
 
 
 def test_get_build_commands(gadget_plugin):
