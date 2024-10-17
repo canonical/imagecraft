@@ -4,6 +4,7 @@ APIs
 balancer
 Charmhub
 CLI
+cryptographic
 Diátaxis
 dropdown
 EBS
