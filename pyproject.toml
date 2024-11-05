@@ -2,10 +2,10 @@
 name = "imagecraft"
 dynamic = ["version", "readme", "description", "license", "authors", "urls", "scripts"]
 dependencies = [
-    "craft-archives==2.0.0",
-    "craft-application==4.2.5",
-    "craft-parts==2.1.1",
-    "craft-cli==2.7.0",
+    "craft-archives==2.0.1",
+    "craft-application==4.3.0",
+    "craft-parts==2.1.2",
+    "craft-cli==2.10.0",
     "craft-providers==2.0.4",
 ]
 classifiers = [
