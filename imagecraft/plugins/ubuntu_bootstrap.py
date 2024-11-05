@@ -16,11 +16,11 @@
 
 """UbuntuBootstrap plugin."""
 
-from typing import TYPE_CHECKING, Any, Self, cast
+from typing import Literal, cast
 
+from craft_application.models.constraints import UniqueList
 from craft_cli import EmitterMode, emit
 from craft_parts import plugins
-from pydantic import AnyUrl, conlist
 
 from imagecraft.models.package_repository import (
     get_customization_package_repository,
@@ -28,50 +28,26 @@ from imagecraft.models.package_repository import (
 )
 from imagecraft.ubuntu_image import ubuntu_image_cmds_build_rootfs
 
-# A workaround for mypy false positives
-# see https://github.com/samuelcolvin/pydantic/issues/975#issuecomment-551147305
-# fmt: off
-if TYPE_CHECKING:
-    UniqueStrList = list[str]
-else:
-    UniqueStrList = conlist(str, unique_items=True, min_items=1)
 
-if TYPE_CHECKING:
-    UniqueUrlList = list[str]
-else:
-    UniqueUrlList = conlist(AnyUrl, unique_items=True, min_items=1)
-
-class GerminateProperties(plugins.PluginProperties):
+class GerminateProperties(plugins.PluginProperties, frozen=True):
     """Supported attributes for the 'Germinate' section of the UbuntuBootstrapPlugin plugin."""
 
-    urls: UniqueUrlList
-    branch: str | None
-    names: UniqueStrList
+    urls: UniqueList[str]
+    branch: str | None = None
+    names: UniqueList[str]
     vcs: bool | None = True
 
-class UbuntuBootstrapPluginProperties(plugins.PluginProperties):
+
+class UbuntuBootstrapPluginProperties(plugins.PluginProperties, frozen=True):
     """Supported attributes for the 'UbuntuBootstrapPlugin' plugin."""
+
+    plugin: Literal["ubuntu-bootstrap"] = "ubuntu-bootstrap"
 
     ubuntu_bootstrap_pocket: str = "updates"
     ubuntu_bootstrap_germinate: GerminateProperties
-    ubuntu_bootstrap_extra_snaps: UniqueStrList | None = None
-    ubuntu_bootstrap_extra_packages: UniqueStrList | None = None
+    ubuntu_bootstrap_extra_snaps: UniqueList[str] | None = None
+    ubuntu_bootstrap_extra_packages: UniqueList[str] | None = None
     ubuntu_bootstrap_kernel: str | None = None
-
-    @classmethod
-    def unmarshal(cls, data: dict[str, Any]) -> Self:
-        """Populate properties from the part specification.
-
-        :param data: A dictionary containing part properties.
-
-        :return: The populated plugin properties data object.
-
-        :raise pydantic.ValidationError: If validation fails.
-        """
-        plugin_data = plugins.base.extract_plugin_properties(
-            data, plugin_name="ubuntu-bootstrap",
-        )
-        return cls(**plugin_data)
 
 
 class UbuntuBootstrapPlugin(plugins.Plugin):
@@ -104,9 +80,13 @@ class UbuntuBootstrapPlugin(plugins.Plugin):
         if branch:
             source_branch = branch
 
-        main_repo = get_main_package_repository(self._part_info.project_info.package_repositories_)
+        main_repo = get_main_package_repository(
+            self._part_info.project_info.package_repositories_,
+        )
 
-        customize_repo = get_customization_package_repository(self._part_info.project_info.package_repositories_)
+        customize_repo = get_customization_package_repository(
+            self._part_info.project_info.package_repositories_,
+        )
 
         custom_components = None
         custom_pocket = None
