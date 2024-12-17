@@ -19,19 +19,23 @@
 This module defines a imagecraft.yaml file, exportable to a JSON schema.
 """
 
-from typing import Any, Self
+import typing
+from typing import Any, Literal, Self
 
 from craft_application.errors import CraftValidationError
 from craft_application.models import BuildPlanner as BaseBuildPlanner
 from craft_application.models import Platform as BasePlatform
 from craft_application.models import Project as BaseProject
+from craft_providers import bases
+from craft_providers.errors import BaseConfigurationError
 from pydantic import (
     ConfigDict,
+    Field,
+    ValidationInfo,
     field_validator,
     model_validator,
 )
-
-from imagecraft.architectures import SUPPORTED_ARCHS
+from typing_extensions import override
 
 from .volume import Volume
 
@@ -57,10 +61,35 @@ class Platform(BasePlatform):
         return self
 
 
+BaseT = Literal["bare"]
+BuildBaseT = typing.Annotated[
+    Literal["ubuntu@20.04", "ubuntu@22.04", "ubuntu@24.04", "devel"] | None,
+    Field(validate_default=True),
+]
+
+
 class BuildPlanner(BaseBuildPlanner):
     """BuildPlanner for Imagecraft projects."""
 
     platforms: dict[str, Platform]  # type: ignore[assignment]
+    base: BaseT  # type: ignore[reportIncompatibleVariableOverride]
+    build_base: BuildBaseT = None  # type: ignore[reportIncompatibleVariableOverride]
+
+    @field_validator("build_base")
+    @classmethod
+    def _validate_build_base(
+        cls, value: str | None, info: ValidationInfo
+    ) -> str | None:
+        """Build-base defaults to the base value if not specified.
+
+        :raises CraftValidationError: If base validation fails.
+        """
+        if not value:
+            base_value = info.data.get("base")
+            if base_value == "bare":
+                raise ValueError('When "base" is bare, a build-base must be specified.')
+            return base_value
+        return value
 
     @field_validator(
         "platforms",
@@ -78,57 +107,6 @@ class BuildPlanner(BaseBuildPlanner):
 
         return platforms
 
-    @field_validator("platforms")  # pyright: ignore[reportUntypedFunctionDecorator]
-    @classmethod
-    def _validate_all_platforms(cls, platforms: dict[str, Any]) -> dict[str, Platform]:
-        """Make sure all provided platforms are tangible and sane."""
-        for platform_label, platform in platforms.items():
-            error_prefix = f"Error for platform entry '{platform_label}'"
-
-            # build_on and build_for are validated
-            # let's also validate the platform label
-            # If the label maps to a valid architecture and
-            # `build-for` is present, then both need to have the same value,
-            # otherwise the project is invalid.
-            if platform.build_for:
-                build_target = platform.build_for[0]
-                if platform_label in SUPPORTED_ARCHS and platform_label != build_target:
-                    raise CraftValidationError(
-                        str(
-                            f"{error_prefix}: if 'build_for' is provided and the "
-                            "platform entry label corresponds to a valid architecture, then "
-                            f"both values must match. {platform_label} != {build_target}",
-                        ),
-                    )
-            else:
-                build_target = platform_label
-
-            build_on_one_of = (
-                platform.build_on if platform.build_on else [platform_label]
-            )
-            # Both build and target architectures must be supported
-            if not any(b_o in SUPPORTED_ARCHS for b_o in build_on_one_of):
-                raise CraftValidationError(
-                    str(
-                        f"{error_prefix}: trying to build image in one of "
-                        f"{build_on_one_of}, but none of these build architectures is supported. "
-                        f"Supported architectures: {SUPPORTED_ARCHS}",
-                    ),
-                )
-
-            if build_target not in SUPPORTED_ARCHS:
-                raise CraftValidationError(
-                    str(
-                        f"{error_prefix}: trying to build image for target "
-                        f"architecture {build_target}, which is not supported. "
-                        f"Supported architectures: {SUPPORTED_ARCHS}",
-                    ),
-                )
-
-            platforms[platform_label] = platform
-
-        return platforms
-
 
 class Project(BuildPlanner, BaseProject):
     """Definition of imagecraft.yaml configuration."""
@@ -142,3 +120,25 @@ class Project(BuildPlanner, BaseProject):
         frozen=False,
         populate_by_name=True,
     )
+
+    @override
+    @classmethod
+    def _providers_base(cls, base: str) -> bases.BaseAlias | None:
+        """Get a BaseAlias from imagecraft's base.
+
+        :param base: The base name.
+
+        :returns: The BaseAlias for the base or None for bare bases.
+        :raises ValueError: If the project's base cannot be determined.
+        """
+        if base == "bare":
+            return None
+
+        if base == "devel":
+            return bases.get_base_alias(("ubuntu", "devel"))
+
+        try:
+            name, channel = base.split("@")
+            return bases.get_base_alias(bases.BaseName(name, channel))
+        except (ValueError, BaseConfigurationError) as err:
+            raise ValueError(f"Unknown base {base!r}") from err
