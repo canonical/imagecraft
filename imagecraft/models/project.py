@@ -33,6 +33,8 @@ from pydantic import (
 
 from imagecraft.architectures import SUPPORTED_ARCHS
 
+from .volume import Volume
+
 
 class Platform(BasePlatform):
     """Imagecraft project platform definition."""
@@ -132,6 +134,8 @@ class Project(BuildPlanner, BaseProject):
     """Definition of imagecraft.yaml configuration."""
 
     platforms: dict[str, Platform] | None = None  # type: ignore[assignment, reportIncompatibleVariableOverride]
+    volumes: dict[str, Volume] | None = None
+
     model_config = ConfigDict(
         validate_assignment=True,
         extra="forbid",
