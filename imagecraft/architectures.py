@@ -15,7 +15,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Architecture definitions."""
 
-
 # The keys are valid debian architectures.
 SUPPORTED_ARCHS: list[str] = [
     "amd64",

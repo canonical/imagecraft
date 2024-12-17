@@ -19,9 +19,8 @@
 This module defines a imagecraft.yaml file, exportable to a JSON schema.
 """
 
-from typing import Annotated, Any, Self
+from typing import Any, Self
 
-import pydantic
 from craft_application.errors import CraftValidationError
 from craft_application.models import BuildPlanner as BaseBuildPlanner
 from craft_application.models import Platform as BasePlatform
@@ -33,14 +32,6 @@ from pydantic import (
 )
 
 from imagecraft.architectures import SUPPORTED_ARCHS
-from imagecraft.models.package_repository import (
-    PackageRepositoryApt,
-    PackageRepositoryPPA,
-    validate_package_repositories,
-    validate_repository,
-)
-
-file_name = "imagecraft.yaml"
 
 
 class Platform(BasePlatform):
@@ -140,25 +131,6 @@ class BuildPlanner(BaseBuildPlanner):
 class Project(BuildPlanner, BaseProject):
     """Definition of imagecraft.yaml configuration."""
 
-    series: str
-    package_repositories_: (  # type: ignore[reportIncompatibleVariableOverride]
-        list[
-            Annotated[
-                dict[str, Any],
-                pydantic.AfterValidator(validate_repository),
-            ]
-            | list[PackageRepositoryPPA | PackageRepositoryApt]
-        ]
-        | None
-    ) = pydantic.Field(
-        alias="package-repositories",
-        default=None,
-    )  # type: ignore[assignment]
-    package_repositories: list[dict[str, Any]] | None = pydantic.Field(
-        alias="unused",
-        default=None,
-    )
-
     platforms: dict[str, Platform] | None = None  # type: ignore[assignment, reportIncompatibleVariableOverride]
     model_config = ConfigDict(
         validate_assignment=True,
@@ -166,12 +138,3 @@ class Project(BuildPlanner, BaseProject):
         frozen=False,
         populate_by_name=True,
     )
-
-    @field_validator("package_repositories_")
-    @classmethod
-    def _validate_all_package_repositories(
-        cls,
-        project_repositories: list[PackageRepositoryPPA | PackageRepositoryApt],
-    ) -> list[PackageRepositoryPPA | PackageRepositoryApt]:
-        validate_package_repositories(project_repositories)
-        return project_repositories

@@ -1,56 +1,127 @@
-**********
-Imagecraft
-**********
+|Release| |Documentation| |test|
 
-.. |testBadge| image:: https://github.com/canonical/imagecraft/actions/workflows/tests.yaml/badge.svg?branch=main
-.. |coverageBadge| image:: https://codecov.io/gh/canonical/imagecraft/branch/main/graph/badge.svg?token=dZifVsQDUG
-  :target: https://codecov.io/gh/canonical/imagecraft
+.. |Release| image:: https://github.com/canonical/imagecraft/actions/workflows/release-publish.yaml/badge.svg?branch=main&event=push
+   :target: https://github.com/canonical/imagecraft/actions/workflows/release-publish.yaml
+.. |Documentation| image:: https://github.com/canonical/imagecraft/actions/workflows/docs.yaml/badge.svg?branch=main&event=push
+   :target: https://github.com/canonical/imagecraft/actions/workflows/docs.yaml
+.. |test| image:: https://github.com/canonical/imagecraft/actions/workflows/tests.yaml/badge.svg?branch=main&event=push
+   :target: https://github.com/canonical/imagecraft/actions/workflows/tests.yaml
 
-|testBadge| |coverageBadge|
+********
+imagecraft
+********
 
-Craft tool to create Ubuntu bootable images.
+The base repository for Imagecraft projects.
 
 Description
 -----------
-Imagecraft is a craft tool used to create Ubuntu bootable images. It follows
-the same principles as snapcraft, but is focused on creating bootable images
-instead.
+This template code is the basis for all future imagecraft projects, and acts as
+the testbed for any major tooling changes that we want to make before
+propagating them across all projects.
 
+Structure
 ---------
+TODO
 
-Documentation
--------------
+Migrate existing projects
+--------------------------------
+#. Update this guide as you go along, if something is unclear or missing.
 
-Imagecraft documentation is built from reStructuredText (``.rst``) files, most
-of them under the ``docs/`` folder in the source tree. `Build and browse the
-documentation locally`_ if you prefer, although the `product website`_ is
-recommended.
+#. Use ruff.
+   #. Pull in the bare minimum ``pyproject.toml`` needed to use ruff.
+   #. Make your codebase pass with ruff.  Commit after each step:
 
-Build and browse the documentation locally
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      #. ``ruff check --fix``
+      #. ``ruff check --fix --unsafe-fixes``
+      #. ``ruff check --add-noqa``
+      #. ``ruff format``
 
-Clone the official source tree from GitHub into your computer's home directory.
-Its default location will then be ``~/imagecraft/``. (You may clone the
-`Imagecraft repository`_ directly. However, it's protected: if you plan on
-`contributing to the project <#project-and-community>`_, consider forking it to
-your own GitHub account then cloning that instead.)
+   #. Replace use of black, flake8, pydocstyle, isort, and pylint in Makefile/CI
+      with:
+      - ``ruff check --fix``
+      - ``ruff format``
+#. Modify top-level files in your project to match what's in Imagecraft as closely
+   as possible.
+   #. ``Makefile`` - Ensure you use ``uv`` and at least have the same targets:
 
-Install the documentation tools:
+      - ``setup``
+      - ``lint``
+      - ``test-unit``
+      - ``test-integration`` (If this applies to your repo, i.e. the repo is a library
+        rather than an application)
+      - ``coverage``
 
-.. code-block:: bash
+   #. ``pyproject.toml`` - Expand from just the ruff things: move things into
+      here from your ``setup.py``, ``setup.cfg``, and ``requirements.*.txt``.
+   #. ``README`` - If your readme is .md, convert to .rst with pandoc:
+      ``pandoc -o README.rst README.md``
+      Don't worry about making the contents match, Imagecraft's is very specific.
+#. Run all the linters: ``make lint``
+   #. ``mypy``:
 
-   cd ~/imagecraft/docs
-   make install
+      - Mypy checks the same things as ``ruff``'s ``ANNXXX`` checks, but
+        ``ruff``'s ``noqa`` directives mean nothing to mypy.  You'll need to fix
+        these by hand, mostly by adding type annotations to function definitions.
 
-Build and serve the documentation:
+   #. ``pyright``:
 
-.. code-block:: bash
+      - For errors along the lines of "Stub file not found for $library", check
+        for the existence of pip package ``typing-$library`` and add it as a
+        dependency.
+      - If you have lots of errors you may need to remove the ``strict``
+        directive from ``pyproject.toml``.
 
-   make run
+#. Do a side-by-side diff of the ``.gitignore`` files in your project and
+   Imagecraft, making them as close as possible and adding anything that makes
+   sense upstream.
 
-Point your web browser to address ``127.0.0.1:8000``.
+#. Bring in remaining top-level files:
+   - .editorconfig
+   - .pre-commit-config.yaml
+   - .shellcheckrc
+   - tox.ini
+   - .yamllint.yaml
+
+#. If you're rebasing a library, add the integrations tests structure.
+   Applications should use spread for integration tests.
+
+#. Finally, once all files are manually synced, actually sync the git history:
+
+   - ``git remote add imagecraft git@github.com:canonical/imagecraft.git``
+   - ``git merge --allow-unrelated-histories imagecraft/main``
+   - ``git remote remove imagecraft``
+   - Don't forget to review all the new files and dirs that this merge adds -
+     you'll want to delete a lot of them.
+   - When you merge, DO NOT squash, otherwise the imagecraft history will not be
+     preserved.
 
 
-.. LINKS
-.. _Imagecraft repository: https://github.com/canonical/imagecraft
-.. _product website: https://canonical-imagecraft.readthedocs-hosted.com
+Create a new project
+--------------------
+
+#. `Use this template`_ to create your repository.
+#. Sync the git history with imagecraft to ease future merging:
+   - ``git clone <your-repo>``
+   - ``git remote add imagecraft git@github.com:canonical/imagecraft.git``
+   - ``git merge --allow-unrelated-histories imagecraft/main``
+   - ``git push -f origin main``
+   - ``git remote remove imagecraft``
+#. Ensure the ``LICENSE`` file represents the current best practices from the
+   Canonical legal team for the specific project you intend to release. We use
+   LGPL v3 for libraries, and GPL v3 for apps.
+#. Rename any files or directories and ensure references are updated.
+#. Replace any instances of the words ``Imagecraft`` and ``imagecraft`` with the product's
+   name.
+#. Place contact information in a code of conduct.
+#. Rewrite the README.
+#. If a Diataxis quadrant (tutorials, how-tos, references, explanations)
+   doesn't yet have content, remove its landing page from the TOC and delete
+   its card in ``docs/index.rst``. You can re-index it when at least one
+   document has been produced for it.
+#. Register the product's documentation on our custom domain on `Read the
+   Docs for Business`_.
+
+.. _EditorConfig: https://editorconfig.org/
+.. _pre-commit: https://pre-commit.com/
+.. _Read the Docs for Business: https://library.canonical.com/documentation/publish-on-read-the-docs
+.. _use this template: https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-repository-from-a-template

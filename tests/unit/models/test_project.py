@@ -143,7 +143,7 @@ parts:
 """
 
 
-@pytest.fixture()
+@pytest.fixture
 def yaml_loaded_data():
     return util.safe_yaml_load(io.StringIO(IMAGECRAFT_YAML_GENERIC))
 

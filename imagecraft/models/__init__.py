@@ -16,6 +16,5 @@
 """Data models for Imagecraft."""
 
 from imagecraft.models.project import Project, Platform, BuildPlanner
-from imagecraft.models.package_repository import PackageRepository
 
-__all__ = ["BuildPlanner", "Project", "Platform", "PackageRepository"]
+__all__ = ["BuildPlanner", "Project", "Platform"]
