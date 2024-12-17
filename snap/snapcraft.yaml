@@ -11,14 +11,20 @@ grade: devel
 license: GPL-3.0
 source-code: https://github.com/canonical/imagecraft
 
+platforms:
+  amd64:
+  arm64:
+  armhf:
+  riscv64:
+  s390x:
+  ppc64el:
+
 apps:
   imagecraft:
-    command: bin/python $SNAP/bin/imagecraft
+    command: bin/python3 $SNAP/bin/imagecraft
     environment:
-      PATH: $SNAP/usr/sbin:$SNAP/usr/bin:$SNAP/sbin:$SNAP/bin:$PATH
-      DEBOOTSTRAP_DIR: $SNAP/usr/share/debootstrap
+      PATH: "$SNAP/libexec/imagecraft:/snap/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
       PERL5LIB: $SNAP/usr/share/perl5:$SNAP/usr/share/perl:$PERL5LIB
-      PYTHONPATH: $SNAP/usr/lib/python3/dist-packages:$PYTHONPATH
 
 build-packages:
   - git
@@ -36,14 +42,24 @@ build-packages:
   - python3.12-minimal
 
 parts:
+  libgit2:
+    source: https://github.com/libgit2/libgit2/archive/refs/tags/v1.7.2.tar.gz
+    source-checksum: sha256/de384e29d7efc9330c6cdb126ebf88342b5025d920dcb7c645defad85195ea7f
+    plugin: cmake
+    cmake-parameters:
+      - -DCMAKE_INSTALL_PREFIX=/usr
+      - -DCMAKE_BUILD_TYPE=RelWithDebInfo
+    build-attributes:
+      - enable-patchelf
+    build-packages:
+      - libssl-dev
+    prime:
+      - -usr/include
+      - -usr/bin
   imagecraft-libs:
     plugin: nil
     build-attributes:
       - enable-patchelf
-    stage-snaps:
-      # For now use the latest/edge to make sure we use a core24 based ubuntu-image
-      # With python3.12
-      - ubuntu-image/latest/edge
     stage-packages:
       - apt
       - apt-transport-https
@@ -52,36 +68,41 @@ parts:
       - libpython3-stdlib
       - libpython3.12-stdlib
       - libpython3.12-minimal
+      - python-apt-common
+      - python3-apt
       - python3-pip
       - python3-setuptools
       - python3-wheel
       - python3-pkg-resources
       - python3.12-venv
       - python3.12-minimal
-
+      - fuse-overlayfs
+    organize:
+      "usr/bin/fuse-overlayfs": "libexec/imagecraft/fuse-overlayfs"
   imagecraft:
-    after: [imagecraft-libs]
+    after: [imagecraft-libs, libgit2]
     source: .
     plugin: python
     build-attributes:
       - enable-patchelf
+    build-packages:
+      - python3.12-dev
+      - python3-pip-whl
+      - libffi-dev
+      - cargo
+      - pkg-config
+      - git
     python-packages:
       - wheel
       - pip
       - setuptools
-    python-requirements:
-      - requirements.txt
     build-environment:
-      - "PARTS_PYTHON_INTERPRETER": "python3.12"
-      - "CFLAGS": "$(pkg-config python-3.12 yaml-0.1 --cflags)"
+      - PARTS_PYTHON_VENV_ARGS: --system-site-packages
+      - PIP_NO_BINARY: ":all:"
+    organize:
+      bin/craftctl: libexec/imagecraft/craftctl
     override-build: |
-      python3 --version
       craftctl default
-      version="$(python3 setup.py --version)"
-      # Fix pyvenv.cfg until it is fixed in craft libs
-      sed -i "${CRAFT_PART_INSTALL}/pyvenv.cfg" \
-          -e 's@^home = '"${CRAFT_STAGE}"'/usr/bin$@home = /snap/imagecraft/current/usr/bin@g'
-      sed -i '\,^executable = ,d' "${CRAFT_PART_INSTALL}/pyvenv.cfg"
-      sed -i '\,^command = ,d' "${CRAFT_PART_INSTALL}/pyvenv.cfg"
-
+      sed -i -e '1 s|^#!/.*|#!/snap/imagecraft/current/bin/python -E|' $CRAFT_PART_INSTALL/bin/craftctl
+      version="$("${CRAFT_STAGE}/usr/bin/python3" -c "import imagecraft;print(imagecraft.__version__)")"
       craftctl set version="$version"

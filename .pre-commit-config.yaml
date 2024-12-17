@@ -2,7 +2,7 @@
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: "v5.0.0"
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -12,19 +12,15 @@ repos:
       - id: check-toml
       - id: fix-byte-order-marker
       - id: mixed-line-ending
-  - repo: https://github.com/charliermarsh/ruff-pre-commit
-    # renovate: datasource=pypi;depName=ruff
-    rev: "v0.0.267"
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: "v0.8.2"
     hooks:
+      # Run the linter
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
-  - repo: https://github.com/psf/black
-    # renovate: datasource=pypi;depName=black
-    rev: "23.3.0"
-    hooks:
-      - id: black
+      # Run the formatter
+      - id: ruff-format
   - repo: https://github.com/adrienverge/yamllint.git
-    # renovate: datasource=pypi;depName=yamllint
-    rev: "v1.31.0"
+    rev: "v1.35.1"
     hooks:
       - id: yamllint

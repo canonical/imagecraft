@@ -14,16 +14,18 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from craft_parts import plugins
+from craft_parts.plugins import register
+from craft_parts.plugins.plugins import PluginType
 
-from imagecraft.plugins import gadget, ubuntu_bootstrap
+
+def get_app_plugins() -> dict[str, PluginType]:
+    """Get Imagecraft-specific craft-parts plugins.
+
+    :returns: A dict mapping plugin names to plugins
+    """
+    return {}
 
 
 def setup_plugins() -> None:
     """Register plugins specific to imagecraft."""
-    plugins.register(
-        {
-            "gadget": gadget.GadgetPlugin,
-            "ubuntu-bootstrap": ubuntu_bootstrap.UbuntuBootstrapPlugin,
-        },
-    )
+    register(get_app_plugins())

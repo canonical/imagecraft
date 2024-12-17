@@ -19,28 +19,21 @@
 This module defines a imagecraft.yaml file, exportable to a JSON schema.
 """
 
-from typing import Annotated, Any, Self
+import typing
+from typing import Any, Literal, Self
 
-import pydantic
 from craft_application.errors import CraftValidationError
 from craft_application.models import BuildPlanner as BaseBuildPlanner
 from craft_application.models import Platform as BasePlatform
 from craft_application.models import Project as BaseProject
+from craft_providers import bases
 from pydantic import (
     ConfigDict,
+    Field,
     field_validator,
     model_validator,
 )
-
-from imagecraft.architectures import SUPPORTED_ARCHS
-from imagecraft.models.package_repository import (
-    PackageRepositoryApt,
-    PackageRepositoryPPA,
-    validate_package_repositories,
-    validate_repository,
-)
-
-file_name = "imagecraft.yaml"
+from typing_extensions import override
 
 
 class Platform(BasePlatform):
@@ -64,10 +57,19 @@ class Platform(BasePlatform):
         return self
 
 
+BaseT = Literal["bare"]
+BuildBaseT = typing.Annotated[
+    Literal["ubuntu@20.04", "ubuntu@22.04", "ubuntu@24.04", "devel"] | None,
+    Field(validate_default=True),
+]
+
+
 class BuildPlanner(BaseBuildPlanner):
     """BuildPlanner for Imagecraft projects."""
 
     platforms: dict[str, Platform]  # type: ignore[assignment]
+    base: BaseT  # type: ignore[reportIncompatibleVariableOverride]
+    build_base: BuildBaseT  # type: ignore[reportIncompatibleVariableOverride]
 
     @field_validator(
         "platforms",
@@ -85,81 +87,14 @@ class BuildPlanner(BaseBuildPlanner):
 
         return platforms
 
-    @field_validator("platforms")  # pyright: ignore[reportUntypedFunctionDecorator]
-    @classmethod
-    def _validate_all_platforms(cls, platforms: dict[str, Any]) -> dict[str, Platform]:
-        """Make sure all provided platforms are tangible and sane."""
-        for platform_label, platform in platforms.items():
-            error_prefix = f"Error for platform entry '{platform_label}'"
 
-            # build_on and build_for are validated
-            # let's also validate the platform label
-            # If the label maps to a valid architecture and
-            # `build-for` is present, then both need to have the same value,
-            # otherwise the project is invalid.
-            if platform.build_for:
-                build_target = platform.build_for[0]
-                if platform_label in SUPPORTED_ARCHS and platform_label != build_target:
-                    raise CraftValidationError(
-                        str(
-                            f"{error_prefix}: if 'build_for' is provided and the "
-                            "platform entry label corresponds to a valid architecture, then "
-                            f"both values must match. {platform_label} != {build_target}",
-                        ),
-                    )
-            else:
-                build_target = platform_label
-
-            build_on_one_of = (
-                platform.build_on if platform.build_on else [platform_label]
-            )
-            # Both build and target architectures must be supported
-            if not any(b_o in SUPPORTED_ARCHS for b_o in build_on_one_of):
-                raise CraftValidationError(
-                    str(
-                        f"{error_prefix}: trying to build image in one of "
-                        f"{build_on_one_of}, but none of these build architectures is supported. "
-                        f"Supported architectures: {SUPPORTED_ARCHS}",
-                    ),
-                )
-
-            if build_target not in SUPPORTED_ARCHS:
-                raise CraftValidationError(
-                    str(
-                        f"{error_prefix}: trying to build image for target "
-                        f"architecture {build_target}, which is not supported. "
-                        f"Supported architectures: {SUPPORTED_ARCHS}",
-                    ),
-                )
-
-            platforms[platform_label] = platform
-
-        return platforms
-
-
-class Project(BuildPlanner, BaseProject):
+class Project(BaseProject):
     """Definition of imagecraft.yaml configuration."""
 
-    series: str
-    package_repositories_: (  # type: ignore[reportIncompatibleVariableOverride]
-        list[
-            Annotated[
-                dict[str, Any],
-                pydantic.AfterValidator(validate_repository),
-            ]
-            | list[PackageRepositoryPPA | PackageRepositoryApt]
-        ]
-        | None
-    ) = pydantic.Field(
-        alias="package-repositories",
-        default=None,
-    )  # type: ignore[assignment]
-    package_repositories: list[dict[str, Any]] | None = pydantic.Field(
-        alias="unused",
-        default=None,
-    )
-
+    base: BaseT  # type: ignore[reportIncompatibleVariableOverride]
+    build_base: BuildBaseT  # type: ignore[reportIncompatibleVariableOverride]
     platforms: dict[str, Platform] | None = None  # type: ignore[assignment, reportIncompatibleVariableOverride]
+
     model_config = ConfigDict(
         validate_assignment=True,
         extra="forbid",
@@ -167,11 +102,13 @@ class Project(BuildPlanner, BaseProject):
         populate_by_name=True,
     )
 
-    @field_validator("package_repositories_")
+    @override
     @classmethod
-    def _validate_all_package_repositories(
-        cls,
-        project_repositories: list[PackageRepositoryPPA | PackageRepositoryApt],
-    ) -> list[PackageRepositoryPPA | PackageRepositoryApt]:
-        validate_package_repositories(project_repositories)
-        return project_repositories
+    def _providers_base(cls, base: str) -> bases.BaseAlias | None:
+        """Get a BaseAlias from imagecraft's base.
+
+        :param base: The base name.
+
+        :returns: Always None because imagecraft only supports bare bases.
+        """
+        return None

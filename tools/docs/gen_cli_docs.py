@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-# Adapted from rockcraft documentation script
 
-import argparse
 import os
 import pathlib
 import sys
 
-sys.path.append("../")
+from craft_cli.dispatcher import _CustomArgumentParser
+
+this_dir = pathlib.Path(os.path.split(__file__)[0])
+sys.path.insert(0, str((this_dir / ".." / "..").absolute()))
 
 from imagecraft import cli
-from craft_cli.dispatcher import Dispatcher, _CustomArgumentParser
 
 
 def command_page_header(cmd, options_str, required_str):
@@ -29,7 +29,17 @@ Usage
 """
 
 
+def argname(dest, metavars):
+    # There should be only one metavar name. If None, use the dest instead.
+    if metavars[0]:
+        return metavars[0]
+    else:
+        return dest
+
+
 def make_sentence(t):
+    if not t:
+        t = ""
     return t[:1].upper() + t[1:].rstrip(".") + "."
 
 
@@ -37,22 +47,30 @@ def not_none(*args):
     return [x for x in args if x != None]
 
 
-def make_section(title: str, items: list):
+def make_section(title, items):
     s = ""
     if items:
         underline = "-" * len(title)
         s = f"{title}\n{underline}\n\n"
 
-    for dest, (names, help_str) in sorted(items):
-        names = " or ".join([f"``{name}``" for name in names])
-        description = make_sentence(help_str)
-        s += f"{names}\n   {description}\n"
+    for dest, (names, help_str) in items:
+        if help_str != "==SUPPRESS==":
+            if names == [None]:
+                s += f"``{dest}``\n"
+            else:
+                s += " or ".join([f"``{name}``" for name in names]) + "\n"
+            if help_str:
+                s += "   %s\n" % make_sentence(help_str)
 
     s += "\n"
     return s
 
 
-def gen_docs(docs_dir: pathlib.Path):
+def remove_spaces(t):
+    return t.replace(" ", "-")
+
+
+def main(docs_dir):
     """Generate reference documentation for the command line interface,
     creating pages in the docs/reference/commands directory and creating the
     directory itself if necessary."""
@@ -64,14 +82,11 @@ def gen_docs(docs_dir: pathlib.Path):
 
     # Create a dispatcher like Imagecraft does to get access to the same options.
     app = cli._create_app()
+    app._setup_logging()
     command_groups = app.command_groups
 
-    dispatcher = Dispatcher(
-        app.app.name,
-        command_groups,
-        summary=str(app.app.summary),
-        extra_global_args=app._global_arguments,
-    )
+    # Create a dispatcher like Imagecraft does to get access to the same options.
+    dispatcher = app._create_dispatcher()
 
     help_builder = dispatcher._help_builder
 
@@ -83,12 +98,12 @@ def gen_docs(docs_dir: pathlib.Path):
     toc = []
 
     for group in command_groups:
-        group_name = group.name.lower() + "-commands" + os.extsep + "rst"
+        group_name = remove_spaces(group.name.lower()) + "-commands" + os.extsep + "rst"
         group_path = commands_ref_dir / group_name
         g = group_path.open("w")
 
         for cmd_class in sorted(group.commands, key=lambda c: c.name):
-            cmd = cmd_class({"app": {}, "services": {}})
+            cmd = cmd_class(app.app_config)
             p = _CustomArgumentParser(help_builder)
             cmd.fill_parser(p)
 
@@ -96,23 +111,26 @@ def gen_docs(docs_dir: pathlib.Path):
             required = []
             options_str = " "
 
-            for action in sorted(p._actions, key=lambda a: a.dest):
-                if action.required:
-                    required.append((action.dest, ([action.metavar], action.help)))
-                elif action.option_strings and action.dest not in global_options:
+            # Separate the options from required arguments, discarding global options.
+            for action in p._actions:
+                if action.option_strings and action.dest not in global_options:
                     options[action.dest] = (action.option_strings, action.help)
+                elif action.required or not action.option_strings:
+                    required.append((action.dest, ([action.metavar], action.help)))
 
             cmd_path = commands_ref_dir / (cmd.name + os.extsep + "rst")
 
             if options or global_options:
                 options_str += "[options]"
-            required_str = "".join([(" <%s>" % vl[0]) for d, (vl, h) in required])
+            required_str = "".join(
+                [(" <%s>" % argname(d, vl)) for d, (vl, h) in required]
+            )
 
             f = cmd_path.open("w")
             f.write(command_page_header(cmd, options_str, required_str))
             f.write(make_section("Required", required))
-            f.write(make_section("Options", options.items()))
-            f.write(make_section("Global options", global_options.items()))
+            f.write(make_section("Options", sorted(options.items())))
+            f.write(make_section("Global options", sorted(global_options.items())))
 
             # Add a section for the command to be included in the group reference.
             g.write(f":ref:`ref_commands_{cmd.name}`\n")
@@ -130,4 +148,4 @@ def gen_docs(docs_dir: pathlib.Path):
 
 if __name__ == "__main__":
     if len(sys.argv) == 2:
-        gen_docs(pathlib.Path(sys.argv[1]))
+        main(pathlib.Path(sys.argv[1]))
