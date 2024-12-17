@@ -17,13 +17,17 @@
 from craft_parts.plugins import register
 from craft_parts.plugins.plugins import PluginType
 
+from .mmdebstrap import MmdebstrapPlugin
+
 
 def get_app_plugins() -> dict[str, PluginType]:
     """Get Imagecraft-specific craft-parts plugins.
 
     :returns: A dict mapping plugin names to plugins
     """
-    return {}
+    return {
+        "mmdebstrap": MmdebstrapPlugin,
+    }
 
 
 def setup_plugins() -> None:
