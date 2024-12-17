@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""The Mmdesbtrap plugin."""
+"""The Mmdebstrap plugin."""
 
 from typing import Literal
 
@@ -47,5 +47,10 @@ class MmdebstrapPlugin(plugins.Plugin):
     def get_build_commands(self) -> list[str]:
         """Return a list of commands to run during the build step."""
         return [
-            "mmdebstrap --arch amd64 --variant=minbase --mode=sudo --include=apt --format=dir noble . http://archive.ubuntu.com/ubuntu/"
+            (
+                "mmdebstrap --arch amd64 --variant=minbase --mode=sudo "
+                f"--include=apt --format=dir noble {self._part_info.part_install_dir} "
+                "--include=ubuntu-minimal,ubuntu-standard "
+                "http://archive.ubuntu.com/ubuntu/"
+            )
         ]
