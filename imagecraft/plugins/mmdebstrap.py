@@ -46,11 +46,13 @@ class MmdebstrapPlugin(plugins.Plugin):
 
     def get_build_commands(self) -> list[str]:
         """Return a list of commands to run during the build step."""
+        packages = ["ubuntu-cloud-minimal", "ubuntu-standard"]
         return [
             (
-                "mmdebstrap --arch amd64 --variant=minbase --mode=sudo "
-                f"--include=apt --format=dir noble {self._part_info.part_install_dir} "
-                "--include=ubuntu-minimal,ubuntu-standard "
+                f"mmdebstrap --arch {self._part_info.target_arch} --mode=sudo "
+                "--format=dir --variant=minbase"
+                f"--include=apt --include={ ','.join(packages)} "
+                f"noble {self._part_info.part_install_dir} "
                 "http://archive.ubuntu.com/ubuntu/"
             )
         ]

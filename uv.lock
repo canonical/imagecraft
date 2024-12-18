@@ -615,7 +615,7 @@ wheels = [
 
 [[package]]
 name = "imagecraft"
-version = "0.0.post230+g1bae946.d20241217"
+version = "0.0.post233+g243a208.d20241218"
 source = { editable = "." }
 dependencies = [
     { name = "craft-application" },
@@ -624,6 +624,7 @@ dependencies = [
     { name = "craft-platforms" },
     { name = "craft-providers" },
     { name = "pydantic" },
+    { name = "sh" },
 ]
 
 [package.optional-dependencies]
@@ -669,6 +670,7 @@ requires-dist = [
     { name = "craft-providers", specifier = "~=2.0" },
     { name = "mypy", extras = ["reports"], marker = "extra == 'types'", specifier = "~=1.13.0" },
     { name = "pydantic", specifier = "~=2.8" },
+    { name = "sh", specifier = "==2.0.4" },
     { name = "sphinx-autobuild", marker = "extra == 'docs'", specifier = "~=2024.2" },
     { name = "sphinx-lint", marker = "extra == 'docs'", specifier = "==1.0.0" },
     { name = "sphinx-pydantic", marker = "extra == 'docs'", specifier = "==0.1.1" },
@@ -1511,6 +1513,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/43/54/292f26c208734e9a7f067aea4a7e282c080750c4546559b58e2e45413ca0/setuptools-75.6.0.tar.gz", hash = "sha256:8199222558df7c86216af4f84c30e9b34a61d8ba19366cc914424cdbd28252f6", size = 1337429 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/55/21/47d163f615df1d30c094f6c8bbb353619274edccf0327b185cc2493c2c33/setuptools-75.6.0-py3-none-any.whl", hash = "sha256:ce74b49e8f7110f9bf04883b730f4765b774ef3ef28f722cce7c273d253aaf7d", size = 1224032 },
+]
+
+[[package]]
+name = "sh"
+version = "2.0.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/f3/54/ea1fe5ab317a4d942c71d80df534343cf148739f716ca6224ebcec83cb10/sh-2.0.4.tar.gz", hash = "sha256:a18920f0839991bc9dfddb6dcc006c360b1064ba96257359f0ea356e9fa75a60", size = 345443 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/75/52/2152c858389408403386b740b4d8d011449b49dba3eee71556947d5f6854/sh-2.0.4-py3-none-any.whl", hash = "sha256:14265a4cd1622429edcf300292ec98193530fb143fe642b3437024eca9bee8c5", size = 38318 },
 ]
 
 [[package]]

@@ -16,8 +16,12 @@
 
 """Volume configuration pydantic model."""
 
+import enum
+
 from craft_application.models import CraftBaseModel
 from pydantic import Field
+
+from imagecraft.platforms.gptutil import GptType
 
 
 class VolumeContent(CraftBaseModel):
@@ -27,8 +31,24 @@ class VolumeContent(CraftBaseModel):
     target: str
 
 
-class Structure(CraftBaseModel):
-    """Structure of the image."""
+class Role(enum.Enum):
+    """Role describes the role of given structure."""
+
+    UNSPECIFIED = ""
+    MBR = "mbr"
+    SYSTEM_DATA = "system-data"
+    SYSTEM_BOOT = "system-boot"
+
+
+class PartitionSchema(enum.Enum):
+    """Supported partition schemas."""
+
+    MBR = "mbr"
+    GPT = "gpt"
+
+
+class StructureItem(CraftBaseModel):
+    """Structure item of the image."""
 
     name: str = ""
     filesystem_label: str = ""
@@ -36,8 +56,8 @@ class Structure(CraftBaseModel):
     offset_write: str = ""
     min_size: str = ""
     size: str = ""
-    type_: str = Field(alias="type")
-    role: str = ""
+    type_: GptType = Field(alias="type")
+    role: Role
     id: str = ""
     filesystem: str = ""
     content: list[VolumeContent] | None = None
@@ -46,8 +66,22 @@ class Structure(CraftBaseModel):
 class Volume(CraftBaseModel):
     """Volume defining properties of the image."""
 
-    schema_: str = Field(alias="schema")
+    schema_: PartitionSchema = Field(default=PartitionSchema.GPT, alias="schema")
     bootloader: str
     id: str = ""
-    structure: list[Structure] | None = None
+    structure: list[StructureItem] | None = None
     _name: str
+
+    def data_structure(self) -> StructureItem | None:
+        """Get the structure defining the partition holding the main operating system data."""
+        if self.structure is None:
+            return None
+        for s in self.structure:
+            if s.role == Role.SYSTEM_DATA:
+                return s
+        return None
+
+    @property
+    def name(self) -> str:
+        """Name of the volume."""
+        return self._name

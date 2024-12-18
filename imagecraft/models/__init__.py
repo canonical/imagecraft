@@ -15,6 +15,12 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Data models for Imagecraft."""
 
-from imagecraft.models.project import Project, Platform, BuildPlanner
+from imagecraft.models.project import (
+    Project,
+    Platform,
+    BuildPlanner,
+)
 
-__all__ = ["BuildPlanner", "Project", "Platform"]
+from imagecraft.models.volume import StructureItem, Volume
+
+__all__ = ["BuildPlanner", "Project", "Platform", "StructureItem", "Volume"]

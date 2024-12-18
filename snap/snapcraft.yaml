@@ -74,7 +74,6 @@ parts:
       - python3-pkg-resources
       - python3.12-venv
       - python3.12-minimal
-
   imagecraft:
     after: [imagecraft-libs, libgit2]
     source: .
