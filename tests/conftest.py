@@ -20,7 +20,7 @@ import pytest
 from imagecraft import plugins
 
 
-@pytest.fixture()
+@pytest.fixture
 def project_main_module() -> types.ModuleType:
     """Fixture that returns the project's principal package (imported).
 
@@ -45,7 +45,7 @@ def _setup_parts():
     plugins.setup_plugins()
 
 
-@pytest.fixture()
+@pytest.fixture
 def new_dir(tmpdir):
     """Change to a new temporary directory."""
 
@@ -57,13 +57,13 @@ def new_dir(tmpdir):
     os.chdir(cwd)
 
 
-@pytest.fixture()
+@pytest.fixture
 def extra_project_params():
     """Configuration fixture for the Project used by the default services."""
     return {}
 
 
-@pytest.fixture()
+@pytest.fixture
 def default_project(extra_project_params):
     from imagecraft.models.project import Platform, Project
 
@@ -76,28 +76,19 @@ def default_project(extra_project_params):
         description="default project",
         base="ubuntu@22.04",
         platforms={"amd64": Platform(build_for=["amd64"], build_on=["amd64"])},
-        series="jammy",
-        package_repositories_=[  # pyright: ignore[reportCallIssue]
-            {
-                "type": "apt",
-                "components": ["main", "restricted"],
-                "series": "jammy",
-                "pocket": "proposed",
-            },
-        ],
         parts=parts,
         **extra_project_params,
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def default_build_plan(default_project):
     from imagecraft.models.project import BuildPlanner
 
     return BuildPlanner.unmarshal(default_project.marshal()).get_build_plan()
 
 
-@pytest.fixture()
+@pytest.fixture
 def default_factory(default_project, default_build_plan):
     from imagecraft.application import APP_METADATA
     from imagecraft.services import ImagecraftServiceFactory
@@ -112,14 +103,14 @@ def default_factory(default_project, default_build_plan):
     return factory
 
 
-@pytest.fixture()
+@pytest.fixture
 def default_application(default_factory):
     from imagecraft.application import APP_METADATA, Imagecraft
 
     return Imagecraft(APP_METADATA, default_factory)
 
 
-@pytest.fixture()
+@pytest.fixture
 def lifecycle_service(default_project, default_factory, default_build_plan):
     from imagecraft.application import APP_METADATA
     from imagecraft.services import ImagecraftLifecycleService
@@ -136,7 +127,7 @@ def lifecycle_service(default_project, default_factory, default_build_plan):
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def pack_service(default_project, default_factory, default_build_plan):
     from imagecraft.application import APP_METADATA
     from imagecraft.services import ImagecraftPackService

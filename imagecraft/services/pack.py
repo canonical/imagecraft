@@ -15,14 +15,15 @@
 """Imagecraft Package service."""
 
 import pathlib
-import shutil
 import typing
+from typing import cast
 
-from craft_application import AppMetadata, PackageService, models
+from craft_application import AppMetadata, PackageService, errors, models
 from craft_application.models import BuildInfo
 from overrides import override  # type: ignore[reportUnknownVariableType]
 
-from imagecraft.ubuntu_image import list_image_paths, ubuntu_image_pack
+from imagecraft.models import Project
+from imagecraft.pack import packer
 
 if typing.TYPE_CHECKING:
     from imagecraft.services import ImagecraftServiceFactory
@@ -36,10 +37,11 @@ class ImagecraftPackService(PackageService):
         app: AppMetadata,
         services: "ImagecraftServiceFactory",
         *,
-        project: models.Project,
+        project: Project,
         build_plan: list[BuildInfo],
     ) -> None:
         super().__init__(app, services, project=project)
+
         self._build_plan = build_plan
 
     @override
@@ -50,24 +52,26 @@ class ImagecraftPackService(PackageService):
         :param dest: Directory into which to write the package(s).
         :returns: A list of paths to created packages.
         """
-        gadget_path = f"{prime_dir}/gadget/"
-        rootfs_path = f"{prime_dir}/rootfs/"
-        workdir_path = f"{prime_dir}/workdir/"
 
-        # Create per-platform output directories
-        platform_output = pathlib.Path(
-            dest,
-            self._build_plan[0].platform if self._build_plan[0].platform else "",
+        if not self._build_plan:
+            raise errors.EmptyBuildPlanError
+
+        if len(self._build_plan) > 1:
+            raise errors.MultipleBuildsError
+
+        platform = self._build_plan[0].platform
+        self._filename = f"{self._project.name}_{self._project.version}_{platform}.raw"
+
+        dest_path = dest / self._filename
+
+        packer(
+            prime_dir=prime_dir,
+            work_dir=self._services.lifecycle.project_info.dirs().work_dir,
+            imagepath=dest_path,
+            project=cast(Project, self._project),
         )
-        platform_output.mkdir(parents=True, exist_ok=True)
 
-        ubuntu_image_pack(rootfs_path, gadget_path, str(dest), workdir_path)
-
-        img_paths = list_image_paths(workdir_path)
-
-        shutil.rmtree(workdir_path)
-
-        return [pathlib.Path(dest) / img for img in img_paths]
+        return [dest_path]
 
     @property
     def metadata(self) -> models.BaseMetadata:

@@ -14,11 +14,14 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Main module."""
+"""Main module.
+
+Entrypoint to use if running with python -m imagecraft.
+"""
 
 import sys
 
-from .cli import run
+from imagecraft.cli import run
 
 if __name__ == "__main__":
     sys.exit(run())

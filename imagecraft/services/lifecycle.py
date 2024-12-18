@@ -19,13 +19,9 @@
 from typing import cast
 
 from craft_application import LifecycleService
-from craft_parts import Features
 from overrides import override  # type: ignore[reportUnknownVariableType]
 
 from imagecraft.models.project import Project
-
-# Enable the craft-parts features that we use
-Features(enable_overlay=True)
 
 
 class ImagecraftLifecycleService(LifecycleService):
@@ -40,8 +36,6 @@ class ImagecraftLifecycleService(LifecycleService):
         self._manager_kwargs.update(
             base=project.base,
             project_name=project.name,
-            package_repositories_=project.package_repositories_,
-            series=project.series,
         )
 
         super().setup()

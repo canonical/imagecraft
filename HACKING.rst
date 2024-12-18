@@ -1,6 +1,6 @@
-**************************
-Contributing to Imagecraft
-**************************
+*********
+Imagecraft
+*********
 
 Welcome to Imagecraft! We hope this document helps you get started. Before
 contributing any code, please sign the `Canonical contributor licence
@@ -8,109 +8,356 @@ agreement`_.
 
 Setting up a development environment
 ------------------------------------
-TBD
+We use a forking, feature-based workflow, so you should start by forking the
+repository. Once you've done that, clone the project to your computer using git
+clone's ``--recurse-submodules`` parameter. (See more on the `git submodules`_
+documentation.)
 
+To set up a development environment, run::
 
-Tooling
+    make setup
+
+To test that the environment works, run::
+
+    make lint
+    make test
+
+Code conventions
+================
+
+Several targets exist in the Makefile to help with code conventions. They are all
+merged into the ``format`` target for automatic formatting and the ``lint`` target
+for running all linters. These conventions apply to all files in the repository,
+including documentation and metadata files. ``pre-commit`` is used for running many
+hooks before committing. Run::
+
+    make setup-precommit
+
+to configure it for this repository.
+
+Testing
 =======
 
-We use a large number of tools for our project. Most of these are installed for
-you with tox, but you'll need to install:
+Tests can be run using ``make test``, which will run all test forms. Specific types
+of tests can be run with other testing targets shown in ``make help``.
 
-- Python 3.12 (default on Ubuntu 24.04) with setuptools.
-- tox_ version 4.6 or later
-- ShellCheck_  (also available via snap: ``snap install shellcheck``)
+Branches
+--------
 
-Once you have all of those installed, you can install the necessary virtual
-environments for this repository using tox.
+Imagecraft projects follow the `OneFlow`_ git branching model.
 
-Other tools
-###########
 
-Some other tools we use for code quality include:
+Branch names
+============
 
-- Black_ for code formatting
-- pytest_ for testing
-- ruff_ for linting (and some additional formatting)
+The branch name should be brief and less than 200 characters.
 
-A complete list is kept in our pyproject.toml_ file in dev dependencies.
+Branch names are formatted as ``<category>/<name>``.
 
-Initial Setup
-#############
+This naming convention provides a few benefits:
+  - GitHub workflows can choose which categories they should run on
+  - GitHub branches rules can be configured per category
+  - Some IDEs and git tools display categorized branches in a neat and
+    nested format
 
-After cloning the repository but before making any changes, it's worth ensuring
-that the tests, linting and tools all run on your machine. Running ``tox`` with
-no parameters will create the necessary virtual environments for linting and
-testing and run those::
+``main``
+########
 
-    tox
+The main branch containing the latest changes.
 
-If you want to install the environments but not run the tests, you can run::
+``renovate/*``
+##############
 
-    tox --notest
+Branches created automatically by the `Renovate bot`_.
 
-If you'd like to run the tests with a newer version of Python, you can pass a
-specific environment. You must have an appropriately versioned Python
-interpreter installed. For example, to run with Python 3.12, run::
+``work/<ticket>-<description>``
+###############################
 
-    tox -e test-py3.12
+For any work driven by a ticketing system, the ticket should be
+part of the branch name. The ticketing system can be built into the repo
+like GitHub issues or an external ticketing system.
 
-While the use of pre-commit_ is optional, it is highly encouraged, as it runs
-automatic fixes for files when ``git commit`` is called, including code
-formatting with ``black`` and ``ruff``.  The versions available in ``apt`` from
-Debian 11 (bullseye), Ubuntu 22.04 (jammy) and newer are sufficient, but you can
-also install the latest with ``pip install pre-commit``. Once you've installed
-it, run ``pre-commit install`` in this git repository to install the pre-commit
-hooks.
+For GitHub issue #100 (a ticket to add a README file), the branch would be
+called ``work/100-add-readme``.
 
-Tox environments and labels
-###########################
+For an external ticketing system like Jira, a ticket labeled
+``CRAFT-100`` would use a branch called ``work/CRAFT-100-add-readme``.
 
-We group tox environments with the following labels:
+``work/<description>``
+######################
 
-* ``format``: Runs all code formatters with auto-fixing
-* ``type``: Runs all type checkers
-* ``lint``: Runs all linters (including type checkers)
-* ``unit-tests``: Runs unit tests in several supported Python versions
-* ``integration-tests``: Run integration tests in several Python versions
-* ``tests``: The union of ``unit-tests`` and ``integration-tests``
+For any new features, bug fixes, and general work not driven by a ticketing
+system.
 
-For each of these, you can see which environments will be run with ``tox list``.
-For example::
+``hotfix/X.Y``
+##############
 
-    tox list -m lint
+For hotfixes to an existing minor release.
 
-You can also see all the environments by simply running ``tox list``
+For example, hotfixes for Testcraft 2.1 would go to a branch called
+``hotfix/2.1``.
 
-Running ``tox run -m format`` and ``tox run -m lint`` before committing code is
-recommended.
+As a departure from OneFlow, hotfix branches for \*craft applications can be
+long-lived. This is because \*craft applications are built via Launchpad,
+which uses build recipes that follow specific branches.
 
-Maintaining test helpers
+After a tagged release of a hotfix branch, the branch should be merged back
+to ``main``.
+
+``merge/<other-branch>``
 ########################
 
-Spread tests rely on [snapd-testing-tools](https://github.com/snapcore/snapd-testing-tools). To update the subtree of this project, run::
+For commits that merge another branch into the current branch.  See the
+`chore <#chore>`_ section for information on merge commit headers.
 
-    git subtree pull --prefix tests/lib/external/snapd-testing-tools/ https://github.com/snapcore/snapd-testing-tools.git main --squash
+``release/X.Y.Z``
+#################
+
+For commits that prepare for a release. These commits should update the
+`changelog <#changelog>`_.
+
+Commits
+-------
+
+Commit messages are based on the `conventional commit`_ style::
+
+  <type>[(optional scope)][!]: <description>
+
+  [optional body]
+
+  [optional footer]
+
+The commit is divided into three sections: a header, body, and footer.
+
+Header
+======
+
+The header is required and consists of three subsections: a type,
+optional scope, and description. The header must be 72 characters or less.
+
+Types
+#####
+
+``ci``
+""""""
+
+Commits that affect the CI/CD pipeline.
+
+``build``
+"""""""""
+
+Commits that affect the build of an application or library.
+
+This includes dependency updates, which should use the ``deps`` scope
+(``build(deps):``).
+
+``feat``
+""""""""
+
+Commits that add a new feature for the user.
+
+``fix``
+"""""""
+
+Commits that fix a bug or regression.
+
+``perf``
+""""""""
+
+Commits that improve performance without changing the API or external behavior.
+
+``refactor``
+"""""""""""""
+
+Commits that refactor code.
+
+Using `Martin Fowler's definition`_, refactor means "*a change made
+to the internal structure of software to make it easier to understand and
+cheaper to modify without changing its observable behavior.*"
+
+``style``
+""""""""""
+
+Commits that change the syntax, format, or aesthics of any text the codebase.
+The meaning of the text should not change.
+
+Examples include:
+* automatic changes from tools like ``black`` and ``ruff format``
+* changes to documentation that don't affect the meaning
+* correcting a typo
+
+``test``
+""""""""
+
+Commits that improve, add, or remove tests.
+
+``docs``
+""""""""
+
+Commits that affect the contents of the documentation.
+
+Changes to how documentation is built should use ``build(docs)::``.
+
+Changes to how the documentation is built in the CI/CD pipeline should use
+the ``ci(docs):``.
+
+``chore``
+"""""""""
+
+Miscellaneous commits that don't fit into any other type.
+
+Examples include:
+
+* edits to a comment or docstring
+* type changes
+* accommodating a developer-facing deprecation warning
+* many *small* fixes for an existing PR
+* merge commits (``chore(merge): <branch or tag> into <branch>``)
+
+  * the remote name should not be included (for example, use ``main``
+    instead of ``origin/main``)
+
+Choosing the right type
+"""""""""""""""""""""""
+
+Sometimes, multiple types may be appropriate for a PR.
+
+This may signal that a commit is doing more than one thing and should be
+broken into multiple smaller commits. For example, a commit should not refactor
+code and fix a bug. This should be two separate commits.
+
+In other scenarios, multiple types could be appropriate because of the nature
+of the commit. This can happen with ``test`` and ``docs``, which can be used
+as types or scopes.
+
+The types above are ordered by descending priority. The first appropriate type
+should be used.
+
+For example, refactoring a test suite could have the header
+``test(project): reorganize tests`` or
+``refactor(test): reorganize project tests``. ``refactor`` has a higher
+priority than ``test``, so the latter option is correct.
 
 
-Rebuilding stable snaps
-=======================
+Scope
+#####
 
-To fix vulnerabilities in dependencies pulled when building the snap, we have to rebuild the snap.
+A scope is an optional part of the commit header.  It adds additional context
+by specifying what part of the codebase will be affected.
 
-To do so:
-1. Get the git tag associated to the published snap
-2. Update the `Source` on the `imagecraft-rebuild` snap recipe on Launchpad with the tag.
-3. Request a build.
-4. (optional) Check the build was triggered from the same commit as the snap you want to replace
-5. Promote the build from `latest/beta` to `latest/stable`.
+It should be a tangible part of the codebase, like a directory, module, or
+class name.
 
-.. _Black: https://black.readthedocs.io
+If a commit affects many areas of the codebase, the scope should be omitted;
+``many`` is not an accepted scope.
+
+Breaking changes
+################
+
+If an exclamation point (``!``) is inserted after the type/scope, this means
+that the commit introduces a breaking change.  Including one or more commits
+with an exclamation point in a release will trigger a major version increment.
+
+Breaking changes may also be indicated by including the words ``BREAKING CHANGE``
+in the commit footer.
+
+Description
+###########
+
+The description is written in the imperative mood (present tense, second
+person). The description should complete the following sentence::
+
+  If applied, this commit will <description>.
+
+The description does not begin with capital letter (unless it's a proper
+noun) and does not end with puncuation mark.
+
+Examples
+########
+
+Examples of commit headings::
+
+    feat: inherit context from services
+    test: increase unit test stability
+    fix: check foo before running bar
+    feat(daemon): foo the bar correctly in the baz
+    test(daemon): ensure the foo bars correctly in the baz
+    fix(test): mock class Foo
+    ci(snap): upload the snap artefacts to Github
+    chore(deps): update go.mod dependencies
+
+Body
+====
+
+The body is an optional section of the commit to provide more context.
+It should be succinct (no more than 3-4 sentences) and may reference relevant
+bugs and issues.
+
+Footer
+======
+
+The footer is an optional section of the commit message that can mention the
+signer and co-authors of the commit.
+
+Example footers::
+
+  Signed-off-by: <name> <<email>>
+  Co-authored-by: <name> <<email>>
+
+Changelog
+---------
+
+Scope
+=====
+
+The changelog is a reference documentation page that gives a human-readable
+summary of changes to the project that are relevant to users.
+
+Each change should be clear in its purpose, whether it is fixing a bug,
+adding a feature, or changing an existing behavior.
+
+Internal changes should not be included in the changelog. For example,
+dev dependency updates, CI updates, and style changes should not
+be included.
+
+Style and format
+================
+
+Changes should be written in the imperative mood (present tense, second
+person) similar to commit headers.
+
+The changelog should link to the project's GitHub releases page, which
+contains an exhaustive list of all commits added to the release.
+
+Release entries should be sorted by date from newest to oldest.
+
+Hotfixes
+========
+
+If an older version gets a hotfix release, subsequent releases should mention
+when the hotfix is incorporated.
+
+For example, consider a package with a previous release ``2.9.0`` and a latest
+release of ``3.0.0``. If the ``2.9.0`` receives a hotfix release ``2.9.1`` and
+is merged back to ``main``, then the next ``3.x`` release should indicate that
+it includes the changes from 2.9.1.
+
+.. note::
+
+   3.0.1 includes changes from the 2.9.1 release.
+
+
 .. _`Canonical contributor licence agreement`: http://www.ubuntu.com/legal/contributors/
+.. _Codespell: https://github.com/codespell-project/codespell
+.. _`conventional commit`: https://www.conventionalcommits.org/en/v1.0.0/#summary
 .. _`git submodules`: https://git-scm.com/book/en/v2/Git-Tools-Submodules#_cloning_submodules
+.. _`Martin Fowler's definition`: https://refactoring.com/
+.. _OneFlow: https://www.endoflineblog.com/oneflow-a-git-branching-model-and-workflow
 .. _pre-commit: https://pre-commit.com/
 .. _pyproject.toml: ./pyproject.toml
+.. _Pyright: https://github.com/microsoft/pyright
 .. _pytest: https://pytest.org
+.. _`Renovate bot`: https://github.com/renovatebot/renovate
 .. _ruff: https://github.com/charliermarsh/ruff
 .. _ShellCheck: https://www.shellcheck.net/
 .. _tox: https://tox.wiki
