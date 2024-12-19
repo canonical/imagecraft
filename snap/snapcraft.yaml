@@ -21,7 +21,7 @@ platforms:
 
 apps:
   imagecraft:
-    command: bin/python $SNAP/bin/imagecraft
+    command: bin/python3 $SNAP/bin/imagecraft
     environment:
       PATH: "$SNAP/libexec/imagecraft:/snap/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
       PERL5LIB: $SNAP/usr/share/perl5:$SNAP/usr/share/perl:$PERL5LIB
@@ -68,12 +68,17 @@ parts:
       - libpython3-stdlib
       - libpython3.12-stdlib
       - libpython3.12-minimal
+      - python-apt-common
+      - python3-apt
       - python3-pip
       - python3-setuptools
       - python3-wheel
       - python3-pkg-resources
       - python3.12-venv
       - python3.12-minimal
+      - fuse-overlayfs
+    organize:
+      "usr/bin/fuse-overlayfs": "libexec/imagecraft/fuse-overlayfs"
   imagecraft:
     after: [imagecraft-libs, libgit2]
     source: .

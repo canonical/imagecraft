@@ -16,6 +16,8 @@
 
 """Main Imagecraft Application."""
 
+from typing import Any
+
 from craft_application import Application, AppMetadata
 from craft_parts.plugins.plugins import PluginType
 from overrides import override  # type: ignore[reportUnknownVariableType]
@@ -51,3 +53,14 @@ class Imagecraft(Application):
     @override
     def _get_app_plugins(self) -> dict[str, PluginType]:
         return plugins.get_app_plugins()
+
+    @override
+    def _enable_craft_parts_features(self) -> None:
+        # pylint: disable=import-outside-toplevel
+        from craft_parts.features import Features
+
+        Features(enable_overlay=True, enable_partitions=True)
+
+    @override
+    def _setup_partitions(self, yaml_data: dict[str, Any]) -> list[str] | None:  # noqa: ARG002
+        return ["default", "bios", "rootfs", "efi"]

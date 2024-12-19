@@ -16,6 +16,8 @@
 
 """Imagecraft Lifecycle service."""
 
+import hashlib
+from pathlib import Path
 from typing import cast
 
 from craft_application import LifecycleService
@@ -33,9 +35,16 @@ class ImagecraftLifecycleService(LifecycleService):
         # Configure extra args to the LifecycleManager
         project = cast(Project, self._project)
 
+        hasher = hashlib.sha1()  # noqa: S324
+        path = "./overlay/"
+
+        hasher.update(path.encode())
+
         self._manager_kwargs.update(
             base=project.base,
             project_name=project.name,
+            base_layer_dir=Path(path),
+            base_layer_hash=hasher.digest(),
         )
 
         super().setup()

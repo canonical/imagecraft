@@ -5,7 +5,7 @@ dynamic = ["version", "readme"]
 authors = [{ name = "Canonical Ltd.", email = "snapcraft@lists.snapcraft.io" }]
 license = { file = "LICENSE" }
 dependencies = [
-    "craft-parts>=2.1.4",
+    "craft-parts @ git+https://github.com/upils/craft-parts.git@work/enable-overlays-partitions#egg=craft-parts",
     "craft-cli~=2.13",
     "craft-platforms~=0.4",
     "craft-application~=4.6",
@@ -36,6 +36,9 @@ types = [
     "types-Pygments",
     "types-colorama",
     "types-setuptools",
+]
+apt = [
+    "python-apt @ https://launchpad.net/ubuntu/+archive/primary/+sourcefiles/python-apt/2.4.0ubuntu2/python-apt_2.4.0ubuntu2.tar.xz ; sys_platform == 'linux'",
 ]
 docs = [
     "canonical-sphinx~=0.2.0",
