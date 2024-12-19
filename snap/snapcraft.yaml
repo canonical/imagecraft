@@ -99,5 +99,5 @@ parts:
     override-build: |
       craftctl default
       sed -i -e '1 s|^#!/.*|#!/snap/imagecraft/current/bin/python -E|' $CRAFT_PART_INSTALL/bin/craftctl
-      version="$("${CRAFT_STAGE}/usr/bin/python3" -c "import imagecraft;print(imagecraft.__version__)")"
+      version="$(python3 -c "import imagecraft;print(imagecraft.__version__)")"
       craftctl set version="$version"
