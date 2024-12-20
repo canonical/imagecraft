@@ -16,16 +16,13 @@
 
 """Imagecraft Lifecycle service."""
 
+import hashlib
 from typing import cast
 
 from craft_application import LifecycleService
-from craft_parts import Features
 from overrides import override  # type: ignore[reportUnknownVariableType]
 
 from imagecraft.models.project import Project
-
-# Enable the craft-parts features that we use
-Features(enable_overlay=True)
 
 
 class ImagecraftLifecycleService(LifecycleService):
@@ -37,11 +34,17 @@ class ImagecraftLifecycleService(LifecycleService):
         # Configure extra args to the LifecycleManager
         project = cast(Project, self._project)
 
+        image_dir = self._work_dir / "image"
+        image_dir.mkdir(parents=True, exist_ok=True)
+        hasher = hashlib.sha1()  # noqa: S324
+
+        hasher.update(str(image_dir).encode())
+
         self._manager_kwargs.update(
             base=project.base,
             project_name=project.name,
-            package_repositories_=project.package_repositories_,
-            series=project.series,
+            base_layer_dir=image_dir,
+            base_layer_hash=hasher.digest(),
         )
 
         super().setup()

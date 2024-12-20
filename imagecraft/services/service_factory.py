@@ -29,7 +29,7 @@ class ImagecraftServiceFactory(ServiceFactory):
     """Imagecraft-specific Service Factory."""
 
     # These are overrides of default ServiceFactory services
-    LifecycleClass: type[
-        base_services.LifecycleService
-    ] = services.ImagecraftLifecycleService
+    LifecycleClass: type[base_services.LifecycleService] = (
+        services.ImagecraftLifecycleService
+    )
     PackageClass: type[base_services.PackageService] = services.ImagecraftPackService

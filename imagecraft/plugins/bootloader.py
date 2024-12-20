@@ -14,53 +14,53 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Gadget plugin."""
+"""Bootloader plugin."""
 
 from typing import Any, Literal, cast
 
 from craft_parts import plugins
 
 
-class GadgetPluginProperties(plugins.PluginProperties, frozen=True):
-    """Supported attributes for the 'gadget' plugin."""
+class BootloaderPluginProperties(plugins.PluginProperties, frozen=True):
+    """Supported attributes for the 'bootloader' plugin."""
 
-    plugin: Literal["gadget"] = "gadget"
+    plugin: Literal["bootloader"] = "bootloader"
 
-    gadget_target: str | None = None
+    bootloader_target: str | None = None
     source: str  # pyright: ignore[reportGeneralTypeIssues]
 
 
-class GadgetPlugin(plugins.Plugin):
-    """Builds the gadget containing bootloader configuration."""
+class BootloaderPlugin(plugins.Plugin):
+    """Builds the bootloader containing bootloader configuration."""
 
-    properties_class = GadgetPluginProperties
+    properties_class = BootloaderPluginProperties
 
     def get_build_snaps(self) -> set[str]:
         """Return a set of required snaps to install in the build environment."""
         return set()
 
     def get_build_packages(self) -> set[str]:
-        """Return a set a packages needed to build the gadget.
+        """Return a set a packages needed to build the bootloader.
 
-        More specific packages to the actual gadget build should be added manually by users.
+        More specific packages to the actual bootloader build should be added manually by users.
         """
         return {"make"}
 
     def get_build_environment(self) -> dict[str, Any]:
         """Return a dictionary with the environment to use in the build step."""
-        gadget_arch = self._part_info.target_arch
-        gadget_series = self._part_info.project_info.series
-        return {"ARCH": gadget_arch, "SERIES": gadget_series}
+        bootloader_arch = self._part_info.target_arch
+        bootloader_series = "noble"
+        return {"ARCH": bootloader_arch, "SERIES": bootloader_series}
 
     def get_build_commands(self) -> list[str]:
         """Return a list of commands to run during the build step."""
-        options = cast(GadgetPluginProperties, self._options)
+        options = cast(BootloaderPluginProperties, self._options)
 
-        gadget_target = options.gadget_target
-        if gadget_target is None:
-            gadget_target = ""
+        bootloader_target = options.bootloader_target
+        if bootloader_target is None:
+            bootloader_target = ""
 
         return [
-            f"make {gadget_target}",
-            f"mv {self._part_info.part_build_dir}/install {self._part_info.part_install_dir}/gadget",
+            f"make {bootloader_target}",
+            f"mv {self._part_info.part_build_dir}/install/* {self._part_info.part_install_dir}",
         ]

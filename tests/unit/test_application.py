@@ -18,23 +18,10 @@ IMAGECRAFT_YAML = """
 name: ubuntu-server-amd64
 version: "1"
 base: ubuntu@22.04
-series: jammy
 platforms:
   amd64:
     build-for: [amd64]
     build-on: [amd64]
-package-repositories:
-  - type: apt
-    components: [main,restricted]
-    url: http://archive.ubuntu.com/ubuntu/
-    flavor: ubuntu
-    series: jammy
-    pocket: proposed
-    used-for: build
-  - type: apt
-    components: [restricted,universe]
-    pocket: updates
-    used-for: run
 parts:
   gadget:
     plugin: gadget
@@ -62,7 +49,6 @@ IMAGECRAFT_YAML_NO_GADGET = """
 name: ubuntu-server-amd64
 version: "1"
 base: ubuntu@22.04
-series: jammy
 platforms:
   amd64:
     build-for: [amd64]

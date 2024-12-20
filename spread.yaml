@@ -8,7 +8,6 @@ environment:
 
 exclude:
   - .github
-  - .tox
   - .venv
   - .*_cache
 
