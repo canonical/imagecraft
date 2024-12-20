@@ -17,7 +17,6 @@
 """Imagecraft Lifecycle service."""
 
 import hashlib
-from pathlib import Path
 from typing import cast
 
 from craft_application import LifecycleService
@@ -39,12 +38,12 @@ class ImagecraftLifecycleService(LifecycleService):
         image_dir.mkdir(parents=True, exist_ok=True)
         hasher = hashlib.sha1()  # noqa: S324
 
-        hasher.update(image_dir.encode())
+        hasher.update(str(image_dir).encode())
 
         self._manager_kwargs.update(
             base=project.base,
             project_name=project.name,
-            base_layer_dir=Path(image_dir),
+            base_layer_dir=image_dir,
             base_layer_hash=hasher.digest(),
         )
 

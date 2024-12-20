@@ -66,7 +66,7 @@ class ImagecraftPackService(PackageService):
 
         packer(
             prime_dir=prime_dir,
-            work_dir=self._services.lifecycle.project_info.dirs().work_dir,
+            work_dir=self._services.lifecycle.project_info.dirs.work_dir,
             imagepath=dest_path,
             project=cast(Project, self._project),
         )

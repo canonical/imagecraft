@@ -63,4 +63,4 @@ class Imagecraft(Application):
 
     @override
     def _setup_partitions(self, yaml_data: dict[str, Any]) -> list[str] | None:  # noqa: ARG002
-        return ["default", "bios", "rootfs", "efi"]
+        return ["default", "bios", "mbr", "efi"]

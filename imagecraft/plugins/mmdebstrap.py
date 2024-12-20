@@ -50,8 +50,8 @@ class MmdebstrapPlugin(plugins.Plugin):
         return [
             (
                 f"mmdebstrap --arch {self._part_info.target_arch} --mode=sudo "
-                "--format=dir --variant=minbase"
-                f"--include=apt"
+                "--format=dir --variant=minbase "
+                f"--include=apt --include=linux-image-generic "
                 f"noble {self._part_info.part_install_dir} "
                 "http://archive.ubuntu.com/ubuntu/"
             )

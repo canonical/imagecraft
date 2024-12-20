@@ -78,7 +78,10 @@ def convert_kib_to_sectors(*, kibibyte: int, sector_size: int) -> int:
 
 
 def create_zero_image(
-    *, imagepath: pathlib.Path, sector_size: int, sector_count: int
+    *,
+    imagepath: pathlib.Path,
+    sector_size: int,  # noqa: ARG001 - Unused function argument
+    sector_count: int,
 ) -> None:
     """Create an empty image.
 
@@ -87,12 +90,10 @@ def create_zero_image(
     :param sector_count: Number of sectors.
     """
     utils.cmd(
-        "dd",
-        "if=/dev/zero",
-        f"of={str(imagepath)}",
-        f"bs={sector_size}",
-        f"count={sector_count}",
-        "conv=sparse",
+        "truncate",
+        "-s",
+        f"{sector_count}",
+        f"{str(imagepath)}",
     )
 
 

@@ -17,6 +17,7 @@
 from craft_parts.plugins import register
 from craft_parts.plugins.plugins import PluginType
 
+from .bootloader import BootloaderPlugin
 from .mmdebstrap import MmdebstrapPlugin
 
 
@@ -27,6 +28,7 @@ def get_app_plugins() -> dict[str, PluginType]:
     """
     return {
         "mmdebstrap": MmdebstrapPlugin,
+        "bootloader": BootloaderPlugin,
     }
 
 

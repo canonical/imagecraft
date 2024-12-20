@@ -20,7 +20,7 @@ import pathlib
 import uuid
 from collections import OrderedDict
 
-from imagecraft.models import Project, StructureItem, Volume
+from imagecraft.models import Project, Role, StructureItem, Volume
 from imagecraft.platforms import (
     diskutil,
     gptutil,
@@ -31,6 +31,9 @@ from imagecraft.platforms.gptutil import (
     GptDisk,
     GptHeader,
     GptPartition,
+    MbrDisk,
+    MbrHeader,
+    MbrPartition,
 )
 
 # Disk sector size
@@ -39,19 +42,12 @@ _DISK_SECTOR = 512
 
 def packer(
     *,
-    prime_dir: pathlib.Path,
+    prime_dir: pathlib.Path,  # noqa: ARG001 - Unused function argument
     work_dir: pathlib.Path,
     imagepath: pathlib.Path,
     project: Project,
 ) -> None:
     """Create the image for a given architecture."""
-    ## create image file
-    ## Prepare partitions and gpt table from volumes
-
-    ## copy content to partitions
-    ## prepare grub
-    ## Kernel?
-
     pack_dir = work_dir / "pack"
     pack_dir.mkdir(parents=True, exist_ok=True)
 
@@ -84,7 +80,7 @@ def packer(
     data_structure = volume.data_structure()
 
     install_data(
-        parts_prime_dir=prime_dir / "rootfs",
+        parts_prime_dir=work_dir / "partitions" / "rootfs",
         pack_image_dir=pack_image_dir,
         layout=layout,
         data_structure=data_structure,
@@ -145,22 +141,38 @@ def gpt_layout(
     """Create GPT layout."""
     partitions = OrderedDict()
 
+    start = 17408  # 34 * 512
     for strucure_item in volume.structure:
+        if strucure_item.role == Role.MBR:
+            continue
         partitions[strucure_item.name] = GptPartition(
-            start=204800 + 4096,
+            start=start,
             size=strucure_item.size,
             type=strucure_item.type_,
             uuid=str(uuid.uuid4()),
             name=strucure_item.name,
         )
+        start = start + int(strucure_item.size)
 
     gpt_disk = GptDisk(
         header_lines=GptHeader(label_id="8984DCD3-7190-1246-A4BB-980CEE0EB65A"),
         partitions=partitions,
     )
 
+    mbr_disk = MbrDisk(
+        header_lines=MbrHeader(),
+        partitions={
+            "mbr": MbrPartition(
+                start=1,
+                size=440,
+                type="0c",
+            ),
+        },
+    )
+
     return DiskLayout(
         gptdisk=gpt_disk,
+        hybridmbrdisk=mbr_disk,
     )
 
 
@@ -287,9 +299,6 @@ def install_bootloaders(
     # Write a config file
     grubutil.grub_efi_config(esp_stage_dir=partition_stage_dir)
 
-    # Write the default empty environment
-    grubutil.grub_efi_env_default(esp_stage_dir=partition_stage_dir)
-
     # Create actual EFI System Partition.
     diskutil.format_install_fat_partition(
         content_dir=partition_stage_dir,
@@ -310,7 +319,7 @@ def install_data(
     diskutil.format_install_ext_partition(
         content_dir=parts_prime_dir,
         sector_size=_DISK_SECTOR,
-        sector_count=layout.gptdisk.partitions[data_structure.name].size,
+        sector_count=layout.gptdisk.partitions[data_structure.name].size / _DISK_SECTOR,
         partitionpath=pack_image_dir / "rootfs",
         fstype="ext4",
         label=data_structure.filesystem_label,

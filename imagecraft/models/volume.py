@@ -27,8 +27,9 @@ from imagecraft.platforms.gptutil import GptType
 class VolumeContent(CraftBaseModel):
     """VolumeContent defines the contents of the structure."""
 
-    source: str
-    target: str
+    source: str | None = None
+    target: str | None = None
+    image: str | None = None
 
 
 class Role(enum.Enum):

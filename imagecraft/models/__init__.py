@@ -21,6 +21,6 @@ from imagecraft.models.project import (
     BuildPlanner,
 )
 
-from imagecraft.models.volume import StructureItem, Volume
+from imagecraft.models.volume import StructureItem, Volume, Role
 
-__all__ = ["BuildPlanner", "Project", "Platform", "StructureItem", "Volume"]
+__all__ = ["BuildPlanner", "Project", "Platform", "StructureItem", "Volume", "Role"]
