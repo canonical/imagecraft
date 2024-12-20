@@ -7,55 +7,41 @@ platforms:
 
 parts:
   rootfs:
-    plugin: nil
-    overlay-script: |
-      mmdebstrap --arch amd64 --mode=sudo --format=dir --variant=minbase --include=apt noble $CRAFT_OVERLAY/ http://archive.ubuntu.com/ubuntu/
-    stage:
-      - -*
+    plugin: mmdebstrap
   bootloader:
-    plugin: nil
-    after: [rootfs]
-    overlay-script: |
-      # mkdir -p $CRAFT_OVERLAY/dev $CRAFT_OVERLAY/sys $CRAFT_OVERLAY/proc
-      mount -t devtmpfs devtmpfs-build $CRAFT_OVERLAY/dev
-      mount -t devpts devpts-build -o nodev,nosuid $CRAFT_OVERLAY/dev/pts
-      mount -t sysfs sysfs-build $CRAFT_OVERLAY/sys
-      mount -t proc proc-build $CRAFT_OVERLAY/proc
-      mount --bind /run $CRAFT_OVERLAY/run
-      mkdir -p $CRAFT_OVERLAY/boot/efi
-      # mount $CRAFT_PART_INSTALL $CRAFT_OVERLAY/boot
-      chroot $CRAFT_OVERLAY lsblk
-      chroot $CRAFT_OVERLAY apt update
-      DEBIAN_FRONTEND=noninteractive chroot $CRAFT_OVERLAY apt install --assume-yes --quiet --option=Dpkg::options::=--force-unsafe-io --option=Dpkg::Options::=--force-confold grub-pc shim-signed
-      chroot $CRAFT_OVERLAY ls /boot
-      chroot $CRAFT_OVERLAY grub-install --boot-directory=/boot --efi-directory=/boot/efi --target=x86_64-efi --uefi-secure-boot --no-nvram
-      mount --make-rprivate $CRAFT_OVERLAY/run
-      umount --recursive $CRAFT_OVERLAY/run
-      mount --make-rprivate $CRAFT_OVERLAY/sys
-      umount --recursive $CRAFT_OVERLAY/sys
-      mount --make-rprivate $CRAFT_OVERLAY/proc
-      umount --recursive $CRAFT_OVERLAY/proc
-      mount --make-rprivate $CRAFT_OVERLAY/dev/pts
-      umount --recursive $CRAFT_OVERLAY/dev/pts
-      mount --make-rprivate $CRAFT_OVERLAY/dev
-      umount --recursive $CRAFT_OVERLAY/dev
+    plugin: bootloader
+    source: https://github.com/snapcore/pc-gadget.git
+    source-branch: classic
     organize:
-      '/boot/efi/': (efi)/boot/efi/
-
+      shimx64.efi: (efi)/boot/EFI/BOOT/BOOTX64.EFI
+      fbx64.efi: (efi)/boot/EFI/BOOT/fbx64.efi
+      mmx64.efi: (efi)/boot/EFI/BOOT/mmx64.efi
+      BOOTX64.CSV: (efi)/boot/EFI/ubuntu/BOOTX64.CSV
+      grub.cfg: (efi)/boot/EFI/ubuntu/grub.cfg
+      grubx64.efi: (efi)/boot/EFI/ubuntu/grubx64.efi
+      pc-boot.img: (mbr)/pc-boot.img
+      pc-core.img: (bios)/pc-core.img
 
 volumes:
   pc:
     bootloader: grub
     schema: gpt
     structure:
+      - name: mbr
+        type: EBD0A0A2-B9E5-4433-87C0-68B6B72699C7
+        size: 440
+        role: "mbr"
+        content:
+          - source: (mbr)/pc-boot.img
+            target: /
       - name: boot
         type: 21686148-6449-6E6F-744E-656564454649
         size: 1000000
-        offset: 1000000
         role: system-boot
+        offset: 1000000
         content:
           - source: (bios)/pc-core.img
-            target: (bios)/pc-core.img
+            target: /
       - name: EFI
         type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
         filesystem: vfat
@@ -72,5 +58,5 @@ volumes:
         role: system-data
         size: 3000000000
         content:
-          - source: /rootfs
+          - source: (default)
             target: /
