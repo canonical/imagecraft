@@ -35,15 +35,16 @@ class ImagecraftLifecycleService(LifecycleService):
         # Configure extra args to the LifecycleManager
         project = cast(Project, self._project)
 
+        image_dir = self._work_dir / "image"
+        image_dir.mkdir(parents=True, exist_ok=True)
         hasher = hashlib.sha1()  # noqa: S324
-        path = "./overlay/"
 
-        hasher.update(path.encode())
+        hasher.update(image_dir.encode())
 
         self._manager_kwargs.update(
             base=project.base,
             project_name=project.name,
-            base_layer_dir=Path(path),
+            base_layer_dir=Path(image_dir),
             base_layer_hash=hasher.digest(),
         )
 
