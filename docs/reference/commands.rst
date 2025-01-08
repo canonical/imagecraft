@@ -1,5 +1,7 @@
-Imagecraft commands
-===================
+.. _commands:
+
+Commands
+========
 
 .. Use a hidden table of contents to ensure that documentation is read.
 

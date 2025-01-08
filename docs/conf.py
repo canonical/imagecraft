@@ -43,6 +43,7 @@ html_context = {
 
 extensions = [
     "canonical_sphinx",
+    "notfound.extension",
 ]
 # endregion
 
@@ -78,12 +79,18 @@ exclude_patterns = [
     # documents (so they generate "duplicate label" errors) or they aren't
     # used in this documentation at all (so they generate "unreferenced"
     # errors).
+    # Disable sections and pages that are currently empty
+    "tutorials/index.rst",
+    "how-to-guides/index.rst",
+    "reference/plugins.rst",
+    # Disable unused pages from Craft Parts
     "common/craft-parts/explanation/parts.rst",
     "common/craft-parts/explanation/overlay_parameters.rst",
     "common/craft-parts/explanation/overlays.rst",
     "common/craft-parts/explanation/how_parts_are_built.rst",
     "common/craft-parts/explanation/overlay_step.rst",
     "common/craft-parts/explanation/dump_plugin.rst",
+    "common/craft-parts/explanation/lifecycle.rst",
     "common/craft-parts/how-to/craftctl.rst",
     "common/craft-parts/how-to/include_files.rst",
     "common/craft-parts/how-to/override_build.rst",
@@ -107,6 +114,8 @@ exclude_patterns = [
     "common/craft-parts/reference/plugins/qmake_plugin.rst",
     "common/craft-parts/reference/plugins/rust_plugin.rst",
     "common/craft-parts/reference/plugins/scons_plugin.rst",
+    "common/craft-parts/reference/plugins/go_use_plugin.rst",
+    "common/craft-parts/reference/plugins/uv_plugin.rst",
 ]
 
 linkcheck_ignore = ["http://127.0.0.1:8000", "https://apt-repo.com"]

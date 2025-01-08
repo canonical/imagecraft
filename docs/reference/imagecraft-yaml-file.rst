@@ -1,8 +1,7 @@
-.. _imagecraft.yaml_reference:
+.. _imagecraft-yaml-file:
 
-===============
-imagecraft.yaml
-===============
+``imagecraft.yaml`` file
+========================
 
 .. include:: image_parts/toc.rst
 
@@ -12,9 +11,6 @@ at the root of the project tree in the filesystem.
 This Reference section is for when you need to know which options can be
 used, and how, in this ``imagecraft.yaml`` file.
 
-
-Format specification
-====================
 
 ``name``
 --------
@@ -117,16 +113,6 @@ is a valid, supported architecture name.
    if provided ``build-on`` must be a single string or a list with exactly one
    element.
 
-``package-repositories``
-------------------------
-
-**Type**: dict
-
-**Required**: Yes
-
-The set of values to configure the sources list to use at various stages of the build.  
-(see :ref:`Package Repositories <package_repositories>`).
-
 ``parts``
 ---------
 
@@ -138,8 +124,10 @@ The set of parts that compose the image's contents
 (see :doc:`/common/craft-parts/reference/part_properties`).
 
 
-Example
-=======
+Example file
+------------
 
-.. literalinclude:: code/example/imagecraft.yaml
-    :language: yaml
+.. collapse:: imagecraft.yaml
+
+    .. literalinclude:: code/example/imagecraft.yaml
+       :language: yaml
