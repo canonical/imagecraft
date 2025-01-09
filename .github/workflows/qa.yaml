@@ -16,6 +16,7 @@ jobs:
     uses: canonical/starflow/.github/workflows/test-python.yaml@work/missing-uv-python
     with:
       lowest-python-version: ""
-      fast-test-platforms: '["ubuntu-22.04", "noble"]'
-      fast-test-python-versions: '["3.11", "3.12", "3.13"]'
-      slow-test-python-versions: '["3.11"]'
+      fast-test-platforms: '["noble"]'
+      fast-test-python-versions: '["3.12", "3.13"]'
+      slow-test-platforms: '["noble"]'
+      slow-test-python-versions: '["3.12"]'

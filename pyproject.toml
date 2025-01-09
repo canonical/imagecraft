@@ -35,10 +35,6 @@ types = [
     "types-colorama",
     "types-setuptools",
 ]
-apt-jammy = [
-    # Stay on 2.4 for Jammy
-    "python-apt~=2.4.0;sys_platform=='linux'",
-]
 apt-noble = [
     # 2.7 for Noble
     "python-apt~=2.7.0;sys_platform=='linux'",
@@ -107,7 +103,6 @@ dev-dependencies = [
 ]
 conflicts = [
     [
-        { extra = "apt-jammy" },
         { extra = "apt-noble" },
         { extra = "apt-oracular" },
         { extra = "apt-plucky" },
