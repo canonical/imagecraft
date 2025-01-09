@@ -11,7 +11,6 @@ dependencies = [
     "craft-application~=4.6",
     "craft-providers~=2.0",
     "pydantic~=2.8",
-    "sh==2.0.4",
 ]
 classifiers = [
     "Development Status :: 1 - Planning",
@@ -36,8 +35,21 @@ types = [
     "types-colorama",
     "types-setuptools",
 ]
-apt = [
-    "python-apt @ https://launchpad.net/ubuntu/+archive/primary/+sourcefiles/python-apt/2.4.0ubuntu2/python-apt_2.4.0ubuntu2.tar.xz ; sys_platform == 'linux'",
+apt-jammy = [
+    # Stay on 2.4 for Jammy
+    "python-apt~=2.4.0;sys_platform=='linux'",
+]
+apt-noble = [
+    # 2.7 for Noble
+    "python-apt~=2.7.0;sys_platform=='linux'",
+]
+apt-oracular = [
+    # 2.9 for Oracular+
+    "python-apt>=2.9.0;sys_platform=='linux'",
+]
+apt-plucky = [
+    # 2.9 for Oracular+
+    "python-apt>=2.9.0;sys_platform=='linux'",
 ]
 docs = [
     "canonical-sphinx[full]~=0.2.0",
@@ -48,6 +60,12 @@ docs = [
     "sphinxcontrib-details-directive",
     "matplotlib",
 ]
+
+
+[[tool.uv.index]]
+name = "python-apt-wheels"
+url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/"
+
 
 [tool.uv]
 constraint-dependencies = [
@@ -87,6 +105,15 @@ dev-dependencies = [
     "types-colorama",
     "types-setuptools",
 ]
+conflicts = [
+    [
+        { extra = "apt-jammy" },
+        { extra = "apt-noble" },
+        { extra = "apt-oracular" },
+        { extra = "apt-plucky" },
+    ],
+]
+
 
 [build-system]
 requires = ["setuptools>=69.0", "setuptools_scm[toml]>=7.1"]
