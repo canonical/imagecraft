@@ -42,7 +42,7 @@ install-build-deps: install-lint-build-deps
 ifeq ($(shell which apt-get),)
 	$(warning Cannot install build dependencies without apt.)
 else ifeq ($(wildcard /usr/include/libxml2/libxml/xpath.h),)
-	sudo $(APT) install libxml2-dev libxslt1-dev python3-venv
+	sudo $(APT) install libxml2-dev libxslt1-dev python3-venv libgit2-dev
 else ifeq ($(wildcard /usr/include/libxslt/xslt.h),)
 	sudo $(APT) install libxslt1-dev python3-venv
 else ifeq ($(wildcard /usr/share/doc/python3-venv/copyright),)
