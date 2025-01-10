@@ -112,16 +112,12 @@ prepare: |
 
   snap install core24
   snap install yq
-  snap install snapcraft --classic
 
   # Setup lxd
   # Make sure we use the snap version
   apt remove -y lxd
   snap install lxd
   lxd init --auto
-
-  rm -rf imagecraft_*.snap || true
-  make pack-snap
 
   snap install --classic --dangerous imagecraft_*.snap
 

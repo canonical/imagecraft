@@ -62,7 +62,6 @@ jobs:
           path: "${{ github.workspace }}/.test-results"
           key: "${{ github.job }}-results-${{ github.run_id }}-${{ matrix.group }}-${{ steps.get-previous-attempt.outputs.previous_attempt }}"
 
-      # Needed for some older series we are unable to build the snap on anymore
       - name: Download previsouly build artifact
         uses: actions/download-artifact@v4
         with:
