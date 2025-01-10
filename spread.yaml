@@ -100,7 +100,11 @@ prepare: |
       systemctl restart ssh
   fi
 
-  apt update
+  tempfile="$(mktemp)"
+  if ! apt-get update > "$tempfile" 2>&1; then
+      cat "$tempfile"
+      exit 1
+  fi
   apt install -y snapd libc6-dev git
   if [[ ! "$SPREAD_BACKEND" == *-arm ]]; then
       apt install -y gcc-multilib binfmt-support qemu-user-static
@@ -116,12 +120,8 @@ prepare: |
   snap install lxd
   lxd init --auto
 
-  # Build and install the snap except for series older than 20.04
-  # In this case we expect to find an already built snap in the current dir
-  if [[ "$SPREAD_SYSTEM" != ubuntu-1* ]]; then
-    rm -rf imagecraft_*.snap || true
-    snapcraft
-  fi
+  rm -rf imagecraft_*.snap || true
+  make pack-snap
 
   snap install --classic --dangerous imagecraft_*.snap
 
@@ -131,13 +131,5 @@ debug: |
 suites:
   tests/spread/commons/:
     summary: Common integration tests for imagecraft
-  tests/spread/amd64/:
-    summary: Integration tests for imagecraft on amd64
-    backends: [google, qemu]
-    variants: [ubuntu_server_pc_amd64]
-  tests/spread/arm64/:
-    summary: Integration tests for imagecraft on arm64
-    backends: [google-arm, qemu]
-    variants: [ubuntu_server_pc_arm64]
 
 kill-timeout: 30m

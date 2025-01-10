@@ -15,9 +15,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Build imagecraft snap
-        uses: snapcore/action-build@v1
+        uses: canonical/action-build@v1
+        id: build-imagecraft
 
       - name: Uploading imagecraft snap artifact
         uses: actions/upload-artifact@v4
