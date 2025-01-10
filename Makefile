@@ -20,7 +20,7 @@ format: format-ruff format-prettier  ## Run all automatic formatters
 lint: lint-ruff lint-codespell lint-mypy lint-prettier lint-pyright lint-shellcheck lint-docs lint-twine  ## Run all linters
 
 .PHONY: pack
-pack: pack-pip  ## Build all packages
+pack: pack-pip pack-snap ## Build all packages
 
 .PHONY: pack-snap
 pack-snap: snap/snapcraft.yaml  ##- Build snap package
