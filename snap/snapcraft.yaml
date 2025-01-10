@@ -2,9 +2,9 @@ name: imagecraft
 base: core24
 summary: Imagecraft is a craft tool used to create Ubuntu bootable images.
 description: |
-    Imagecraft is a craft tool used to create Ubuntu bootable images. It follows
-    the same principles as snapcraft, but is focused on creating bootable images
-    instead.
+  Imagecraft is a craft tool used to create Ubuntu bootable images. It follows
+  the same principles as snapcraft, but is focused on creating bootable images
+  instead.
 adopt-info: imagecraft
 confinement: classic
 grade: devel
@@ -76,6 +76,7 @@ parts:
       - python3-pkg-resources
       - python3.12-venv
       - python3.12-minimal
+      - python3-minimal
       - fuse-overlayfs
     organize:
       "usr/bin/fuse-overlayfs": "libexec/imagecraft/fuse-overlayfs"
