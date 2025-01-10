@@ -33,15 +33,15 @@ jobs:
       matrix:
         include:
           - group: ubuntu-arm
-            systems: 'ubuntu-20.04-arm-64 ubuntu-22.04-arm-64 ubuntu-24.04-arm-64'
+            systems: "ubuntu-20.04-arm-64 ubuntu-22.04-arm-64 ubuntu-24.04-arm-64"
           - group: ubuntu
-            systems: 'ubuntu-18.04-64 ubuntu-20.04-64 ubuntu-22.04-64 ubuntu-23.10-64 ubuntu-24.04-64'
+            systems: "ubuntu-20.04-64 ubuntu-22.04-64 ubuntu-24.04-64"
     steps:
       - name: Cleanup job workspace
         id: cleanup-job-workspace
         run: |
-            rm -rf "${{ github.workspace }}"
-            mkdir "${{ github.workspace }}"
+          rm -rf "${{ github.workspace }}"
+          mkdir "${{ github.workspace }}"
 
       - uses: actions/checkout@v4
         with:
@@ -68,59 +68,59 @@ jobs:
       - name: Prepare test results env and vars
         id: prepare-test-results-env
         run: |
-            # Create test results directories and save vars
-            TEST_RESULTS_DIR="${{ github.workspace }}/.test-results"
-            echo "TEST_RESULTS_DIR=$TEST_RESULTS_DIR" >> $GITHUB_ENV
+          # Create test results directories and save vars
+          TEST_RESULTS_DIR="${{ github.workspace }}/.test-results"
+          echo "TEST_RESULTS_DIR=$TEST_RESULTS_DIR" >> $GITHUB_ENV
 
-            # Save the var with the failed tests file
-            echo "FAILED_TESTS_FILE=$TEST_RESULTS_DIR/failed-tests" >> $GITHUB_ENV
+          # Save the var with the failed tests file
+          echo "FAILED_TESTS_FILE=$TEST_RESULTS_DIR/failed-tests" >> $GITHUB_ENV
 
-            # Make sure the test results dirs are created
-            # This step has to be after the cache is restored
-            mkdir -p "$TEST_RESULTS_DIR"
+          # Make sure the test results dirs are created
+          # This step has to be after the cache is restored
+          mkdir -p "$TEST_RESULTS_DIR"
 
       - name: Check failed tests to run
         if: "!contains(github.event.pull_request.labels.*.name, 'Run all')"
         run: |
-            # Save previous failed test results in FAILED_TESTS env var
-            FAILED_TESTS=""
-            if [ -f "$FAILED_TESTS_FILE" ]; then
-                echo "Failed tests file found"
-                FAILED_TESTS="$(cat $FAILED_TESTS_FILE)"
-                if [ -n "$FAILED_TESTS" ]; then
-                    echo "Failed tests to run: $FAILED_TESTS"
-                    echo "FAILED_TESTS=$FAILED_TESTS" >> $GITHUB_ENV
-                fi
-            fi
+          # Save previous failed test results in FAILED_TESTS env var
+          FAILED_TESTS=""
+          if [ -f "$FAILED_TESTS_FILE" ]; then
+              echo "Failed tests file found"
+              FAILED_TESTS="$(cat $FAILED_TESTS_FILE)"
+              if [ -n "$FAILED_TESTS" ]; then
+                  echo "Failed tests to run: $FAILED_TESTS"
+                  echo "FAILED_TESTS=$FAILED_TESTS" >> $GITHUB_ENV
+              fi
+          fi
 
       - name: Run spread tests
         if: "!contains(github.event.pull_request.labels.*.name, 'Skip spread')"
         run: |
-            # Register a problem matcher to highlight spread failures
-            echo "::add-matcher::.github/spread-problem-matcher.json"
+          # Register a problem matcher to highlight spread failures
+          echo "::add-matcher::.github/spread-problem-matcher.json"
 
-            BACKEND=google
-            SPREAD=spread
+          BACKEND=google
+          SPREAD=spread
 
-            if [[ "${{ matrix.systems }}" =~ -arm- ]]; then
-              BACKEND=google-arm
-            fi
+          if [[ "${{ matrix.systems }}" =~ -arm- ]]; then
+            BACKEND=google-arm
+          fi
 
-            RUN_TESTS=""
-            # Save previous failed test results in FAILED_TESTS env var
-            if [ -n "$FAILED_TESTS" ]; then
-                RUN_TESTS="$FAILED_TESTS"
-            else
-                for SYSTEM in ${{ matrix.systems }}; do
-                    RUN_TESTS="$RUN_TESTS $BACKEND:$SYSTEM:tests/..."
-                done
-            fi
-            # Run spread tests
-            # "pipefail" ensures that a non-zero status from the spread is
-            # propagated; and we use a subshell as this option could trigger
-            # undesired changes elsewhere
-            echo "Running command: $SPREAD $RUN_TESTS"
-            (set -o pipefail; $SPREAD $RUN_TESTS | tee spread.log)
+          RUN_TESTS=""
+          # Save previous failed test results in FAILED_TESTS env var
+          if [ -n "$FAILED_TESTS" ]; then
+              RUN_TESTS="$FAILED_TESTS"
+          else
+              for SYSTEM in ${{ matrix.systems }}; do
+                  RUN_TESTS="$RUN_TESTS $BACKEND:$SYSTEM:tests/..."
+              done
+          fi
+          # Run spread tests
+          # "pipefail" ensures that a non-zero status from the spread is
+          # propagated; and we use a subshell as this option could trigger
+          # undesired changes elsewhere
+          echo "Running command: $SPREAD $RUN_TESTS"
+          (set -o pipefail; $SPREAD $RUN_TESTS | tee spread.log)
 
       - name: Discard spread workers
         if: always()
@@ -133,33 +133,33 @@ jobs:
       - name: analyze spread test results
         if: always()
         run: |
-            if [ -f spread.log ]; then
-                echo "Running spread log parser"
-                ./tests/lib/external/snapd-testing-tools/utils/log-parser spread.log --output spread-results.json
+          if [ -f spread.log ]; then
+              echo "Running spread log parser"
+              ./tests/lib/external/snapd-testing-tools/utils/log-parser spread.log --output spread-results.json
 
-                BACKEND=google
-                if [[ "${{ matrix.systems }}" =~ -arm- ]]; then
-                  BACKEND=google-arm
-                fi
+              BACKEND=google
+              if [[ "${{ matrix.systems }}" =~ -arm- ]]; then
+                BACKEND=google-arm
+              fi
 
-                echo "Determining which tests were executed"
-                RUN_TESTS=""
-                for SYSTEM in ${{ matrix.systems }}; do
-                    RUN_TESTS="$RUN_TESTS $BACKEND:$SYSTEM:tests/..."
-                done
-                if [ -n "$FAILED_TESTS" ]; then
-                    RUN_TESTS="$FAILED_TESTS"
-                fi
+              echo "Determining which tests were executed"
+              RUN_TESTS=""
+              for SYSTEM in ${{ matrix.systems }}; do
+                  RUN_TESTS="$RUN_TESTS $BACKEND:$SYSTEM:tests/..."
+              done
+              if [ -n "$FAILED_TESTS" ]; then
+                  RUN_TESTS="$FAILED_TESTS"
+              fi
 
-                echo "Running spread log analyzer"
-                ./tests/lib/external/snapd-testing-tools/utils/log-analyzer list-reexecute-tasks "$RUN_TESTS" spread-results.json > "$FAILED_TESTS_FILE"
+              echo "Running spread log analyzer"
+              ./tests/lib/external/snapd-testing-tools/utils/log-analyzer list-reexecute-tasks "$RUN_TESTS" spread-results.json > "$FAILED_TESTS_FILE"
 
-                echo "List of failed tests saved"
-                cat "$FAILED_TESTS_FILE"
-            else
-                echo "No spread log found, saving empty list of failed tests"
-                touch "$FAILED_TESTS_FILE"
-            fi
+              echo "List of failed tests saved"
+              cat "$FAILED_TESTS_FILE"
+          else
+              echo "No spread log found, saving empty list of failed tests"
+              touch "$FAILED_TESTS_FILE"
+          fi
 
       - name: save spread test results to cache
         if: always()
