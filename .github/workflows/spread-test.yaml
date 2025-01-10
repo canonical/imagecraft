@@ -35,8 +35,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - group: ubuntu-arm
-            systems: "ubuntu-20.04-arm-64 ubuntu-22.04-arm-64 ubuntu-24.04-arm-64"
           - group: ubuntu
             systems: "ubuntu-20.04-64 ubuntu-22.04-64 ubuntu-24.04-64"
     steps:
