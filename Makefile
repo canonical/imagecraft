@@ -9,8 +9,6 @@ ifneq ($(VERSION_CODENAME),)
 SETUP_TESTS_EXTRA_ARGS=--extra apt-$(VERSION_CODENAME)
 endif
 
-UV_FROZEN=true
-
 include common.mk
 
 .PHONY: format
