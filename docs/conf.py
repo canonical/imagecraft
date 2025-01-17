@@ -83,6 +83,8 @@ exclude_patterns = [
     "tutorials/index.rst",
     "how-to-guides/index.rst",
     "reference/plugins.rst",
+    # We do not use the overlay command, yet...
+    "reference/commands/overlay.rst",
     # Disable unused pages from Craft Parts
     "common/craft-parts/explanation/parts.rst",
     "common/craft-parts/explanation/overlay_parameters.rst",
