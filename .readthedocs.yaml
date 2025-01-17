@@ -17,10 +17,9 @@ build:
   tools:
     python: "3.12"
   jobs:
-    pre_install:
-      - cd docs && pip install craft-parts==2.1.2 craft-application==4.3.0 craft-archives==2.0.1
-      - cd docs && python3 .sphinx/build_requirements.py
-      - git fetch --unshallow || true
+    post_checkout:
+      - git fetch --tags --unshallow # Also fetch tags
+      - git describe # Make sure we get a proper version
 
 python:
   install:
