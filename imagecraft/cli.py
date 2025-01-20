@@ -16,23 +16,12 @@
 
 """Command-line application entry point."""
 
-import logging
-
 from imagecraft.application import Imagecraft
-from imagecraft.plugins import setup_plugins
 from imagecraft.services.service_factory import ImagecraftServiceFactory
 
 
 def run() -> int:
     """Command-line interface entrypoint."""
-    # Register our own plugins
-    setup_plugins()
-
-    # Set lib loggers to debug level so that all messages are sent to Emitter
-    for lib_name in ("craft_providers", "craft_parts"):
-        logger = logging.getLogger(lib_name)
-        logger.setLevel(logging.DEBUG)
-
     app = _create_app()
 
     return app.run()

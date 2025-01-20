@@ -16,8 +16,9 @@
 
 """Plugins support."""
 
-from ._setup import setup_plugins
+from ._setup import get_app_plugins, setup_plugins
 
 __all__ = [
+    "get_app_plugins",
     "setup_plugins",
 ]

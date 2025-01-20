@@ -15,14 +15,13 @@
 """Imagecraft Package service."""
 
 import pathlib
-import shutil
 import typing
 
 from craft_application import AppMetadata, PackageService, models
 from craft_application.models import BuildInfo
 from overrides import override  # type: ignore[reportUnknownVariableType]
 
-from imagecraft.ubuntu_image import list_image_paths, ubuntu_image_pack
+from imagecraft.models import Project
 
 if typing.TYPE_CHECKING:
     from imagecraft.services import ImagecraftServiceFactory
@@ -36,38 +35,23 @@ class ImagecraftPackService(PackageService):
         app: AppMetadata,
         services: "ImagecraftServiceFactory",
         *,
-        project: models.Project,
+        project: Project,
         build_plan: list[BuildInfo],
     ) -> None:
         super().__init__(app, services, project=project)
+
         self._build_plan = build_plan
 
     @override
-    def pack(self, prime_dir: pathlib.Path, dest: pathlib.Path) -> list[pathlib.Path]:
+    def pack(self, prime_dir: pathlib.Path, dest: pathlib.Path) -> list[pathlib.Path]:  # noqa: ARG002
         """Pack the image.
 
         :param prime_dir: Directory path to the prime directory.
         :param dest: Directory into which to write the package(s).
         :returns: A list of paths to created packages.
         """
-        gadget_path = f"{prime_dir}/gadget/"
-        rootfs_path = f"{prime_dir}/rootfs/"
-        workdir_path = f"{prime_dir}/workdir/"
 
-        # Create per-platform output directories
-        platform_output = pathlib.Path(
-            dest,
-            self._build_plan[0].platform if self._build_plan[0].platform else "",
-        )
-        platform_output.mkdir(parents=True, exist_ok=True)
-
-        ubuntu_image_pack(rootfs_path, gadget_path, str(dest), workdir_path)
-
-        img_paths = list_image_paths(workdir_path)
-
-        shutil.rmtree(workdir_path)
-
-        return [pathlib.Path(dest) / img for img in img_paths]
+        return []
 
     @property
     def metadata(self) -> models.BaseMetadata:

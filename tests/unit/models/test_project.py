@@ -28,122 +28,89 @@ from pydantic import ValidationError
 IMAGECRAFT_YAML_GENERIC = """
 name: ubuntu-server-amd64
 version: "1"
-series: jammy
+base: bare
+build-base: ubuntu@24.04
+
 platforms:
   amd64:
     build-for: [amd64]
     build-on: [amd64]
-
-package-repositories:
-  - type: apt
-    components: [main,restricted]
-    url: http://archive.ubuntu.com/ubuntu/
-    flavor: ubuntu
-    series: jammy
-    pocket: proposed
-    used-for: build
-  - type: apt
-    components: [main,restricted]
-    series: jammy
-    pocket: release
-    url: http://archive.ubuntu.com/ubuntu/
-    used-for: run
-  - type: apt
-    ppa: canonical-foundations/ubuntu-image
-    used-for: always
-  - type: apt
-    ppa: canonical-foundations/ubuntu-image-private-test
-    auth: "sil2100:vVg74j6SM8WVltwpxDRJ"
-    used-for: run
-
 parts:
-  gadget:
-    plugin: gadget
-    source: https://github.com/snapcore/pc-gadget.git
-    source-branch: classic
-  rootfs:
-    plugin: ubuntu-bootstrap
-    ubuntu-bootstrap-germinate:
-      urls:
-        - "git://git.launchpad.net/~ubuntu-core-dev/ubuntu-seeds/+git/"
-      branch: jammy
-      names:
-        - server
-        - minimal
-        - standard
-        - cloud-image
-    ubuntu-bootstrap-pocket: updates
-    ubuntu-bootstrap-extra-snaps: [core20, snapd]
-    ubuntu-bootstrap-kernel: linux-generic
-    stage:
-      - -etc/cloud/cloud.cfg.d/90_dpkg.cfg
+    rootfs:
+        plugin: nil
 """
 
 IMAGECRAFT_YAML_SIMPLE_PLATFORM = """
 name: ubuntu-server-amd64
 version: "1"
-series: jammy
+base: bare
+build-base: ubuntu@24.04
+
 platforms:
   amd64:
     build-for: amd64
     build-on: amd64
-package-repositories:
-  - type: apt
-    components: [main,restricted]
-    url: http://archive.ubuntu.com/ubuntu/
-    flavor: ubuntu
-    series: jammy
-    pocket: proposed
 parts:
-  gadget:
-    plugin: gadget
-    source: https://github.com/snapcore/pc-gadget.git
-    source-branch: classic
+    rootfs:
+        plugin: nil
 """
 
 IMAGECRAFT_YAML_MINIMAL_PLATFORM = """
 name: ubuntu-server-amd64
 version: "1"
-series: jammy
+base: bare
+build-base: ubuntu@24.04
+
 platforms:
   amd64:
-package-repositories:
-  - type: apt
-    components: [main,restricted]
-    url: http://archive.ubuntu.com/ubuntu/
-    flavor: ubuntu
-    series: jammy
-    pocket: proposed
 parts:
-  gadget:
-    plugin: gadget
-    source: https://github.com/snapcore/pc-gadget.git
-    source-branch: classic
+    rootfs:
+        plugin: nil
 """
 
 IMAGECRAFT_YAML_NO_BUILD_FOR_PLATFORM = """
 name: ubuntu-server-amd64
 version: "1"
-series: jammy
+base: bare
+build-base: ubuntu@24.04
+
 platforms:
   amd64:
     build-on: amd64
-package-repositories:
-  - type: apt
-    components: [main,restricted]
-    url: http://archive.ubuntu.com/ubuntu/
-    flavor: ubuntu
-    series: jammy
-    pocket: proposed
 parts:
-  gadget:
-    plugin: gadget
-    source: https://github.com/snapcore/pc-gadget.git
-    source-branch: classic
+    rootfs:
+        plugin: nil
+"""
+
+IMAGECRAFT_YAML_INVALID_BASE = """
+name: ubuntu-server-amd64
+version: "1"
+base: ubuntu@24.04
+build-base: ubuntu@24.04
+
+platforms:
+  amd64:
+    build-on: amd64
+parts:
+    rootfs:
+        plugin: nil
+"""
+
+IMAGECRAFT_YAML_MISSING_BUILD_BASE = """
+name: ubuntu-server-amd64
+version: "1"
+base: bare
+
+platforms:
+  amd64:
+    build-on: amd64
+parts:
+    rootfs:
+        plugin: nil
 """
 
 
-@pytest.fixture()
+@pytest.fixture
 def yaml_loaded_data():
     return util.safe_yaml_load(io.StringIO(IMAGECRAFT_YAML_GENERIC))
 
@@ -169,8 +136,6 @@ def test_project_unmarshal(yaml_data):
     for attr, v in yaml_loaded.items():
         if attr == "platforms":
             assert getattr(project, attr).keys() == v.keys()
-            continue
-        if attr == "package-repositories":
             continue
         assert getattr(project, attr.replace("-", "_")) == v
 
@@ -217,29 +182,17 @@ def test_project_platform_invalid(
 @pytest.mark.parametrize(
     ("error_value", "platforms"),
     [
-        # If the label maps to a valid architecture and
-        # `build-for` is present, then both need to have the same value    mock_platforms = {"mock": {"build-on": "amd64"}}
-        (
-            "arm64 != amd64",
-            {"arm64": {"build-on": ["arm64"], "build-for": ["amd64"]}},
-        ),
         # Both build and target architectures must be supported
         (
-            "Invalid architecture: 'noarch' must be a valid debian architecture.",
+            "'noarch' is not a valid DebianArchitecture",
             {
                 "mock": {"build-on": ["noarch"], "build-for": ["amd64"]},
             },
         ),
         (
-            "Invalid architecture: 'noarch' must be a valid debian architecture.",
+            "'noarch' is not a valid DebianArchitecture",
             {
                 "mock": {"build-on": ["arm64"], "build-for": ["noarch"]},
-            },
-        ),
-        (
-            "trying to build image in one of ['powerpc']",
-            {
-                "powerpc": None,
             },
         ),
     ],
@@ -258,17 +211,23 @@ def test_project_all_platforms_invalid(yaml_loaded_data, error_value, platforms)
     )
 
 
-def test_project_package_repositories_invalid(yaml_loaded_data):
-    def reload_project_package_repositories(mock_package_repositories, raises):
-        yaml_loaded_data["package-repositories"] = mock_package_repositories
-        project_path = pathlib.Path("myproject.yaml")
-        with pytest.raises(raises) as err:
-            Project.from_yaml_data(yaml_loaded_data, project_path)
+@pytest.mark.parametrize(
+    ("error_value", "yaml_data"),
+    [
+        (
+            "Bad myproject.yaml content:\n- input should be 'bare' (in field 'base')",
+            IMAGECRAFT_YAML_INVALID_BASE,
+        ),
+        (
+            "Bad myproject.yaml content:\n- field 'build-base' required in top-level configuration",
+            IMAGECRAFT_YAML_MISSING_BUILD_BASE,
+        ),
+    ],
+)
+def test_project_invalid_base(error_value, yaml_data):
+    yaml_loaded = yaml.safe_load(yaml_data)
+    project_path = pathlib.Path("myproject.yaml")
+    with pytest.raises(CraftValidationError) as err:
+        Project.from_yaml_data(yaml_loaded, project_path)
 
-        return str(err.value)
-
-    mock_package_repositories = ["test"]
-    assert "input should be a valid dictionary" in reload_project_package_repositories(
-        mock_package_repositories,
-        CraftValidationError,
-    )
+    assert error_value == str(err.value)

@@ -4,9 +4,6 @@
 :ref:`ref_commands_clean`
    Remove a part's assets.
 
-:ref:`ref_commands_overlay`
-   Create part layers over the base filesystem.
-
 :ref:`ref_commands_pack`
    Create the final artifact.
 

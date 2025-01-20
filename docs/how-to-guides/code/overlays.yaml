@@ -1,0 +1,42 @@
+name: ubuntu-server-amd64
+version: "1"
+base: bare
+series: noble
+platforms:
+  amd64:
+    build-for: [amd64]
+    build-on: [amd64]
+
+package-repositories:
+  - type: apt
+    components: [main, restricted, universe, multiverse]
+    url: http://archive.ubuntu.com/ubuntu/
+    pocket: updates
+    used-for: build
+
+parts:
+  seeds:
+    plugin: seed
+    seed-urls:
+      - "git://git.launchpad.net/~ubuntu-core-dev/ubuntu-seeds/+git/"
+    seed-branch: noble
+    seed-vcs: true
+    seed-names:
+      - server
+      - minimal
+      - standard
+      - cloud-image
+  bootstrap:
+    after: [seeds]
+    plugin: bootstrap
+    ubuntu-bootstrap-pocket: updates
+    ubuntu-bootstrap-kernel: linux-image-generic
+    ubuntu-bootstrap-extra-snaps: [snapd]
+    overlays: [.*]
+    stage:
+      - -rootfs/etc/cloud/cloud.cfg.d/90_dpkg.cfg
+  cloud-init:
+    plugin: dump
+    source: cloud-init/
+    overlay:
+      '*': rootfs/

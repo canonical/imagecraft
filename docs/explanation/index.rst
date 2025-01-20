@@ -1,10 +1,10 @@
 .. _explanation:
 
 Explanation
-***********
+===========
 
 .. toctree::
-   :maxdepth: 1
+    :maxdepth: 1
 
-   parts
-   security-overview
+    security-overview
+    parts

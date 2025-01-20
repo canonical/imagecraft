@@ -4,10 +4,9 @@ The following documents the imagecraft security policy.
 
 ## Supported Versions
 
-Imagecraft is not ready for producation use, so no stable version is available yet.  
+Imagecraft is not ready for producation use, so no stable version is available yet.
 
 Once imagecraft is published, we plan on supporting the last version published in the `latest/stable` channel of the [Snapstore](https://snapcraft.io/imagecraft).
-
 
 ## Reporting a Vulnerability
 

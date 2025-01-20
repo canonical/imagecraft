@@ -3,13 +3,17 @@
 Reference
 =========
 
-This section of the documentation contains an in-depth description of
-Imagecraft's components, commands and keywords.
-
 .. toctree::
-   :maxdepth: 1
-   
-   imagecraft.yaml <imagecraft.yaml>
-   commands
-   plugins
-   parts_steps
+    :maxdepth: 1
+
+    imagecraft-yaml-file
+    commands
+    parts-steps
+    part-lifecycle-details
+    /common/craft-parts/explanation/filesets
+
+Indices and tables
+------------------
+
+* :ref:`genindex`
+* :ref:`modindex`

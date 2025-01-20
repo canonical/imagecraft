@@ -20,11 +20,6 @@ from unittest.mock import ANY
 from craft_parts import (
     LifecycleManager,
 )
-from imagecraft.models.package_repository import (
-    PackageRepositoryApt,
-    PocketEnum,
-    UsedForEnum,
-)
 
 
 def test_lifecycle_args(
@@ -49,27 +44,11 @@ def test_lifecycle_args(
         ignore_local_sources=[],
         parallel_build_count=ANY,  # Value will vary when tests run locally or in CI
         project_vars_part_name=None,
-        project_vars={"version": "1"},
+        project_vars={"version": "1.0"},
         track_stage_packages=True,
         partitions=None,
         build_for="amd64",
         platform="amd64",
-        base="ubuntu@22.04",
+        base="bare",
         project_name="default",
-        package_repositories_=[
-            PackageRepositoryApt(  # pyright: ignore[reportCallIssue]
-                type="apt",
-                priority=None,
-                architectures=None,
-                formats=None,
-                path=None,
-                components=["main", "restricted"],
-                suites=None,
-                pocket=PocketEnum.PROPOSED,
-                series="jammy",
-                used_for=UsedForEnum.ALWAYS,
-                flavor=None,
-            ),
-        ],
-        series="jammy",
     )

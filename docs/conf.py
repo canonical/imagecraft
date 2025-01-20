@@ -1,239 +1,164 @@
-import sys
-import os
-import requests
-from urllib.parse import urlparse
-from git import Repo, InvalidGitRepositoryError
-import time
-
-sys.path.append("./")
-from custom_conf import *
-
-sys.path.append(".sphinx/")
-from build_requirements import *
-
-# Configuration file for the Sphinx documentation builder.
-# You should not do any modifications to this file. Put your custom
-# configuration into the custom_conf.py file.
-# If you need to change this file, contribute the changes upstream.
+# This file is part of imagecraft.
 #
-# For the full list of built-in configuration values, see the documentation:
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
+# Copyright 2024 Canonical Ltd.
+#
+# This program is free software: you can redistribute it and/or modify it
+# under the terms of the GNU General Public License version 3, as published
+# by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranties of MERCHANTABILITY,
+# SATISFACTORY QUALITY, or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-############################################################
-### Extensions
-############################################################
+import os
+import datetime
+import pathlib
+import sys
 
-extensions = [
-    "sphinx_design",
-    "sphinx_copybutton",
-    "sphinxcontrib.jquery",
-]
+import craft_parts_docs  # type: ignore
 
-# Only add redirects extension if any redirects are specified.
-if AreRedirectsDefined():
-    extensions.append("sphinx_reredirects")
 
-# Only add myst extensions if any configuration is present.
-if IsMyStParserUsed():
-    extensions.append("myst_parser")
+project_dir = pathlib.Path("..").resolve()
+sys.path.insert(0, str(project_dir.absolute()))
 
-    # Additional MyST syntax
-    myst_enable_extensions = ["substitution", "deflist", "linkify"]
-    myst_enable_extensions.extend(custom_myst_extensions)
 
-# Only add Open Graph extension if any configuration is present.
-if IsOpenGraphConfigured():
-    extensions.append("sphinxext.opengraph")
+project = "Imagecraft"
+author = "Canonical"
 
-extensions.extend(custom_extensions)
-extensions = DeduplicateExtensions(extensions)
+copyright = "2023-%s, %s" % (datetime.date.today().year, author)
 
-### Configuration for extensions
+# region Configuration for canonical-sphinx
+ogp_site_url = "https://canonical-imagecraft.readthedocs-hosted.com/"
+ogp_site_name = project
+ogp_image = "https://assets.ubuntu.com/v1/253da317-image-document-ubuntudocs.svg"
 
-# Used for related links
-if not "discourse_prefix" in html_context and "discourse" in html_context:
-    html_context["discourse_prefix"] = html_context["discourse"] + "/t/"
-
-# The URL prefix for the notfound extension depends on whether the documentation uses versions.
-# For documentation on documentation.ubuntu.com, we also must add the slug.
-url_version = ""
-url_lang = ""
-
-# Determine if the URL uses versions and language
-if (
-    "READTHEDOCS_CANONICAL_URL" in os.environ
-    and os.environ["READTHEDOCS_CANONICAL_URL"]
-):
-    url_parts = os.environ["READTHEDOCS_CANONICAL_URL"].split("/")
-
-    if (
-        len(url_parts) >= 2
-        and "READTHEDOCS_VERSION" in os.environ
-        and os.environ["READTHEDOCS_VERSION"] == url_parts[-2]
-    ):
-        url_version = url_parts[-2] + "/"
-
-    if (
-        len(url_parts) >= 3
-        and "READTHEDOCS_LANGUAGE" in os.environ
-        and os.environ["READTHEDOCS_LANGUAGE"] == url_parts[-3]
-    ):
-        url_lang = url_parts[-3] + "/"
-
-# Set notfound_urls_prefix to the slug (if defined) and the version/language affix
-if slug:
-    notfound_urls_prefix = "/" + slug + "/" + url_lang + url_version
-elif len(url_lang + url_version) > 0:
-    notfound_urls_prefix = "/" + url_lang + url_version
-else:
-    notfound_urls_prefix = ""
-
-notfound_context = {
-    "title": "Page not found",
-    "body": "<p><strong>Sorry, but the documentation page that you are looking for was not found.</strong></p>\n\n<p>Documentation changes over time, and pages are moved around. We try to redirect you to the updated content where possible, but unfortunately, that didn't work this time (maybe because the content you were looking for does not exist in this version of the documentation).</p>\n<p>You can try to use the navigation to locate the content you're looking for, or search for a similar page.</p>\n",
+html_context = {
+    "product_page": "github.com/canonical/imagecraft",
+    "github_url": "https://github.com/canonical/imagecraft",
 }
 
-# Default image for OGP (to prevent font errors, see
-# https://github.com/canonical/sphinx-docs-starter-pack/pull/54 )
-if not "ogp_image" in locals():
-    ogp_image = "https://assets.ubuntu.com/v1/253da317-image-document-ubuntudocs.svg"
+extensions = [
+    "canonical_sphinx",
+    "notfound.extension",
+]
+# endregion
 
-############################################################
-### General configuration
-############################################################
+# region General configuration
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
+
+extensions.extend(
+    [
+        "sphinx.ext.intersphinx",
+        "sphinx.ext.viewcode",
+        "sphinx.ext.coverage",
+        "sphinx.ext.doctest",
+        "sphinx.ext.ifconfig",
+        "sphinx-pydantic",
+        "sphinx_toolbox",
+        "sphinx_toolbox.more_autodoc",
+        "sphinx.ext.autodoc",  # Must be loaded after more_autodoc
+        "canonical.terminal-output",
+        "sphinxcontrib.details.directive",
+    ]
+)
+
+# endregion
+
 
 exclude_patterns = [
     "_build",
     "Thumbs.db",
     ".DS_Store",
-    ".sphinx",
+    "env",
+    "sphinx-starter-pack",
+    # Excluded here because they are either included explicitly in other
+    # documents (so they generate "duplicate label" errors) or they aren't
+    # used in this documentation at all (so they generate "unreferenced"
+    # errors).
+    # Disable sections and pages that are currently empty
+    "tutorials/index.rst",
+    "how-to-guides/index.rst",
+    "reference/plugins.rst",
+    # We do not use the overlay command, yet...
+    "reference/commands/overlay.rst",
+    # Disable unused pages from Craft Parts
+    "common/craft-parts/explanation/parts.rst",
+    "common/craft-parts/explanation/overlay_parameters.rst",
+    "common/craft-parts/explanation/overlays.rst",
+    "common/craft-parts/explanation/how_parts_are_built.rst",
+    "common/craft-parts/explanation/overlay_step.rst",
+    "common/craft-parts/explanation/dump_plugin.rst",
+    "common/craft-parts/explanation/lifecycle.rst",
+    "common/craft-parts/how-to/craftctl.rst",
+    "common/craft-parts/how-to/include_files.rst",
+    "common/craft-parts/how-to/override_build.rst",
+    "common/craft-parts/reference/step_execution_environment.rst",
+    "common/craft-parts/reference/step_output_directories.rst",
+    "common/craft-parts/reference/parts_steps.rst",
+    "common/craft-parts/reference/partition_specific_output_directory_variables.rst",
+    "common/craft-parts/reference/plugins/ant_plugin.rst",
+    "common/craft-parts/reference/plugins/autotools_plugin.rst",
+    "common/craft-parts/reference/plugins/cmake_plugin.rst",
+    "common/craft-parts/reference/plugins/dotnet_plugin.rst",
+    "common/craft-parts/reference/plugins/dump_plugin.rst",
+    "common/craft-parts/reference/plugins/go_plugin.rst",
+    "common/craft-parts/reference/plugins/make_plugin.rst",
+    "common/craft-parts/reference/plugins/maven_plugin.rst",
+    "common/craft-parts/reference/plugins/meson_plugin.rst",
+    "common/craft-parts/reference/plugins/nil_plugin.rst",
+    "common/craft-parts/reference/plugins/npm_plugin.rst",
+    "common/craft-parts/reference/plugins/python_plugin.rst",
+    "common/craft-parts/reference/plugins/poetry_plugin.rst",
+    "common/craft-parts/reference/plugins/qmake_plugin.rst",
+    "common/craft-parts/reference/plugins/rust_plugin.rst",
+    "common/craft-parts/reference/plugins/scons_plugin.rst",
+    "common/craft-parts/reference/plugins/go_use_plugin.rst",
+    "common/craft-parts/reference/plugins/uv_plugin.rst",
 ]
-exclude_patterns.extend(custom_excludes)
+
+linkcheck_ignore = ["http://127.0.0.1:8000", "https://apt-repo.com"]
 
 rst_epilog = """
 .. include:: /reuse/links.txt
 """
-if "custom_rst_epilog" in locals():
-    rst_epilog = custom_rst_epilog
 
-source_suffix = {
-    ".rst": "restructuredtext",
-    ".md": "markdown",
+# region Options for extensions
+# Intersphinx extension
+# https://www.sphinx-doc.org/en/master/usage/extensions/intersphinx.html#configuration
+
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3", None),
 }
 
-if not "conf_py_path" in html_context and "github_folder" in html_context:
-    html_context["conf_py_path"] = html_context["github_folder"]
+# Type hints configuration
+set_type_checking_flag = True
+typehints_fully_qualified = False
+always_document_param_types = True
 
-# For ignoring specific links
-linkcheck_anchors_ignore_for_url = [r"https://github\.com/.*"]
-linkcheck_anchors_ignore_for_url.extend(custom_linkcheck_anchors_ignore_for_url)
+# Github config
+github_username = "canonical"
+github_repository = "imagecraft"
 
-# Tags cannot be added directly in custom_conf.py, so add them here
-for tag in custom_tags:
-    tags.add(tag)
-
-# html_context['get_contribs'] is a function and cannot be
-# cached (see https://github.com/sphinx-doc/sphinx/issues/12300)
-suppress_warnings = ["config.cache"]
-
-############################################################
-### Styling
-############################################################
-
-# Find the current builder
-builder = "dirhtml"
-if "-b" in sys.argv:
-    builder = sys.argv[sys.argv.index("-b") + 1]
-
-# Setting templates_path for epub makes the build fail
-if builder == "dirhtml" or builder == "html":
-    templates_path = [".sphinx/_templates"]
-    notfound_template = "404.html"
-
-# Theme configuration
-html_theme = "furo"
-html_last_updated_fmt = ""
-html_permalinks_icon = "¶"
-
-if html_title == "":
-    html_theme_options = {"sidebar_hide_name": True}
-
-############################################################
-### Additional files
-############################################################
-
-html_static_path = [".sphinx/_static"]
-
-html_css_files = [
-    "custom.css",
-    "header.css",
-    "github_issue_links.css",
-    "furo_colors.css",
-    "footer.css",
-]
-html_css_files.extend(custom_html_css_files)
-
-html_js_files = ["header-nav.js", "footer.js"]
-if (
-    "github_issues" in html_context
-    and html_context["github_issues"]
-    and not disable_feedback_button
-):
-    html_js_files.append("github_issue_links.js")
-html_js_files.extend(custom_html_js_files)
-
-#############################################################
-# Display the contributors
+# endregion
 
 
-def get_contributors_for_file(
-    github_url,
-    github_folder,
-    pagename,
-    page_source_suffix,
-    display_contributors_since=None,
-):
-    filename = f"{pagename}{page_source_suffix}"
-    paths = html_context["github_folder"][1:] + filename
-
-    try:
-        repo = Repo(".")
-    except InvalidGitRepositoryError:
-        cwd = os.getcwd()
-        ghfolder = html_context["github_folder"][:-1]
-        if ghfolder and cwd.endswith(ghfolder):
-            repo = Repo(cwd.rpartition(ghfolder)[0])
-        else:
-            print("The local Git repository could not be found.")
-            return
-
-    since = (
-        display_contributors_since
-        if display_contributors_since and display_contributors_since.strip()
-        else None
-    )
-
-    commits = repo.iter_commits(paths=paths, since=since)
-
-    contributors_dict = {}
-    for commit in commits:
-        contributor = commit.author.name
-        if (
-            contributor not in contributors_dict
-            or commit.committed_date > contributors_dict[contributor]["date"]
-        ):
-            contributors_dict[contributor] = {
-                "date": commit.committed_date,
-                "sha": commit.hexsha,
-            }
-    # The github_page contains the link to the contributor's latest commit.
-    contributors_list = [
-        {"name": name, "github_page": f"{github_url}/commit/{data['sha']}"}
-        for name, data in contributors_dict.items()
-    ]
-    sorted_contributors_list = sorted(contributors_list, key=lambda x: x["name"])
-    return sorted_contributors_list
+def generate_cli_docs(nil):
+    gen_cli_docs_path = (project_dir / "tools" / "docs" / "gen_cli_docs.py").resolve()
+    os.system("%s %s" % (gen_cli_docs_path, project_dir / "docs"))
 
 
-html_context["get_contribs"] = get_contributors_for_file
-#############################################################
+def setup(app):
+    app.connect("builder-inited", generate_cli_docs)
+
+
+# Setup libraries documentation snippets for use in imagecraft docs.
+common_docs_path = pathlib.Path(__file__).parent / "common"
+craft_parts_docs_path = pathlib.Path(craft_parts_docs.__file__).parent / "craft-parts"
+(common_docs_path / "craft-parts").unlink(missing_ok=True)
+(common_docs_path / "craft-parts").symlink_to(
+    craft_parts_docs_path, target_is_directory=True
+)

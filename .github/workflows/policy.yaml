@@ -1,0 +1,16 @@
+name: Check policy
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - hotfix/*
+
+jobs:
+  policy:
+    uses: canonical/starflow/.github/workflows/policy.yaml@main
+  python-scans:
+    name: Security scan
+    uses: canonical/starflow/.github/workflows/scan-python.yaml@work/missing-uv-python
+    with:
+      uv-export-extra-args: "--extra docs --extra lint --extra types"

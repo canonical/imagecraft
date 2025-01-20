@@ -12,11 +12,16 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Integration tests related to building the package."""
+
 import re
 import subprocess
 import sys
 from pathlib import Path
 from zipfile import ZipFile
+
+import pytest
+
+pytestmark = [pytest.mark.slow]
 
 
 def test_packages(project_main_module, tmp_path, request):
