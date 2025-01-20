@@ -13,7 +13,7 @@ jobs:
   lint:
     uses: canonical/starflow/.github/workflows/lint-python.yaml@main
   test:
-    uses: canonical/starflow/.github/workflows/test-python.yaml@work/main
+    uses: canonical/starflow/.github/workflows/test-python.yaml@main
     with:
       lowest-python-version: ""
       fast-test-platforms: '["noble"]'
