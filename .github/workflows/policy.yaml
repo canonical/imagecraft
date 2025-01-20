@@ -11,6 +11,6 @@ jobs:
     uses: canonical/starflow/.github/workflows/policy.yaml@main
   python-scans:
     name: Security scan
-    uses: canonical/starflow/.github/workflows/scan-python.yaml@work/missing-uv-python
+    uses: canonical/starflow/.github/workflows/scan-python.yaml@work/main
     with:
       uv-export-extra-args: "--extra docs --extra lint --extra types"
