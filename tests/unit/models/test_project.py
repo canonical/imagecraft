@@ -36,8 +36,17 @@ platforms:
     build-for: [amd64]
     build-on: [amd64]
 parts:
-    rootfs:
-        plugin: nil
+  rootfs:
+    plugin: nil
+volumes:
+  pc:
+    schema: gpt
+    structure:
+      - name: efi
+        role: system-boot
+        type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
+        filesystem: vfat
+        size: 500 MiB
 """
 
 IMAGECRAFT_YAML_SIMPLE_PLATFORM = """
@@ -51,8 +60,17 @@ platforms:
     build-for: amd64
     build-on: amd64
 parts:
-    rootfs:
-        plugin: nil
+  rootfs:
+    plugin: nil
+volumes:
+  pc:
+    schema: gpt
+    structure:
+      - name: efi
+        role: system-boot
+        type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
+        filesystem: vfat
+        size: 500 MiB
 """
 
 IMAGECRAFT_YAML_MINIMAL_PLATFORM = """
@@ -64,8 +82,17 @@ build-base: ubuntu@24.04
 platforms:
   amd64:
 parts:
-    rootfs:
-        plugin: nil
+  rootfs:
+    plugin: nil
+volumes:
+  pc:
+    schema: gpt
+    structure:
+      - name: efi
+        role: system-boot
+        type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
+        filesystem: vfat
+        size: 500 MiB
 """
 
 IMAGECRAFT_YAML_NO_BUILD_FOR_PLATFORM = """
@@ -78,8 +105,17 @@ platforms:
   amd64:
     build-on: amd64
 parts:
-    rootfs:
-        plugin: nil
+  rootfs:
+    plugin: nil
+volumes:
+  pc:
+    schema: gpt
+    structure:
+      - name: efi
+        role: system-boot
+        type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
+        filesystem: vfat
+        size: 500 MiB
 """
 
 IMAGECRAFT_YAML_INVALID_BASE = """
@@ -92,8 +128,17 @@ platforms:
   amd64:
     build-on: amd64
 parts:
-    rootfs:
-        plugin: nil
+  rootfs:
+    plugin: nil
+volumes:
+  pc:
+    schema: gpt
+    structure:
+      - name: efi
+        role: system-boot
+        type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
+        filesystem: vfat
+        size: 500 MiB
 """
 
 IMAGECRAFT_YAML_MISSING_BUILD_BASE = """
@@ -105,8 +150,17 @@ platforms:
   amd64:
     build-on: amd64
 parts:
-    rootfs:
-        plugin: nil
+  rootfs:
+    plugin: nil
+volumes:
+  pc:
+    schema: gpt
+    structure:
+      - name: efi
+        role: system-boot
+        type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
+        filesystem: vfat
+        size: 500 MiB
 """
 
 
@@ -135,6 +189,9 @@ def test_project_unmarshal(yaml_data):
 
     for attr, v in yaml_loaded.items():
         if attr == "platforms":
+            assert getattr(project, attr).keys() == v.keys()
+            continue
+        if attr == "volumes":
             assert getattr(project, attr).keys() == v.keys()
             continue
         assert getattr(project, attr.replace("-", "_")) == v
@@ -225,6 +282,85 @@ def test_project_all_platforms_invalid(yaml_loaded_data, error_value, platforms)
     ],
 )
 def test_project_invalid_base(error_value, yaml_data):
+    yaml_loaded = yaml.safe_load(yaml_data)
+    project_path = pathlib.Path("myproject.yaml")
+    with pytest.raises(CraftValidationError) as err:
+        Project.from_yaml_data(yaml_loaded, project_path)
+
+    assert error_value == str(err.value)
+
+
+IMAGECRAFT_YAML_MULTIPLE_VOLUMES = """
+name: ubuntu-server-amd64
+version: "1"
+base: bare
+build-base: ubuntu@24.04
+
+platforms:
+  amd64:
+    build-for: [amd64]
+    build-on: [amd64]
+parts:
+  rootfs:
+    plugin: nil
+volumes:
+  pc:
+    schema: gpt
+    structure:
+      - name: efi
+        role: system-boot
+        type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
+        filesystem: vfat
+        size: 500MiB
+  pc2:
+    schema: gpt
+    structure:
+      - name: efi
+        role: system-boot
+        type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
+        filesystem: vfat
+        size: 500MiB
+"""
+
+IMAGECRAFT_YAML_INVALID_VOLUME_NAME = """
+name: ubuntu-server-amd64
+version: "1"
+base: bare
+build-base: ubuntu@24.04
+
+platforms:
+  amd64:
+    build-for: [amd64]
+    build-on: [amd64]
+parts:
+  rootfs:
+    plugin: nil
+volumes:
+  invalid_test-:
+    schema: gpt
+    structure:
+      - name: efi
+        role: system-boot
+        type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
+        filesystem: vfat
+        size: 500MiB
+"""
+
+
+@pytest.mark.parametrize(
+    ("error_value", "yaml_data"),
+    [
+        (
+            "Bad myproject.yaml content:\n- dictionary should have at most 1 item after validation, not 2 (in field 'volumes')",
+            IMAGECRAFT_YAML_MULTIPLE_VOLUMES,
+        ),
+        (
+            "Bad myproject.yaml content:\n- volume names must only contain lowercase letters, numbers, and hyphens, and may not begin or end with a hyphen. (in field 'volumes.invalid_test-.[key]')",
+            IMAGECRAFT_YAML_INVALID_VOLUME_NAME,
+        ),
+    ],
+)
+def test_project_invalid_volumes(error_value, yaml_data):
     yaml_loaded = yaml.safe_load(yaml_data)
     project_path = pathlib.Path("myproject.yaml")
     with pytest.raises(CraftValidationError) as err:

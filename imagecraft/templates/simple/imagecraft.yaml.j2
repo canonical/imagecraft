@@ -15,3 +15,13 @@ platforms: # the platforms this rock should be built on and run on
 parts:
     my-part:
         plugin: nil
+volumes:
+    disk:
+        schema: gpt
+        structure:
+            - name: rootfs
+              role: system-data
+              type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+              filesystem: ext4
+              filesystem-label: writable
+              size: 3 GiB

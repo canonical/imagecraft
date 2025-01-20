@@ -23,6 +23,15 @@ platforms:
   amd64:
     build-for: [amd64]
     build-on: [amd64]
+volumes:
+  pc:
+    schema: gpt
+    structure:
+      - name: efi
+        role: system-boot
+        type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
+        filesystem: vfat
+        size: 500 MiB
 """
 
 
@@ -34,3 +43,4 @@ def test_application(new_dir, default_application):
 
     assert project.base == "bare"
     assert project.build_base == "ubuntu@22.04"
+    assert project.volumes["pc"].volume_schema == "gpt"
