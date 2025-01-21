@@ -46,7 +46,7 @@ def test_lifecycle_args(
         project_vars_part_name=None,
         project_vars={"version": "1.0"},
         track_stage_packages=True,
-        partitions=None,
+        partitions=["default", "volume/pc/efi"],
         build_for="amd64",
         platform="amd64",
         base="bare",
