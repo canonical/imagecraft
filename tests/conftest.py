@@ -42,6 +42,23 @@ def project_main_module() -> types.ModuleType:
     return main_module
 
 
+@pytest.fixture(autouse=True)
+def reset_features():
+    from craft_parts import Features
+
+    Features.reset()
+    yield
+    Features.reset()
+
+
+@pytest.fixture
+def enable_partitions_feature(reset_features):
+    """Enable the partitions feature."""
+    from craft_parts import Features
+
+    Features(enable_partitions=True)
+
+
 @pytest.fixture(autouse=True, scope="session")
 def _setup_parts():
     plugins.setup_plugins()
@@ -66,7 +83,7 @@ def extra_project_params():
 
 
 @pytest.fixture
-def default_project(extra_project_params):
+def default_project(enable_partitions_feature, extra_project_params):
     from imagecraft.models.project import Project
 
     parts = extra_project_params.pop("parts", {})
@@ -144,6 +161,7 @@ def lifecycle_service(default_project, default_factory, default_build_plan):
         work_dir=Path("work/"),
         cache_dir=Path("cache/"),
         build_plan=default_build_plan,
+        partitions=default_project.get_partitions(),
     )
 
 
