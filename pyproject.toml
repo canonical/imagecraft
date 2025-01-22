@@ -63,6 +63,20 @@ name = "python-apt-wheels"
 url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/"
 
 
+[dependency-groups]
+dev = [
+    "coverage[toml]~=7.4",
+    "pytest~=8.0",
+    "pytest-check>=2.4",
+    "pytest-cov~=6.0",
+    "pytest-mock~=3.12",
+    "mypy[reports]~=1.13.0",
+    "pyright==1.1.392.post0",
+    "types-Pygments",
+    "types-colorama",
+    "types-setuptools",
+]
+
 [tool.uv]
 constraint-dependencies = [
     # Basic constraints to allow --resolution=lowest
@@ -88,18 +102,6 @@ constraint-dependencies = [
     "urllib3>=2.0",
     "webencodings>=0.4.0",
     "wheel>=0.38",
-]
-dev-dependencies = [
-    "build",
-    "coverage[toml]~=7.4",
-    "pytest~=8.0",
-    "pytest-cov~=6.0",
-    "pytest-mock~=3.12",
-    "mypy[reports]~=1.13.0",
-    "pyright==1.1.392.post0",
-    "types-Pygments",
-    "types-colorama",
-    "types-setuptools",
 ]
 conflicts = [
     [
