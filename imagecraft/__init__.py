@@ -16,6 +16,8 @@
 
 """The craft tool to create ubuntu images."""
 
+from imagecraft.application import Imagecraft
+
 try:
     from ._version import __version__
 except ImportError:  # pragma: no cover
@@ -25,3 +27,5 @@ except ImportError:  # pragma: no cover
         __version__ = version("imagecraft")
     except PackageNotFoundError:
         __version__ = "dev"
+
+__all__ = ["__version__", "Imagecraft"]
