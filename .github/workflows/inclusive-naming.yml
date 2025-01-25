@@ -9,7 +9,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - uses: tj-actions/changed-files@v42.1.0
+      - uses: tj-actions/changed-files@v45.0.6
         id: files
 
       - name: woke

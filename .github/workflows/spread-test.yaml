@@ -8,7 +8,7 @@ concurrency:
 
 jobs:
   snap-builds:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     # Only build the snap for pull requests, it's not needed on release branches
     # or on master since we have launchpad build recipes which do this already
     if: ${{ github.event_name == 'pull_request' }}
