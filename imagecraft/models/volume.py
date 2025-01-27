@@ -30,6 +30,7 @@ from craft_application.models.constraints import (
     UniqueList,
     get_validator_by_regex,
 )
+from craft_parts.utils.partition_utils import VALID_PARTITION_REGEX
 from pydantic import (
     BeforeValidator,
     ByteSize,
@@ -41,11 +42,13 @@ from pydantic import (
 
 from imagecraft.platforms import GPT_NAME_MAX_LENGTH, FileSystem, GptType
 
-# This is slightly stricter than VALID_PARTITION_REGEX from craft_parts.utils.partition_utils.
-PARTITION_COMPILED_REGEX = re.compile(r"^(?!-|\.)[a-z0-9-\.]+(?<!-|\.)$", re.ASCII)
+# Avoid matches on substrings when validating Volume/Structure names.
+PARTITION_COMPILED_STRICT_REGEX = re.compile(
+    r"^" + VALID_PARTITION_REGEX.pattern + r"$", re.ASCII
+)
 
-VOLUME_NAME_COMPILED_REGEX = PARTITION_COMPILED_REGEX
-STRUCTURE_NAME_COMPILED_REGEX = PARTITION_COMPILED_REGEX
+VOLUME_NAME_COMPILED_REGEX = PARTITION_COMPILED_STRICT_REGEX
+STRUCTURE_NAME_COMPILED_REGEX = PARTITION_COMPILED_STRICT_REGEX
 
 VOLUME_INVALID_MSG = (
     "volume names must only contain lowercase letters, numbers, "
