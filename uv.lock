@@ -773,6 +773,7 @@ wheels = [
 
 [[package]]
 name = "imagecraft"
+version = "0.0.post270+gb49cc80.d20250128"
 source = { editable = "." }
 dependencies = [
     { name = "craft-application" },
@@ -829,7 +830,7 @@ requires-dist = [
     { name = "canonical-sphinx", extras = ["full"], marker = "extra == 'docs'", specifier = "~=0.3.0" },
     { name = "craft-application", specifier = "~=4.6" },
     { name = "craft-cli", specifier = "~=2.15" },
-    { name = "craft-parts", specifier = "~=2.6" },
+    { name = "craft-parts", git = "https://github.com/canonical/craft-parts.git?rev=work%2Fenable-overlays-partitions" },
     { name = "craft-platforms", specifier = "~=0.4" },
     { name = "craft-providers", specifier = "~=2.0" },
     { name = "matplotlib", marker = "extra == 'docs'" },
