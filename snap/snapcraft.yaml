@@ -50,6 +50,7 @@ parts:
     cmake-parameters:
       - -DCMAKE_INSTALL_PREFIX=/usr
       - -DCMAKE_BUILD_TYPE=RelWithDebInfo
+      - -DBUILD_TESTS=OFF
     build-attributes:
       - enable-patchelf
     build-packages:
@@ -101,6 +102,7 @@ parts:
     build-environment:
       - PARTS_PYTHON_VENV_ARGS: --system-site-packages
       - PIP_NO_BINARY: ":all:"
+      - MAKEOPTS: -j$(nproc --all)
     organize:
       bin/craftctl: libexec/imagecraft/craftctl
     override-build: |
