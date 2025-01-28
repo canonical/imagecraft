@@ -96,7 +96,7 @@ dev-dependencies = [
     "pytest-cov~=6.0",
     "pytest-mock~=3.12",
     "mypy[reports]~=1.13.0",
-    "pyright==1.1.390",
+    "pyright==1.1.392.post0",
     "types-Pygments",
     "types-colorama",
     "types-setuptools",
