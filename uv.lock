@@ -520,8 +520,8 @@ wheels = [
 
 [[package]]
 name = "craft-parts"
-version = "2.3.0.post1+g2f260aa"
-source = { git = "https://github.com/canonical/craft-parts.git?rev=work%2Fallow-separator-in-partition-names#2f260aa3ffd8545b92fc411309bef2328697a8e8" }
+version = "2.3.0.post7+gddedb33"
+source = { git = "https://github.com/canonical/craft-parts.git?rev=work%2Fenable-overlays-partitions#ddedb33e6e26d7d2739ff5ae8cea107d285c6a12" }
 dependencies = [
     { name = "overrides" },
     { name = "pydantic" },
@@ -752,7 +752,7 @@ wheels = [
 
 [[package]]
 name = "imagecraft"
-version = "0.0.post266+g91de3e1.d20250122"
+version = "0.0.post270+gb49cc80.d20250128"
 source = { editable = "." }
 dependencies = [
     { name = "craft-application" },
@@ -808,7 +808,7 @@ requires-dist = [
     { name = "canonical-sphinx", extras = ["full"], marker = "extra == 'docs'", specifier = "~=0.3.0" },
     { name = "craft-application", specifier = "~=4.6" },
     { name = "craft-cli", specifier = "~=2.13" },
-    { name = "craft-parts", git = "https://github.com/canonical/craft-parts.git?rev=work%2Fallow-separator-in-partition-names" },
+    { name = "craft-parts", git = "https://github.com/canonical/craft-parts.git?rev=work%2Fenable-overlays-partitions" },
     { name = "craft-platforms", specifier = "~=0.4" },
     { name = "craft-providers", specifier = "~=2.0" },
     { name = "matplotlib", marker = "extra == 'docs'" },
