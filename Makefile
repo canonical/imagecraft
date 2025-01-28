@@ -36,7 +36,7 @@ publish-pypi: clean package-pip lint-twine  ##- Publish Python packages to pypi
 
 # Used for installing build dependencies in CI.
 .PHONY: install-build-deps
-install-build-deps: install-lint-build-deps
+install-build-deps: install-lint-build-deps install-common-build-deps
 ifeq ($(shell which apt-get),)
 	$(warning Cannot install build dependencies without apt.)
 else ifeq ($(wildcard /usr/include/libxml2/libxml/xpath.h),)
@@ -45,6 +45,14 @@ else ifeq ($(wildcard /usr/include/libxslt/xslt.h),)
 	sudo $(APT) install libxslt1-dev python3-venv
 else ifeq ($(wildcard /usr/share/doc/python3-venv/copyright),)
 	sudo $(APT) install python3-venv
+endif
+
+.PHONY: install-common-build-deps
+install-common-build-deps:
+ifeq ($(shell which apt-get),)
+	$(warning Cannot install build dependencies without apt.)
+else
+	sudo $(APT) install fuse-overlayfs
 endif
 
 # If additional build dependencies need installing in order to build the linting env.
