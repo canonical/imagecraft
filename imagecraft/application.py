@@ -59,7 +59,7 @@ class Imagecraft(Application):
         # pylint: disable=import-outside-toplevel
         from craft_parts.features import Features
 
-        Features(enable_partitions=True)
+        Features(enable_partitions=True, enable_overlay=True)
 
     @override
     def _setup_partitions(self, yaml_data: dict[str, Any]) -> list[str] | None:
