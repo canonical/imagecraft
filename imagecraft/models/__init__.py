@@ -1,6 +1,6 @@
 # This file is part of imagecraft.
 #
-# Copyright 2023 Canonical Ltd.
+# Copyright 2023-2025 Canonical Ltd.
 #
 # This program is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 3, as published
@@ -21,4 +21,12 @@ from imagecraft.models.project import (
     BuildPlanner,
 )
 
-__all__ = ["BuildPlanner", "Project", "Platform"]
+from imagecraft.models.volume import Volume, Role
+
+__all__ = [
+    "BuildPlanner",
+    "Project",
+    "Platform",
+    "Volume",
+    "Role",
+]

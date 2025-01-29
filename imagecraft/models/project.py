@@ -1,6 +1,6 @@
 # This file is part of imagecraft.
 #
-# Copyright 2023 Canonical Ltd.
+# Copyright 2023-2025 Canonical Ltd.
 #
 # This program is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 3, as published
@@ -26,6 +26,7 @@ from craft_application.errors import CraftValidationError
 from craft_application.models import BuildPlanner as BaseBuildPlanner
 from craft_application.models import Platform as BasePlatform
 from craft_application.models import Project as BaseProject
+from craft_application.models.constraints import SingleEntryDict
 from craft_providers import bases
 from pydantic import (
     ConfigDict,
@@ -34,6 +35,11 @@ from pydantic import (
     model_validator,
 )
 from typing_extensions import override
+
+from imagecraft.models.volume import (
+    Volume,
+    VolumeName,
+)
 
 
 class Platform(BasePlatform):
@@ -94,6 +100,7 @@ class Project(BaseProject):
     base: BaseT  # type: ignore[reportIncompatibleVariableOverride]
     build_base: BuildBaseT  # type: ignore[reportIncompatibleVariableOverride]
     platforms: dict[str, Platform] | None = None  # type: ignore[assignment, reportIncompatibleVariableOverride]
+    volumes: SingleEntryDict[VolumeName, Volume]
 
     model_config = ConfigDict(
         validate_assignment=True,

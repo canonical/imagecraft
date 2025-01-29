@@ -1,4 +1,6 @@
-# Copyright 2023 Canonical Ltd.
+# This file is part of imagecraft.
+#
+# Copyright 2023-2025 Canonical Ltd.
 #
 # This program is free software: you can redistribute it and/or modify it
 # under the terms of the GNU Lesser General Public License version 3, as
@@ -80,6 +82,20 @@ def default_project(extra_project_params):
             "parts": parts,
             "license": "MIT",
             "platforms": {"amd64": {"build-on": ["amd64"], "build-for": ["amd64"]}},
+            "volumes": {
+                "pc": {
+                    "schema": "gpt",
+                    "structure": [
+                        {
+                            "name": "efi",
+                            "role": "system-boot",
+                            "type": "C12A7328-F81F-11D2-BA4B-00A0C93EC93B",
+                            "filesystem": "vfat",
+                            "size": "500MiB",
+                        }
+                    ],
+                }
+            },
             **extra_project_params,
         }
     )
