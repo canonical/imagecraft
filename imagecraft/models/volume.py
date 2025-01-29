@@ -117,10 +117,7 @@ StructureList = UniqueList[StructureItem]
 class Volume(CraftBaseModel):
     """Volume defining properties of the image."""
 
-    volume_schema: typing.Annotated[
-        Literal[PartitionSchema.GPT],
-        Field(default=PartitionSchema.GPT),
-    ] = Field(alias="schema")
+    volume_schema: Literal[PartitionSchema.GPT] = Field(alias="schema")
     structure: StructureList = Field(min_length=1)
 
     @field_validator("structure", mode="after")

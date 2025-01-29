@@ -67,6 +67,21 @@ def test_volume_valid():
             "1 validation error for Volume\nschema",
             ValidationError,
             {
+                "structure": [
+                    {
+                        "name": "test",
+                        "role": "system-data",
+                        "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+                        "filesystem": "ext4",
+                        "size": "0",
+                    }
+                ],
+            },
+        ),
+        (
+            "1 validation error for Volume\nschema",
+            ValidationError,
+            {
                 "schema": "",
                 "structure": [
                     {
