@@ -414,7 +414,6 @@ TimedWriter
 toml
 toolchain
 toplevel
-Tox
 txt
 TypeError
 ubuntu

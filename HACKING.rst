@@ -360,4 +360,3 @@ it includes the changes from 2.9.1.
 .. _`Renovate bot`: https://github.com/renovatebot/renovate
 .. _ruff: https://github.com/charliermarsh/ruff
 .. _ShellCheck: https://www.shellcheck.net/
-.. _tox: https://tox.wiki
