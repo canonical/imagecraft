@@ -25,6 +25,7 @@ apps:
     environment:
       PATH: "$SNAP/libexec/imagecraft:/snap/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
       PERL5LIB: $SNAP/usr/share/perl5:$SNAP/usr/share/perl:$PERL5LIB
+    completer: completion.sh
 
 build-packages:
   - git
@@ -107,3 +108,12 @@ parts:
       sed -i -e '1 s|^#!/.*|#!/snap/imagecraft/current/bin/python -E|' $CRAFT_PART_INSTALL/bin/craftctl
       version="$(python3 -c "import imagecraft;print(imagecraft.__version__)")"
       craftctl set version="$version"
+
+  bash-completion:
+    after: [imagecraft]
+    plugin: nil
+    build-environment:
+      - PYTHONPATH: $CRAFT_STAGE/lib/python3.12/site-packages
+    override-build: |
+      python3 -m craft_cli.completion $CRAFT_PROJECT_NAME imagecraft.cli:get_app_info \
+        > $CRAFT_PART_INSTALL/completion.sh
