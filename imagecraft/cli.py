@@ -16,6 +16,10 @@
 
 """Command-line application entry point."""
 
+from typing import Any
+
+from craft_cli import Dispatcher
+
 from imagecraft.application import Imagecraft
 from imagecraft.services.service_factory import ImagecraftServiceFactory
 
@@ -38,3 +42,11 @@ def _create_app() -> Imagecraft:
     )
 
     return Imagecraft(app=APP_METADATA, services=services)
+
+
+def get_app_info() -> tuple[Dispatcher, dict[str, Any]]:
+    """Retrieve application info. Used by craft-cli's completion module."""
+    app = _create_app()
+    dispatcher = app._create_dispatcher()  # noqa: SLF001 (private member access)  # pyright: ignore[reportPrivateUsage]
+
+    return dispatcher, app.app_config

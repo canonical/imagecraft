@@ -6,7 +6,7 @@ authors = [{ name = "Canonical Ltd.", email = "snapcraft@lists.snapcraft.io" }]
 license = { file = "LICENSE" }
 dependencies = [
     "craft-parts~=2.2",
-    "craft-cli~=2.13",
+    "craft-cli~=2.15",
     "craft-platforms~=0.4",
     "craft-application~=4.6",
     "craft-providers~=2.0",
