@@ -816,6 +816,7 @@ dev = [
     { name = "mypy", extra = ["reports"] },
     { name = "pyright" },
     { name = "pytest" },
+    { name = "pytest-check" },
     { name = "pytest-cov" },
     { name = "pytest-mock" },
     { name = "types-colorama" },
@@ -854,6 +855,7 @@ dev = [
     { name = "mypy", extras = ["reports"], specifier = "~=1.13.0" },
     { name = "pyright", specifier = "==1.1.393" },
     { name = "pytest", specifier = "~=8.0" },
+    { name = "pytest-check", specifier = ">=2.4" },
     { name = "pytest-cov", specifier = "~=6.0" },
     { name = "pytest-mock", specifier = "~=3.12" },
     { name = "types-colorama" },
@@ -1674,6 +1676,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/05/35/30e0d83068951d90a01852cb1cef56e5d8a09d20c7f511634cc2f7e0372a/pytest-8.3.4.tar.gz", hash = "sha256:965370d062bce11e73868e0335abac31b4d3de0e82f4007408d242b4f8610761", size = 1445919 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/11/92/76a1c94d3afee238333bc0a42b82935dd8f9cf8ce9e336ff87ee14d9e1cf/pytest-8.3.4-py3-none-any.whl", hash = "sha256:50e16d954148559c9a74109af1eaf0c945ba2d8f30f0a3d3335edde19788b6f6", size = 343083 },
+]
+
+[[package]]
+name = "pytest-check"
+version = "2.4.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/15/d3/178a723f0420cf4e06fb6ddf43fc1ec68c1d0d4ea3db1ecf8f6df21b345f/pytest_check-2.4.1.tar.gz", hash = "sha256:5224efcef059bf7f0cda253f8d0f62704b4819ff48c93f51c675aea6a014f650", size = 28933 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c0/25/465756acbb66db47ad40e0be6b457d8644c7b9f882b2ff7f5e92dde07915/pytest_check-2.4.1-py3-none-any.whl", hash = "sha256:74f38938183880d9921aeb85662437d2b13e1e053e1bed7d186d54613d3068c7", size = 13789 },
 ]
 
 [[package]]
