@@ -507,16 +507,19 @@ wheels = [
 
 [[package]]
 name = "craft-cli"
-version = "2.13.0"
+version = "2.15.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
+    { name = "jinja2" },
+    { name = "overrides" },
     { name = "platformdirs" },
     { name = "pywin32", marker = "sys_platform == 'win32' or (extra == 'extra-10-imagecraft-apt-noble' and extra == 'extra-10-imagecraft-apt-oracular') or (extra == 'extra-10-imagecraft-apt-noble' and extra == 'extra-10-imagecraft-apt-plucky') or (extra == 'extra-10-imagecraft-apt-oracular' and extra == 'extra-10-imagecraft-apt-plucky')" },
     { name = "pyyaml" },
+    { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9f/1f/cd622c8218adea214e11224f1dfa581242a307a023c9997f085ef0d9d1e0/craft_cli-2.13.0.tar.gz", hash = "sha256:a53575dde5bc4284cba49573093eb940584ad3520aa989271345770e4f6f5172", size = 108894 }
+sdist = { url = "https://files.pythonhosted.org/packages/9e/a7/32b8170deaefb28a8ec4cbccbaa0fbc4fac019cf3edf3682079af271ffa9/craft_cli-2.15.0.tar.gz", hash = "sha256:83c94e521c597c0836eb4a649c68105827006731d2032ca925cf1aea27d9fc9c", size = 116960 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/27/ae/59258afc5c5da165707673780b75171a28386836b7cf8f256a72b30e5db0/craft_cli-2.13.0-py3-none-any.whl", hash = "sha256:f390d7926020b0b7aed1d01ff83f6f8ba5a875f3a50dc4004f4c88774f2ac0cd", size = 39885 },
+    { url = "https://files.pythonhosted.org/packages/f8/1c/9786bc93f1d210eadf6513868d27b75996ab6c3a40013782a4be86f5a98e/craft_cli-2.15.0-py3-none-any.whl", hash = "sha256:4ed2f7e409acce8f66a60d7038645431b38b2320d2eb88e133b7b9af1ce9843a", size = 46437 },
 ]
 
 [[package]]
