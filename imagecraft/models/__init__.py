@@ -19,6 +19,7 @@ from imagecraft.models.project import (
     Project,
     Platform,
     BuildPlanner,
+    VolumeProject,
 )
 
 from imagecraft.models.volume import Volume, Role
@@ -28,5 +29,6 @@ __all__ = [
     "Project",
     "Platform",
     "Volume",
+    "VolumeProject",
     "Role",
 ]
