@@ -83,6 +83,12 @@ def test_imagecraft_build(
     result = imagecraft_app.run()
 
     assert result == 0
+
+    assert imagecraft_app._partitions == [
+        "default",
+        "volume/pc/efi",
+        "volume/pc/rootfs",
+    ]
     check.is_true((empty_project_dir / "prime").exists())
     check.is_true((empty_project_dir / "parts").exists())
     check.is_true((empty_project_dir / "stage").exists())
