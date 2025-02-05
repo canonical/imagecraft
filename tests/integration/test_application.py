@@ -29,6 +29,12 @@ platforms:
   generic-amd64:
     build-on: amd64
     build-for: amd64
+  arm64:
+  armhf:
+  i386:
+  ppc64el:
+  riscv64:
+  s390x:
 parts:
   rootfs:
     plugin: nil
