@@ -52,11 +52,11 @@ def reset_features():
 
 
 @pytest.fixture
-def enable_partitions_feature(reset_features):
+def enable_features(reset_features):
     """Enable the partitions feature."""
     from craft_parts import Features
 
-    Features(enable_partitions=True)
+    Features(enable_partitions=True, enable_overlay=True)
 
 
 @pytest.fixture(autouse=True, scope="session")
@@ -83,7 +83,7 @@ def extra_project_params():
 
 
 @pytest.fixture
-def default_project(enable_partitions_feature, extra_project_params):
+def default_project(enable_features, extra_project_params):
     from imagecraft.models.project import Project
 
     parts = extra_project_params.pop("parts", {})
