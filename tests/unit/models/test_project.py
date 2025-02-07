@@ -163,6 +163,8 @@ volumes:
         size: 500 MiB
 """
 
+pytestmark = [pytest.mark.usefixtures("enable_partitions_feature")]
+
 
 @pytest.fixture
 def yaml_loaded_data():

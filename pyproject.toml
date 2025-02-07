@@ -5,7 +5,7 @@ dynamic = ["version", "readme"]
 authors = [{ name = "Canonical Ltd.", email = "snapcraft@lists.snapcraft.io" }]
 license = { file = "LICENSE" }
 dependencies = [
-    "craft-parts~=2.2",
+    "craft-parts~=2.6",
     "craft-cli~=2.15",
     "craft-platforms~=0.4",
     "craft-application~=4.6",
@@ -94,6 +94,7 @@ dev-dependencies = [
     "coverage[toml]~=7.4",
     "pytest~=8.0",
     "pytest-cov~=6.0",
+    "pytest-check>=2.4",
     "pytest-mock~=3.12",
     "mypy[reports]~=1.13.0",
     "pyright==1.1.393",

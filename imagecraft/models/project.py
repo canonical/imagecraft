@@ -20,13 +20,13 @@ This module defines a imagecraft.yaml file, exportable to a JSON schema.
 """
 
 import typing
-from typing import Any, Literal, Self
+from typing import Annotated, Any, Literal, Self
 
 from craft_application.errors import CraftValidationError
 from craft_application.models import BuildPlanner as BaseBuildPlanner
+from craft_application.models import CraftBaseModel
 from craft_application.models import Platform as BasePlatform
 from craft_application.models import Project as BaseProject
-from craft_application.models.constraints import SingleEntryDict
 from craft_providers import bases
 from pydantic import (
     ConfigDict,
@@ -94,13 +94,16 @@ class BuildPlanner(BaseBuildPlanner):
         return platforms
 
 
+VolumeDictT = Annotated[dict[VolumeName, Volume], Field(min_length=1, max_length=1)]
+
+
 class Project(BaseProject):
     """Definition of imagecraft.yaml configuration."""
 
     base: BaseT  # type: ignore[reportIncompatibleVariableOverride]
     build_base: BuildBaseT  # type: ignore[reportIncompatibleVariableOverride]
     platforms: dict[str, Platform] | None = None  # type: ignore[assignment, reportIncompatibleVariableOverride]
-    volumes: SingleEntryDict[VolumeName, Volume]
+    volumes: VolumeDictT
 
     model_config = ConfigDict(
         validate_assignment=True,
@@ -119,3 +122,38 @@ class Project(BaseProject):
         :returns: Always None because imagecraft only supports bare bases.
         """
         return None
+
+    def get_partitions(self) -> list[str]:
+        """Get a list of partitions based on the project's volumes.
+
+        :returns: A list of partitions formatted as ['default', 'volume/<name>', ...]
+        """
+        return _get_partitions_from_volumes(self.volumes)
+
+
+class VolumeProject(CraftBaseModel, extra="ignore"):
+    """Project definition containing only volumes data."""
+
+    volumes: VolumeDictT
+
+    def get_partitions(self) -> list[str]:
+        """Get a list of partitions based on the project's volumes.
+
+        :returns: A list of partitions formatted as ['default', 'volume/<name>', ...]
+        """
+        return _get_partitions_from_volumes(self.volumes)
+
+
+def _get_partitions_from_volumes(
+    volumes_data: dict[str, Any],
+) -> list[str]:
+    """Get a list of partitions based on the project's volumes.
+
+    :returns: A list of partitions formatted as ['default', 'volume/<name>', ...]
+    """
+    partitions: list[str] = ["default"]
+    for volume_name, volume in volumes_data.items():
+        partitions.extend(
+            [f"volume/{volume_name}/{structure.name}" for structure in volume.structure]
+        )
+    return partitions

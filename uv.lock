@@ -507,16 +507,19 @@ wheels = [
 
 [[package]]
 name = "craft-cli"
-version = "2.13.0"
+version = "2.15.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
+    { name = "jinja2" },
+    { name = "overrides" },
     { name = "platformdirs" },
     { name = "pywin32", marker = "sys_platform == 'win32' or (extra == 'extra-10-imagecraft-apt-noble' and extra == 'extra-10-imagecraft-apt-oracular') or (extra == 'extra-10-imagecraft-apt-noble' and extra == 'extra-10-imagecraft-apt-plucky') or (extra == 'extra-10-imagecraft-apt-oracular' and extra == 'extra-10-imagecraft-apt-plucky')" },
     { name = "pyyaml" },
+    { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9f/1f/cd622c8218adea214e11224f1dfa581242a307a023c9997f085ef0d9d1e0/craft_cli-2.13.0.tar.gz", hash = "sha256:a53575dde5bc4284cba49573093eb940584ad3520aa989271345770e4f6f5172", size = 108894 }
+sdist = { url = "https://files.pythonhosted.org/packages/9e/a7/32b8170deaefb28a8ec4cbccbaa0fbc4fac019cf3edf3682079af271ffa9/craft_cli-2.15.0.tar.gz", hash = "sha256:83c94e521c597c0836eb4a649c68105827006731d2032ca925cf1aea27d9fc9c", size = 116960 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/27/ae/59258afc5c5da165707673780b75171a28386836b7cf8f256a72b30e5db0/craft_cli-2.13.0-py3-none-any.whl", hash = "sha256:f390d7926020b0b7aed1d01ff83f6f8ba5a875f3a50dc4004f4c88774f2ac0cd", size = 39885 },
+    { url = "https://files.pythonhosted.org/packages/f8/1c/9786bc93f1d210eadf6513868d27b75996ab6c3a40013782a4be86f5a98e/craft_cli-2.15.0-py3-none-any.whl", hash = "sha256:4ed2f7e409acce8f66a60d7038645431b38b2320d2eb88e133b7b9af1ce9843a", size = 46437 },
 ]
 
 [[package]]
@@ -534,7 +537,7 @@ wheels = [
 
 [[package]]
 name = "craft-parts"
-version = "2.2.1"
+version = "2.6.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "overrides" },
@@ -544,9 +547,9 @@ dependencies = [
     { name = "requests" },
     { name = "requests-unixsocket2" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/dd/11/443c81b7a7e33c7ec77f8e2cdca96a59f340e928ddda79cbc93b513e7b62/craft_parts-2.2.1.tar.gz", hash = "sha256:7a2751438dd9b26b2a2e15d79379f4fc5fb26cf6610da7fff4f0b451b843e4d3", size = 563795 }
+sdist = { url = "https://files.pythonhosted.org/packages/c1/89/a22b2a4e8ae2328dba5e719d2eb47a244b274368a2690a0f3512d4d6e79b/craft_parts-2.6.0.tar.gz", hash = "sha256:74532696167b741c39d1c0eafd6a6b7e52aef0a76c8cd54b176e43dd5e89e1a0", size = 641931 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4a/1a/283a6775d86a0c7b5caf697314919172ad6f0c4a82716d3ff99f456d9e8c/craft_parts-2.2.1-py3-none-any.whl", hash = "sha256:12be64f7ba4f2909a26e1160e743613681be34634eca7206dc69a2159ca24ebc", size = 449056 },
+    { url = "https://files.pythonhosted.org/packages/d3/78/fcbe3f7b5d4b6d528e193da7afb5fc8f0e519bc2b939a8091fecebf952bd/craft_parts-2.6.0-py3-none-any.whl", hash = "sha256:f7e4b0f506dec260f793ec5bd2a254d13995c9d1e9757e4e6d1e3066d76a1eb7", size = 454525 },
 ]
 
 [[package]]
@@ -813,6 +816,7 @@ dev = [
     { name = "mypy", extra = ["reports"] },
     { name = "pyright" },
     { name = "pytest" },
+    { name = "pytest-check" },
     { name = "pytest-cov" },
     { name = "pytest-mock" },
     { name = "types-colorama" },
@@ -824,8 +828,8 @@ dev = [
 requires-dist = [
     { name = "canonical-sphinx", extras = ["full"], marker = "extra == 'docs'", specifier = "~=0.3.0" },
     { name = "craft-application", specifier = "~=4.6" },
-    { name = "craft-cli", specifier = "~=2.13" },
-    { name = "craft-parts", specifier = "~=2.2" },
+    { name = "craft-cli", specifier = "~=2.15" },
+    { name = "craft-parts", specifier = "~=2.6" },
     { name = "craft-platforms", specifier = "~=0.4" },
     { name = "craft-providers", specifier = "~=2.0" },
     { name = "matplotlib", marker = "extra == 'docs'" },
@@ -851,6 +855,7 @@ dev = [
     { name = "mypy", extras = ["reports"], specifier = "~=1.13.0" },
     { name = "pyright", specifier = "==1.1.393" },
     { name = "pytest", specifier = "~=8.0" },
+    { name = "pytest-check", specifier = ">=2.4" },
     { name = "pytest-cov", specifier = "~=6.0" },
     { name = "pytest-mock", specifier = "~=3.12" },
     { name = "types-colorama" },
@@ -1671,6 +1676,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/05/35/30e0d83068951d90a01852cb1cef56e5d8a09d20c7f511634cc2f7e0372a/pytest-8.3.4.tar.gz", hash = "sha256:965370d062bce11e73868e0335abac31b4d3de0e82f4007408d242b4f8610761", size = 1445919 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/11/92/76a1c94d3afee238333bc0a42b82935dd8f9cf8ce9e336ff87ee14d9e1cf/pytest-8.3.4-py3-none-any.whl", hash = "sha256:50e16d954148559c9a74109af1eaf0c945ba2d8f30f0a3d3335edde19788b6f6", size = 343083 },
+]
+
+[[package]]
+name = "pytest-check"
+version = "2.4.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/15/d3/178a723f0420cf4e06fb6ddf43fc1ec68c1d0d4ea3db1ecf8f6df21b345f/pytest_check-2.4.1.tar.gz", hash = "sha256:5224efcef059bf7f0cda253f8d0f62704b4819ff48c93f51c675aea6a014f650", size = 28933 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c0/25/465756acbb66db47ad40e0be6b457d8644c7b9f882b2ff7f5e92dde07915/pytest_check-2.4.1-py3-none-any.whl", hash = "sha256:74f38938183880d9921aeb85662437d2b13e1e053e1bed7d186d54613d3068c7", size = 13789 },
 ]
 
 [[package]]
