@@ -20,14 +20,13 @@ This module defines a imagecraft.yaml file, exportable to a JSON schema.
 """
 
 import typing
-from typing import Any, Literal, Self
+from typing import Annotated, Any, Literal, Self
 
 from craft_application.errors import CraftValidationError
 from craft_application.models import BuildPlanner as BaseBuildPlanner
 from craft_application.models import CraftBaseModel
 from craft_application.models import Platform as BasePlatform
 from craft_application.models import Project as BaseProject
-from craft_application.models.constraints import SingleEntryDict
 from craft_providers import bases
 from pydantic import (
     ConfigDict,
@@ -95,7 +94,7 @@ class BuildPlanner(BaseBuildPlanner):
         return platforms
 
 
-VolumeDictT = SingleEntryDict[VolumeName, Volume]
+VolumeDictT = Annotated[dict[VolumeName, Volume], Field(min_length=1, max_length=1)]
 
 
 class Project(BaseProject):
