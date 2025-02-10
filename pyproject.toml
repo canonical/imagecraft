@@ -30,7 +30,7 @@ imagecraft = "imagecraft.cli:run"
 
 [project.optional-dependencies]
 types = [
-    "mypy[reports]~=1.13.0",
+    "mypy[reports]~=1.15.0",
     "types-Pygments",
     "types-colorama",
     "types-setuptools",
@@ -96,7 +96,7 @@ dev-dependencies = [
     "pytest-cov~=6.0",
     "pytest-check>=2.4",
     "pytest-mock~=3.12",
-    "mypy[reports]~=1.13.0",
+    "mypy[reports]~=1.15.0",
     "pyright==1.1.393",
     "types-Pygments",
     "types-colorama",
