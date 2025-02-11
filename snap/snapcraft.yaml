@@ -85,23 +85,19 @@ parts:
   imagecraft:
     after: [imagecraft-libs, libgit2]
     source: .
-    plugin: python
+    plugin: uv
     build-attributes:
       - enable-patchelf
     build-packages:
-      - python3.12-dev
-      - python3-pip-whl
       - libffi-dev
       - cargo
       - pkg-config
       - git
-    python-packages:
-      - wheel
-      - pip
-      - setuptools
+    build-snaps:
+      - astral-uv
     build-environment:
-      - PARTS_PYTHON_VENV_ARGS: --system-site-packages
-      - PIP_NO_BINARY: ":all:"
+      - UV_COMPILE_BYTECODE: "1"
+      - UV_NO_BINARY: "1"
       - MAKEOPTS: -j$(nproc --all)
     organize:
       bin/craftctl: libexec/imagecraft/craftctl
