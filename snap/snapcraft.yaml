@@ -102,10 +102,10 @@ parts:
     organize:
       bin/craftctl: libexec/imagecraft/craftctl
     override-build: |
-      craftctl default
+      ${SNAP}/libexec/snapcraft/craftctl default
       sed -i -e '1 s|^#!/.*|#!/snap/imagecraft/current/bin/python -E|' $CRAFT_PART_INSTALL/bin/craftctl
       version="$(PYTHONPATH=$CRAFT_PART_INSTALL/lib/python3.12/site-packages "${CRAFT_STAGE}/usr/bin/python3" -c "import imagecraft;print(imagecraft.__version__)")"
-      craftctl set version="$version"
+      ${SNAP}/libexec/snapcraft/craftctl set version="$version"
 
   bash-completion:
     after: [imagecraft]
