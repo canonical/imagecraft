@@ -14,6 +14,7 @@
 
 """Imagecraft Package service."""
 
+import os
 import pathlib
 import typing
 
@@ -22,9 +23,13 @@ from craft_application.models import BuildInfo
 from overrides import override  # type: ignore[reportUnknownVariableType]
 
 from imagecraft.models import Project
+from imagecraft.pack import diskutil, gptutil
 
 if typing.TYPE_CHECKING:
     from imagecraft.services import ImagecraftServiceFactory
+
+
+SECTOR_SIZE = 512
 
 
 class ImagecraftPackService(PackageService):
@@ -50,8 +55,34 @@ class ImagecraftPackService(PackageService):
         :param dest: Directory into which to write the package(s).
         :returns: A list of paths to created packages.
         """
+        # Pydantic has already validated that there is only a single volume before now
+        volume_name, volume = next(iter(self._project.volumes.items()))
+        disk_image_file = dest / (volume_name + os.extsep + "img")
 
-        return []
+        # Determine necessary image size, and reserve space
+        # "The default start offset for the first partition is 1 MiB", per `man sfdisk`,
+        # plus one more for padding at the end of the disk.
+        image_bytes = diskutil.MIB * 2
+        for structure_item in volume.structure:
+            image_bytes += structure_item.size
+        image_sectors = diskutil.convert_bytes_to_sectors(
+            byte_count=image_bytes,
+            sector_size=SECTOR_SIZE,
+        )
+        diskutil.create_zero_image(
+            imagepath=disk_image_file,
+            sector_size=SECTOR_SIZE,
+            sector_count=image_sectors,
+        )
+
+        # Create partition layout
+        gptutil.create_gpt_layout(
+            imagepath=disk_image_file,
+            sector_size=SECTOR_SIZE,
+            layout=volume,
+        )
+
+        return [disk_image_file]
 
     @property
     def metadata(self) -> models.BaseMetadata:
