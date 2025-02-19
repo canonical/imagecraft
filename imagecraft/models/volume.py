@@ -40,8 +40,6 @@ from pydantic import (
     model_validator,
 )
 
-from imagecraft.platforms import GPT_NAME_MAX_LENGTH, FileSystem, GptType
-
 # Avoid matches on substrings when validating Volume/Structure names.
 PARTITION_COMPILED_STRICT_REGEX = re.compile(
     r"^" + VALID_PARTITION_REGEX.pattern + r"$", re.ASCII
@@ -49,6 +47,8 @@ PARTITION_COMPILED_STRICT_REGEX = re.compile(
 
 VOLUME_NAME_COMPILED_REGEX = PARTITION_COMPILED_STRICT_REGEX
 STRUCTURE_NAME_COMPILED_REGEX = PARTITION_COMPILED_STRICT_REGEX
+
+GPT_NAME_MAX_LENGTH = 36
 
 VOLUME_INVALID_MSG = (
     "volume names must only contain lowercase letters, numbers, "
@@ -69,6 +69,24 @@ VolumeName = typing.Annotated[
     ),
     StringConstraints(pattern=VOLUME_NAME_COMPILED_REGEX),
 ]
+
+
+class GptType(str, enum.Enum):
+    """Supported GUID Partition types."""
+
+    LINUX_DATA = "0FC63DAF-8483-4772-8E79-3D69D8477DE4"
+    WINDOWS_BASIC = "EBD0A0A2-B9E5-4433-87C0-68B6B72699C7"
+    EFI_SYSTEM = "C12A7328-F81F-11D2-BA4B-00A0C93EC93B"
+    BIOS_BOOT = "21686148-6449-6E6F-744E-656564454649"
+
+
+class FileSystem(enum.Enum):
+    """Supported filesystem types."""
+
+    EXT4 = "ext4"
+    EXT3 = "ext3"
+    FAT16 = "fat16"
+    VFAT = "vfat"
 
 
 class Role(str, enum.Enum):
