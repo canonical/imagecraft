@@ -46,7 +46,7 @@ def service_factory(
 
     return ImagecraftServiceFactory(
         app=app_metadata,
-    )
+    )  # type: ignore[assignment]
 
 
 @pytest.fixture

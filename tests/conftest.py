@@ -126,16 +126,22 @@ def default_build_plan(default_project):
 
 
 @pytest.fixture
-def default_factory(default_project, default_build_plan):
+def default_factory(default_project, default_build_plan, tmp_path):
     from imagecraft.application import APP_METADATA
     from imagecraft.services import ImagecraftServiceFactory
 
     factory = ImagecraftServiceFactory(
         app=APP_METADATA,
         project=default_project,
-    )
+    )  # type: ignore[assignment]
 
-    factory.update_kwargs("lifecycle", build_plan=default_build_plan)
+    factory.update_kwargs(
+        "lifecycle",
+        work_dir=tmp_path / "work",
+        cache_dir=tmp_path / "cache",
+        build_plan=default_build_plan,
+        partitions=default_project.get_partitions(),
+    )
     factory.update_kwargs("package", build_plan=default_build_plan)
     return factory
 

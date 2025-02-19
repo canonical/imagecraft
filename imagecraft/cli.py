@@ -39,7 +39,7 @@ def _create_app() -> Imagecraft:
 
     services = ImagecraftServiceFactory(
         app=APP_METADATA,
-    )
+    )  # type: ignore[assignment]
 
     return Imagecraft(app=APP_METADATA, services=services)
 
