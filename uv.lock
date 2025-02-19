@@ -1,4 +1,5 @@
 version = 1
+revision = 1
 requires-python = ">=3.11"
 resolution-markers = [
     "python_full_version >= '3.13'",
@@ -836,14 +837,6 @@ requires-dist = [
     { name = "craft-platforms", specifier = "~=0.4" },
     { name = "craft-providers", specifier = "~=2.0" },
     { name = "pydantic", specifier = "~=2.8" },
-    { name = "sphinx-autobuild", marker = "extra == 'docs'", specifier = "~=2024.2" },
-    { name = "sphinx-lint", marker = "extra == 'docs'", specifier = "==1.0.0" },
-    { name = "sphinx-pydantic", marker = "extra == 'docs'", specifier = "==0.1.1" },
-    { name = "sphinx-toolbox", marker = "extra == 'docs'", specifier = "~=3.5" },
-    { name = "sphinxcontrib-details-directive", marker = "extra == 'docs'" },
-    { name = "types-colorama", marker = "extra == 'types'" },
-    { name = "types-pygments", marker = "extra == 'types'" },
-    { name = "types-setuptools", marker = "extra == 'types'" },
     { name = "python-apt", marker = "sys_platform == 'linux' and extra == 'apt'", specifier = ">=2.7.0", index = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" },
 ]
 provides-extras = ["apt"]

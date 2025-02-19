@@ -108,5 +108,7 @@ debug: |
 suites:
   tests/spread/commons/:
     summary: Common integration tests for imagecraft
+  tests/spread/pack/:
+    summary: Test imagecraft packing
 
 kill-timeout: 30m

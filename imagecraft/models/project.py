@@ -37,6 +37,7 @@ from pydantic import (
 from typing_extensions import override
 
 from imagecraft.models.volume import (
+    StructureItem,
     Volume,
     VolumeName,
 )
@@ -144,6 +145,11 @@ class VolumeProject(CraftBaseModel, extra="ignore"):
         return _get_partitions_from_volumes(self.volumes)
 
 
+def get_partition_name(volume_name: str, structure: StructureItem) -> str:
+    """Get the name of the partition associated to the StructureItem."""
+    return f"volume/{volume_name}/{structure.name}"
+
+
 def _get_partitions_from_volumes(
     volumes_data: dict[str, Any],
 ) -> list[str]:
@@ -154,6 +160,9 @@ def _get_partitions_from_volumes(
     partitions: list[str] = ["default"]
     for volume_name, volume in volumes_data.items():
         partitions.extend(
-            [f"volume/{volume_name}/{structure.name}" for structure in volume.structure]
+            [
+                get_partition_name(volume_name, structure)
+                for structure in volume.structure
+            ]
         )
     return partitions

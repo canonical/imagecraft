@@ -59,7 +59,7 @@ volumes:
         filesystem: ext4
         filesystem-label: writable
         role: system-data
-        size: 6GiB
+        size: 512MiB
 
 """
 
@@ -102,3 +102,26 @@ def test_imagecraft_build(
             empty_project_dir / "partitions/volume/pc/efi/parts/rootfs/install/b.txt"
         ).exists()
     )
+
+
+def test_imagecraft_pack(
+    empty_project_dir: Path,
+    imagecraft_app: application.Imagecraft,
+    monkeypatch: pytest.MonkeyPatch,
+    check,
+):
+    """Test imagecraft."""
+    monkeypatch.setenv("CRAFT_DEBUG", "1")
+
+    project_file = empty_project_dir / "imagecraft.yaml"
+    project_file.write_text(IMAGECRAFT_YAML)
+
+    monkeypatch.setattr(
+        "sys.argv",
+        ["imagecraft", "pack", "--destructive-mode", "--verbosity", "debug"],
+    )
+    result = imagecraft_app.run()
+
+    assert result == 0
+
+    check.is_true((empty_project_dir / "pc.img").is_file())

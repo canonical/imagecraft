@@ -1,0 +1,54 @@
+name: lotz-of-partitions
+version: "0.1"
+base: bare
+build-base: ubuntu@24.04
+
+platforms:
+  amd64:
+
+parts:
+  kernel:
+    plugin: nil
+    stage-packages: [linux-image]
+    organize:
+      "*": (volume/party/efi)/
+  rootfs:
+    plugin: nil
+    stage-packages: [busybox-static]
+    organize:
+      "*": (volume/party/rootfs)/
+
+volumes:
+  party:
+    schema: gpt
+    structure:
+      - name: efi
+        type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
+        filesystem: vfat
+        role: system-boot
+        filesystem-label: EFI System
+        size: 256MiB
+      - name: rootfs
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        filesystem: ext4
+        filesystem-label: writable
+        role: system-data
+        size: 1GiB
+      - name: data1
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        filesystem: ext4
+        filesystem-label: 1
+        role: system-data
+        size: 200MB
+      - name: data2
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        filesystem: ext4
+        filesystem-label: 2
+        role: system-data
+        size: 80M
+      - name: data3
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        filesystem: ext3
+        filesystem-label: 3
+        role: system-data
+        size: 25 MiB
