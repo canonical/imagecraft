@@ -62,7 +62,7 @@ def _create_sfdisk_lines(
     return stdin_lines
 
 
-def create_gpt_layout(  # pylint: disable=too-many-branches
+def _create_gpt_layout(  # pylint: disable=too-many-branches
     *,
     imagepath: Path,
     sector_size: int,
@@ -112,6 +112,39 @@ def create_gpt_layout(  # pylint: disable=too-many-branches
         "sfdisk",
         imagepath,
         input=stdin_lines,
+    )
+
+
+def create_empty_gpt_image(
+    imagepath: Path,
+    sector_size: int,
+    layout: Volume,
+) -> None:
+    """Create a zeroed image file with a GPT partition table, but no filesystems or data.
+
+    :param imagepath: Path to image file.
+    :param sector_size: Sector size in bytes.
+    :param layout: Disk layout to create.
+    """
+    # Determine necessary image size, and reserve space
+    # "The default start offset for the first partition is 1 MiB", per `man sfdisk`,
+    # plus one more MiB for padding at the end of the disk.
+    image_bytes = diskutil.MIB * 2
+    for structure_item in layout.structure:
+        image_bytes += structure_item.size
+    image_sectors = diskutil.bytes_to_sectors(image_bytes, sector_size)
+
+    diskutil.create_zero_image(
+        imagepath=imagepath,
+        sector_size=sector_size,
+        sector_count=image_sectors,
+    )
+
+    # Create partition table
+    _create_gpt_layout(
+        imagepath=imagepath,
+        sector_size=sector_size,
+        layout=layout,
     )
 
 

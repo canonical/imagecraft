@@ -39,5 +39,5 @@ def test_pack(pack_service, default_factory, mocker):
         pack_service.setup()
         assert pack_service.pack(prime_dir, dest=dest_path) == [Path("pc.img")]
 
-        assert gptutil.create_gpt_layout.called
+        assert gptutil.create_empty_gpt_image.called
         assert diskutil.inject_partition_into_image.called

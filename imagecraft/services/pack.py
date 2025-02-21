@@ -60,21 +60,8 @@ class ImagecraftPackService(PackageService):
         volume_name, volume = next(iter(cast(Project, self._project).volumes.items()))
         disk_image_file = dest / (volume_name + os.extsep + "img")
 
-        # Determine necessary image size, and reserve space
-        # "The default start offset for the first partition is 1 MiB", per `man sfdisk`,
-        # plus one more MiB for padding at the end of the disk.
-        image_bytes = diskutil.MIB * 2
-        for structure_item in volume.structure:
-            image_bytes += structure_item.size
-        image_sectors = diskutil.bytes_to_sectors(image_bytes, SECTOR_SIZE)
-        diskutil.create_zero_image(
-            imagepath=disk_image_file,
-            sector_size=SECTOR_SIZE,
-            sector_count=image_sectors,
-        )
-
-        # Create partition layout
-        gptutil.create_gpt_layout(
+        # Create empty image
+        gptutil.create_empty_gpt_image(
             imagepath=disk_image_file,
             sector_size=SECTOR_SIZE,
             layout=volume,
