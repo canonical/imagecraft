@@ -16,7 +16,7 @@
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from craft_cli import CraftError, emit
 
@@ -33,7 +33,7 @@ SUPPORTED_SECTOR_SIZES = [512]
 
 
 def _create_sfdisk_lines(
-    header: dict[str, str], partitions: list[dict[str, str]]
+    header: dict[str, str], partitions: list[dict[str, Any]]
 ) -> list[str]:
     """Create sfdisk command lines.
 
@@ -180,10 +180,10 @@ def _get_partition_info(imagepath: Path, partname: str) -> dict[str, Any]:
     """Return a dict representing info about the partition named by partname."""
     for partition in _get_partition_table(imagepath)["partitions"]:
         if partition["name"] == partname:
-            return partition
+            return cast(dict[str, Any], partition)
     raise CraftError(f"No partition named {partname} in {imagepath}")
 
 
 def get_partition_sector_offset(imagepath: Path, partname: str) -> int:
     """Return the start sector (offset) for the partition indicated by partname."""
-    return _get_partition_info(imagepath, partname)["start"]
+    return cast(int, _get_partition_info(imagepath, partname)["start"])

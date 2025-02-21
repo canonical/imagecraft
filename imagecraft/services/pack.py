@@ -16,8 +16,8 @@
 
 import os
 import tempfile
-import typing
 from pathlib import Path
+from typing import TYPE_CHECKING, cast
 
 from craft_application import AppMetadata, PackageService, models
 from craft_application.models import BuildInfo
@@ -26,7 +26,7 @@ from overrides import override  # type: ignore[reportUnknownVariableType]
 from imagecraft.models import Project
 from imagecraft.pack import diskutil, gptutil
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from imagecraft.services import ImagecraftServiceFactory
 
 
@@ -57,7 +57,7 @@ class ImagecraftPackService(PackageService):
         :returns: A list of paths to created packages.
         """
         # Pydantic has already validated that there is only a single volume before now
-        volume_name, volume = next(iter(self._project.volumes.items()))
+        volume_name, volume = next(iter(cast(Project, self._project).volumes.items()))
         disk_image_file = dest / (volume_name + os.extsep + "img")
 
         # Determine necessary image size, and reserve space
