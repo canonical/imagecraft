@@ -56,7 +56,9 @@ docs = [
     "sphinxcontrib-details-directive",
     "matplotlib",
 ]
-lint = []
+lint = [
+    "yamllint",
+]
 
 
 [[tool.uv.index]]
