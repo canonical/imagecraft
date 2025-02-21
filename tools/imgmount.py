@@ -5,8 +5,9 @@ import contextlib
 import json
 import subprocess
 import sys
+from collections.abc import Generator
 from pathlib import Path
-from typing import Any, Self
+from typing import Any
 
 ME = Path(sys.argv[0]).name
 MP_ROOT = Path("/mnt/imagecraft")
@@ -53,7 +54,7 @@ def _detach_loop_device(
     _run("losetup", "-d", loop_device)
 
 
-def _lsblk(blk_device: str | Path) -> list[dict[str, Any]]:
+def _lsblk(blk_device: str | Path) -> dict[str, Any]:
     blkdevs = json.loads(_run("lsblk", "--json", blk_device))["blockdevices"]
     if len(blkdevs) > 1:
         sys.exit(f"Unexpectedly found more than one block device {blk_device}")
@@ -79,7 +80,7 @@ def _umount(path: str | Path) -> None:
 class ImageFile:
     """Wraps an image file produced by imagecraft."""
 
-    def __init__(self, image_file: str | Path) -> Self:
+    def __init__(self, image_file: str | Path) -> None:
         self.image_file = Path(image_file)
         if not self.image_file.is_file():
             sys.exit(f"Image file specified ({self.image_file}) doesn't exist.")
@@ -122,7 +123,7 @@ class ImageFile:
             )
         return self.loop_device
 
-    def get_loopdevs(self) -> list[dict[str, Any]]:
+    def get_loopdevs(self) -> Generator[dict[str, Any]]:
         """Return the loop devices attached from this image file."""
         for loop_device in _get_loop_devices():
             try:
@@ -164,7 +165,7 @@ def umount(image_file: Path | None) -> None:
     sys.exit(0)
 
 
-def mount(image_file: Path) -> None:
+def mount(image_file: str | Path) -> None:
     """Mount the specified imagecraft image file."""
     image = ImageFile(image_file)
     image.attach_loopdev()
@@ -193,8 +194,8 @@ def main() -> None:
 
     subcommand = sys.argv[1]
 
+    image_file = None
     if subcommand in ("umount", "unmount"):
-        image_file = None
         if len(sys.argv) > 2:
             image_file = Path(sys.argv[2])
             if not image_file.is_file():
@@ -218,6 +219,10 @@ def main() -> None:
         else:
             usage_error_exit(f"Unknown subcommand {subcommand}")
 
+    if not image_file:
+        # This case shouldn't be possible to hit, but adding this check makes pyright
+        # happy and guards against logic errors.
+        sys.exit("Image file not specified")
     mount(image_file)
 
 
