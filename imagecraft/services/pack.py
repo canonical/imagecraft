@@ -76,10 +76,6 @@ class ImagecraftPackService(PackageService):
                     partition=partition_name
                 )
 
-                # Test data - remove once we can organize from overlays into partitions
-                with (partition_prime_dir / "testo.txt").open("w") as f:
-                    f.write(f"hello imagecraft!  this is {partition_name}\n")
-
                 partition_img = (
                     Path(partition_dir) / f"{volume_name}.{structure_item.name}.img"
                 )
