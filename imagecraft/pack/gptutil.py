@@ -26,7 +26,7 @@ from imagecraft.subprocesses import run
 
 # Supported Sector Sizes
 
-SUPPORTED_SECTOR_SIZES = [512]
+SUPPORTED_SECTOR_SIZES = (512,)
 
 
 # pylint: disable=no-member
