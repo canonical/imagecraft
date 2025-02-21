@@ -34,49 +34,10 @@ KIB = 1 << 10  # 1 KiB
 # Conversion functions
 
 
-def gib_to_sectors(gibibyte: int, sector_size: int) -> int:
-    """Convert GiB to sector count.
-
-    The sector count will be rounded up to the nearest sector boundary
-
-    :param gibibyte: Gibibytes.
-    :param sector_size: Size of a sector.
-
-    :returns: Number of sectors.
-    """
-    return bytes_to_sectors(gibibyte, sector_size, _unit_multiplier=GIB)
-
-
-def mib_to_sectors(mebibyte: int, sector_size: int) -> int:
-    """Convert MiB to sector count.
-
-    The sector count will be rounded up to the nearest sector boundary
-
-    :param gibibyte: Mibibytes.
-    :param sector_size: Size of a sector.
-
-    :returns: Number of sectors.
-    """
-    return bytes_to_sectors(mebibyte, sector_size, _unit_multiplier=MIB)
-
-
-def kib_to_sectors(kibibyte: int, sector_size: int) -> int:
-    """Convert KiB to sector count.
-
-    The sector count will be rounded up to the nearest sector boundary
-
-    :param gibibyte: Kibibytes.
-    :param sector_size: Size of a sector.
-
-    :returns: Number of sectors.
-    """
-    return bytes_to_sectors(kibibyte, sector_size, _unit_multiplier=KIB)
-
-
 def bytes_to_sectors(
     bytes_: int,
     sector_size: int,
-    _unit_multiplier: int = 1,
+    unit_multiplier: int = 1,
 ) -> int:
     """Convert bytes to sector count.
 
@@ -84,10 +45,12 @@ def bytes_to_sectors(
 
     :param bytes_: Byte count.
     :param sector_size: Size of a sector.
+    :param unit_multiplier: Use one of the *IB constants here if the input unit is
+    something larger than "bytes" (KIB, MIB, GIB).
 
     :returns: Number of sectors.
     """
-    return ((bytes_ * _unit_multiplier) + sector_size - 1) // sector_size
+    return ((bytes_ * unit_multiplier) + sector_size - 1) // sector_size
 
 
 # Image file operations
@@ -295,25 +258,3 @@ def inject_partition_into_image(
         f"count={sector_count}",
         "conv=notrunc,sparse",
     )
-
-
-def compare_contents_partition_size(
-    *,
-    partition_name: str,
-    available_size_bytes: int,
-    fit_image: Path,
-    fit_contents_src: Path,
-) -> None:
-    """Ensure the FIT image will fit in the partition.
-
-    In case of failure, the culprit is probably extra stuff going into the
-    initramfs, so point the user to the source dir where those files are.
-    """
-    actual_size_bytes = fit_image.stat().st_size
-    if actual_size_bytes > available_size_bytes:
-        raise CraftError(
-            f"Disk contents are too large for {partition_name}, "
-            f"check for extra or large files in {fit_contents_src}.  Contents "
-            f"need to be <={available_size_bytes * MIB}MB, but are "
-            f"{actual_size_bytes * MIB}MB."
-        )

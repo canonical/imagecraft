@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """Utility to mount and unmount imagecraft images."""
+# Various invocations here can have multiple numbers of args, so magic values are ok.
+# ruff: noqa: PLR2004
 
 import contextlib
 import json

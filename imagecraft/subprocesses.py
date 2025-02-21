@@ -14,6 +14,7 @@
 
 """Imagecraft subprocess utility functions."""
 
+import shlex
 import subprocess
 from subprocess import PIPE, CompletedProcess
 from typing import Any, cast
@@ -22,7 +23,10 @@ from craft_cli import emit
 
 
 def run(cmd: str, *args: Any, **kwargs: Any) -> CompletedProcess[str]:
-    """Thin wrapper around subprocess.run that emits commandline and executes it."""
+    """Thin wrapper around subprocess.run.
+
+    That emits commandline and then executes it, with useful defaults.
+    """
     # Allow callers to override these defaults but set them for convenience
     defaults = {
         "text": True,
@@ -33,8 +37,8 @@ def run(cmd: str, *args: Any, **kwargs: Any) -> CompletedProcess[str]:
         if key not in kwargs:
             kwargs[key] = value
 
-    emit.debug(f"Command: {cmd} {' '.join([str(a) for a in args])}")
+    emit.debug(f"Command: {cmd} {shlex.join(str(a) for a in args)}")
     return cast(
         CompletedProcess[str],
-        subprocess.run([cmd] + [str(a) for a in args], **kwargs),  # noqa: PLW1510
+        subprocess.run([cmd, *(str(a) for a in args)], **kwargs),  # noqa: PLW1510
     )
