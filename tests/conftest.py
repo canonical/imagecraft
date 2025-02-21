@@ -135,7 +135,13 @@ def default_factory(default_project, default_build_plan):
         project=default_project,
     )
 
-    factory.update_kwargs("lifecycle", build_plan=default_build_plan)
+    factory.update_kwargs(
+        "lifecycle",
+        work_dir=Path("work/"),
+        cache_dir=Path("cache/"),
+        build_plan=default_build_plan,
+        partitions=default_project.get_partitions(),
+    )
     factory.update_kwargs("package", build_plan=default_build_plan)
     return factory
 
