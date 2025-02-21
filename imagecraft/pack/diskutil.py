@@ -15,6 +15,7 @@
 """Disk related utility functions."""
 
 from pathlib import Path
+from typing import Literal
 
 from craft_cli import CraftError
 
@@ -23,6 +24,7 @@ from imagecraft.subprocesses import run
 
 # pylint: disable=no-member
 
+FatT = Literal["fat", "vfat"]
 
 # Size constants
 
@@ -120,7 +122,7 @@ def format_install_ext_partition(  # pylint: disable=too-many-arguments
 
 def format_install_fat_partition(  # pylint: disable=too-many-arguments
     *,
-    fattype: str,
+    fattype: FatT,
     fatsize: int | None,
     content_dir: Path,
     partitionpath: Path,
@@ -129,7 +131,7 @@ def format_install_fat_partition(  # pylint: disable=too-many-arguments
     label: str | None = None,
     uuid: str | None = None,
 ) -> None:
-    """Format partition FAT32 and copy files.
+    """Format partition FAT and copy files.
 
     :param fattype: One of fat, vfat.
     :param fatsize: 12, 16, 32, or None to let the driver decide.
@@ -204,6 +206,7 @@ def format_install_partition(
             uuid=uuid,
         )
     if "fat" in fstype.value:
+        fattype: FatT
         if fstype == FileSystem.VFAT:
             fattype = "vfat"
             fatsize = None
