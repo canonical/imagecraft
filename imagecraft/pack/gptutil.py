@@ -73,6 +73,7 @@ def _create_gpt_layout(  # pylint: disable=too-many-branches
     :param imagepath: Path to image file.
     :param sector_size: Sector size in bytes.
     :param layout: Disk layout to create.
+    :raises CalledProcessError: If sfdisk fails.
     """
     # There is no way today to specify the sector size when using
     # sfdisk (or any other variants) directly on an image file as
@@ -149,7 +150,10 @@ def create_empty_gpt_image(
 
 
 def _get_partition_table(imagepath: Path) -> dict[str, Any]:
-    """Return a dict representing the complete partition table."""
+    """Return a dict representing the complete partition table.
+
+    :raises CalledProcessError: If sfdisk fails.
+    """
     return json.loads(run("sfdisk", "--json", imagepath).stdout)["partitiontable"]  # type: ignore[no-any-return]
 
 
@@ -157,6 +161,7 @@ def primary_gpt_sector_count(*, imagepath: Path) -> int:
     """Extract which sector the data starts.
 
     :param imagepath: Path to image file.
+    :raises CalledProcessError: If sfdisk fails.
     """
     # This is the start of the usable GPT sectors after the header
     # so we know every sector before this is part of the header.
@@ -169,6 +174,7 @@ def extract_primary_gpt(*, imagepath: Path, sector_size: int, headerpath: Path) 
     :param imagepath: Path to image file.
     :param sector_size: Sector size in bytes.
     :param headerpath: Path to header file for writing.
+    :raises CalledProcessError: If sfdisk or dd fails.
     """
     count = primary_gpt_sector_count(imagepath=imagepath)
 
@@ -186,6 +192,7 @@ def backup_gpt_sector_start(*, imagepath: Path) -> int:
     """Extract which sector the data starts.
 
     :param imagepath: Path to image file.
+    :raises CalledProcessError: If sfdisk fails.
     """
     # This is the end of the usable GPT sectors before the footer
     # so we know every sector after this is the footer.
@@ -198,6 +205,7 @@ def extract_backup_gpt(*, imagepath: Path, sector_size: int, footerpath: Path) -
     :param imagepath: Path to image file.
     :param sector_size: Sector size in bytes.
     :param footerpath: Path to footer file for writing.
+    :raises CalledProcessError: If sfdisk or dd fails.
     """
     start = backup_gpt_sector_start(imagepath=imagepath)
 
@@ -212,7 +220,10 @@ def extract_backup_gpt(*, imagepath: Path, sector_size: int, footerpath: Path) -
 
 
 def _get_partition_info(imagepath: Path, partname: str) -> dict[str, Any]:
-    """Return a dict representing info about the partition named by partname."""
+    """Return a dict representing info about the partition named by partname.
+
+    :raises CalledProcessError: If sfdisk fails.
+    """
     for partition in _get_partition_table(imagepath)["partitions"]:
         if partition["name"] == partname:
             return cast(dict[str, Any], partition)
@@ -220,5 +231,8 @@ def _get_partition_info(imagepath: Path, partname: str) -> dict[str, Any]:
 
 
 def get_partition_sector_offset(imagepath: Path, partname: str) -> int:
-    """Return the start sector (offset) for the partition indicated by partname."""
+    """Return the start sector (offset) for the partition indicated by partname.
+
+    :raises CalledProcessError: If sfdisk fails.
+    """
     return cast(int, _get_partition_info(imagepath, partname)["start"])

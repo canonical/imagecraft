@@ -26,6 +26,8 @@ def run(cmd: str, *args: Any, **kwargs: Any) -> CompletedProcess[str]:
     """Thin wrapper around subprocess.run.
 
     That emits commandline and then executes it, with useful defaults.
+
+    :raises CalledProcessError: If the command fails.
     """
     # Allow callers to override these defaults but set them for convenience
     defaults = {

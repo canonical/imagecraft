@@ -64,6 +64,7 @@ def create_zero_image(*, imagepath: Path, sector_size: int, sector_count: int) -
     :param imagepath: Path to image file.
     :param sector_size: Size of a sector.
     :param sector_count: Number of sectors.
+    :raises CalledProcessError: If dd fails.
     """
     run(
         "dd",
@@ -94,6 +95,7 @@ def format_install_ext_partition(  # pylint: disable=too-many-arguments
     :param sector_count: Number of sectors.
     :param label: Ext Filesystem label, empty if not supplied.
     :param uuid: Ext Filesystem UUID, generated if not supplied.
+    :raises CalledProcessError: If dd or mke2fs fails.
     """
     # Create the partition file
     create_zero_image(
@@ -141,6 +143,7 @@ def format_install_fat_partition(  # pylint: disable=too-many-arguments
     :param sector_count: Number of sectors.
     :param label: Fat Filesystem label, empty if not supplied.
     :param uuid: Fat Filesystem UUID, generated if not supplied.
+    :raises CalledProcessError: If dd, mkfs.xxx, or mcopy fails.
     """
     # Create the partition file
     create_zero_image(
@@ -243,6 +246,7 @@ def inject_partition_into_image(
     :param sector_size: Size of a sector.
     :param sector_offset: Number of image sectors to skip before writing.
     :param sector_count: Number of sectors to write.
+    :raises CalledProcessError: If dd fails.
     """
     part_size = partition.stat().st_size
     requested_size = sector_size * sector_count
