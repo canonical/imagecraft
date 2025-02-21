@@ -56,12 +56,18 @@ docs = [
     "sphinxcontrib-details-directive",
     "matplotlib",
 ]
+lint = [
+    "yamllint",
+]
 
 
 [[tool.uv.index]]
 name = "python-apt-wheels"
 url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/"
+explicit = true
 
+[tool.uv.sources]
+python-apt = { index = "python-apt-wheels" }
 
 [tool.uv]
 constraint-dependencies = [
