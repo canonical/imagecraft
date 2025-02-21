@@ -13,7 +13,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from pathlib import Path
-from unittest.mock import patch
 
 
 def test_pack(pack_service, default_factory, mocker):
@@ -21,12 +20,11 @@ def test_pack(pack_service, default_factory, mocker):
     prime_dir = Path(prime)
     dest_path = Path()
 
-    with (
-        patch("imagecraft.services.pack.diskutil", autospec=True) as diskutil,
-        patch("imagecraft.services.pack.gptutil", autospec=True) as gptutil,
-    ):
-        pack_service.setup()
-        assert pack_service.pack(prime_dir, dest=dest_path) == [Path("pc.img")]
+    diskutil = mocker.patch("imagecraft.services.pack.diskutil", autospec=True)
+    gptutil = mocker.patch("imagecraft.services.pack.gptutil", autospec=True)
 
-        assert gptutil.create_empty_gpt_image.called
-        assert diskutil.inject_partition_into_image.called
+    pack_service.setup()
+    assert pack_service.pack(prime_dir, dest=dest_path) == [Path("pc.img")]
+
+    assert gptutil.create_empty_gpt_image.called
+    assert diskutil.inject_partition_into_image.called
