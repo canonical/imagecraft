@@ -1,5 +1,4 @@
 version = 1
-revision = 1
 requires-python = ">=3.11"
 resolution-markers = [
     "python_full_version >= '3.13'",
@@ -848,7 +847,6 @@ requires-dist = [
     { name = "types-pygments", marker = "extra == 'types'" },
     { name = "types-setuptools", marker = "extra == 'types'" },
 ]
-provides-extras = ["types", "apt-noble", "apt-oracular", "apt-plucky", "docs"]
 
 [package.metadata.requires-dev]
 dev = [
