@@ -18,6 +18,7 @@ from pathlib import Path
 
 from craft_cli import CraftError
 
+from imagecraft.platforms import FileSystem
 from imagecraft.subprocesses import run
 
 # pylint: disable=no-member
@@ -33,7 +34,7 @@ KIB = 1 << 10  # 1 KiB
 # Conversion functions
 
 
-def convert_gib_to_sectors(*, gibibyte: int, sector_size: int) -> int:
+def gib_to_sectors(gibibyte: int, sector_size: int) -> int:
     """Convert GiB to sector count.
 
     The sector count will be rounded up to the nearest sector boundary
@@ -43,14 +44,10 @@ def convert_gib_to_sectors(*, gibibyte: int, sector_size: int) -> int:
 
     :returns: Number of sectors.
     """
-    return convert_bytes_to_sectors(
-        byte_count=gibibyte,
-        sector_size=sector_size,
-        _unit_multiplier=GIB,
-    )
+    return bytes_to_sectors(gibibyte, sector_size, _unit_multiplier=GIB)
 
 
-def convert_mib_to_sectors(*, mebibyte: int, sector_size: int) -> int:
+def mib_to_sectors(mebibyte: int, sector_size: int) -> int:
     """Convert MiB to sector count.
 
     The sector count will be rounded up to the nearest sector boundary
@@ -60,14 +57,10 @@ def convert_mib_to_sectors(*, mebibyte: int, sector_size: int) -> int:
 
     :returns: Number of sectors.
     """
-    return convert_bytes_to_sectors(
-        byte_count=mebibyte,
-        sector_size=sector_size,
-        _unit_multiplier=MIB,
-    )
+    return bytes_to_sectors(mebibyte, sector_size, _unit_multiplier=MIB)
 
 
-def convert_kib_to_sectors(*, kibibyte: int, sector_size: int) -> int:
+def kib_to_sectors(kibibyte: int, sector_size: int) -> int:
     """Convert KiB to sector count.
 
     The sector count will be rounded up to the nearest sector boundary
@@ -77,16 +70,11 @@ def convert_kib_to_sectors(*, kibibyte: int, sector_size: int) -> int:
 
     :returns: Number of sectors.
     """
-    return convert_bytes_to_sectors(
-        byte_count=kibibyte,
-        sector_size=sector_size,
-        _unit_multiplier=KIB,
-    )
+    return bytes_to_sectors(kibibyte, sector_size, _unit_multiplier=KIB)
 
 
-def convert_bytes_to_sectors(
-    *,
-    byte_count: int,
+def bytes_to_sectors(
+    bytes_: int,
     sector_size: int,
     _unit_multiplier: int = 1,
 ) -> int:
@@ -94,12 +82,12 @@ def convert_bytes_to_sectors(
 
     The sector count will be rounded up to the nearest sector boundary
 
-    :param byte_count: Bytes.
+    :param bytes_: Byte count.
     :param sector_size: Size of a sector.
 
     :returns: Number of sectors.
     """
-    return ((byte_count * _unit_multiplier) + sector_size - 1) // sector_size
+    return ((bytes_ * _unit_multiplier) + sector_size - 1) // sector_size
 
 
 # Image file operations
@@ -124,21 +112,21 @@ def create_zero_image(*, imagepath: Path, sector_size: int, sector_count: int) -
 
 def format_install_ext_partition(  # pylint: disable=too-many-arguments
     *,
+    fstype: str,
     content_dir: Path,
+    partitionpath: Path,
     sector_size: int,
     sector_count: int,
-    partitionpath: Path,
-    fstype: str,
     label: str | None = None,
     uuid: str | None = None,
 ) -> None:
     """Format partition EXT2/3/4 and copy files.
 
+    :param fstype: Type of Ext filesystem (ext2/3/4).
     :param content_dir: Directory containing contents for partition.
+    :param partitionpath: Path to partition file.
     :param sector_size: Size of a sector.
     :param sector_count: Number of sectors.
-    :param partitionpath: Path to partition file.
-    :param fstype: Type of Ext filesystem (ext2/3/4).
     :param label: Ext Filesystem label, empty if not supplied.
     :param uuid: Ext Filesystem UUID, generated if not supplied.
     """
@@ -169,19 +157,23 @@ def format_install_ext_partition(  # pylint: disable=too-many-arguments
 
 def format_install_fat_partition(  # pylint: disable=too-many-arguments
     *,
+    fattype: str,
+    fatsize: int | None,
     content_dir: Path,
+    partitionpath: Path,
     sector_size: int,
     sector_count: int,
-    partitionpath: Path,
     label: str | None = None,
     uuid: str | None = None,
 ) -> None:
     """Format partition FAT32 and copy files.
 
+    :param fattype: One of fat, vfat.
+    :param fatsize: 12, 16, 32, or None to let the driver decide.
     :param content_dir: Directory containing contents for partition.
+    :param partitionpath: Path to partition file.
     :param sector_size: Size of a sector.
     :param sector_count: Number of sectors.
-    :param partitionpath: Path to partition file.
     :param label: Fat Filesystem label, empty if not supplied.
     :param uuid: Fat Filesystem UUID, generated if not supplied.
     """
@@ -191,10 +183,10 @@ def format_install_fat_partition(  # pylint: disable=too-many-arguments
     )
 
     # Create and copy
-    mkdosfs_args: list[str | Path] = [
-        "-F",
-        "32",
-    ]
+    mkdosfs_args: list[str | Path] = []
+
+    if fatsize is not None:
+        mkdosfs_args.extend(["-F", str(fatsize)])
 
     if label is not None:
         mkdosfs_args.extend(["-n", label])
@@ -204,7 +196,7 @@ def format_install_fat_partition(  # pylint: disable=too-many-arguments
 
     mkdosfs_args.append(partitionpath)
 
-    run("mkdosfs", *mkdosfs_args)
+    run("mkfs." + fattype, *mkdosfs_args)
 
     if any(content_dir.iterdir()):
         # If we invoke mcopy directly, the sh wrapper will quote the
@@ -216,6 +208,58 @@ def format_install_fat_partition(  # pylint: disable=too-many-arguments
         # It appears to insert files into a filesystem file.
         mcopy_args = f"mcopy -n -o -s -i{str(partitionpath)} {content_dir}/* ::"
         run("bash", "-c", mcopy_args)
+
+
+def format_install_partition(
+    *,
+    fstype: FileSystem,
+    content_dir: Path,
+    partitionpath: Path,
+    sector_size: int,
+    sector_count: int,
+    label: str | None = None,
+    uuid: str | None = None,
+) -> None:
+    """Format partition and copy files.
+
+    :param fstype: Type of FS - one of (vfat, fat16, ext3, ext4).
+    :param content_dir: Directory containing contents for partition.
+    :param partitionpath: Path to partition file.
+    :param sector_size: Size of a sector.
+    :param sector_count: Number of sectors.
+    :param label: Filesystem label, empty if not supplied.
+    :param uuid: Filesystem UUID, generated if not supplied.
+    """
+    if fstype.value.startswith("ext"):
+        return format_install_ext_partition(
+            fstype=fstype.value,
+            content_dir=content_dir,
+            partitionpath=partitionpath,
+            sector_size=sector_size,
+            sector_count=sector_count,
+            label=label,
+            uuid=uuid,
+        )
+    if "fat" in fstype.value:
+        if fstype == FileSystem.VFAT:
+            fattype = "vfat"
+            fatsize = None
+        elif fstype == FileSystem.FAT16:
+            fattype = "fat"
+            fatsize = 16
+        else:
+            raise CraftError(f"Unsupported FAT: {fstype}")
+        return format_install_fat_partition(
+            fattype=fattype,
+            fatsize=fatsize,
+            content_dir=content_dir,
+            partitionpath=partitionpath,
+            sector_size=sector_size,
+            sector_count=sector_count,
+            label=label,
+            uuid=uuid,
+        )
+    raise CraftError(f"Unsupported filesystem: {fstype}")
 
 
 def inject_partition_into_image(

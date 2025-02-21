@@ -15,8 +15,9 @@
 """Imagecraft Package service."""
 
 import os
-import pathlib
+import tempfile
 import typing
+from pathlib import Path
 
 from craft_application import AppMetadata, PackageService, models
 from craft_application.models import BuildInfo
@@ -48,7 +49,7 @@ class ImagecraftPackService(PackageService):
         self._build_plan = build_plan
 
     @override
-    def pack(self, prime_dir: pathlib.Path, dest: pathlib.Path) -> list[pathlib.Path]:  # noqa: ARG002
+    def pack(self, prime_dir: Path, dest: Path) -> list[Path]:  # noqa: ARG002
         """Pack the image.
 
         :param prime_dir: Directory path to the prime directory.
@@ -61,14 +62,11 @@ class ImagecraftPackService(PackageService):
 
         # Determine necessary image size, and reserve space
         # "The default start offset for the first partition is 1 MiB", per `man sfdisk`,
-        # plus one more for padding at the end of the disk.
+        # plus one more MiB for padding at the end of the disk.
         image_bytes = diskutil.MIB * 2
         for structure_item in volume.structure:
             image_bytes += structure_item.size
-        image_sectors = diskutil.convert_bytes_to_sectors(
-            byte_count=image_bytes,
-            sector_size=SECTOR_SIZE,
-        )
+        image_sectors = diskutil.bytes_to_sectors(image_bytes, SECTOR_SIZE)
         diskutil.create_zero_image(
             imagepath=disk_image_file,
             sector_size=SECTOR_SIZE,
@@ -82,6 +80,43 @@ class ImagecraftPackService(PackageService):
             layout=volume,
         )
 
+        # Create filesystems
+        project_dirs = self._services.lifecycle.project_info.dirs
+        with tempfile.TemporaryDirectory() as partition_dir:
+            for structure_item in volume.structure:
+                partition_name = f"volume/{volume_name}/{structure_item.name}"
+                partition_prime_dir = project_dirs.get_prime_dir(
+                    partition=partition_name
+                )
+
+                # Test data - remove once we can organize from overlays into partitions
+                with (partition_prime_dir / "testo.txt").open("w") as f:
+                    f.write(f"hello imagecraft!  this is {partition_name}\n")
+
+                partition_img = (
+                    Path(partition_dir) / f"{volume_name}.{structure_item.name}.img"
+                )
+                sector_count = diskutil.bytes_to_sectors(
+                    structure_item.size, SECTOR_SIZE
+                )
+                diskutil.format_install_partition(
+                    fstype=structure_item.filesystem,
+                    content_dir=partition_prime_dir,
+                    partitionpath=partition_img,
+                    sector_size=SECTOR_SIZE,
+                    sector_count=sector_count,
+                    label=structure_item.filesystem_label,
+                )
+                diskutil.inject_partition_into_image(
+                    partition=partition_img,
+                    imagepath=disk_image_file,
+                    sector_size=SECTOR_SIZE,
+                    sector_offset=gptutil.get_partition_sector_offset(
+                        disk_image_file,
+                        structure_item.name,
+                    ),
+                    sector_count=sector_count,
+                )
         return [disk_image_file]
 
     @property
@@ -91,7 +126,7 @@ class ImagecraftPackService(PackageService):
         return models.BaseMetadata()
 
     @override
-    def write_metadata(self, path: pathlib.Path) -> None:
+    def write_metadata(self, path: Path) -> None:
         """Write the project metadata to metadata.yaml in the given directory.
 
         :param path: The path to the prime directory.

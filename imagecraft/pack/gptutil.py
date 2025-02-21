@@ -92,9 +92,9 @@ def create_gpt_layout(  # pylint: disable=too-many-branches
     for structure_item in layout.structure:
         partition = {
             "name": f'"{structure_item.name}"',
-            "size": diskutil.convert_bytes_to_sectors(
-                byte_count=structure_item.size,
-                sector_size=sector_size,
+            "size": diskutil.bytes_to_sectors(
+                structure_item.size,
+                sector_size,
             ),
             "type": structure_item.structure_type.value,
         }
@@ -115,7 +115,7 @@ def create_gpt_layout(  # pylint: disable=too-many-branches
 
 def _get_partition_table(imagepath: Path) -> dict[str, Any]:
     """Return a dict representing the complete partition table."""
-    return json.loads(run("sfdisk", "--json", imagepath))["partitiontable"]  # type: ignore[no-any-return]
+    return json.loads(run("sfdisk", "--json", imagepath).stdout)["partitiontable"]  # type: ignore[no-any-return]
 
 
 def primary_gpt_sector_count(*, imagepath: Path) -> int:
@@ -174,3 +174,16 @@ def extract_backup_gpt(*, imagepath: Path, sector_size: int, footerpath: Path) -
         f"bs={sector_size}",
         f"skip={start}",
     )
+
+
+def _get_partition_info(imagepath: Path, partname: str) -> dict[str, Any]:
+    """Return a dict representing info about the partition named by partname."""
+    for partition in _get_partition_table(imagepath)["partitions"]:
+        if partition["name"] == partname:
+            return partition
+    raise CraftError(f"No partition named {partname} in {imagepath}")
+
+
+def get_partition_sector_offset(imagepath: Path, partname: str) -> int:
+    """Return the start sector (offset) for the partition indicated by partname."""
+    return _get_partition_info(imagepath, partname)["start"]

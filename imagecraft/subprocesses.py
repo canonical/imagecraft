@@ -26,6 +26,7 @@ def run(cmd: str, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
     defaults = {
         "text": True,
         "check": True,
+        "stdout": subprocess.PIPE,
     }
     for key, value in defaults.items():
         if key not in kwargs:

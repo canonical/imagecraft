@@ -359,3 +359,6 @@ classmethod-decorators = ["pydantic.validator", "pydantic.root_validator"]
     "I001", # isort leaves init files alone by default, this makes ruff ignore them too.
     "F401", # Allows unused imports in __init__ files.
 ]
+"tools/imgmount.py" = [
+    "PLR2004", # Various invocations can have variable numbers of args, magic variable ok
+]
