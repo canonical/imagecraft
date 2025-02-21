@@ -49,7 +49,7 @@ def _create_sfdisk_lines(
         stdin_lines.append(f"{key}: {value}")
 
     for entry in partitions:
-        fields = []
+        fields: list[str] = []
         for key, value in entry.items():
             if value is None:
                 fields.append(key)
@@ -83,27 +83,29 @@ def create_gpt_layout(  # pylint: disable=too-many-branches
     if sector_size not in SUPPORTED_SECTOR_SIZES:
         raise CraftError(f"Unsupported disk sector size: {sector_size}")
 
-    header = {
+    header: dict[str, str] = {
         "label": layout.volume_schema.value,
         "unit": "sectors",
-        "sector-size": sector_size,
+        "sector-size": str(sector_size),
     }
-    partitions = []
+    partitions: list[dict[str, str | None]] = []
     for structure_item in layout.structure:
-        partition = {
+        partition: dict[str, str | None] = {
             "name": f'"{structure_item.name}"',
-            "size": diskutil.bytes_to_sectors(
-                structure_item.size,
-                sector_size,
+            "size": str(
+                diskutil.bytes_to_sectors(
+                    structure_item.size,
+                    sector_size,
+                )
             ),
             "type": structure_item.structure_type.value,
         }
         if structure_item.role == "system-boot":
             partition["bootable"] = None
         if structure_item.id:
-            partition["uuid"] = structure_item.id
+            partition["uuid"] = str(structure_item.id)
         partitions.append(partition)
-    stdin_lines = "\n".join(_create_sfdisk_lines(header, partitions))
+    stdin_lines: str = "\n".join(_create_sfdisk_lines(header, partitions))
 
     emit.debug(f"Stdin (sfdisk):\n{stdin_lines}")
     run(

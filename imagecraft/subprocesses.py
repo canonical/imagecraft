@@ -15,22 +15,26 @@
 """Imagecraft subprocess utility functions."""
 
 import subprocess
-from typing import Any
+from subprocess import PIPE, CompletedProcess
+from typing import Any, cast
 
 from craft_cli import emit
 
 
-def run(cmd: str, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
+def run(cmd: str, *args: Any, **kwargs: Any) -> CompletedProcess[str]:
     """Thin wrapper around subprocess.run that emits commandline and executes it."""
     # Allow callers to override these defaults but set them for convenience
     defaults = {
         "text": True,
         "check": True,
-        "stdout": subprocess.PIPE,
+        "stdout": PIPE,
     }
     for key, value in defaults.items():
         if key not in kwargs:
             kwargs[key] = value
 
     emit.debug(f"Command: {cmd} {' '.join([str(a) for a in args])}")
-    return subprocess.run([cmd] + [str(a) for a in args], **kwargs)  # noqa: PLW1510
+    return cast(
+        CompletedProcess[str],
+        subprocess.run([cmd] + [str(a) for a in args], **kwargs),  # noqa: PLW1510
+    )
