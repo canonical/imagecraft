@@ -67,7 +67,9 @@ class ImagecraftPackService(PackageService):
             layout=volume,
         )
 
-        # Create filesystems
+        # Create partition images with filesystems.  These are always recreated, but we
+        # may want to revisit that once this is solved:
+        # https://github.com/canonical/craft-parts/issues/665
         project_dirs = self._services.lifecycle.project_info.dirs
         with tempfile.TemporaryDirectory() as partition_dir:
             for structure_item in volume.structure:
