@@ -1,6 +1,6 @@
 # This file is part of imagecraft.
 #
-# Copyright 2023 Canonical Ltd.
+# Copyright 2023-2025 Canonical Ltd.
 #
 # This program is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 3, as published
@@ -18,12 +18,13 @@
 
 from typing import Any
 
+import craft_cli
 from craft_application import Application, AppMetadata
 from craft_parts.plugins.plugins import PluginType
 from overrides import override  # type: ignore[reportUnknownVariableType]
 
-from imagecraft import plugins
-from imagecraft.models import VolumeProject, project
+from imagecraft import grammar, plugins
+from imagecraft.models import project
 
 APP_METADATA = AppMetadata(
     name="imagecraft",
@@ -35,6 +36,18 @@ APP_METADATA = AppMetadata(
 
 class Imagecraft(Application):
     """Imagecraft application definition."""
+
+    @override
+    def _extra_yaml_transform(
+        self,
+        yaml_data: dict[str, Any],
+        *,
+        build_on: str,
+        build_for: str | None,
+    ) -> dict[str, Any]:
+        return transform_yaml(
+            build_on=build_on, build_for=build_for, yaml_data=yaml_data
+        )
 
     @override
     def _configure_services(self, provider_name: str | None) -> None:
@@ -62,7 +75,21 @@ class Imagecraft(Application):
         Features(enable_partitions=True)
 
     @override
-    def _setup_partitions(self, yaml_data: dict[str, Any]) -> list[str] | None:
-        volumes = VolumeProject.unmarshal(yaml_data)
+    def _setup_partitions(self, yaml_data: dict[str, Any]) -> list[str] | None:  # noqa: ARG002
+        return ["default"]
 
-        return volumes.get_partitions()
+
+def transform_yaml(
+    build_on: str, build_for: str | None, yaml_data: dict[str, Any]
+) -> dict[str, Any]:
+    """Resolve the grammar in the Volumes section."""
+    build_for = build_for or build_on
+    if "volumes" in yaml_data:
+        craft_cli.emit.debug(f"Processing grammar (on {build_on} for {build_for})")
+        yaml_data["volumes"] = grammar.process_volumes(
+            volumes_yaml_data=yaml_data["volumes"],
+            arch=build_on,
+            target_arch=build_for,
+        )
+
+    return yaml_data
