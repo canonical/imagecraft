@@ -16,10 +16,12 @@
 
 """Grammar-aware models."""
 
+from typing import Any
+
 import pydantic
 from craft_application.models.base import alias_generator
 from craft_grammar.models import Grammar  # type: ignore[import-untyped]
-from pydantic import ConfigDict, Field
+from pydantic import ConfigDict
 
 
 class _GrammarAwareModel(pydantic.BaseModel):
@@ -31,19 +33,8 @@ class _GrammarAwareModel(pydantic.BaseModel):
     )
 
 
-class _GrammarAwareStructureItem(_GrammarAwareModel):
-    name: Grammar[str] | None = None
-    id: Grammar[str] | None = None
-    role: Grammar[str] | None = None
-    structure_type: Grammar[str] | None = None
-    size: Grammar[str] | None = None
-    filesystem: Grammar[str] | None = None
-    filesystem_label: Grammar[str] | None = None
-
-
 class _GrammarAwareVolume(_GrammarAwareModel):
-    volume_schema: Grammar[str] | None = Field(None, alias="schema")
-    structure: Grammar[list[_GrammarAwareStructureItem]] | None = None
+    structure: Grammar[list[dict[str, Any]]] | None = None
 
 
 def get_grammar_aware_volume_keywords() -> list[str]:
