@@ -29,24 +29,17 @@ Source = "https://github.com/canonical/imagecraft.git"
 imagecraft = "imagecraft.cli:run"
 
 [project.optional-dependencies]
+
+apt = ["python-apt>=2.7.0;sys_platform=='linux'"]
+
+[dependency-groups]
 types = [
     "mypy[reports]~=1.15.0",
     "types-Pygments",
     "types-colorama",
     "types-setuptools",
 ]
-apt-noble = [
-    # 2.7 for Noble
-    "python-apt~=2.7.0;sys_platform=='linux'",
-]
-apt-oracular = [
-    # 2.9 for Oracular+
-    "python-apt>=2.9.0;sys_platform=='linux'",
-]
-apt-plucky = [
-    # 2.9 for Oracular+
-    "python-apt>=2.9.0;sys_platform=='linux'",
-]
+
 docs = [
     "canonical-sphinx[full]~=0.3.0",
     "sphinx-autobuild~=2024.2",
@@ -55,6 +48,19 @@ docs = [
     "sphinx-lint==1.0.0",
     "sphinxcontrib-details-directive",
     "matplotlib",
+]
+
+dev-noble = [
+    # 2.7 for Noble
+    "python-apt~=2.7.0;sys_platform=='linux'",
+]
+dev-oracular = [
+    # 2.9 for Oracular+
+    "python-apt>=2.9.0;sys_platform=='linux'",
+]
+dev-plucky = [
+    # 2.9 for Oracular+
+    "python-apt>=2.9.0;sys_platform=='linux'",
 ]
 
 
@@ -107,9 +113,9 @@ dev-dependencies = [
 ]
 conflicts = [
     [
-        { extra = "apt-noble" },
-        { extra = "apt-oracular" },
-        { extra = "apt-plucky" },
+        { group = "dev-noble" },
+        { group = "dev-oracular" },
+        { group = "dev-plucky" },
     ],
 ]
 

@@ -6,9 +6,9 @@ resolution-markers = [
     "python_full_version < '3.12'",
 ]
 conflicts = [[
-    { package = "imagecraft", extra = "apt-noble" },
-    { package = "imagecraft", extra = "apt-oracular" },
-    { package = "imagecraft", extra = "apt-plucky" },
+    { package = "imagecraft", group = "dev-noble" },
+    { package = "imagecraft", group = "dev-oracular" },
+    { package = "imagecraft", group = "dev-plucky" },
 ]]
 
 [manifest]
@@ -62,7 +62,7 @@ source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "idna" },
     { name = "sniffio" },
-    { name = "typing-extensions", marker = "python_full_version < '3.13' or (extra == 'extra-10-imagecraft-apt-noble' and extra == 'extra-10-imagecraft-apt-oracular') or (extra == 'extra-10-imagecraft-apt-noble' and extra == 'extra-10-imagecraft-apt-plucky') or (extra == 'extra-10-imagecraft-apt-oracular' and extra == 'extra-10-imagecraft-apt-plucky')" },
+    { name = "typing-extensions", marker = "python_full_version < '3.13' or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-oracular') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-oracular' and extra == 'group-10-imagecraft-dev-plucky')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/a3/73/199a98fc2dae33535d6b8e8e6ec01f8c1d76c9adb096c6b7d64823038cde/anyio-4.8.0.tar.gz", hash = "sha256:1d9fe889df5212298c0c0723fa20479d1b94883a2df44bd3897aa91083316f7a", size = 181126 }
 wheels = [
@@ -153,7 +153,7 @@ name = "build"
 version = "1.2.2.post1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "os_name == 'nt' or (extra == 'extra-10-imagecraft-apt-noble' and extra == 'extra-10-imagecraft-apt-oracular') or (extra == 'extra-10-imagecraft-apt-noble' and extra == 'extra-10-imagecraft-apt-plucky') or (extra == 'extra-10-imagecraft-apt-oracular' and extra == 'extra-10-imagecraft-apt-plucky')" },
+    { name = "colorama", marker = "os_name == 'nt' or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-oracular') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-oracular' and extra == 'group-10-imagecraft-dev-plucky')" },
     { name = "packaging" },
     { name = "pyproject-hooks" },
 ]
@@ -340,7 +340,7 @@ name = "click"
 version = "8.1.8"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'extra-10-imagecraft-apt-noble' and extra == 'extra-10-imagecraft-apt-oracular') or (extra == 'extra-10-imagecraft-apt-noble' and extra == 'extra-10-imagecraft-apt-plucky') or (extra == 'extra-10-imagecraft-apt-oracular' and extra == 'extra-10-imagecraft-apt-plucky')" },
+    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-oracular') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-oracular' and extra == 'group-10-imagecraft-dev-plucky')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/b9/2e/0090cbf739cee7d23781ad4b89a9894a41538e4fcf4c31dcdd705b78eb8b/click-8.1.8.tar.gz", hash = "sha256:ed53c9d8990d83c2a27deae68e4ee337473f6330c040a31d4225c9574d16096a", size = 226593 }
 wheels = [
@@ -457,7 +457,7 @@ wheels = [
 
 [package.optional-dependencies]
 toml = [
-    { name = "tomli", marker = "python_full_version <= '3.11' or (extra == 'extra-10-imagecraft-apt-noble' and extra == 'extra-10-imagecraft-apt-oracular') or (extra == 'extra-10-imagecraft-apt-noble' and extra == 'extra-10-imagecraft-apt-plucky') or (extra == 'extra-10-imagecraft-apt-oracular' and extra == 'extra-10-imagecraft-apt-plucky')" },
+    { name = "tomli", marker = "python_full_version <= '3.11' or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-oracular') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-oracular' and extra == 'group-10-imagecraft-dev-plucky')" },
 ]
 
 [[package]]
@@ -513,7 +513,7 @@ dependencies = [
     { name = "jinja2" },
     { name = "overrides" },
     { name = "platformdirs" },
-    { name = "pywin32", marker = "sys_platform == 'win32' or (extra == 'extra-10-imagecraft-apt-noble' and extra == 'extra-10-imagecraft-apt-oracular') or (extra == 'extra-10-imagecraft-apt-noble' and extra == 'extra-10-imagecraft-apt-plucky') or (extra == 'extra-10-imagecraft-apt-oracular' and extra == 'extra-10-imagecraft-apt-plucky')" },
+    { name = "pywin32", marker = "sys_platform == 'win32' or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-oracular') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-oracular' and extra == 'group-10-imagecraft-dev-plucky')" },
     { name = "pyyaml" },
     { name = "typing-extensions" },
 ]
@@ -784,13 +784,32 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
-apt-noble = [
+apt = [
+    { name = "python-apt", version = "2.7.7+ubuntu3", source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }, marker = "(sys_platform == 'linux' and extra == 'group-10-imagecraft-dev-noble') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-oracular') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-oracular' and extra == 'group-10-imagecraft-dev-plucky')" },
+    { name = "python-apt", version = "2.9.0+ubuntu1", source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }, marker = "(sys_platform == 'linux' and extra != 'group-10-imagecraft-dev-noble') or (extra == 'group-10-imagecraft-dev-oracular' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-oracular') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky')" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "build" },
+    { name = "coverage", extra = ["toml"] },
+    { name = "mypy", extra = ["reports"] },
+    { name = "pyright" },
+    { name = "pytest" },
+    { name = "pytest-check" },
+    { name = "pytest-cov" },
+    { name = "pytest-mock" },
+    { name = "types-colorama" },
+    { name = "types-pygments" },
+    { name = "types-setuptools" },
+]
+dev-noble = [
     { name = "python-apt", version = "2.7.7+ubuntu3", source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }, marker = "sys_platform == 'linux'" },
 ]
-apt-oracular = [
+dev-oracular = [
     { name = "python-apt", version = "2.9.0+ubuntu1", source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }, marker = "sys_platform == 'linux'" },
 ]
-apt-plucky = [
+dev-plucky = [
     { name = "python-apt", version = "2.9.0+ubuntu1", source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }, marker = "sys_platform == 'linux'" },
 ]
 docs = [
@@ -809,35 +828,14 @@ types = [
     { name = "types-setuptools" },
 ]
 
-[package.dev-dependencies]
-dev = [
-    { name = "build" },
-    { name = "coverage", extra = ["toml"] },
-    { name = "mypy", extra = ["reports"] },
-    { name = "pyright" },
-    { name = "pytest" },
-    { name = "pytest-check" },
-    { name = "pytest-cov" },
-    { name = "pytest-mock" },
-    { name = "types-colorama" },
-    { name = "types-pygments" },
-    { name = "types-setuptools" },
-]
-
 [package.metadata]
 requires-dist = [
-    { name = "canonical-sphinx", extras = ["full"], marker = "extra == 'docs'", specifier = "~=0.3.0" },
     { name = "craft-application", specifier = "~=4.6" },
     { name = "craft-cli", specifier = "~=2.15" },
     { name = "craft-parts", specifier = "~=2.6" },
     { name = "craft-platforms", specifier = "~=0.4" },
     { name = "craft-providers", specifier = "~=2.0" },
-    { name = "matplotlib", marker = "extra == 'docs'" },
-    { name = "mypy", extras = ["reports"], marker = "extra == 'types'", specifier = "~=1.15.0" },
     { name = "pydantic", specifier = "~=2.8" },
-    { name = "python-apt", marker = "sys_platform == 'linux' and extra == 'apt-noble'", specifier = "~=2.7.0" },
-    { name = "python-apt", marker = "sys_platform == 'linux' and extra == 'apt-oracular'", specifier = ">=2.9.0" },
-    { name = "python-apt", marker = "sys_platform == 'linux' and extra == 'apt-plucky'", specifier = ">=2.9.0" },
     { name = "sphinx-autobuild", marker = "extra == 'docs'", specifier = "~=2024.2" },
     { name = "sphinx-lint", marker = "extra == 'docs'", specifier = "==1.0.0" },
     { name = "sphinx-pydantic", marker = "extra == 'docs'", specifier = "==0.1.1" },
@@ -846,7 +844,9 @@ requires-dist = [
     { name = "types-colorama", marker = "extra == 'types'" },
     { name = "types-pygments", marker = "extra == 'types'" },
     { name = "types-setuptools", marker = "extra == 'types'" },
+    { name = "python-apt", marker = "sys_platform == 'linux' and extra == 'apt'", specifier = ">=2.7.0", index = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" },
 ]
+provides-extras = ["apt"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -858,6 +858,24 @@ dev = [
     { name = "pytest-check", specifier = ">=2.4" },
     { name = "pytest-cov", specifier = "~=6.0" },
     { name = "pytest-mock", specifier = "~=3.12" },
+    { name = "types-colorama" },
+    { name = "types-pygments" },
+    { name = "types-setuptools" },
+]
+dev-noble = [{ name = "python-apt", marker = "sys_platform == 'linux'", specifier = "~=2.7.0", index = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }]
+dev-oracular = [{ name = "python-apt", marker = "sys_platform == 'linux'", specifier = ">=2.9.0", index = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }]
+dev-plucky = [{ name = "python-apt", marker = "sys_platform == 'linux'", specifier = ">=2.9.0", index = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }]
+docs = [
+    { name = "canonical-sphinx", extras = ["full"], specifier = "~=0.3.0" },
+    { name = "matplotlib" },
+    { name = "sphinx-autobuild", specifier = "~=2024.2" },
+    { name = "sphinx-lint", specifier = "==1.0.0" },
+    { name = "sphinx-pydantic", specifier = "==0.1.1" },
+    { name = "sphinx-toolbox", specifier = "~=3.5" },
+    { name = "sphinxcontrib-details-directive" },
+]
+types = [
+    { name = "mypy", extras = ["reports"], specifier = "~=1.15.0" },
     { name = "types-colorama" },
     { name = "types-pygments" },
     { name = "types-setuptools" },
@@ -1590,7 +1608,7 @@ version = "1.14.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cffi" },
-    { name = "setuptools", marker = "python_full_version >= '3.12' or (extra == 'extra-10-imagecraft-apt-noble' and extra == 'extra-10-imagecraft-apt-oracular') or (extra == 'extra-10-imagecraft-apt-noble' and extra == 'extra-10-imagecraft-apt-plucky') or (extra == 'extra-10-imagecraft-apt-oracular' and extra == 'extra-10-imagecraft-apt-plucky')" },
+    { name = "setuptools", marker = "python_full_version >= '3.12' or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-oracular') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-oracular' and extra == 'group-10-imagecraft-dev-plucky')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/f0/5e/6e05213a9163bad15489beda5f958500881d45889b0df01d7b8964f031bf/pygit2-1.14.1.tar.gz", hash = "sha256:ec5958571b82a6351785ca645e5394c31ae45eec5384b2fa9c4e05dde3597ad6", size = 765621 }
 wheels = [
@@ -1671,7 +1689,7 @@ name = "pytest"
 version = "8.3.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'extra-10-imagecraft-apt-noble' and extra == 'extra-10-imagecraft-apt-oracular') or (extra == 'extra-10-imagecraft-apt-noble' and extra == 'extra-10-imagecraft-apt-plucky') or (extra == 'extra-10-imagecraft-apt-oracular' and extra == 'extra-10-imagecraft-apt-plucky')" },
+    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-oracular') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-oracular' and extra == 'group-10-imagecraft-dev-plucky')" },
     { name = "iniconfig" },
     { name = "packaging" },
     { name = "pluggy" },
@@ -1938,7 +1956,7 @@ name = "ruamel-yaml"
 version = "0.18.10"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "ruamel-yaml-clib", marker = "(python_full_version < '3.13' and platform_python_implementation == 'CPython') or (python_full_version >= '3.13' and extra == 'extra-10-imagecraft-apt-noble' and extra == 'extra-10-imagecraft-apt-oracular') or (python_full_version >= '3.13' and extra == 'extra-10-imagecraft-apt-noble' and extra == 'extra-10-imagecraft-apt-plucky') or (python_full_version >= '3.13' and extra == 'extra-10-imagecraft-apt-oracular' and extra == 'extra-10-imagecraft-apt-plucky') or (platform_python_implementation != 'CPython' and extra == 'extra-10-imagecraft-apt-noble' and extra == 'extra-10-imagecraft-apt-oracular') or (platform_python_implementation != 'CPython' and extra == 'extra-10-imagecraft-apt-noble' and extra == 'extra-10-imagecraft-apt-plucky') or (platform_python_implementation != 'CPython' and extra == 'extra-10-imagecraft-apt-oracular' and extra == 'extra-10-imagecraft-apt-plucky')" },
+    { name = "ruamel-yaml-clib", marker = "(python_full_version < '3.13' and platform_python_implementation == 'CPython') or (python_full_version >= '3.13' and extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-oracular') or (python_full_version >= '3.13' and extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (python_full_version >= '3.13' and extra == 'group-10-imagecraft-dev-oracular' and extra == 'group-10-imagecraft-dev-plucky') or (platform_python_implementation != 'CPython' and extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-oracular') or (platform_python_implementation != 'CPython' and extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (platform_python_implementation != 'CPython' and extra == 'group-10-imagecraft-dev-oracular' and extra == 'group-10-imagecraft-dev-plucky')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/ea/46/f44d8be06b85bc7c4d8c95d658be2b68f27711f279bf9dd0612a5e4794f5/ruamel.yaml-0.18.10.tar.gz", hash = "sha256:20c86ab29ac2153f80a428e1254a8adf686d3383df04490514ca3b79a362db58", size = 143447 }
 wheels = [
@@ -2053,7 +2071,7 @@ source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "alabaster" },
     { name = "babel" },
-    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'extra-10-imagecraft-apt-noble' and extra == 'extra-10-imagecraft-apt-oracular') or (extra == 'extra-10-imagecraft-apt-noble' and extra == 'extra-10-imagecraft-apt-plucky') or (extra == 'extra-10-imagecraft-apt-oracular' and extra == 'extra-10-imagecraft-apt-plucky')" },
+    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-oracular') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-oracular' and extra == 'group-10-imagecraft-dev-plucky')" },
     { name = "docutils" },
     { name = "imagesize" },
     { name = "jinja2" },
@@ -2145,7 +2163,7 @@ source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jinja2" },
     { name = "markupsafe" },
-    { name = "standard-imghdr", marker = "python_full_version >= '3.13' or (extra == 'extra-10-imagecraft-apt-noble' and extra == 'extra-10-imagecraft-apt-oracular') or (extra == 'extra-10-imagecraft-apt-noble' and extra == 'extra-10-imagecraft-apt-plucky') or (extra == 'extra-10-imagecraft-apt-oracular' and extra == 'extra-10-imagecraft-apt-plucky')" },
+    { name = "standard-imghdr", marker = "python_full_version >= '3.13' or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-oracular') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-oracular' and extra == 'group-10-imagecraft-dev-plucky')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/26/df/27282da6f8c549f765beca9de1a5fc56f9651ed87711a5cac1e914137753/sphinx_jinja2_compat-0.3.0.tar.gz", hash = "sha256:f3c1590b275f42e7a654e081db5e3e5fb97f515608422bde94015ddf795dfe7c", size = 4998 }
 wheels = [
