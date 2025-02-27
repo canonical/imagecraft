@@ -48,19 +48,19 @@ help: ## Show this help.
 
 .PHONY: setup
 setup: install-uv setup-precommit ## Set up a development environment
-	uv sync $(SETUP_TESTS_EXTRA_ARGS) --extra docs --extra lint --extra types
+	uv sync $(UV_TEST_GROUPS) $(UV_LINT_GROUPS) $(UV_DOCS_GROUPS)
 
 .PHONY: setup-tests
 setup-tests: install-uv install-build-deps ##- Set up a testing environment without linters
-	uv sync $(SETUP_TESTS_EXTRA_ARGS)
+	uv sync $(UV_TEST_GROUPS)
 
 .PHONY: setup-lint
 setup-lint: install-uv install-shellcheck install-pyright install-lint-build-deps  ##- Set up a linting-only environment
-	uv sync --no-install-workspace --extra lint --extra types
+	uv sync $(UV_LINT_GROUPS)
 
 .PHONY: setup-docs
 setup-docs: install-uv  ##- Set up a documentation-only environment
-	uv sync --no-dev --no-install-workspace --extra docs
+	uv sync --no-dev $(UV_DOCS_GROUPS)
 
 .PHONY: setup-precommit
 setup-precommit: install-uv  ##- Set up pre-commit hooks in this repository.
@@ -162,7 +162,7 @@ lint-docs:  ##- Lint the documentation
 ifneq ($(CI),)
 	@echo ::group::$@
 endif
-	uv run --extra docs sphinx-lint --max-line-length 88 --enable all $(DOCS)
+	uv run $(UV_DOCS_GROUPS) sphinx-lint --max-line-length 88 --enable all $(DOCS)
 ifneq ($(CI),)
 	@echo ::endgroup::
 endif
@@ -198,11 +198,11 @@ test-coverage:  ## Generate coverage report
 
 .PHONY: docs
 docs:  ## Build documentation
-	uv run --extra docs sphinx-build -b html -W $(DOCS) $(DOCS)/_build
+	uv run $(UV_DOCS_GROUPS) sphinx-build -b html -W $(DOCS) $(DOCS)/_build
 
 .PHONY: docs-auto
 docs-auto:  ## Build and host docs with sphinx-autobuild
-	uv run --extra docs sphinx-autobuild -b html --open-browser --port=8080 --watch $(PROJECT) -W $(DOCS) $(DOCS)/_build
+	uv run $(UV_DOCS_GROUPS) sphinx-autobuild -b html --open-browser --port=8080 --watch $(PROJECT) -W $(DOCS) $(DOCS)/_build
 
 .PHONY: pack-pip
 pack-pip:  ##- Build packages for pip (sdist, wheel)

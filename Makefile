@@ -1,12 +1,15 @@
 PROJECT=imagecraft
+UV_TEST_GROUPS := "--group=dev"
+UV_DOCS_GROUPS := "--group=docs"
+UV_LINT_GROUPS := "--group=types"
 
 ifneq ($(wildcard /etc/os-release),)
 include /etc/os-release
-export
 endif
-
-ifneq ($(VERSION_CODENAME),)
-SETUP_TESTS_EXTRA_ARGS=--extra apt-$(VERSION_CODENAME)
+ifdef VERSION_CODENAME
+UV_TEST_GROUPS += "--group=dev-$(VERSION_CODENAME)"
+UV_DOCS_GROUPS += "--group=dev-$(VERSION_CODENAME)"
+UV_LINT_GROUPS += "--group=dev-$(VERSION_CODENAME)"
 endif
 
 include common.mk

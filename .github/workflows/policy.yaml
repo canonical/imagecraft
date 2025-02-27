@@ -13,4 +13,4 @@ jobs:
     name: Security scan
     uses: canonical/starflow/.github/workflows/scan-python.yaml@main
     with:
-      uv-export-extra-args: "--extra docs --extra lint --extra types"
+      uv-export-extra-args: "--group=docs --group=types"
