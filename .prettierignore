@@ -1,2 +1,3 @@
-tests/lib/external/**
+# External code
+tools/external
 docs/**

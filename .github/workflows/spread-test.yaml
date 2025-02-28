@@ -47,6 +47,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 2
+          submodules: true
 
       - name: Get previous attempt
         id: get-previous-attempt
@@ -135,7 +136,7 @@ jobs:
         run: |
           if [ -f spread.log ]; then
               echo "Running spread log parser"
-              ./tests/lib/external/snapd-testing-tools/utils/log-parser spread.log --output spread-results.json
+              ./tools/external/utils/log-parser spread.log --output spread-results.json
 
               BACKEND=google
               if [[ "${{ matrix.systems }}" =~ -arm- ]]; then
@@ -152,7 +153,7 @@ jobs:
               fi
 
               echo "Running spread log analyzer"
-              ./tests/lib/external/snapd-testing-tools/utils/log-analyzer list-reexecute-tasks "$RUN_TESTS" spread-results.json > "$FAILED_TESTS_FILE"
+              ./tools/external/utils/log-analyzer list-reexecute-tasks "$RUN_TESTS" spread-results.json > "$FAILED_TESTS_FILE"
 
               echo "List of failed tests saved"
               cat "$FAILED_TESTS_FILE"
