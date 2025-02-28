@@ -104,9 +104,14 @@ prepare: |
   snap install yq
 
   # Setup lxd
-  # Make sure we use the snap version
-  apt remove -y lxd
-  snap install lxd
+  # older linux releases have separate packages for lxd and lxc (lxd-client)
+  if [ "$SPREAD_SYSTEM" = "ubuntu-20.04-64" ]; then
+    tests.pkgs remove lxd lxd-client
+  else
+    tests.pkgs remove lxd
+  fi
+  snap install lxd --channel=latest/stable
+  lxd waitready --timeout=30
   lxd init --auto
 
   snap install --classic --dangerous imagecraft_*.snap
