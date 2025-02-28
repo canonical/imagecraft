@@ -1,10 +1,15 @@
 project: imagecraft
 
+path: /home/imagecraft
+
 environment:
   LANG: "C.UTF-8"
   LANGUAGE: "en"
   # build the snap with lxd
+  PROJECT_PATH: /home/imagecraft
   SNAPCRAFT_BUILD_ENVIRONMENT: lxd
+  SNAPD_TESTING_TOOLS: $PROJECT_PATH/tools/external/tools
+  PATH: /snap/bin:$PATH:$SNAPD_TESTING_TOOLS
 
 exclude:
   - .github
@@ -40,9 +45,13 @@ backends:
           username: ubuntu
           password: ubuntu
 
-path: /home/imagecraft
-
 prepare: |
+  # if the 'tools' directory inside the submodule does not exist, then assume the submodule is empty
+  if [[ ! -d "$SNAPD_TESTING_TOOLS" ]]; then
+    echo "Cannot run spread because submodule 'snapd-testing-tools' is empty. Fetch with 'git submodule update --init' and rerun spread."
+    exit 1
+  fi
+
   # Make sure there is a hostname file because it could be missing
   # We will need it to have debootstrap properly run
   if [ ! -f /etc/hostname ]; then

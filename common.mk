@@ -142,7 +142,7 @@ lint-shellcheck:  ##- Lint shell scripts
 ifneq ($(CI),)
 	@echo ::group::$@
 endif
-	git ls-files | grep -v "tests/lib/external/" | file --mime-type -Nnf- | grep shellscript | cut -f1 -d: | xargs -r shellcheck
+	git ls-files | file --mime-type -Nnf- | grep shellscript | cut -f1 -d: | xargs -r shellcheck
 ifneq ($(CI),)
 	@echo ::endgroup::
 endif
