@@ -49,6 +49,5 @@ def test_lifecycle_args(
         partitions=["default", "volume/pc/efi"],
         build_for="amd64",
         platform="amd64",
-        base="bare",
         project_name="default",
     )

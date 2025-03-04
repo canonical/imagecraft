@@ -1,4 +1,6 @@
-# Copyright 2023-2025 Canonical Ltd.
+# This file is part of imagecraft.
+#
+# Copyright 2025 Canonical Ltd.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 3 as
@@ -12,7 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Imagecraft services.
+"""Tests for grammar-aware project models."""
 
-Services are not exposed here on purpose so that they can be lazy-loaded.
-"""
+from imagecraft.models import get_grammar_aware_volume_keywords
+
+
+def test_get_grammar_aware_volume_keywords():
+    """Test get_grammar_aware_volume_keywords."""
+    assert get_grammar_aware_volume_keywords() == ["structure"]

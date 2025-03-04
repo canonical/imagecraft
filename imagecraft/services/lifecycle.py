@@ -1,6 +1,6 @@
 # This file is part of imagecraft.
 #
-# Copyright 2023 Canonical Ltd.
+# Copyright 2023-2025 Canonical Ltd.
 #
 # This program is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 3, as published
@@ -16,12 +16,8 @@
 
 """Imagecraft Lifecycle service."""
 
-from typing import cast
-
 from craft_application import LifecycleService
 from overrides import override  # type: ignore[reportUnknownVariableType]
-
-from imagecraft.models.project import Project
 
 
 class ImagecraftLifecycleService(LifecycleService):
@@ -31,10 +27,9 @@ class ImagecraftLifecycleService(LifecycleService):
     def setup(self) -> None:
         """Initialize the LifecycleManager with previously-set arguments."""
         # Configure extra args to the LifecycleManager
-        project = cast(Project, self._project)
+        project = self._services.get("project").get()
 
         self._manager_kwargs.update(
-            base=project.base,
             project_name=project.name,
         )
 
