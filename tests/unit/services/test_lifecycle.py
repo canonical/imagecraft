@@ -20,10 +20,11 @@ from unittest.mock import ANY
 from craft_parts import (
     LifecycleManager,
 )
+from imagecraft.services.lifecycle import ImagecraftLifecycleService
 
 
 def test_lifecycle_args(
-    lifecycle_service,
+    lifecycle_service: ImagecraftLifecycleService,
     mocker,
     monkeypatch,
 ):
@@ -36,7 +37,13 @@ def test_lifecycle_args(
     lifecycle_service.setup()
 
     mock_lifecycle.assert_called_once_with(
-        {"parts": {}},
+        {
+            "parts": {
+                "my-part": {
+                    "plugin": "nil",
+                }
+            }
+        },
         application_name="imagecraft",
         arch="amd64",
         cache_dir=Path("cache"),
@@ -49,6 +56,5 @@ def test_lifecycle_args(
         partitions=["default", "volume/pc/efi"],
         build_for="amd64",
         platform="amd64",
-        base="bare",
         project_name="default",
     )

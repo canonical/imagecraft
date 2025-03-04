@@ -19,7 +19,9 @@ import types
 from pathlib import Path
 
 import pytest
-from imagecraft import plugins
+from craft_application import ProjectService, ServiceFactory
+from imagecraft import cli, plugins
+from imagecraft.application import APP_METADATA
 
 
 @pytest.fixture
@@ -42,6 +44,11 @@ def project_main_module() -> types.ModuleType:
     return main_module
 
 
+@pytest.fixture
+def app_metadata():
+    return APP_METADATA
+
+
 @pytest.fixture(autouse=True)
 def reset_features():
     from craft_parts import Features
@@ -60,8 +67,13 @@ def enable_partitions_feature(reset_features):
 
 
 @pytest.fixture(autouse=True, scope="session")
-def _setup_parts():
+def setup_plugins():
     plugins.setup_plugins()
+
+
+@pytest.fixture(autouse=True, scope="session")
+def register_services():
+    cli.register_services()
 
 
 @pytest.fixture
@@ -77,108 +89,77 @@ def new_dir(tmpdir):
 
 
 @pytest.fixture
-def extra_project_params():
-    """Configuration fixture for the Project used by the default services."""
-    return {}
+def default_project_yaml():
+    return """\
+name: default
+version: "1.0"
+summary: "default project"
+description: "default project"
+base: bare
+build-base: ubuntu@24.04
+license: "MIT"
+
+platforms:
+  amd64:
+    build-for: [amd64]
+    build-on: [amd64]
+parts:
+  my-part:
+    plugin: nil
+volumes:
+  pc:
+    schema: gpt
+    structure:
+      - name: efi
+        role: system-boot
+        type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
+        filesystem: vfat
+        size: 500MiB
+"""
 
 
 @pytest.fixture
-def default_project(enable_partitions_feature, extra_project_params):
-    from imagecraft.models.project import Project
+def default_project_file(in_project_path, default_project_yaml):
+    project_file = in_project_path / "imagecraft.yaml"
+    project_file.write_text(default_project_yaml)
 
-    parts = extra_project_params.pop("parts", {})
+    return project_file
 
-    return Project.unmarshal(
-        {
-            "name": "default",
-            "version": "1.0",
-            "summary": "default project",
-            "description": "default project",
-            "base": "bare",
-            "build-base": "ubuntu@22.04",
-            "parts": parts,
-            "license": "MIT",
-            "platforms": {"amd64": {"build-on": ["amd64"], "build-for": ["amd64"]}},
-            "volumes": {
-                "pc": {
-                    "schema": "gpt",
-                    "structure": [
-                        {
-                            "name": "efi",
-                            "role": "system-boot",
-                            "type": "C12A7328-F81F-11D2-BA4B-00A0C93EC93B",
-                            "filesystem": "vfat",
-                            "size": "500MiB",
-                        }
-                    ],
-                }
-            },
-            **extra_project_params,
-        }
+
+@pytest.fixture
+def default_factory(default_project_file, app_metadata):
+    factory = ServiceFactory(
+        app=app_metadata,
     )
 
+    factory.update_kwargs("project", project_dir=default_project_file.parent)
+    factory.update_kwargs("lifecycle", work_dir=Path("work/"), cache_dir=Path("cache/"))
 
-@pytest.fixture
-def default_build_plan(default_project):
-    from imagecraft.models.project import BuildPlanner
+    project: ProjectService = factory.get("project")
+    project.configure(platform=None, build_for=None)
 
-    return BuildPlanner.unmarshal(default_project.marshal()).get_build_plan()
-
-
-@pytest.fixture
-def default_factory(default_project, default_build_plan, tmp_path):
-    from imagecraft.application import APP_METADATA
-    from imagecraft.services import ImagecraftServiceFactory
-
-    factory = ImagecraftServiceFactory(
-        app=APP_METADATA,
-        project=default_project,
-    )  # type: ignore[assignment]
-
-    factory.update_kwargs(
-        "lifecycle",
-        work_dir=tmp_path / "work",
-        cache_dir=tmp_path / "cache",
-        build_plan=default_build_plan,
-        partitions=default_project.get_partitions(),
-    )
-    factory.update_kwargs("package", build_plan=default_build_plan)
     return factory
 
 
 @pytest.fixture
-def default_application(default_factory):
-    from imagecraft.application import APP_METADATA, Imagecraft
+def default_application(default_factory, app_metadata):
+    from imagecraft.application import Imagecraft
 
-    return Imagecraft(APP_METADATA, default_factory)
+    return Imagecraft(app_metadata, default_factory)
 
 
 @pytest.fixture
-def lifecycle_service(default_project, default_factory, default_build_plan):
-    from imagecraft.application import APP_METADATA
-    from imagecraft.services import ImagecraftLifecycleService
-
-    return ImagecraftLifecycleService(
-        app=APP_METADATA,
+def lifecycle_service(default_factory, app_metadata, enable_partitions_feature):
+    return default_factory.get_class("lifecycle")(
+        app=app_metadata,
         build_for="amd64",
         platform="amd64",
-        project=default_project,
         services=default_factory,
         work_dir=Path("work/"),
         cache_dir=Path("cache/"),
-        build_plan=default_build_plan,
-        partitions=default_project.get_partitions(),
     )
 
 
 @pytest.fixture
-def pack_service(default_project, default_factory, default_build_plan):
-    from imagecraft.application import APP_METADATA
-    from imagecraft.services import ImagecraftPackService
-
-    return ImagecraftPackService(
-        app=APP_METADATA,
-        project=default_project,
-        services=default_factory,
-        build_plan=default_build_plan,
-    )
+def pack_service(default_factory):
+    return default_factory.get("package")

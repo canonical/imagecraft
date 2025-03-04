@@ -18,6 +18,7 @@
 from pathlib import Path
 
 import pytest
+from craft_parts import Features
 from imagecraft import application
 
 IMAGECRAFT_YAML = """
@@ -27,8 +28,8 @@ base: bare
 build-base: ubuntu@24.04
 platforms:
   generic-amd64:
-    build-on: amd64
-    build-for: amd64
+    build-on: [amd64]
+    build-for: [amd64]
   arm64:
   armhf:
   i386:
@@ -64,18 +65,21 @@ volumes:
 """
 
 
+@pytest.fixture
+def custom_project_file(default_project_file: Path):
+    default_project_file.write_text(IMAGECRAFT_YAML)
+    return default_project_file
+
+
 def test_imagecraft_build(
-    empty_project_dir: Path,
+    project_path: Path,
+    custom_project_file: Path,
     imagecraft_app: application.Imagecraft,
     monkeypatch: pytest.MonkeyPatch,
     check,
 ):
     """Test imagecraft."""
-    monkeypatch.setenv("CRAFT_DEBUG", "1")
-
-    project_file = empty_project_dir / "imagecraft.yaml"
-    project_file.write_text(IMAGECRAFT_YAML)
-
+    Features.reset()
     monkeypatch.setattr(
         "sys.argv",
         ["imagecraft", "build", "--destructive-mode", "--verbosity", "debug"],
@@ -84,28 +88,28 @@ def test_imagecraft_build(
 
     assert result == 0
 
-    assert imagecraft_app._partitions == [
+    project = imagecraft_app.services.get("project")
+
+    assert project.partitions == [
         "default",
         "volume/pc/efi",
         "volume/pc/rootfs",
     ]
-    check.is_true((empty_project_dir / "prime").exists())
-    check.is_true((empty_project_dir / "parts").exists())
-    check.is_true((empty_project_dir / "stage").exists())
+    check.is_true((project_path / "prime").exists())
+    check.is_true((project_path / "parts").exists())
+    check.is_true((project_path / "stage").exists())
     check.is_true(
         (
-            empty_project_dir / "partitions/volume/pc/rootfs/parts/rootfs/install/a.txt"
+            project_path / "partitions/volume/pc/rootfs/parts/rootfs/install/a.txt"
         ).exists()
     )
     check.is_true(
-        (
-            empty_project_dir / "partitions/volume/pc/efi/parts/rootfs/install/b.txt"
-        ).exists()
+        (project_path / "partitions/volume/pc/efi/parts/rootfs/install/b.txt").exists()
     )
 
 
 def test_imagecraft_pack(
-    empty_project_dir: Path,
+    project_path: Path,
     imagecraft_app: application.Imagecraft,
     monkeypatch: pytest.MonkeyPatch,
     check,
@@ -113,7 +117,7 @@ def test_imagecraft_pack(
     """Test imagecraft."""
     monkeypatch.setenv("CRAFT_DEBUG", "1")
 
-    project_file = empty_project_dir / "imagecraft.yaml"
+    project_file = project_path / "imagecraft.yaml"
     project_file.write_text(IMAGECRAFT_YAML)
 
     monkeypatch.setattr(
@@ -124,4 +128,4 @@ def test_imagecraft_pack(
 
     assert result == 0
 
-    check.is_true((empty_project_dir / "pc.img").is_file())
+    check.is_true((project_path / "pc.img").is_file())

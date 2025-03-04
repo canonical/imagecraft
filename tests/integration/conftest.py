@@ -18,12 +18,13 @@ from pathlib import Path
 
 import craft_application
 import imagecraft
-import imagecraft.application
 import pytest
+from craft_application import ServiceFactory
+from imagecraft.cli import register_services
 
 
 @pytest.fixture
-def empty_project_dir(
+def project_path(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> Path:
@@ -34,17 +35,11 @@ def empty_project_dir(
 
 
 @pytest.fixture
-def app_metadata():
-    return imagecraft.application.APP_METADATA
-
-
-@pytest.fixture
 def service_factory(
     app_metadata: craft_application.AppMetadata,
+    default_project_file,
 ) -> craft_application.ServiceFactory:
-    from imagecraft.services import ImagecraftServiceFactory
-
-    return ImagecraftServiceFactory(
+    return ServiceFactory(
         app=app_metadata,
     )  # type: ignore[assignment]
 
@@ -52,6 +47,7 @@ def service_factory(
 @pytest.fixture
 def imagecraft_app(
     app_metadata: craft_application.AppMetadata,
-    service_factory: craft_application.ServiceFactory,
+    service_factory,
 ) -> imagecraft.Imagecraft:
+    register_services()
     return imagecraft.Imagecraft(app_metadata, service_factory)

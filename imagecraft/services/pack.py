@@ -17,36 +17,19 @@
 import os
 import tempfile
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import cast
 
-from craft_application import AppMetadata, PackageService, models
-from craft_application.models import BuildInfo
+from craft_application import PackageService, models
 from overrides import override  # type: ignore[reportUnknownVariableType]
 
 from imagecraft.models import Project, get_partition_name
 from imagecraft.pack import diskutil, gptutil
-
-if TYPE_CHECKING:
-    from imagecraft.services import ImagecraftServiceFactory
-
 
 SECTOR_SIZE = 512
 
 
 class ImagecraftPackService(PackageService):
     """Package service subclass for Imagecraft."""
-
-    def __init__(
-        self,
-        app: AppMetadata,
-        services: "ImagecraftServiceFactory",
-        *,
-        project: Project,
-        build_plan: list[BuildInfo],
-    ) -> None:
-        super().__init__(app, services, project=project)
-
-        self._build_plan = build_plan
 
     @override
     def pack(self, prime_dir: Path, dest: Path) -> list[Path]:  # noqa: ARG002
@@ -57,7 +40,7 @@ class ImagecraftPackService(PackageService):
         :returns: A list of paths to created packages.
         """
         # Pydantic has already validated that there is only a single volume before now
-        project = cast(Project, self._project)
+        project = cast(Project, self._services.get("project").get())
         if len(project.volumes) != 1:
             raise AssertionError("This code can only handle one volume")
         volume_name, volume = next(iter(project.volumes.items()))
@@ -73,7 +56,7 @@ class ImagecraftPackService(PackageService):
         # Create partition images with filesystems.  These are always recreated, but we
         # may want to revisit that once this is solved:
         # https://github.com/canonical/craft-parts/issues/665
-        project_dirs = self._services.lifecycle.project_info.dirs
+        project_dirs = self._services.get("lifecycle").project_info.dirs
         with tempfile.TemporaryDirectory() as tmp_dir:
             for structure_item in volume.structure:
                 partition_name = get_partition_name(volume_name, structure_item)

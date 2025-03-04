@@ -463,8 +463,8 @@ toml = [
 
 [[package]]
 name = "craft-application"
-version = "4.9.1.post21+g63f818b"
-source = { git = "https://github.com/canonical/craft-application.git?rev=work%2Fimagecraft-partitions#63f818bd5970355f624bf10bce36c186a4e4c59e" }
+version = "4.9.1.post16+g85e01f4"
+source = { git = "https://github.com/canonical/craft-application.git?rev=work%2FCRAFT-4163#85e01f4f2113f2cf2df8b16ec5db99e8f7bd8181" }
 dependencies = [
     { name = "annotated-types" },
     { name = "craft-archives" },
@@ -828,8 +828,7 @@ types = [
 
 [package.metadata]
 requires-dist = [
-    { name = "canonical-sphinx", extras = ["full"], marker = "extra == 'docs'", specifier = "~=0.3.0" },
-    { name = "craft-application", git = "https://github.com/canonical/craft-application.git?rev=work%2Fimagecraft-partitions" },
+    { name = "craft-application", git = "https://github.com/canonical/craft-application.git?rev=work%2FCRAFT-4163" },
     { name = "craft-cli", specifier = "~=2.15" },
     { name = "craft-grammar", specifier = "~=2.0.2" },
     { name = "craft-parts", specifier = "~=2.6" },

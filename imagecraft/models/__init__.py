@@ -18,7 +18,6 @@
 from imagecraft.models.project import (
     Project,
     Platform,
-    BuildPlanner,
     VolumeProject,
     get_partition_name,
 )
@@ -27,7 +26,6 @@ from imagecraft.models.volume import FileSystem, Volume, Role
 from imagecraft.models.grammar import get_grammar_aware_volume_keywords
 
 __all__ = [
-    "BuildPlanner",
     "FileSystem",
     "Project",
     "Platform",
