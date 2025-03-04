@@ -130,14 +130,14 @@ def grammar_app(
 
 
 def test_application_grammar_arm64(monkeypatch, grammar_app):
-    project = grammar_app.get_project(build_for="arm64")
+    project = grammar_app.get_project(platform="arm64")
 
     assert project.volumes["pc"].structure[0].name == "efi"
     assert project.volumes["pc"].structure[1].name == "rootfs"
 
 
 def test_application_grammar_riscv64(grammar_app):
-    project = grammar_app.get_project(build_for="riscv64")
+    project = grammar_app.get_project(platform="riscv64")
 
     assert project.volumes["pc"].structure[0].name == "uboot"
     assert project.volumes["pc"].structure[1].name == "rootfs"
