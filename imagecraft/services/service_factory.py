@@ -20,6 +20,7 @@ from dataclasses import dataclass
 
 from craft_application import ServiceFactory
 from craft_application import services as base_services
+from craft_application.application import AppMetadata
 
 from imagecraft import services
 
@@ -28,8 +29,11 @@ from imagecraft import services
 class ImagecraftServiceFactory(ServiceFactory):
     """Imagecraft-specific Service Factory."""
 
-    # These are overrides of default ServiceFactory services
-    LifecycleClass: type[base_services.LifecycleService] = (
-        services.ImagecraftLifecycleService
-    )
-    PackageClass: type[base_services.PackageService] = services.ImagecraftPackService
+    def __init__(
+        self,
+        app: AppMetadata,
+        **kwargs: type[base_services.AppService] | None,
+    ) -> None:
+        ServiceFactory.register("lifecycle", services.ImagecraftLifecycleService)
+        ServiceFactory.register("package", services.ImagecraftPackService)
+        super().__init__(app, **kwargs)
