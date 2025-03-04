@@ -7,7 +7,7 @@ license = { file = "LICENSE" }
 dependencies = [
     "craft-parts~=2.6",
     "craft-cli~=2.15",
-    "craft-platforms~=0.4",
+    "craft-platforms~=0.6",
     "craft-application~=4.6",
     "craft-providers~=2.0",
     "pydantic~=2.8",
