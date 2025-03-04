@@ -48,15 +48,15 @@ help: ## Show this help.
 
 .PHONY: setup
 setup: install-uv setup-precommit ## Set up a development environment
-	uv sync $(SETUP_TESTS_EXTRA_ARGS) --extra docs --extra lint --extra types
+	uv sync $(SETUP_TESTS_EXTRA_ARGS) --reinstall-package craft-grammar --reinstall-package craft-application --reinstall-package craft-platforms --extra docs --extra types
 
 .PHONY: setup-tests
 setup-tests: install-uv install-build-deps ##- Set up a testing environment without linters
-	uv sync $(SETUP_TESTS_EXTRA_ARGS)
+	uv sync $(SETUP_TESTS_EXTRA_ARGS) --reinstall-package craft-grammar --reinstall-package craft-application --reinstall-package craft-platforms
 
 .PHONY: setup-lint
 setup-lint: install-uv install-shellcheck install-pyright install-lint-build-deps  ##- Set up a linting-only environment
-	uv sync --no-install-workspace --extra lint --extra types
+	uv sync --no-install-workspace --extra types
 
 .PHONY: setup-docs
 setup-docs: install-uv  ##- Set up a documentation-only environment
