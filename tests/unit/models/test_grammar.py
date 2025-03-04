@@ -21,4 +21,4 @@ from imagecraft.models import get_grammar_aware_volume_keywords
 
 def test_get_grammar_aware_volume_keywords():
     """Test get_grammar_aware_volume_keywords."""
-    assert get_grammar_aware_volume_keywords() == ["schema", "structure"]
+    assert get_grammar_aware_volume_keywords() == ["structure"]
