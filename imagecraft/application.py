@@ -16,14 +16,12 @@
 
 """Main Imagecraft Application."""
 
-from typing import Any
-
 from craft_application import Application, AppMetadata
 from craft_parts.plugins.plugins import PluginType
 from overrides import override  # type: ignore[reportUnknownVariableType]
 
 from imagecraft import plugins
-from imagecraft.models import VolumeProject, project
+from imagecraft.models import project
 
 APP_METADATA = AppMetadata(
     name="imagecraft",
@@ -45,9 +43,3 @@ class Imagecraft(Application):
         from craft_parts.features import Features
 
         Features(enable_partitions=True)
-
-    @override
-    def _setup_partitions(self, yaml_data: dict[str, Any]) -> list[str] | None:
-        volumes = VolumeProject.unmarshal(yaml_data)
-
-        return volumes.get_partitions()

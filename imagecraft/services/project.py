@@ -21,6 +21,7 @@ from craft_application import ProjectService
 from overrides import override  # type: ignore[reportUnknownVariableType]
 
 from imagecraft import grammar
+from imagecraft.models import VolumeProject
 
 
 class ImagecraftProjectService(ProjectService):
@@ -36,6 +37,12 @@ class ImagecraftProjectService(ProjectService):
         platform: str,  # noqa: ARG002
     ) -> None:
         transform_yaml(build_on=build_on, build_for=build_for, yaml_data=project)
+
+    @override
+    def get_partitions(self) -> list[str] | None:
+        volumes = VolumeProject.unmarshal(self._load_raw_project())
+
+        return volumes.get_partitions()
 
 
 def transform_yaml(
