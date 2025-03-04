@@ -18,6 +18,7 @@
 from pathlib import Path
 
 import pytest
+from craft_parts import Features
 from imagecraft import application
 
 IMAGECRAFT_YAML = """
@@ -64,18 +65,20 @@ volumes:
 """
 
 
+@pytest.fixture
+def custom_project_file(default_project_file):
+    default_project_file.write_text(IMAGECRAFT_YAML)
+
+
 def test_imagecraft_build(
-    empty_project_dir: Path,
+    project_path: Path,
     imagecraft_app: application.Imagecraft,
     monkeypatch: pytest.MonkeyPatch,
+    custom_project_file,
     check,
 ):
     """Test imagecraft."""
-    monkeypatch.setenv("CRAFT_DEBUG", "1")
-
-    project_file = empty_project_dir / "imagecraft.yaml"
-    project_file.write_text(IMAGECRAFT_YAML)
-
+    Features.reset()
     monkeypatch.setattr(
         "sys.argv",
         ["imagecraft", "build", "--destructive-mode", "--verbosity", "debug"],
@@ -89,16 +92,14 @@ def test_imagecraft_build(
         "volume/pc/efi",
         "volume/pc/rootfs",
     ]
-    check.is_true((empty_project_dir / "prime").exists())
-    check.is_true((empty_project_dir / "parts").exists())
-    check.is_true((empty_project_dir / "stage").exists())
+    check.is_true((project_path / "prime").exists())
+    check.is_true((project_path / "parts").exists())
+    check.is_true((project_path / "stage").exists())
     check.is_true(
         (
-            empty_project_dir / "partitions/volume/pc/rootfs/parts/rootfs/install/a.txt"
+            project_path / "partitions/volume/pc/rootfs/parts/rootfs/install/a.txt"
         ).exists()
     )
     check.is_true(
-        (
-            empty_project_dir / "partitions/volume/pc/efi/parts/rootfs/install/b.txt"
-        ).exists()
+        (project_path / "partitions/volume/pc/efi/parts/rootfs/install/b.txt").exists()
     )

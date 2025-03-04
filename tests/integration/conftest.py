@@ -23,7 +23,7 @@ import pytest
 
 
 @pytest.fixture
-def empty_project_dir(
+def project_path(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> Path:
@@ -52,6 +52,6 @@ def service_factory(
 @pytest.fixture
 def imagecraft_app(
     app_metadata: craft_application.AppMetadata,
-    service_factory: craft_application.ServiceFactory,
+    default_factory,
 ) -> imagecraft.Imagecraft:
-    return imagecraft.Imagecraft(app_metadata, service_factory)
+    return imagecraft.Imagecraft(app_metadata, default_factory)

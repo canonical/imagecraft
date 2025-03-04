@@ -15,32 +15,13 @@
 """Imagecraft Package service."""
 
 import pathlib
-import typing
 
-from craft_application import AppMetadata, PackageService, models
-from craft_application.models import BuildInfo
+from craft_application import PackageService, models
 from overrides import override  # type: ignore[reportUnknownVariableType]
-
-from imagecraft.models import Project
-
-if typing.TYPE_CHECKING:
-    from imagecraft.services import ImagecraftServiceFactory
 
 
 class ImagecraftPackService(PackageService):
     """Package service subclass for Imagecraft."""
-
-    def __init__(
-        self,
-        app: AppMetadata,
-        services: "ImagecraftServiceFactory",
-        *,
-        project: Project,
-        build_plan: list[BuildInfo],
-    ) -> None:
-        super().__init__(app, services, project=project)
-
-        self._build_plan = build_plan
 
     @override
     def pack(self, prime_dir: pathlib.Path, dest: pathlib.Path) -> list[pathlib.Path]:  # noqa: ARG002

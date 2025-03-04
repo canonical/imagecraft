@@ -1,4 +1,4 @@
-# Copyright 2023 Canonical Ltd.
+# Copyright 2023-2025 Canonical Ltd.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 3 as
@@ -12,14 +12,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Imagecraft services."""
+"""Imagecraft services.
 
-from imagecraft.services.pack import ImagecraftPackService
-from imagecraft.services.lifecycle import ImagecraftLifecycleService
-from imagecraft.services.service_factory import ImagecraftServiceFactory
-
-__all__ = [
-    "ImagecraftPackService",
-    "ImagecraftServiceFactory",
-    "ImagecraftLifecycleService",
-]
+Services are not exposed here on purpose so that they can be lazy-loaded.
+"""

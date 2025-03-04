@@ -18,7 +18,9 @@ import os
 import types
 from pathlib import Path
 
+import imagecraft
 import pytest
+from craft_application import ServiceFactory
 from imagecraft import plugins
 
 
@@ -83,6 +85,33 @@ def extra_project_params():
 
 
 @pytest.fixture
+def default_project_yaml():
+    return """\
+name: default
+version: "1.0"
+summary: "default project"
+description: "default project"
+base: bare
+build-base: ubuntu@22.04
+license: "MIT"
+
+platforms:
+  amd64:
+    build-for: [amd64]
+    build-on: [amd64]
+volumes:
+  pc:
+    schema: gpt
+    structure:
+      - name: efi
+        role: system-boot
+        type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
+        filesystem: vfat
+        size: 500MiB
+"""
+
+
+@pytest.fixture
 def default_project(enable_partitions_feature, extra_project_params):
     from imagecraft.models.project import Project
 
@@ -118,25 +147,31 @@ def default_project(enable_partitions_feature, extra_project_params):
     )
 
 
-@pytest.fixture
-def default_build_plan(default_project):
-    from imagecraft.models.project import BuildPlanner
-
-    return BuildPlanner.unmarshal(default_project.marshal()).get_build_plan()
+@pytest.fixture(autouse=True, scope="session")
+def register_services():
+    imagecraft.cli.register_services()
 
 
 @pytest.fixture
-def default_factory(default_project, default_build_plan):
+def default_project_file(in_project_path, default_project_yaml):
+    project_file = in_project_path / "imagecraft.yaml"
+    project_file.write_text(default_project_yaml)
+
+    return project_file
+
+
+@pytest.fixture
+def default_factory(default_project, default_project_file):
     from imagecraft.application import APP_METADATA
-    from imagecraft.services import ImagecraftServiceFactory
 
-    factory = ImagecraftServiceFactory(
+    factory = ServiceFactory(
         app=APP_METADATA,
-        project=default_project,
     )
 
-    factory.update_kwargs("lifecycle", build_plan=default_build_plan)
-    factory.update_kwargs("package", build_plan=default_build_plan)
+    factory.update_kwargs("project", project_dir=default_project_file.parent)
+    project = factory.get("project")
+    project.render_once()
+
     return factory
 
 
@@ -148,31 +183,20 @@ def default_application(default_factory):
 
 
 @pytest.fixture
-def lifecycle_service(default_project, default_factory, default_build_plan):
+def lifecycle_service(default_project, default_factory):
     from imagecraft.application import APP_METADATA
-    from imagecraft.services import ImagecraftLifecycleService
 
-    return ImagecraftLifecycleService(
+    return default_factory.get_class("lifecycle")(
         app=APP_METADATA,
         build_for="amd64",
         platform="amd64",
-        project=default_project,
         services=default_factory,
         work_dir=Path("work/"),
         cache_dir=Path("cache/"),
-        build_plan=default_build_plan,
         partitions=default_project.get_partitions(),
     )
 
 
 @pytest.fixture
-def pack_service(default_project, default_factory, default_build_plan):
-    from imagecraft.application import APP_METADATA
-    from imagecraft.services import ImagecraftPackService
-
-    return ImagecraftPackService(
-        app=APP_METADATA,
-        project=default_project,
-        services=default_factory,
-        build_plan=default_build_plan,
-    )
+def pack_service(default_project, default_factory):
+    return default_factory.get("package")
