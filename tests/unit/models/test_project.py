@@ -243,13 +243,13 @@ def test_project_platform_invalid(
     [
         # Both build and target architectures must be supported
         (
-            "'noarch' is not a valid DebianArchitecture",
+            "'noarch' is not a valid Debian architecture",
             {
                 "mock": {"build-on": ["noarch"], "build-for": ["amd64"]},
             },
         ),
         (
-            "'noarch' is not a valid DebianArchitecture",
+            "'noarch' is not a valid Debian architecture",
             {
                 "mock": {"build-on": ["arm64"], "build-for": ["noarch"]},
             },
