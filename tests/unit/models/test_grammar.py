@@ -16,9 +16,69 @@
 
 """Tests for grammar-aware project models."""
 
+import pydantic
+import pytest
 from imagecraft.models import get_grammar_aware_volume_keywords
+from imagecraft.models.grammar import _GrammarAwareVolume
 
 
 def test_get_grammar_aware_volume_keywords():
     """Test get_grammar_aware_volume_keywords."""
     assert get_grammar_aware_volume_keywords() == ["structure"]
+
+
+@pytest.mark.parametrize(
+    ("volume"),
+    [
+        ({}),
+        (
+            {
+                "schema": "gpt",
+                "structure": [
+                    {
+                        "name": "rootfs",
+                        "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+                        "filesystem": "ext4",
+                        "filesystem-label": "writable",
+                        "role": "system-data",
+                        "size": "6GiB",
+                    },
+                    {
+                        "name": "rootfs",
+                        "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+                        "filesystem": "ext4",
+                        "filesystem-label": "writable",
+                        "role": "system-data",
+                        "size": "6GiB",
+                    },
+                ],
+            }
+        ),
+    ],
+)
+def test_grammar_aware_volume(volume):
+    """Test the grammar-aware volume should be able to parse the input data."""
+    _GrammarAwareVolume(**volume)
+
+
+@pytest.mark.parametrize(
+    ("volume"),
+    [
+        (
+            {
+                "structure": {},
+            }
+        ),
+        (
+            {
+                "structure": [
+                    "test",
+                ],
+            }
+        ),
+    ],
+)
+def test_grammar_aware_volume_error(volume):
+    """Test the grammar-aware volume should be able to report error."""
+    with pytest.raises(pydantic.ValidationError):
+        _GrammarAwareVolume(**volume)

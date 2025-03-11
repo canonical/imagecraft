@@ -16,6 +16,7 @@
 
 import pytest
 import yaml
+from craft_application.errors import CraftValidationError
 from imagecraft.grammar import process_volumes
 
 
@@ -105,3 +106,33 @@ def test_process_volumes(volumes_yaml, arch, target_arch, expected):
         )
         == expected
     )
+
+
+@pytest.mark.parametrize(
+    ("volumes_yaml", "arch", "target_arch"),
+    [
+        (
+            """
+pc:
+  schema: gpt
+  structure:
+    - to arm64:
+        - name: rootfs
+          type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+          filesystem: ext4
+          filesystem-label: writable
+          role: system-data
+          size: 6GiB
+    - else:
+    """,
+            "amd64",
+            "amd64",
+        ),
+    ],
+)
+def test_process_volumes_fail(volumes_yaml, arch, target_arch):
+    yaml_loaded = yaml.safe_load(volumes_yaml)
+    with pytest.raises(CraftValidationError):
+        process_volumes(
+            volumes_yaml_data=yaml_loaded, arch=arch, target_arch=target_arch
+        )
