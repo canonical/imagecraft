@@ -20,6 +20,7 @@ from unittest.mock import ANY
 from craft_parts import (
     LifecycleManager,
 )
+from craft_platforms import DebianArchitecture
 from imagecraft.services.lifecycle import ImagecraftLifecycleService
 
 
@@ -45,7 +46,7 @@ def test_lifecycle_args(
             }
         },
         application_name="imagecraft",
-        arch="amd64",
+        arch=str(DebianArchitecture.from_host()),
         cache_dir=Path("cache"),
         work_dir=Path("work"),
         ignore_local_sources=[],
