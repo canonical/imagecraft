@@ -23,7 +23,6 @@ import typing
 from typing import Annotated, Any, Literal, Self
 
 from craft_application.errors import CraftValidationError
-from craft_application.models import BuildPlanner as BaseBuildPlanner
 from craft_application.models import CraftBaseModel
 from craft_application.models import Platform as BasePlatform
 from craft_application.models import Project as BaseProject
@@ -31,7 +30,6 @@ from craft_providers import bases
 from pydantic import (
     ConfigDict,
     Field,
-    field_validator,
     model_validator,
 )
 from typing_extensions import override
@@ -69,30 +67,6 @@ BuildBaseT = typing.Annotated[
     Literal["ubuntu@20.04", "ubuntu@22.04", "ubuntu@24.04", "devel"] | None,
     Field(validate_default=True),
 ]
-
-
-class BuildPlanner(BaseBuildPlanner):
-    """BuildPlanner for Imagecraft projects."""
-
-    platforms: dict[str, Platform]  # type: ignore[assignment]
-    base: BaseT  # type: ignore[reportIncompatibleVariableOverride]
-    build_base: BuildBaseT  # type: ignore[reportIncompatibleVariableOverride]
-
-    @field_validator(
-        "platforms",
-        mode="before",
-    )  # pyright: ignore[reportUntypedFunctionDecorator]
-    @classmethod
-    def _preprocess_all_platforms(cls, platforms: dict[str, Any]) -> dict[str, Any]:
-        """Convert the simplified form of platform to the full one."""
-        for platform_label, platform in platforms.items():
-            if platform is None:
-                platforms[platform_label] = {
-                    "build_on": platform_label,
-                    "build_for": platform_label,
-                }
-
-        return platforms
 
 
 VolumeDictT = Annotated[dict[VolumeName, Volume], Field(min_length=1, max_length=1)]

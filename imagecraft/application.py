@@ -1,6 +1,6 @@
 # This file is part of imagecraft.
 #
-# Copyright 2023 Canonical Ltd.
+# Copyright 2023-2025 Canonical Ltd.
 #
 # This program is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 3, as published
@@ -16,39 +16,22 @@
 
 """Main Imagecraft Application."""
 
-from typing import Any
-
 from craft_application import Application, AppMetadata
 from craft_parts.plugins.plugins import PluginType
 from overrides import override  # type: ignore[reportUnknownVariableType]
 
 from imagecraft import plugins
-from imagecraft.models import VolumeProject, project
+from imagecraft.models import project
 
 APP_METADATA = AppMetadata(
     name="imagecraft",
     summary="A tool to create Ubuntu bootable images",
     ProjectClass=project.Project,
-    BuildPlannerClass=project.BuildPlanner,
 )
 
 
 class Imagecraft(Application):
     """Imagecraft application definition."""
-
-    @override
-    def _configure_services(self, provider_name: str | None) -> None:
-        self.services.update_kwargs(
-            "package",
-            build_plan=self._build_plan,
-        )
-        self.services.update_kwargs(
-            "lifecycle",
-            cache_dir=self.cache_dir,
-            work_dir=self._work_dir,
-            build_plan=self._build_plan,
-        )
-        super()._configure_services(provider_name)
 
     @override
     def _get_app_plugins(self) -> dict[str, PluginType]:
@@ -60,9 +43,3 @@ class Imagecraft(Application):
         from craft_parts.features import Features
 
         Features(enable_partitions=True)
-
-    @override
-    def _setup_partitions(self, yaml_data: dict[str, Any]) -> list[str] | None:
-        volumes = VolumeProject.unmarshal(yaml_data)
-
-        return volumes.get_partitions()

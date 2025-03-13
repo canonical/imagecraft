@@ -463,8 +463,8 @@ toml = [
 
 [[package]]
 name = "craft-application"
-version = "4.7.0"
-source = { registry = "https://pypi.org/simple" }
+version = "4.9.1.post15+gfb9c1c8"
+source = { git = "https://github.com/canonical/craft-application.git?rev=feature%2Fhybrid-commands#fb9c1c85b44800f23c07b50f25d56e8bffbeeebe" }
 dependencies = [
     { name = "annotated-types" },
     { name = "craft-archives" },
@@ -482,10 +482,6 @@ dependencies = [
     { name = "requests" },
     { name = "snap-helpers" },
     { name = "typing-extensions" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/93/07/ea6b687ec207ffca23d6de390b6fd73794e907014009ae7d6f5f70d92e3a/craft_application-4.7.0.tar.gz", hash = "sha256:02dde777bf3ca288009401f6e35fbc0b31eb5cc60cebd98055a3f75fcb3bf23f", size = 225607 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/32/f3/6d82e8eb8215dfe96415d43fcc4ed47ce096ecb56278524cc92a06193a03/craft_application-4.7.0-py3-none-any.whl", hash = "sha256:b3b353694b720e3cfe86f40a73ad59801e177cff7bd876dfdd3d4cbc3a0bd6af", size = 144630 },
 ]
 
 [[package]]
@@ -525,15 +521,15 @@ wheels = [
 
 [[package]]
 name = "craft-grammar"
-version = "2.0.1"
+version = "2.0.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "overrides" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/02/d6/073514a6dd3f79fd82f73b0532df0f5dfc39c5ba548795a8c1406851e914/craft_grammar-2.0.1.tar.gz", hash = "sha256:fd6d90b49f3dc1705d9a745192d61192f2eeb42ecb316d7a2b921083d7601c5a", size = 48405 }
+sdist = { url = "https://files.pythonhosted.org/packages/44/f7/3eb0005721edbe2831614a7ac7915b950cd9addcdf4d46bee8b1e40e6fa9/craft_grammar-2.0.2.tar.gz", hash = "sha256:e4bf3ad09cc930c17c4dd5f3a71589e3fe232795a20e1498410d0713d27805d1", size = 49152 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c7/46/dc5c80ac98a005aebdad33ac1ade4e84b3967b7d0280f56dc41046ee0daa/craft_grammar-2.0.1-py3-none-any.whl", hash = "sha256:f72ee5d2a4f73bc75190111b1728b1da9968831fdaf0f4ded35122fb5ba39e3c", size = 23877 },
+    { url = "https://files.pythonhosted.org/packages/14/03/1c1a693a42a7da28f73e4ced7854bdf11349ed3e39a248a7df54b225cabc/craft_grammar-2.0.2-py3-none-any.whl", hash = "sha256:1fd40493be764a696891b02f2f2e0d10dd9ba09b9b7d28f0063b2b29a9f76efb", size = 24853 },
 ]
 
 [[package]]
@@ -555,21 +551,21 @@ wheels = [
 
 [[package]]
 name = "craft-platforms"
-version = "0.5.0"
+version = "0.6.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "annotated-types" },
     { name = "distro" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/30/cb/898d65cfdde700565dc6339e09d919a6e0ac65e27486427ba4d7eb7f6434/craft_platforms-0.5.0.tar.gz", hash = "sha256:f41226163ca111517abd30fd3d1e8c16f08819eb3623b36e5a58d1db3ea8da21", size = 150900 }
+sdist = { url = "https://files.pythonhosted.org/packages/ab/7e/a9a54ac2025f5399689027fd317273f477c7c15478b2c59791aa48f34262/craft_platforms-0.6.0.tar.gz", hash = "sha256:7aa153bfff5a28cf4f8c8a7b3da29c259da3a9d9a2f9a2e7c52e118e5735a927", size = 173964 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f9/d5/a1231182a3012239940ca84bc3b289d54eba7b5841a140439b03226bbd7a/craft_platforms-0.5.0-py3-none-any.whl", hash = "sha256:f80e0eee22174ddc888a938206716dcb7abf66d1161479206e47127091fdfec1", size = 22332 },
+    { url = "https://files.pythonhosted.org/packages/fc/a8/8a11759a28f90b8461ffb0651e21f2b677b4b0547d475a605772858449c4/craft_platforms-0.6.0-py3-none-any.whl", hash = "sha256:ebb1dc6bd1d8c4cbcdab573b9966b20844a9c32aea755ca51de64d4b2a1e646e", size = 24476 },
 ]
 
 [[package]]
 name = "craft-providers"
-version = "2.0.4"
+version = "2.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "packaging" },
@@ -578,9 +574,9 @@ dependencies = [
     { name = "requests" },
     { name = "requests-unixsocket2" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/02/85/4c5a2cdafa858cfd10fe76fdab5fb0452e6dff895b12fe67c8cbe451685e/craft_providers-2.0.4.tar.gz", hash = "sha256:a70248fb6705fc34f44f0d6a5af360945aca94f871bb607ef5c70de60652e776", size = 179472 }
+sdist = { url = "https://files.pythonhosted.org/packages/16/92/93e3f7adff46a338ae7087ffedab34dd116b329917735677f3205369b931/craft_providers-2.2.0.tar.gz", hash = "sha256:dda4df4f777fbc6fbb4fd72cb85ccd237d07875b80a5c95bc70ace3c22d26b07", size = 185832 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9b/6b/2133285adb7310abad0b0d65cee02980b54b877d46d72356fa522c962a20/craft_providers-2.0.4-py2.py3-none-any.whl", hash = "sha256:b282fcfc0430e481b39ff8dbd354689a3ac260be3dc2b046691801217c4b2a8b", size = 96958 },
+    { url = "https://files.pythonhosted.org/packages/66/09/6958083cd574fcb13fdf3943b2d3151c4422a6b649a130bcdb055a2ba063/craft_providers-2.2.0-py2.py3-none-any.whl", hash = "sha256:3198eee67f93fb5903b40635f0561c294a05b9c20127cabd2295173dfd443f83", size = 101447 },
 ]
 
 [[package]]
@@ -778,6 +774,7 @@ source = { editable = "." }
 dependencies = [
     { name = "craft-application" },
     { name = "craft-cli" },
+    { name = "craft-grammar" },
     { name = "craft-parts" },
     { name = "craft-platforms" },
     { name = "craft-providers" },
@@ -831,10 +828,11 @@ types = [
 
 [package.metadata]
 requires-dist = [
-    { name = "craft-application", specifier = "~=4.6" },
+    { name = "craft-application", git = "https://github.com/canonical/craft-application.git?rev=feature%2Fhybrid-commands" },
     { name = "craft-cli", specifier = "~=2.15" },
+    { name = "craft-grammar", specifier = "~=2.0.2" },
     { name = "craft-parts", specifier = "~=2.6" },
-    { name = "craft-platforms", specifier = "~=0.4" },
+    { name = "craft-platforms", specifier = "~=0.6" },
     { name = "craft-providers", specifier = "~=2.0" },
     { name = "pydantic", specifier = "~=2.8" },
     { name = "python-apt", marker = "sys_platform == 'linux' and extra == 'apt'", specifier = ">=2.7.0", index = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" },

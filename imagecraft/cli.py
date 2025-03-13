@@ -18,10 +18,10 @@
 
 from typing import Any
 
+from craft_application import ServiceFactory
 from craft_cli import Dispatcher
 
 from imagecraft.application import Imagecraft
-from imagecraft.services.service_factory import ImagecraftServiceFactory
 
 
 def run() -> int:
@@ -31,13 +31,33 @@ def run() -> int:
     return app.run()
 
 
+def register_services() -> None:
+    """Register Imagecraft' services.
+
+    :returns: None
+    """
+    ServiceFactory.register(
+        "lifecycle",
+        "ImagecraftLifecycleService",
+        module="imagecraft.services.lifecycle",
+    )
+    ServiceFactory.register(
+        "package", "ImagecraftPackService", module="imagecraft.services.pack"
+    )
+    ServiceFactory.register(
+        "project", "ImagecraftProjectService", module="imagecraft.services.project"
+    )
+
+
 def _create_app() -> Imagecraft:
     # pylint: disable=import-outside-toplevel
     # Import these here so that the script that generates the docs for the
     # commands doesn't need to know *too much* of the application.
     from .application import APP_METADATA, Imagecraft
 
-    services = ImagecraftServiceFactory(
+    register_services()
+
+    services = ServiceFactory(
         app=APP_METADATA,
     )  # type: ignore[assignment]
 
