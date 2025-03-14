@@ -6,5 +6,6 @@ Explanation
 .. toctree::
     :maxdepth: 1
 
-    security-overview
     parts
+    overlay-step
+    security-overview
