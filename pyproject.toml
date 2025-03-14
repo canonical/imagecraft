@@ -5,7 +5,7 @@ dynamic = ["version", "readme"]
 authors = [{ name = "Canonical Ltd.", email = "snapcraft@lists.snapcraft.io" }]
 license = { file = "LICENSE" }
 dependencies = [
-    "craft-parts~=2.6",
+    "craft-parts @ git+https://github.com/canonical/craft-parts.git@CRAFT-4270-Allow-enabling-both-partitions-and-overlays-features-at-the-same-time#egg=craft-parts",
     "craft-cli~=2.15",
     "craft-platforms~=0.6",
     "craft-application @ git+https://github.com/canonical/craft-application.git@feature/hybrid-commands#egg=craft-application",

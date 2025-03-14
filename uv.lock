@@ -538,8 +538,8 @@ wheels = [
 
 [[package]]
 name = "craft-parts"
-version = "2.6.2"
-source = { registry = "https://pypi.org/simple" }
+version = "2.6.2.post37+g2665a80"
+source = { git = "https://github.com/canonical/craft-parts.git?rev=CRAFT-4270-Allow-enabling-both-partitions-and-overlays-features-at-the-same-time#2665a80847ef8caea16301d0f75d1c84876aa6e9" }
 dependencies = [
     { name = "overrides" },
     { name = "pydantic" },
@@ -547,10 +547,6 @@ dependencies = [
     { name = "pyyaml" },
     { name = "requests" },
     { name = "requests-unixsocket2" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/fb/d7/f8d6c8aca83d1c751b0ed30c7e5b70f119f5d020569ae91626c37347caa9/craft_parts-2.6.2.tar.gz", hash = "sha256:937ac0f5a4abc7b2a1c9b236652b95a7d39de95bb76c380e0fb1249a8b4df0ea", size = 642416 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/af/f0/c5795b199fd3db6a246a6609da69d4649c2f9347cc48c963b5589c8c307b/craft_parts-2.6.2-py3-none-any.whl", hash = "sha256:f6f0a58e3f31f0933f392b7bebc8f5fd335005db1404bb1ab27fce3f87172a15", size = 454557 },
 ]
 
 [[package]]
@@ -836,7 +832,7 @@ requires-dist = [
     { name = "craft-application", git = "https://github.com/canonical/craft-application.git?rev=feature%2Fhybrid-commands" },
     { name = "craft-cli", specifier = "~=2.15" },
     { name = "craft-grammar", specifier = "~=2.0.3" },
-    { name = "craft-parts", specifier = "~=2.6" },
+    { name = "craft-parts", git = "https://github.com/canonical/craft-parts.git?rev=CRAFT-4270-Allow-enabling-both-partitions-and-overlays-features-at-the-same-time" },
     { name = "craft-platforms", specifier = "~=0.6" },
     { name = "craft-providers", specifier = "~=2.0" },
     { name = "pydantic", specifier = "~=2.8" },
