@@ -63,6 +63,28 @@ A longer, possibly multi-line description of the image.
 
 The imagecraft configuration version, used to track changes to the configuration file.
 
+``base``
+--------
+
+**Type**: string ``bare``
+
+**Required**: Yes
+
+``build-base``
+--------------
+
+**Type**: One of ``ubuntu@20.04 | ubuntu@22.04 | ubuntu@24.04 | devel``
+
+**Required**: Yes
+
+The system and version that will be used during the build, but not
+included in the final image itself. It comprises the set of tools and libraries
+that Imagecraft will use when building the image contents.
+
+.. note::
+   ``devel`` is a "special" value that means "the next Ubuntu version, currently
+   in development". This means that the contents of this system changes
+   frequently and should not be relied on for production rocks.
 
 ``platforms``
 -------------
@@ -122,6 +144,111 @@ is a valid, supported architecture name.
 
 The set of parts that compose the image's contents
 (see :doc:`/common/craft-parts/reference/part_properties`).
+
+``volumes``
+---------
+
+**Type**: dict (single entry)
+
+**Required**: Yes
+
+Structure and conten of the image. A volume represents a "disk".
+
+``volumes.<entry>.schema``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Type**: string ``gpt``
+
+**Required**: Yes
+
+Partitioning schema to use.
+
+``volumes.<entry>.structure``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Type**: dict (at least one entry)
+
+**Required**: Yes
+
+Structure of the image, defining partitions.
+
+``volumes.<entry>.structure.<entry>.name``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**Type**: string
+
+**Required**: Yes
+
+Structure item name. Must respect the following:
+- contain only lowercase letters [a-z] or hyphens;
+- cannot start or end with a hyphen;
+- maximum length: 36 characters (maximum of a partition name
+  for GPT in the UTF-16 character set);
+
+Structure names must be unique in a volume.
+
+``volumes.<entry>.structure.<entry>.id``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**Type**: string
+
+**Required**: No
+
+GPT unique partition id.
+
+``volumes.<entry>.structure.<entry>.role``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**Type**: One of ``system-boot | system-data``
+
+**Required**: Yes
+
+Role defines a special role for this item in the image.
+- ``system-boot``: Partition holding the boot assets.
+- ``system-data``: Partition holding the main operating system data.
+
+``volumes.<entry>.structure.<entry>.type``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**Type**: string
+
+**Required**: Yes
+
+Type of structure. A GPT partition type GUID.
+
+``volumes.<entry>.structure.<entry>.size``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**Type**: string
+
+**Required**: Yes
+
+Size for structure item. Conforms to the IEC 80000-13 Standard.
+
+.. collapse:: Example
+
+    .. code-block:: yaml
+
+        size: "6GiB"
+
+``volumes.<entry>.structure.<entry>.filesystem``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**Type**: One of ``fat16 | vfat | ext4 | ext3``
+
+**Required**: Yes
+
+Filesystem type.
+
+``volumes.<entry>.structure.<entry>.filesystem``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**Type**: string
+
+**Required**: No
+
+Filesystem label. Defaults to name of structure item.
+Labels must be unique in a volume.
 
 
 Example file
