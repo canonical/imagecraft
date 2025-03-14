@@ -1,43 +1,69 @@
-name: ubuntu-server-amd64
-version: "1"
-base: ubuntu@24.04
-series: noble
+name: ubuntu-minimal
+version: "24.04.20241217"
+base: bare
+build-base: ubuntu@24.04
+
 platforms:
   amd64:
-    build-for: [amd64]
-    build-on: [amd64]
-
-package-repositories:
-  - type: apt
-    components: [main, restricted, universe, multiverse]
-    url: http://archive.ubuntu.com/ubuntu/
-    pocket: updates
-    used-for: build
 
 parts:
-  gadget:
-    plugin: gadget
-    source: https://github.com/snapcore/pc-gadget.git
-    source-branch: classic
   rootfs:
-    plugin: ubuntu-bootstrap
-    ubuntu-bootstrap-pocket: updates
-    ubuntu-bootstrap-germinate:
-      urls:
-        - "git://git.launchpad.net/~ubuntu-core-dev/ubuntu-seeds/+git/"
-      branch: noble
-      vcs: true
-      names:
-        - server
-        - minimal
-        - standard
-        - cloud-image
-    ubuntu-bootstrap-kernel: linux-image-generic
-    ubuntu-bootstrap-extra-snaps: [snapd]
-    stage:
-      - -rootfs/etc/cloud/cloud.cfg.d/90_dpkg.cfg
-  cloud-init:
-    plugin: dump
-    source: cloud-init/
+    plugin: nil
+    overlay-script: |
+      mmdebstrap --arch amd64 --mode=sudo --format=dir --variant=minbase --include=apt noble $CRAFT_OVERLAY/ http://archive.ubuntu.com/ubuntu/
     organize:
-      '*': rootfs/
+      "*": (volume/party/rootfs)/
+
+  packages:
+    plugin: nil
+    after: [rootfs]
+    overlay-script: |
+      mkdir -p $CRAFT_OVERLAY/dev $CRAFT_OVERLAY/sys $CRAFT_OVERLAY/proc
+      mount -t devtmpfs devtmpfs-build $CRAFT_OVERLAY/dev
+      mount -t devpts devpts-build -o nodev,nosuid $CRAFT_OVERLAY/dev/pts
+      mount -t sysfs sysfs-build $CRAFT_OVERLAY/sys
+      mount -t proc proc-build $CRAFT_OVERLAY/proc
+      mount --bind /run $CRAFT_OVERLAY/run
+
+      DEBIAN_FRONTEND=noninteractive chroot $CRAFT_OVERLAY apt update
+      DEBIAN_FRONTEND=noninteractive chroot $CRAFT_OVERLAY apt install --assume-yes --quiet \
+        --option=Dpkg::options::=--force-unsafe-io --option=Dpkg::Options::=--force-confold \
+        ubuntu-server-minimal
+
+      mount --make-rprivate $CRAFT_OVERLAY/run
+      umount --recursive $CRAFT_OVERLAY/run
+      mount --make-rprivate $CRAFT_OVERLAY/sys
+      umount --recursive $CRAFT_OVERLAY/sys
+      mount --make-rprivate $CRAFT_OVERLAY/proc
+      umount --recursive $CRAFT_OVERLAY/proc
+      mount --make-rprivate $CRAFT_OVERLAY/dev/pts
+      umount --recursive $CRAFT_OVERLAY/dev/pts
+      mount --make-rprivate $CRAFT_OVERLAY/dev
+      umount --recursive $CRAFT_OVERLAY/dev
+
+  snaps:
+    plugin: nil
+    after: [kernel]
+    overlay-script: |
+      snap prepare-image --classic --arch=amd64 \
+        --snap snapd --snap core24 "" $CRAFT_OVERLAY
+      /usr/lib/snapd/snap-preseed $CRAFT_OVERLAY
+      mv $CRAFT_OVERLAY/boot/* $CRAFT_VOLUME_PC_EFI_OVERLAY/boot/
+      mv $CRAFT_OVERLAY/* $CRAFT_VOLUME_PC_ROOTFS_OVERLAY/
+
+volumes:
+  pc:
+    schema: gpt
+    structure:
+      - name: efi
+        type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
+        filesystem: vfat
+        role: system-boot
+        filesystem-label: EFI System
+        size: 256MiB
+      - name: rootfs
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        filesystem: ext4
+        filesystem-label: writable
+        role: system-data
+        size: 6GiB
