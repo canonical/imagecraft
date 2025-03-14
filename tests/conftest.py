@@ -66,6 +66,22 @@ def enable_partitions_feature(reset_features):
     Features(enable_partitions=True)
 
 
+@pytest.fixture
+def enable_overlay_feature(reset_features):
+    """Enable the overlay feature."""
+    from craft_parts import Features
+
+    Features(enable_overlay=True)
+
+
+@pytest.fixture
+def enable_feature(reset_features):
+    """Enable the both feature."""
+    from craft_parts import Features
+
+    Features(enable_overlay=True, enable_partitions=True)
+
+
 @pytest.fixture(autouse=True, scope="session")
 def setup_plugins():
     plugins.setup_plugins()
