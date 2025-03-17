@@ -9,19 +9,25 @@ version: 2
 sphinx:
   builder: dirhtml
   configuration: docs/conf.py
-  # These are the warnings currently shown
-  # WARNING: The local Git repository could not be found.
-  fail_on_warning: false
+  fail_on_warning: true
 
-# Set the version of Python and other tools you might need
+# Optionally build your docs in additional formats such as PDF
+# formats:
+#  - pdf
+#  - epub
+
 build:
   os: ubuntu-24.04
   tools:
     python: "3.12"
-
-python:
-  install:
-    - method: pip
-      path: .
-      extra_requirements:
-        - docs
+  jobs:
+    post_checkout:
+      - git fetch --tags --unshallow # Also fetch tags
+    post_system_dependencies:
+      - asdf plugin add uv
+      - asdf install uv latest
+      - asdf global uv latest
+    create_environment:
+      - uv venv "${READTHEDOCS_VIRTUALENV_PATH}"
+    install:
+      - UV_PROJECT_ENVIRONMENT="${READTHEDOCS_VIRTUALENV_PATH}" uv sync --frozen --group docs
