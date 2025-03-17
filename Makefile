@@ -1,7 +1,7 @@
 PROJECT=imagecraft
 UV_TEST_GROUPS := "--group=dev"
 UV_DOCS_GROUPS := "--group=docs"
-UV_LINT_GROUPS := "--group=types"
+UV_LINT_GROUPS := "--group=lint" "--group=types"
 
 ifneq ($(wildcard /etc/os-release),)
 include /etc/os-release
@@ -15,13 +15,13 @@ endif
 include common.mk
 
 .PHONY: format
-format: format-ruff format-prettier  ## Run all automatic formatters
+format: format-ruff format-codespell format-prettier  ## Run all automatic formatters
 
 .PHONY: lint
 lint: lint-ruff lint-codespell lint-mypy lint-prettier lint-pyright lint-shellcheck lint-docs lint-twine  ## Run all linters
 
 .PHONY: pack
-pack: pack-pip pack-snap ## Build all packages
+pack: pack-pip  ## Build all packages
 
 .PHONY: pack-snap
 pack-snap: snap/snapcraft.yaml  ##- Build snap package
@@ -37,17 +37,27 @@ publish: publish-pypi  ## Publish packages
 publish-pypi: clean package-pip lint-twine  ##- Publish Python packages to pypi
 	uv tool run twine upload dist/*
 
+# Find dependencies that need installing
+APT_PACKAGES := mtools
+ifeq ($(wildcard /usr/include/libxml2/libxml/xpath.h),)
+APT_PACKAGES += libxml2-dev libgit2-dev
+endif
+ifeq ($(wildcard /usr/include/libxslt/xslt.h),)
+APT_PACKAGES += libxslt1-dev
+endif
+ifeq ($(wildcard /usr/share/doc/python3-venv/copyright),)
+APT_PACKAGES += python3-venv
+endif
+
 # Used for installing build dependencies in CI.
 .PHONY: install-build-deps
 install-build-deps: install-lint-build-deps
-ifeq ($(shell which apt-get),)
+ifeq ($(APT_PACKAGES),)
+else ifeq ($(shell which apt-get),)
 	$(warning Cannot install build dependencies without apt.)
-else ifeq ($(wildcard /usr/include/libxml2/libxml/xpath.h),)
-	sudo $(APT) install libxml2-dev libxslt1-dev python3-venv libgit2-dev mtools
-else ifeq ($(wildcard /usr/include/libxslt/xslt.h),)
-	sudo $(APT) install libxslt1-dev python3-venv mtools
-else ifeq ($(wildcard /usr/share/doc/python3-venv/copyright),)
-	sudo $(APT) install python3-venv mtools
+	$(warning Please ensure the equivalents to these packages are installed: $(APT_PACKAGES))
+else
+	sudo $(APT) install $(APT_PACKAGES)
 endif
 
 # If additional build dependencies need installing in order to build the linting env.
