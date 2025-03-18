@@ -86,6 +86,17 @@ that Imagecraft will use when building the image contents.
    in development". This means that the contents of this system changes
    frequently and should not be relied on for production rocks.
 
+``license``
+-----------
+
+**Type**: string, in `SPDX format <https://spdx.org/licenses/>`_
+
+**Required**: No
+
+The license of the software packaged inside the image. This must either be
+"proprietary" or match the SPDX format. It is case insensitive (e.g. both
+``MIT`` and ``mit`` are valid).
+
 ``platforms``
 -------------
 
