@@ -3,7 +3,7 @@
 
    /reference/commands/build
    /reference/commands/clean
-   /reference/commands/overlay
+   /reference/commands/init
    /reference/commands/pack
    /reference/commands/prime
    /reference/commands/pull
