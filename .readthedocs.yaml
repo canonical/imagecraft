@@ -9,7 +9,9 @@ version: 2
 sphinx:
   builder: dirhtml
   configuration: docs/conf.py
-  fail_on_warning: true
+  # These are the warnings currently shown
+  # WARNING: The local Git repository could not be found.
+  fail_on_warning: false
 
 # Optionally build your docs in additional formats such as PDF
 # formats:
