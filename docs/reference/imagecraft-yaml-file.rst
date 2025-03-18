@@ -165,7 +165,7 @@ The set of parts that compose the image's contents
 
 **Required**: Yes
 
-Structure and conten of the image. A volume represents a "disk".
+Structure and content of the image. A volume represents a "disk".
 
 ``volumes.<entry>.schema``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -253,8 +253,8 @@ Size for structure item. Conforms to the IEC 80000-13 Standard.
 
 Filesystem type.
 
-``volumes.<entry>.structure.<entry>.filesystem``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+``volumes.<entry>.structure.<entry>.filesystem-label``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Type**: string
 
