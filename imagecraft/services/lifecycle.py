@@ -17,6 +17,7 @@
 """Imagecraft Lifecycle service."""
 
 import hashlib
+from pathlib import Path
 
 from craft_application import LifecycleService
 from overrides import override  # type: ignore[reportUnknownVariableType]
@@ -31,15 +32,16 @@ class ImagecraftLifecycleService(LifecycleService):
         # Configure extra args to the LifecycleManager
         project = self._services.get("project").get()
 
-        image_dir = self._work_dir / "image"
-        image_dir.mkdir(parents=True, exist_ok=True)
+        base_layer_name = "bare_base_layer"
+        base_layer_dir = self._work_dir / Path(base_layer_name)
+        base_layer_dir.mkdir(parents=True, exist_ok=True)
         hasher = hashlib.sha1()  # noqa: S324
 
-        hasher.update(str(image_dir).encode())
+        hasher.update(base_layer_name.encode())
 
         self._manager_kwargs.update(
             project_name=project.name,
-            base_layer_dir=image_dir,
+            base_layer_dir=base_layer_dir,
             base_layer_hash=hasher.digest(),
         )
 
