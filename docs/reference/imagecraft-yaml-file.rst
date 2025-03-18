@@ -146,7 +146,7 @@ The set of parts that compose the image's contents
 (see :doc:`/common/craft-parts/reference/part_properties`).
 
 ``volumes``
----------
+-----------
 
 **Type**: dict (single entry)
 
@@ -183,12 +183,12 @@ Structure item name. Must respect the following:
 - contain only lowercase letters [a-z] or hyphens;
 - cannot start or end with a hyphen;
 - maximum length: 36 characters (maximum of a partition name
-  for GPT in the UTF-16 character set);
+for GPT in the UTF-16 character set);
 
 Structure names must be unique in a volume.
 
 ``volumes.<entry>.structure.<entry>.id``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Type**: string
 
@@ -232,7 +232,7 @@ Size for structure item. Conforms to the IEC 80000-13 Standard.
         size: "6GiB"
 
 ``volumes.<entry>.structure.<entry>.filesystem``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Type**: One of ``fat16 | vfat | ext4 | ext3``
 
@@ -241,7 +241,7 @@ Size for structure item. Conforms to the IEC 80000-13 Standard.
 Filesystem type.
 
 ``volumes.<entry>.structure.<entry>.filesystem``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Type**: string
 
