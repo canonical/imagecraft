@@ -70,6 +70,8 @@ The imagecraft configuration version, used to track changes to the configuration
 
 **Required**: Yes
 
+Base to use as a first layer for the image.
+
 ``build-base``
 --------------
 
