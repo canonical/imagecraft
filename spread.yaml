@@ -130,8 +130,16 @@ prepare: |
 
   snap install --classic --dangerous imagecraft_*.snap
 
-debug: |
-  cat /root/.local/state/snapcraft/log/snapcraft-*.log
+debug-each: |
+  # output latest imagecraft log file on test failure
+  imagecraft_log_file=$(find /root/.local/state/imagecraft/log/ -name 'imagecraft*.log' | sort -n | tail -n1)
+  if [[ -f $imagecraft_log_file ]]; then
+    echo -e "imagecraft log file contents:\n----------------------------"
+    cat "$imagecraft_log_file"
+    echo "----------------------------"
+  else
+    echo "could not find imagecraft log file (this is not necessarily an error)"
+  fi
 
 suites:
   tests/spread/commons/:
