@@ -3,8 +3,6 @@
 ``imagecraft.yaml`` file
 ========================
 
-.. include:: image_parts/toc.rst
-
 An Imagecraft project is defined in a YAML file named ``imagecraft.yaml``
 at the root of the project tree in the filesystem.
 
@@ -156,7 +154,7 @@ is a valid, supported architecture name.
 **Required**: Yes
 
 The set of parts that compose the image's contents
-(see :doc:`/common/craft-parts/reference/part_properties`).
+(see `Part properties`_).
 
 ``volumes``
 -----------
@@ -263,6 +261,7 @@ Filesystem type.
 Filesystem label. Defaults to name of structure item.
 Labels must be unique in a volume.
 
+.. include:: /common/craft-parts/reference/part_properties.rst
 
 Example file
 ------------

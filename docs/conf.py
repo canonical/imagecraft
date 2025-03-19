@@ -97,6 +97,7 @@ exclude_patterns = [
     "common/craft-parts/how-to/craftctl.rst",
     "common/craft-parts/how-to/include_files.rst",
     "common/craft-parts/how-to/override_build.rst",
+    "common/craft-parts/reference/part_properties.rst",
     "common/craft-parts/reference/step_execution_environment.rst",
     "common/craft-parts/reference/step_output_directories.rst",
     "common/craft-parts/reference/parts_steps.rst",
