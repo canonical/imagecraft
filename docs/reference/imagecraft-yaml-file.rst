@@ -10,8 +10,8 @@ This Reference section is for when you need to know which options can be
 used, and how, in this ``imagecraft.yaml`` file.
 
 
-``name``
---------
+name
+----
 
 **Type**: string
 
@@ -25,8 +25,8 @@ The name of the image. This value must:
 - not end with a hyphen, and must not contain two or more consecutive
   hyphens.
 
-``title``
----------
+title
+-----
 
 **Type**: string
 
@@ -34,8 +34,8 @@ The name of the image. This value must:
 
 The human-readable title of the image. If omitted, defaults to ``name``.
 
-``summary``
------------
+summary
+-------
 
 **Type**: string
 
@@ -43,8 +43,8 @@ The human-readable title of the image. If omitted, defaults to ``name``.
 
 A short summary describing the image.
 
-``description``
----------------
+description
+-----------
 
 **Type**: string
 
@@ -52,8 +52,8 @@ A short summary describing the image.
 
 A longer, possibly multi-line description of the image.
 
-``version``
------------
+version
+-------
 
 **Type**: string
 
@@ -61,8 +61,8 @@ A longer, possibly multi-line description of the image.
 
 The imagecraft configuration version, used to track changes to the configuration file.
 
-``base``
---------
+base
+----
 
 **Type**: string ``bare``
 
@@ -70,8 +70,8 @@ The imagecraft configuration version, used to track changes to the configuration
 
 Base to use as a first layer for the image.
 
-``build-base``
---------------
+build-base
+----------
 
 **Type**: One of ``ubuntu@20.04 | ubuntu@22.04 | ubuntu@24.04 | devel``
 
@@ -86,8 +86,8 @@ that Imagecraft will use when building the image contents.
    in development". This means that the contents of this system changes
    frequently and should not be relied on for production rocks.
 
-``license``
------------
+license
+-------
 
 **Type**: string, in `SPDX format <https://spdx.org/licenses/>`_
 
@@ -97,8 +97,8 @@ The license of the software packaged inside the image. This must either be
 "proprietary" or match the SPDX format. It is case insensitive (e.g. both
 ``MIT`` and ``mit`` are valid).
 
-``platforms``
--------------
+platforms
+---------
 
 **Type**: dict
 
@@ -115,8 +115,8 @@ supported architecture (in Debian format).
    the host where Imagecraft is being executed (i.e. emulation is not supported
    at the moment).
 
-``platforms.<entry>.build-for``
--------------------------------
+platforms.<entry>.build-for
+---------------------------
 
 **Type**: string | list[string]
 
@@ -130,8 +130,8 @@ is a valid, supported architecture name.
    if provided ``build-for`` must be a single string or a list with exactly one
    element.
 
-``platforms.<entry>.build-on``
-------------------------------
+platforms.<entry>.build-on
+--------------------------
 
 **Type**: string | list[string]
 
@@ -146,8 +146,8 @@ is a valid, supported architecture name.
    if provided ``build-on`` must be a single string or a list with exactly one
    element.
 
-``parts``
----------
+parts
+-----
 
 **Type**: dict
 
@@ -156,8 +156,8 @@ is a valid, supported architecture name.
 The set of parts that compose the image's contents
 (see `Part properties`_).
 
-``volumes``
------------
+volumes
+-------
 
 **Type**: dict (single entry)
 
@@ -165,8 +165,8 @@ The set of parts that compose the image's contents
 
 Structure and content of the image. A volume represents a "disk".
 
-``volumes.<entry>.schema``
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+volumes.<entry>.schema
+~~~~~~~~~~~~~~~~~~~~~~
 
 **Type**: string ``gpt``
 
@@ -174,8 +174,8 @@ Structure and content of the image. A volume represents a "disk".
 
 Partitioning schema to use.
 
-``volumes.<entry>.structure``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+volumes.<entry>.structure
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 **Type**: dict (at least one entry)
 
@@ -183,8 +183,8 @@ Partitioning schema to use.
 
 Structure of the image, defining partitions.
 
-``volumes.<entry>.structure.<entry>.name``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+volumes.<entry>.structure.<entry>.name
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Type**: string
 
@@ -198,8 +198,8 @@ for GPT in the UTF-16 character set);
 
 Structure names must be unique in a volume.
 
-``volumes.<entry>.structure.<entry>.id``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+volumes.<entry>.structure.<entry>.id
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Type**: string
 
@@ -207,8 +207,8 @@ Structure names must be unique in a volume.
 
 GPT unique partition id.
 
-``volumes.<entry>.structure.<entry>.role``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+volumes.<entry>.structure.<entry>.role
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Type**: One of ``system-boot | system-data``
 
@@ -218,8 +218,8 @@ Role defines a special role for this item in the image.
 - ``system-boot``: Partition holding the boot assets.
 - ``system-data``: Partition holding the main operating system data.
 
-``volumes.<entry>.structure.<entry>.type``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+volumes.<entry>.structure.<entry>.type
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Type**: string
 
@@ -227,8 +227,8 @@ Role defines a special role for this item in the image.
 
 Type of structure. A GPT partition type GUID.
 
-``volumes.<entry>.structure.<entry>.size``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+volumes.<entry>.structure.<entry>.size
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Type**: string
 
@@ -242,8 +242,8 @@ Size for structure item. Conforms to the IEC 80000-13 Standard.
 
         size: "6GiB"
 
-``volumes.<entry>.structure.<entry>.filesystem``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+volumes.<entry>.structure.<entry>.filesystem
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Type**: One of ``fat16 | vfat | ext4 | ext3``
 
@@ -251,8 +251,8 @@ Size for structure item. Conforms to the IEC 80000-13 Standard.
 
 Filesystem type.
 
-``volumes.<entry>.structure.<entry>.filesystem-label``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+volumes.<entry>.structure.<entry>.filesystem-label
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Type**: string
 
