@@ -84,12 +84,16 @@ parts:
       - dosfstools
       - e2fsprogs
       - fdisk
+      - coreutils
+      - util-linux
     organize:
       "usr/bin/fuse-overlayfs": "libexec/imagecraft/fuse-overlayfs"
       "usr/lib/python3/dist-packages/apt*": "lib/python3.12/site-packages/"
       "usr/sbin/sfdisk": "libexec/imagecraft/sfdisk"
       "usr/bin/mcopy": "libexec/imagecraft/mcopy"
       "usr/bin/mtools": "libexec/imagecraft/mtools"
+      "usr/bin/dd": "libexec/imagecraft/dd"
+      "usr/bin/fallocate": "libexec/imagecraft/fallocate"
       "usr/sbin/mkfs*": "libexec/imagecraft/"
   imagecraft:
     after: [imagecraft-libs, libgit2]
