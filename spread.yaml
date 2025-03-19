@@ -95,12 +95,16 @@ prepare: |
       cat "$tempfile"
       exit 1
   fi
-  apt install -y snapd libc6-dev git make
+  tests.pkgs install snapd libc6-dev git make
   if [[ ! "$SPREAD_BACKEND" == *-arm ]]; then
-      apt install -y gcc-multilib binfmt-support qemu-user-static
+      tests.pkgs install gcc-multilib binfmt-support qemu-user-static
   fi
 
-  snap install core24
+  snap wait system seed.loaded
+
+  # The /snap directory does not exist in some environments
+  [ ! -d /snap ] && ln -s /var/lib/snapd/snap /snap
+
   snap install yq
 
   # Setup lxd
