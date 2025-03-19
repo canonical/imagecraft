@@ -8,7 +8,7 @@ build, stage and prime.
 
 The overlay step is configured with overlay parameters.
 To learn more about pull, build, stage and prime see
-:doc:`/common/craft-parts/reference/part_properties`
+:doc:`/reference/part-lifecycle-details`
 
 The overlay step provides the means to refine the content of an image parts
 after parts. ``overlay-script`` will run the provided script in this step.
