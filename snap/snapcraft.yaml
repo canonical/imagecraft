@@ -23,7 +23,7 @@ apps:
   imagecraft:
     command: bin/python3 $SNAP/bin/imagecraft
     environment:
-      PATH: "$SNAP/libexec/imagecraft:/snap/core24/current/bin:/snap/core24/current/sbin:/snap/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+      PATH: "$SNAP/libexec/imagecraft:/snap/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
       PERL5LIB: $SNAP/usr/share/perl5:$SNAP/usr/share/perl:$PERL5LIB
     completer: completion.sh
 
