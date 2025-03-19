@@ -115,6 +115,16 @@ prepare: |
     tests.pkgs remove lxd
   fi
   snap install lxd --channel=latest/stable
+
+  # Hold snap refreshes for 24h.
+  snap set system refresh.hold="$(date --date=tomorrow +%Y-%m-%dT%H:%M:%S%:z)"
+  if ! snap watch --last=auto-refresh?; then
+      journalctl -xe
+  fi
+  if ! snap watch --last=install?; then
+      journalctl -xe
+  fi
+
   lxd waitready --timeout=30
   lxd init --auto
 
