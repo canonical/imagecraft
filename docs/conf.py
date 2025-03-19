@@ -63,6 +63,7 @@ extensions.extend(
         "sphinx.ext.autodoc",  # Must be loaded after more_autodoc
         "canonical.terminal-output",
         "sphinxcontrib.details.directive",
+        "sphinxext.rediraffe",
     ]
 )
 
@@ -162,3 +163,6 @@ craft_parts_docs_path = pathlib.Path(craft_parts_docs.__file__).parent / "craft-
 (common_docs_path / "craft-parts").symlink_to(
     craft_parts_docs_path, target_is_directory=True
 )
+
+# Client-side page redirects.
+rediraffe_redirects = "redirects.txt"

@@ -13,8 +13,11 @@ else
 	APT := apt-get
 endif
 
-PRETTIER=npm exec --package=prettier -- prettier
-PRETTIER_FILES=**.yaml **.yml **.json **.json5 **.css **.md
+PRETTIER=npm exec --package=prettier -- prettier --log-level warn
+PRETTIER_FILES="**/*.{yaml,yml,json,json5,css,md}"
+
+# Cutoff (in seconds) before a test is considered slow by pytest
+SLOW_CUTOFF_TIME ?= 1
 
 # By default we should not update the uv lock file here.
 export UV_FROZEN := true
@@ -47,7 +50,7 @@ help: ## Show this help.
 	}'
 
 .PHONY: setup
-setup: install-uv setup-precommit ## Set up a development environment
+setup: install-uv setup-precommit install-build-deps ## Set up a development environment
 	uv sync $(UV_TEST_GROUPS) $(UV_LINT_GROUPS) $(UV_DOCS_GROUPS)
 
 .PHONY: setup-tests
@@ -65,9 +68,10 @@ setup-docs: install-uv  ##- Set up a documentation-only environment
 .PHONY: setup-precommit
 setup-precommit: install-uv  ##- Set up pre-commit hooks in this repository.
 ifeq ($(shell which pre-commit),)
-	uv tool install pre-commit
-endif
+	uv tool run pre-commit install
+else
 	pre-commit install
+endif
 
 .PHONY: clean
 clean:  ## Clean up the development environment
@@ -104,7 +108,7 @@ ifneq ($(CI),)
 endif
 
 .PHONY: lint-codespell
-lint-codespell:  ##- Check spelling with codespell
+lint-codespell: install-codespell  ##- Check spelling with codespell
 ifneq ($(CI),)
 	@echo ::group::$@
 endif
@@ -162,7 +166,7 @@ lint-docs:  ##- Lint the documentation
 ifneq ($(CI),)
 	@echo ::group::$@
 endif
-	uv run $(UV_DOCS_GROUPS) sphinx-lint --max-line-length 88 --enable all $(DOCS)
+	uv run $(UV_DOCS_GROUPS) sphinx-lint --max-line-length 88 --ignore docs/reference/commands --ignore docs/_build --enable all $(DOCS) -d missing-underscore-after-hyperlink,missing-space-in-hyperlink
 ifneq ($(CI),)
 	@echo ::endgroup::
 endif
@@ -196,20 +200,24 @@ test-coverage:  ## Generate coverage report
 	uv run coverage report -m
 	uv run coverage html
 
+.PHONY: test-find-slow
+test-find-slow:  ##- Identify slow tests. Set cutoff time in seconds with SLOW_CUTOFF_TIME
+	uv run pytest --durations 0 --durations-min $(SLOW_CUTOFF_TIME)
+
 .PHONY: docs
 docs:  ## Build documentation
 	uv run $(UV_DOCS_GROUPS) sphinx-build -b html -W $(DOCS) $(DOCS)/_build
 
 .PHONY: docs-auto
 docs-auto:  ## Build and host docs with sphinx-autobuild
-	uv run $(UV_DOCS_GROUPS) sphinx-autobuild -b html --open-browser --port=8080 --watch $(PROJECT) -W $(DOCS) $(DOCS)/_build
+	uv run --group docs sphinx-autobuild -b html --open-browser --port=8080 --watch $(PROJECT) -W $(DOCS) $(DOCS)/_build
 
 .PHONY: pack-pip
 pack-pip:  ##- Build packages for pip (sdist, wheel)
 ifneq ($(CI),)
 	@echo ::group::$@
 endif
-	uv build .
+	uv build --quiet .
 ifneq ($(CI),)
 	@echo ::endgroup::
 endif
