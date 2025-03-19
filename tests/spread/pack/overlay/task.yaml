@@ -1,0 +1,50 @@
+summary: Pack a simple image
+execute: |
+  TMPDIR="$(mktemp -d)"
+  TMP_MOUNT=${TMPDIR}/mount
+  mkdir -p ${TMP_MOUNT}
+
+  imagecraft pack --verbosity debug
+
+  IMG_NAME=pc.img
+  test -f $IMG_NAME
+  test ! -d parts -a ! -d stage -a ! -d prime
+
+  losetup --find --show --partscan $IMG_NAME
+  losetup -a | grep $IMG_NAME | cut -f1 -d: >> loop.txt
+  LOOP="$(cat loop.txt)"
+
+  for l in `ls -d "$LOOP"p*`
+  do
+      p=${l#"$LOOP"}
+      mkdir ${TMP_MOUNT}/$p
+      mount $l ${TMP_MOUNT}/$p || true
+      ls ${TMP_MOUNT}/$p/ || true
+  done
+
+restore: |
+  if [ -f loop.txt ]; then
+      LOOP="$(cat loop.txt)"
+
+      for l in `ls -d "$LOOP"p*`
+      do
+          p=${l#"$LOOP"}
+          mount --make-rprivate ${TMP_MOUNT}/$p || true
+          umount --recursive ${TMP_MOUNT}/$p || true
+      done
+
+      losetup -d "$LOOP"
+      sync
+      losetup -l | NOMATCH "$LOOP"
+      rm loop.txt
+  fi
+  rm -rf pc.img || true
+
+debug: |
+  df -h
+  du -h -d 1 /tmp/
+  mount  -l
+  if [ -f loop.txt ]; then
+      cat loop.txt
+  fi
+  losetup -l

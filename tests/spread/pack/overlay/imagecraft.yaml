@@ -1,0 +1,41 @@
+name: use-overlay
+version: "0.1"
+base: bare
+build-base: ubuntu@24.04
+
+platforms:
+  amd64:
+
+parts:
+  rootfs:
+    plugin: nil
+    overlay-script: |
+      mkdir $CRAFT_OVERLAY/{etc,bin}
+      echo "test" > $CRAFT_OVERLAY/bin/a
+      echo "test" > $CRAFT_OVERLAY/etc/b
+
+  bootloader:
+    plugin: nil
+    after: [rootfs]
+    overlay-script: |
+      echo "boot files" > $CRAFT_OVERLAY/boot/test
+
+      mv $CRAFT_OVERLAY/boot/* $CRAFT_VOLUME_PC_EFI_OVERLAY/
+      mv $CRAFT_OVERLAY/* $CRAFT_VOLUME_PC_ROOTFS_OVERLAY/
+
+volumes:
+  pc:
+    schema: gpt
+    structure:
+      - name: efi
+        type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
+        filesystem: vfat
+        role: system-boot
+        filesystem-label: EFI System
+        size: 256MiB
+      - name: rootfs
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        filesystem: ext4
+        filesystem-label: writable
+        role: system-data
+        size: 3GiB
