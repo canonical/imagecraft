@@ -50,3 +50,4 @@ Global options
    Set the verbosity level to 'quiet', 'brief', 'verbose', 'debug' or 'trace'.
 ``-V`` or ``--version``
    Show the application version and exit.
+
