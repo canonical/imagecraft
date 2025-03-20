@@ -10,7 +10,7 @@ parts:
   rootfs:
     plugin: nil
     overlay-script: |
-      mkdir $CRAFT_OVERLAY/{etc,bin}
+      mkdir $CRAFT_OVERLAY/{etc,bin,boot}
       echo "test" > $CRAFT_OVERLAY/bin/a
       echo "test" > $CRAFT_OVERLAY/etc/b
 
