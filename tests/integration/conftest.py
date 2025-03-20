@@ -48,6 +48,8 @@ def service_factory(
 def imagecraft_app(
     app_metadata: craft_application.AppMetadata,
     service_factory,
+    mocker,
 ) -> imagecraft.Imagecraft:
+    mocker.patch("craft_parts.lifecycle_manager._ensure_overlay_supported")
     register_services()
     return imagecraft.Imagecraft(app_metadata, service_factory)
