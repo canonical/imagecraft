@@ -19,7 +19,7 @@ from imagecraft.services.pack import ImagecraftPackService
 
 def test_pack(
     tmp_path,
-    enable_partitions_feature,
+    enable_features,
     default_factory: ServiceFactory,
     pack_service: ImagecraftPackService,
     mocker,

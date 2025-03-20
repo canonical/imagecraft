@@ -59,25 +59,11 @@ def reset_features():
 
 
 @pytest.fixture
-def enable_partitions_feature(reset_features):
-    """Enable the partitions feature."""
+def enable_features(reset_features):
+    """Enable both features."""
     from craft_parts import Features
 
-    Features(enable_partitions=True)
-
-
-@pytest.fixture
-def enable_overlay_feature(reset_features):
-    """Enable the overlay feature."""
-    from craft_parts import Features
-
-    Features(enable_overlay=True)
-
-
-@pytest.fixture
-def enable_feature(reset_features):
-    """Enable the both feature."""
-    from craft_parts import Features
+    mocker.patch("craft_parts.lifecycle_manager._ensure_overlay_supported")
 
     Features(enable_overlay=True, enable_partitions=True)
 
@@ -165,7 +151,7 @@ def default_application(default_factory, app_metadata):
 
 
 @pytest.fixture
-def lifecycle_service(default_factory, app_metadata, enable_partitions_feature):
+def lifecycle_service(default_factory, app_metadata, enable_features):
     return default_factory.get_class("lifecycle")(
         app=app_metadata,
         build_for="amd64",
