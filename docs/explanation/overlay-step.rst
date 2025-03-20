@@ -3,17 +3,16 @@
 Overlay step
 ============
 
-Images are built in a sequence of five separate steps: pull, overlay,
-build, stage and prime.
-
-The overlay step is configured with overlay parameters.
-To learn more about pull, build, stage and prime see
-:doc:`/reference/part-lifecycle-details`
+Images are built in a sequence of :doc:`five separate steps
+</reference/part-lifecycle-details>` -- pull, overlay, build, stage, and prime.
 
 The overlay step provides the means to refine the content of an image parts
 after parts. ``overlay-script`` will run the provided script in this step.
-The location of the overlay is made available in the ${CRAFT_OVERLAY}
-environment variable. ``overlay`` can be used to specify which files will be
+The location of the default overlay is made available in the ``${CRAFT_OVERLAY}``
+environment variable.
+The location of the partition-specific overlays is made available in the
+``${CRAFT_<partition>_OVERLAY}`` environment variables.
+``overlay`` can be used to specify which files will be
 migrated to the next steps, and when omitted its default value will be ``"*"``.
 
 .. Include a section about overlay parameters from the Craft Parts documentation.
