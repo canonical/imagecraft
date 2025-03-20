@@ -63,8 +63,6 @@ def enable_features(reset_features):
     """Enable both features."""
     from craft_parts import Features
 
-    mocker.patch("craft_parts.lifecycle_manager._ensure_overlay_supported")
-
     Features(enable_overlay=True, enable_partitions=True)
 
 
