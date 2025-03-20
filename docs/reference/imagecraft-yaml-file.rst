@@ -153,8 +153,8 @@ parts
 
 **Required**: Yes
 
-The set of parts that compose the image's contents
-(see `Part properties`_).
+The set of parts that compose the image's contents. See :ref:`part_properties`
+for more details.
 
 volumes
 -------
@@ -261,7 +261,6 @@ volumes.<entry>.structure.<entry>.filesystem-label
 Filesystem label. Defaults to name of structure item.
 Labels must be unique in a volume.
 
-.. include:: /common/craft-parts/reference/part_properties.rst
 
 Example file
 ------------
