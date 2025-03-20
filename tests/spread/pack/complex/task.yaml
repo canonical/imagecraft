@@ -1,5 +1,5 @@
 summary: Pack a complex image
 execute: |
   imagecraft pack --verbosity trace
-  test -f disk.img
+  test -f party.img
   test ! -d parts -a ! -d stage -a ! -d prime
