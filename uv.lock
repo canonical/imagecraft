@@ -467,8 +467,8 @@ toml = [
 
 [[package]]
 name = "craft-application"
-version = "4.10.0.post21+g414425f"
-source = { git = "https://github.com/canonical/craft-application.git?rev=merge%2Fhybrid-commands#414425f16faa7e5d945fc199a12d780c84aaa7a5" }
+version = "4.10.0.post21+ge53ef22"
+source = { git = "https://github.com/canonical/craft-application.git?rev=main#e53ef22020d3c80024d4a66479b40bcc88008fcb" }
 dependencies = [
     { name = "annotated-types" },
     { name = "craft-archives" },
@@ -833,7 +833,7 @@ types = [
 
 [package.metadata]
 requires-dist = [
-    { name = "craft-application", git = "https://github.com/canonical/craft-application.git?rev=merge%2Fhybrid-commands" },
+    { name = "craft-application", git = "https://github.com/canonical/craft-application.git?rev=main" },
     { name = "craft-cli", specifier = "~=2.15" },
     { name = "craft-grammar", specifier = "~=2.0.3" },
     { name = "craft-parts", specifier = "~=2.6" },
