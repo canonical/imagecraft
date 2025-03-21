@@ -115,30 +115,30 @@ supported architecture (in Debian format).
    the host where Imagecraft is being executed (i.e. emulation is not supported
    at the moment).
 
-platforms.<entry>.build-for
----------------------------
+platforms.<platform>.build-for
+------------------------------
 
 **Type**: string | list[string]
 
-**Required**: Yes, if ``<entry>`` is not a supported architecture name.
+**Required**: Yes, if ``<platform>`` is not a supported architecture name.
 
-Target architecture the image will be built for. Defaults to ``<entry>`` that
-is a valid, supported architecture name.
+Target architecture the image will be built for. Defaults to ``<platform>`` that is a
+valid, supported architecture name.
 
 .. note::
    At the moment Imagecraft will only build for a single architecture, so
    if provided ``build-for`` must be a single string or a list with exactly one
    element.
 
-platforms.<entry>.build-on
---------------------------
+platforms.<platform>.build-on
+-----------------------------
 
 **Type**: string | list[string]
 
-**Required**: Yes, if ``build-for`` is specified *or* if ``<entry>`` is not a
+**Required**: Yes, if ``build-for`` is specified *or* if ``<platform>`` is not a
 supported architecture name.
 
-Host architectures where the image will be built. Defaults to ``<entry>`` if that
+Host architectures where the image will be built. Defaults to ``<platform>`` if that
 is a valid, supported architecture name.
 
 .. note::
@@ -165,8 +165,8 @@ volumes
 
 Structure and content of the image. A volume represents a "disk".
 
-volumes.<entry>.schema
-~~~~~~~~~~~~~~~~~~~~~~
+volumes.<volume>.schema
+-----------------------
 
 **Type**: string ``gpt``
 
@@ -174,17 +174,17 @@ volumes.<entry>.schema
 
 Partitioning schema to use.
 
-volumes.<entry>.structure
-~~~~~~~~~~~~~~~~~~~~~~~~~
+volumes.<volume>.structure
+--------------------------
 
-**Type**: dict (at least one entry)
+**Type**: dict (at least one node entry)
 
 **Required**: Yes
 
 Structure of the image, defining partitions.
 
-volumes.<entry>.structure.<entry>.name
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+volumes.<volume>.structure.<item>.name
+---------------------------------------
 
 **Type**: string
 
@@ -198,8 +198,8 @@ for GPT in the UTF-16 character set);
 
 Structure names must be unique in a volume.
 
-volumes.<entry>.structure.<entry>.id
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+volumes.<volume>.structure.<item>.id
+------------------------------------
 
 **Type**: string
 
@@ -207,8 +207,8 @@ volumes.<entry>.structure.<entry>.id
 
 GPT unique partition id.
 
-volumes.<entry>.structure.<entry>.role
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+volumes.<volume>.structure.<item>.role
+--------------------------------------
 
 **Type**: One of ``system-boot | system-data``
 
@@ -218,8 +218,8 @@ Role defines a special role for this item in the image.
 - ``system-boot``: Partition holding the boot assets.
 - ``system-data``: Partition holding the main operating system data.
 
-volumes.<entry>.structure.<entry>.type
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+volumes.<volume>.structure.<item>.type
+--------------------------------------
 
 **Type**: string
 
@@ -227,8 +227,8 @@ volumes.<entry>.structure.<entry>.type
 
 Type of structure. A GPT partition type GUID.
 
-volumes.<entry>.structure.<entry>.size
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+volumes.<volume>.structure.<item>.size
+--------------------------------------
 
 **Type**: string
 
@@ -242,8 +242,8 @@ Size for structure item. Conforms to the IEC 80000-13 Standard.
 
         size: "6GiB"
 
-volumes.<entry>.structure.<entry>.filesystem
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+volumes.<volume>.structure.<item>.filesystem
+--------------------------------------------
 
 **Type**: One of ``fat16 | vfat | ext4 | ext3``
 
@@ -251,8 +251,8 @@ volumes.<entry>.structure.<entry>.filesystem
 
 Filesystem type.
 
-volumes.<entry>.structure.<entry>.filesystem-label
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+volumes.<volume>.structure.<item>.filesystem-label
+--------------------------------------------------
 
 **Type**: string
 
