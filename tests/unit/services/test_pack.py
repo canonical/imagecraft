@@ -29,6 +29,7 @@ def test_pack(
 
     diskutil = mocker.patch("imagecraft.services.pack.diskutil", autospec=True)
     gptutil = mocker.patch("imagecraft.services.pack.gptutil", autospec=True)
+    grubutil = mocker.patch("imagecraft.services.pack.grubutil", autospec=True)
 
     assert pack_service.pack(prime_dir=prime_dir, dest=dest_path) == [
         dest_path / "pc.img"
@@ -36,3 +37,4 @@ def test_pack(
 
     assert gptutil.create_empty_gpt_image.called
     assert diskutil.inject_partition_into_image.called
+    assert grubutil.setup_grub.called

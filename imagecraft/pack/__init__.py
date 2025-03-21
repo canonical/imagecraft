@@ -28,6 +28,9 @@ from imagecraft.pack.gptutil import (
     get_partition_sector_offset,
 )
 
+from imagecraft.pack.grubutil import setup_grub
+from imagecraft.pack.image import Image
+
 __all__ = [
     "bytes_to_sectors",
     "create_zero_image",
@@ -36,4 +39,6 @@ __all__ = [
     "SUPPORTED_SECTOR_SIZES",
     "create_empty_gpt_image",
     "get_partition_sector_offset",
+    "setup_grub",
+    "Image",
 ]
