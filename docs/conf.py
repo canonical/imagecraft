@@ -41,6 +41,10 @@ html_context = {
     "github_url": "https://github.com/canonical/imagecraft",
 }
 
+html_theme_options = {
+    "source_edit_link": "https://github.com/canonical/imagecraft",
+}
+
 extensions = [
     "canonical_sphinx",
     "notfound.extension",
