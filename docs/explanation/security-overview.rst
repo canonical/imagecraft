@@ -13,10 +13,3 @@ Privileged execution
 destructive mode). It is recommended to use a dedicated building machine. Make sure
 ``imagecraft`` is installed from a trusted source, and the provided configuration is
 trusted.
-
-
-Cryptography
-------------
-
-``imagecraft`` is a wrapper around several tools. The tool itself does not use
-cryptographic technologies.
