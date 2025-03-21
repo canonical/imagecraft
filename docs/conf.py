@@ -41,6 +41,10 @@ html_context = {
     "github_url": "https://github.com/canonical/imagecraft",
 }
 
+html_theme_options = {
+    "source_edit_link": "https://github.com/canonical/imagecraft",
+}
+
 extensions = [
     "canonical_sphinx",
     "notfound.extension",
@@ -119,6 +123,7 @@ exclude_patterns = [
     "common/craft-parts/reference/plugins/scons_plugin.rst",
     "common/craft-parts/reference/plugins/go_use_plugin.rst",
     "common/craft-parts/reference/plugins/uv_plugin.rst",
+    "common/craft-parts/reference/plugins/jlink_plugin.rst",
 ]
 
 linkcheck_ignore = ["http://127.0.0.1:8000", "https://apt-repo.com"]
