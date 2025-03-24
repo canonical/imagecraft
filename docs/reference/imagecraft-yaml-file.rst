@@ -84,7 +84,7 @@ that Imagecraft will use when building the image contents.
 .. note::
    ``devel`` is a "special" value that means "the next Ubuntu version, currently
    in development". This means that the contents of this system changes
-   frequently and should not be relied on for production rocks.
+   frequently and should not be relied on for production images.
 
 license
 -------
