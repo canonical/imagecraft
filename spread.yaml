@@ -95,12 +95,16 @@ prepare: |
       cat "$tempfile"
       exit 1
   fi
-  apt install -y snapd libc6-dev git make
+  tests.pkgs install snapd libc6-dev git make
   if [[ ! "$SPREAD_BACKEND" == *-arm ]]; then
-      apt install -y gcc-multilib binfmt-support qemu-user-static
+      tests.pkgs install gcc-multilib binfmt-support qemu-user-static
   fi
 
-  snap install core24
+  snap wait system seed.loaded
+
+  # The /snap directory does not exist in some environments
+  [ ! -d /snap ] && ln -s /var/lib/snapd/snap /snap
+
   snap install yq
 
   # Setup lxd
@@ -111,13 +115,31 @@ prepare: |
     tests.pkgs remove lxd
   fi
   snap install lxd --channel=latest/stable
+
+  # Hold snap refreshes for 24h.
+  snap set system refresh.hold="$(date --date=tomorrow +%Y-%m-%dT%H:%M:%S%:z)"
+  if ! snap watch --last=auto-refresh?; then
+      journalctl -xe
+  fi
+  if ! snap watch --last=install?; then
+      journalctl -xe
+  fi
+
   lxd waitready --timeout=30
   lxd init --auto
 
   snap install --classic --dangerous imagecraft_*.snap
 
-debug: |
-  cat /root/.local/state/snapcraft/log/snapcraft-*.log
+debug-each: |
+  # output latest imagecraft log file on test failure
+  imagecraft_log_file=$(find /root/.local/state/imagecraft/log/ -name 'imagecraft*.log' | sort -n | tail -n1)
+  if [[ -f $imagecraft_log_file ]]; then
+    echo -e "imagecraft log file contents:\n----------------------------"
+    cat "$imagecraft_log_file"
+    echo "----------------------------"
+  else
+    echo "could not find imagecraft log file (this is not necessarily an error)"
+  fi
 
 suites:
   tests/spread/commons/:

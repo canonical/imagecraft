@@ -1,6 +1,6 @@
 # This file is part of imagecraft.
 #
-# Copyright (C) 2022 Canonical Ltd
+# Copyright 2022-2025 Canonical Ltd.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 3 as
@@ -58,4 +58,6 @@ def test_lifecycle_args(
         build_for="amd64",
         platform="amd64",
         project_name="default",
+        base_layer_dir=Path("work/bare_base_layer"),
+        base_layer_hash=b"i\x8e\x9c\xa4\x12\x1e\xe8\x97\xe4g\x08\xbc\x88\xddjb\x07\x8cp\xec",
     )

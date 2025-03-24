@@ -48,6 +48,13 @@ def service_factory(
 def imagecraft_app(
     app_metadata: craft_application.AppMetadata,
     service_factory,
+    mocker,
 ) -> imagecraft.Imagecraft:
+    mocker.patch(
+        "craft_parts.lifecycle_manager._ensure_overlay_supported",
+        side_effect=print(
+            "_ensure_overlay_supported patched. superuser privileges are not checked."
+        ),
+    )
     register_services()
     return imagecraft.Imagecraft(app_metadata, service_factory)
