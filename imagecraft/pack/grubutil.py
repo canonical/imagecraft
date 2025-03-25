@@ -31,10 +31,15 @@ _ARCH_TO_GRUB_EFI_TARGET: dict[str, str] = {
 }
 
 
-def _grub_install(grub_target: str, loop_used: str) -> None:
+def _grub_install(grub_target: str, loop_dev: str) -> None:
+    """Install grub in the image.
+
+    :param grub_target: target platform to install grub for.
+    :param loop_dev: loop device to install grub on
+    """
     grub_install_command = [
         "grub-install",
-        loop_used,
+        loop_dev,
         "--boot-directory=/boot",
         "--efi-directory=/boot/efi",
         f"--target={grub_target}",
@@ -46,6 +51,7 @@ def _grub_install(grub_target: str, loop_used: str) -> None:
         "update-grub",
     ]
 
+    # Divert os-probe to avoid writing wrong output in grub.cfg
     os_prober = "/etc/grub.d/30_os-prober"
     divert_base_command = "dpkg-divert"
 
@@ -75,19 +81,25 @@ def _grub_install(grub_target: str, loop_used: str) -> None:
 
 
 def setup_grub(image: Image, workdir: Path, arch: str) -> None:
-    """Setups grub in the image."""
+    """Setups GRUB in the image.
+
+    :param image: Image object handling the actual disk file
+    :param workdir: working directory
+    :param arch: architecture the image is built for
+
+    """
     rootfs_partition_num = image.data_partition_number
     boot_partition_num = image.boot_partition_number
 
     if boot_partition_num is None:
-        emit.debug("Cannot install grub without a boot partition")
+        emit.debug("Cannot install GRUB without a boot partition")
         return
     if rootfs_partition_num is None:
-        emit.debug("Cannot install grub without a data partition")
+        emit.debug("Cannot install GRUB without a data partition")
         return
 
     if arch not in _ARCH_TO_GRUB_EFI_TARGET:
-        emit.debug("Cannot install grub on this architecture")
+        emit.debug("Cannot install GRUB on this architecture")
         return
 
     mount_dir = workdir / "mount"
@@ -127,7 +139,7 @@ def setup_grub(image: Image, workdir: Path, arch: str) -> None:
         chroot.chroot(
             target=_grub_install,
             grub_target=_ARCH_TO_GRUB_EFI_TARGET[arch],
-            loop_used=loop_dev,
+            loop_dev=loop_dev,
         )
     finally:
         image.detach_loopdevs()
