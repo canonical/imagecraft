@@ -74,7 +74,7 @@ class Image:
 
     @property
     def boot_partition_number(self) -> int | None:
-        """The partition number associated to the data partition of the image."""
+        """The partition number associated to the boot partition of the image."""
         for i, structure_item in enumerate(self.volume.structure):
             if structure_item.role == Role.SYSTEM_BOOT:
                 # Partition numbers start at 1, so offset the index

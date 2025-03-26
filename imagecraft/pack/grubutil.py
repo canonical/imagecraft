@@ -18,6 +18,7 @@ import subprocess
 from pathlib import Path
 
 from craft_cli import emit
+from craft_platforms import DebianArchitecture
 
 from imagecraft import errors
 from imagecraft.pack.chroot import Chroot, Mount
@@ -25,9 +26,9 @@ from imagecraft.pack.image import Image
 from imagecraft.subprocesses import run
 
 _ARCH_TO_GRUB_EFI_TARGET: dict[str, str] = {
-    "amd64": "x86_64-efi",
-    "arm64": "arm64-efi",
-    "armhf": "arm-efi",
+    DebianArchitecture.AMD64: "x86_64-efi",
+    DebianArchitecture.ARM64: "arm64-efi",
+    DebianArchitecture.ARMHF: "arm-efi",
 }
 
 
@@ -37,6 +38,7 @@ def _grub_install(grub_target: str, loop_dev: str) -> None:
     :param grub_target: target platform to install grub for.
     :param loop_dev: loop device to install grub on
     """
+    check_grub_install = ["grub-install", "-V"]
     grub_install_command = [
         "grub-install",
         loop_dev,
@@ -68,8 +70,15 @@ def _grub_install(grub_target: str, loop_dev: str) -> None:
     undivert_os_prober_command = [
         divert_base_command,
         "--remove",
-        *list(divert_common_args),
+        *divert_common_args,
     ]
+
+    # Check if grub-install is available, otherwise skip the installation without error
+    try:
+        run(*check_grub_install)
+    except FileNotFoundError:
+        emit.message("Skipping GRUB installation because grub-install is not available")
+        return
 
     try:
         run(*grub_install_command)
@@ -77,7 +86,9 @@ def _grub_install(grub_target: str, loop_dev: str) -> None:
         run(*update_grub_command)
         run(*undivert_os_prober_command)
     except subprocess.CalledProcessError as err:
-        raise errors.GRUBInstallError("Cannot install grub") from err
+        raise errors.GRUBInstallError("Fail to install grub") from err
+    except FileNotFoundError as err:
+        raise errors.GRUBInstallError("Missing tool to install grub") from err
 
 
 def setup_grub(image: Image, workdir: Path, arch: str) -> None:
@@ -92,14 +103,14 @@ def setup_grub(image: Image, workdir: Path, arch: str) -> None:
     boot_partition_num = image.boot_partition_number
 
     if boot_partition_num is None:
-        emit.debug("Cannot install GRUB without a boot partition")
+        emit.message("Skipping GRUB installation because no boot partition was found")
         return
     if rootfs_partition_num is None:
-        emit.debug("Cannot install GRUB without a data partition")
+        emit.message("Skipping GRUB installation because data partition was found")
         return
 
     if arch not in _ARCH_TO_GRUB_EFI_TARGET:
-        emit.debug("Cannot install GRUB on this architecture")
+        emit.message("Cannot install GRUB on this architecture")
         return
 
     mount_dir = workdir / "mount"

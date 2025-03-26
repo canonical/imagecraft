@@ -120,36 +120,13 @@ def _runner(
     conn.send((res, None))
 
 
-# Default essential filesystems to mount in order to have basic utilities and
-# name resolution working inside the chroot environment.
-default_linux_mounts: list[Mount] = [
-    Mount(
-        fstype=None,
-        src="/etc/resolv.conf",
-        relative_mountpoint="/etc/resolv.conf",
-        options=["--bind"],
-    ),
-    Mount(fstype="proc", src="proc", relative_mountpoint="/proc", options=None),
-    Mount(fstype="sysfs", src="sysfs", relative_mountpoint="/sys", options=None),
-    # Device nodes require MS_REC to be bind mounted inside a container.
-    Mount(
-        fstype=None,
-        src="/dev",
-        relative_mountpoint="/dev",
-        options=["--rbind", "--make-rprivate"],
-    ),
-]
-
-
 class Chroot:
     """Chroot manager."""
 
     mounts: list[Mount]
     path: Path
 
-    def __init__(
-        self, *, path: Path, mounts: list[Mount] = default_linux_mounts
-    ) -> None:
+    def __init__(self, *, path: Path, mounts: list[Mount]) -> None:
         self.path = path
         self.mounts = mounts
 
