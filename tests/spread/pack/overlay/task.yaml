@@ -1,15 +1,15 @@
-summary: Pack a simple image
+summary: Pack an image using overlays
 execute: |
   TMPDIR="$(mktemp -d)"
   TMP_MOUNT=${TMPDIR}/mount
   mkdir -p ${TMP_MOUNT}
   echo ${TMP_MOUNT} >> tmpmount.txt
 
-  imagecraft pack --verbosity debug
+  sudo imagecraft pack --verbosity debug --destructive-mode
 
   IMG_NAME=pc.img
   test -f ${IMG_NAME}
-  test ! -d parts -a ! -d stage -a ! -d prime
+  # test ! -d parts -a ! -d stage -a ! -d prime
 
   losetup --find --show --partscan ${IMG_NAME}
   losetup -a | grep ${IMG_NAME} | cut -f1 -d: >> loop.txt
