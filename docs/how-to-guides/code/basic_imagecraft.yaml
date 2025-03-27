@@ -1,4 +1,4 @@
-name: basic-server-image
+name: ubuntu-minimal
 version: "0.1"
 base: bare
 build-base: ubuntu@24.04
@@ -21,7 +21,8 @@ parts:
        $CRAFT_OVERLAY/ \
        http://archive.ubuntu.com/ubuntu/
 
-  # add packages using chroot and apt to have maintainer scripts run
+
+  # add packages using chroot and apt to have maintainer scripts properly run
   packages:
     plugin: nil
     after: [rootfs]
@@ -49,15 +50,23 @@ parts:
       mount --make-rprivate $CRAFT_OVERLAY/dev
       umount --recursive $CRAFT_OVERLAY/dev
 
-  # prepare needed directory to install grub, fix fstab and organize content to the partitions
-  organizer:
+  # prepare snaps
+  snaps:
     plugin: nil
     after: [packages]
+    overlay-script: |
+      snap prepare-image --classic --arch=amd64 \
+        --snap snapd --snap core24 "" $CRAFT_OVERLAY
+
+  # prepare needed directory to install grub, fix fstab and organize content to the partition
+  organizer:
+    plugin: nil
+    after: [snaps]
     overlay-script: |
       mkdir $CRAFT_OVERLAY/boot/efi
       cat << EOF > $CRAFT_OVERLAY/etc/fstab
       LABEL=writable	/	ext4	discard,errors=remount-ro	0	1
-      LABEL=UEFI	/boot/efi	vfat	umask=0077	0 1
+      LABEL=UEFI	/boot/efi	vfat	umask=0077	0	1
       EOF
       mv $CRAFT_OVERLAY/* $CRAFT_VOLUME_PC_ROOTFS_OVERLAY/
 
@@ -69,7 +78,7 @@ volumes:
         type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
         filesystem: vfat
         role: system-boot
-        filesystem-label: EFI System
+        filesystem-label: UEFI
         size: 256MiB
       - name: rootfs
         type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
