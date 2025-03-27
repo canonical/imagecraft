@@ -37,7 +37,7 @@ parts:
        noble \
        $CRAFT_OVERLAY/ \
        http://archive.ubuntu.com/ubuntu/
-
+       mkdir $CRAFT_OVERLAY/boot/efi
 
   # add packages using chroot and apt to have maintainer scripts properly run
   packages:
@@ -77,12 +77,11 @@ parts:
       snap prepare-image --classic --arch=amd64 \
         --snap snapd --snap core24 "" $CRAFT_OVERLAY
 
-  # prepare needed directory to install grub, fix fstab and organize content to the partition
-  organizer:
+  # fix fstab and organize content to the partition
+  fstab:
     plugin: nil
     after: [snaps]
     overlay-script: |
-      mkdir $CRAFT_OVERLAY/boot/efi
       cat << EOF > $CRAFT_OVERLAY/etc/fstab
       LABEL=writable	/	ext4	discard,errors=remount-ro	0	1
       LABEL=UEFI	/boot/efi	vfat	umask=0077	0	1
