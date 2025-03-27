@@ -6,6 +6,23 @@ build-base: ubuntu@24.04
 platforms:
   amd64:
 
+volumes:
+  pc:
+    schema: gpt
+    structure:
+      - name: efi
+        type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
+        filesystem: vfat
+        role: system-boot
+        filesystem-label: UEFI
+        size: 256MiB
+      - name: rootfs
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        filesystem: ext4
+        filesystem-label: writable
+        role: system-data
+        size: 5GiB
+
 parts:
   # build a simple rootfs
   rootfs:
@@ -49,6 +66,8 @@ parts:
       umount --recursive $CRAFT_OVERLAY/dev/pts
       mount --make-rprivate $CRAFT_OVERLAY/dev
       umount --recursive $CRAFT_OVERLAY/dev
+    overlay:
+      - -etc/cloud/cloud.cfg.d/90_dpkg.cfg
 
   # prepare snaps
   snaps:
@@ -70,19 +89,8 @@ parts:
       EOF
       mv $CRAFT_OVERLAY/* $CRAFT_VOLUME_PC_ROOTFS_OVERLAY/
 
-volumes:
-  pc:
-    schema: gpt
-    structure:
-      - name: efi
-        type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
-        filesystem: vfat
-        role: system-boot
-        filesystem-label: UEFI
-        size: 256MiB
-      - name: rootfs
-        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
-        filesystem: ext4
-        filesystem-label: writable
-        role: system-data
-        size: 5GiB
+  cloud-init:
+    plugin: dump
+    source: cloud-init/
+    organize:
+      '*': (volume/pc/rootfs)/

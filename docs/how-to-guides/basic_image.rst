@@ -44,6 +44,9 @@ Verify that Imagecraft is properly installed:
 Prepare the configuration
 -------------------------
 
+Project file
+~~~~~~~~~~~~
+
 The name of the project file, ``imagecraft.yaml``, is **important** because Imagecraft
 uses it automatically. Save the following content as ``imagecraft.yaml``:
 
@@ -52,6 +55,34 @@ uses it automatically. Save the following content as ``imagecraft.yaml``:
     .. literalinclude:: code/basic_imagecraft.yaml
         :caption: imagecraft.yaml
         :language: yaml
+
+
+Cloud-init configuration
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Prepare needed directories:
+
+.. code-block::
+
+    mkdir -p cloud-init/var/lib/cloud/seed/nocloud
+    mkdir -p cloud-init/etc/cloud/cloud.cfg.d/
+
+Write the following files in the ``cloud-init`` directory:
+
+- ``cloud-init/var/lib/cloud/seed/nocloud/meta-data``
+
+  .. literalinclude:: code/cloud-init/meta-data
+      :language: yaml
+
+- ``cloud-init/var/lib/cloud/seed/nocloud/user-data``
+
+  .. literalinclude:: code/cloud-init/user-data
+      :language: yaml
+
+- ``cloud-init/etc/cloud/cloud.cfg.d/90_dpkg.cfg``
+
+  .. literalinclude:: code/cloud-init/90_dpkg.cfg
+      :language: yaml
 
 
 Build the image
