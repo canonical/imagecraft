@@ -4,14 +4,15 @@
 Build a basic image
 ===================
 
-These instructions describe how to build a minimal ``classic`` Ubuntu 24.04 AMD64 server image
-with Imagecraft.
+These instructions describe how to build a minimal ``classic`` Ubuntu 24.04 AMD64
+server image with Imagecraft.
 
 Prerequisites
 -------------
 
 - AMD64 machine with Ubuntu 24.04
-- ``snapd`` installed (see `Install snap on Ubuntu <https://snapcraft.io/docs/installing-snap-on-ubuntu>`_)
+- ``snapd`` installed (see `Install snap on Ubuntu
+  <https://snapcraft.io/docs/installing-snap-on-ubuntu>`_)
 - 15GiB or more disk space to process the build and hold the resulting image
 
 .. note:: Following these instructions will build an **AMD64** image on an
