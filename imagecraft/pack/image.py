@@ -14,6 +14,7 @@
 
 """Image handling."""
 
+import contextlib
 import json
 from collections.abc import Generator
 from pathlib import Path
@@ -100,11 +101,9 @@ class Image:
     def get_loopdevs(self) -> Generator[dict[str, Any]]:
         """Return the loop devices attached from this image file."""
         for loop_device in _get_loop_devices():
-            try:
+            with contextlib.suppress(FileNotFoundError):
                 if self.disk_path.samefile(Path(loop_device["back-file"])):
                     yield loop_device
-            except FileNotFoundError:  # noqa: PERF203
-                continue
 
     def detach_loopdevs(self) -> None:
         """Detach all loop devices that are attached from this image file."""
