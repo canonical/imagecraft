@@ -1,4 +1,7 @@
-summary: Pack an image using installing GRUB
+summary: Pack an image with GRUB
+
+systems: [ubuntu-24.04-64]
+
 execute: |
   TMPDIR="$(mktemp -d)"
   TMP_MOUNT=${TMPDIR}/mount
