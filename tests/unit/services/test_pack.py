@@ -27,12 +27,16 @@ def test_pack(
     prime_dir = tmp_path / "prime"
     dest_path = tmp_path / "dest"
 
-    diskutil = mocker.patch("imagecraft.services.pack.diskutil", autospec=True)
-    gptutil = mocker.patch("imagecraft.services.pack.gptutil", autospec=True)
+    mock_diskutil = mocker.patch("imagecraft.services.pack.diskutil", autospec=True)
+    mock_gptutil = mocker.patch("imagecraft.services.pack.gptutil", autospec=True)
+    mock_grubutil = mocker.patch("imagecraft.services.pack.grubutil", autospec=True)
+    mock_image = mocker.patch("imagecraft.services.pack.Image", autospec=True)
 
     assert pack_service.pack(prime_dir=prime_dir, dest=dest_path) == [
         dest_path / "pc.img"
     ]
 
-    assert gptutil.create_empty_gpt_image.called
-    assert diskutil.inject_partition_into_image.called
+    assert mock_gptutil.create_empty_gpt_image.called
+    assert mock_diskutil.inject_partition_into_image.called
+    assert mock_grubutil.setup_grub.called
+    assert mock_image.called

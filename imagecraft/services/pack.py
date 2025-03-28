@@ -23,7 +23,7 @@ from craft_application import PackageService, models
 from overrides import override  # type: ignore[reportUnknownVariableType]
 
 from imagecraft.models import Project, get_partition_name
-from imagecraft.pack import diskutil, gptutil
+from imagecraft.pack import Image, diskutil, gptutil, grubutil
 
 SECTOR_SIZE = 512
 
@@ -88,6 +88,11 @@ class ImagecraftPackService(PackageService):
                     disk_size=partition_size,
                 )
         gptutil.verify_partition_tables(disk_image_file)
+
+        image = Image(volume=volume, disk_path=disk_image_file)
+        arch = self._services.get("lifecycle").project_info.target_arch
+        grubutil.setup_grub(image=image, workdir=project_dirs.work_dir, arch=arch)
+
         return [disk_image_file]
 
     @property

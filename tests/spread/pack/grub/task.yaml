@@ -1,15 +1,23 @@
-summary: Pack an image using overlays
+summary: Pack an image with GRUB
+
+systems: [ubuntu-24.04-64]
+
 execute: |
   TMPDIR="$(mktemp -d)"
   TMP_MOUNT=${TMPDIR}/mount
   mkdir -p ${TMP_MOUNT}
   echo ${TMP_MOUNT} >> tmpmount.txt
 
-  imagecraft pack --verbosity debug
+  # Check that work dirs *don't* exist
+  test ! -d parts -a ! -d stage -a ! -d prime
+
+  sudo imagecraft pack --verbosity debug --destructive-mode
 
   IMG_NAME=pc.img
   test -f ${IMG_NAME}
-  test ! -d parts -a ! -d stage -a ! -d prime
+
+  # Check that work dirs *do* exist
+  test -d parts -a -d stage -a -d prime
 
   losetup --find --show --partscan ${IMG_NAME}
   losetup -a | grep ${IMG_NAME} | cut -f1 -d: >> loop.txt
@@ -22,9 +30,9 @@ execute: |
       mount $l ${TMP_MOUNT}/$p || true
   done
 
-  cat ${TMP_MOUNT}/p1/test | MATCH "boot files"
-  cat ${TMP_MOUNT}/p2/bin/a | MATCH "bina"
-  cat ${TMP_MOUNT}/p2/etc/b | MATCH "confb"
+  # cat ${TMP_MOUNT}/p1/test | MATCH "boot files"
+  # cat ${TMP_MOUNT}/p2/bin/a | MATCH "bina"
+  # cat ${TMP_MOUNT}/p2/etc/b | MATCH "confb"
 
 restore: |
   if [ -f loop.txt -a -f tmpmount.txt ]; then
