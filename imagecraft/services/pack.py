@@ -46,9 +46,6 @@ class ImagecraftPackService(PackageService):
         volume_name, volume = next(iter(project.volumes.items()))
         disk_image_file = dest / (volume_name + os.extsep + "img")
 
-        # Remove previously built image
-        disk_image_file.unlink(missing_ok=True)
-
         # Create empty image
         gptutil.create_empty_gpt_image(
             imagepath=disk_image_file,

@@ -26,11 +26,13 @@ from imagecraft import errors
 from imagecraft.models import Role, Volume
 from imagecraft.subprocesses import run
 
+_LOSETUP_BIN = "losetup"
+
 
 def _get_loop_devices() -> list[dict[str, Any]]:
     return cast(
         list[dict[str, Any]],
-        json.loads(run("losetup", "--json").stdout.strip())["loopdevices"],
+        json.loads(run(_LOSETUP_BIN, "--json").stdout.strip())["loopdevices"],
     )
 
 
@@ -38,7 +40,7 @@ def _detach_loop_device(
     loop_device: str | Path, file: str | Path | None = None
 ) -> None:
     emit.debug(f"Detaching loop device {loop_device} (from {file})")
-    run("losetup", "-d", loop_device)
+    run(_LOSETUP_BIN, "-d", loop_device)
 
 
 class Image:
@@ -61,7 +63,7 @@ class Image:
         self.disk_path = disk_path
         if not self.disk_path.is_file():
             raise errors.ImageError(
-                f"Image file specified ({self.disk_path}) doesn't exist."
+                f"Image specified ({self.disk_path}) doesn't exist or is not a valid file."
             )
 
     @property
@@ -87,7 +89,7 @@ class Image:
         if not hasattr(self, "loop_device"):
             # This command attaches a loop device and returns the path in /dev
             self.loop_device = run(
-                "losetup",
+                _LOSETUP_BIN,
                 "--find",
                 "--show",
                 "--partscan",
