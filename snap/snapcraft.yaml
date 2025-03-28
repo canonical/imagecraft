@@ -121,6 +121,10 @@ parts:
       version="$(PYTHONPATH=$CRAFT_PART_INSTALL/lib/python3.12/site-packages "${CRAFT_STAGE}/usr/bin/python3" -c "import imagecraft;print(imagecraft.__version__)")"
       ${SNAP}/libexec/snapcraft/craftctl set version="$version"
 
+      rm $CRAFT_PART_INSTALL/bin/python*
+      ln -s ../usr/bin/python3 $CRAFT_PART_INSTALL/bin/python3
+      ln -s python3 $CRAFT_PART_INSTALL/bin/python
+
   bash-completion:
     after: [imagecraft]
     plugin: nil
