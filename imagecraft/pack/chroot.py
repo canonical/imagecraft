@@ -22,7 +22,6 @@ from multiprocessing.connection import Connection
 from pathlib import Path
 from typing import Any
 
-from craft_cli import emit
 from craft_parts.utils import os_utils
 
 from imagecraft import errors
@@ -70,8 +69,6 @@ class Mount:
         self._mountpoint = base_path / self._relative_mountpoint.lstrip("/")
         pid = os.getpid()
         # Only mount if mountpoint exists.
-        emit.debug(f"Mount {self._src} on {str(self._mountpoint)}")
-        logger.debug("[pid=%d] mount %r on chroot", pid, str(self._mountpoint))
         if self._mountpoint.exists():
             logger.debug("[pid=%d] mount %r on chroot", pid, str(self._mountpoint))
             os_utils.mount(self._src, str(self._mountpoint), *args)
@@ -110,7 +107,6 @@ def _runner(
     logger.debug("[pid=%d] child process: target=%r", pid, target)
     try:
         logger.debug("[pid=%d] chroot to %r", pid, path)
-        os.chdir(path)
         os.chroot(path)
         res = target(*args, **kwargs)
     except Exception as exc:  # noqa: BLE001
@@ -139,12 +135,6 @@ class Chroot:
         # There's no need to restore the file to its original condition because
         # this operation happens on a temporary filesystem layer.
         logger.debug("setup chroot: %r", self.path)
-        resolv_conf = self.path / "etc/resolv.conf"
-        if resolv_conf.is_symlink():
-            resolv_conf.unlink()
-            resolv_conf.touch()
-        elif not resolv_conf.exists() and resolv_conf.parent.is_dir():
-            resolv_conf.touch()
 
         for entry in self.mounts:
             entry.mount(base_path=self.path)
