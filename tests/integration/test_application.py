@@ -126,10 +126,13 @@ def test_imagecraft_pack(
     imagecraft_app: application.Imagecraft,
     monkeypatch: pytest.MonkeyPatch,
     check,
+    mocker,
 ):
     """Test imagecraft."""
     monkeypatch.setenv("CRAFT_DEBUG", "1")
 
+    mocker.patch("imagecraft.services.pack.Image")
+    mocker.patch("imagecraft.services.pack.grubutil.setup_grub")
     project_file = project_path / "imagecraft.yaml"
     project_file.write_text(IMAGECRAFT_YAML)
 
