@@ -53,7 +53,7 @@ coverage.xml
 .results.*.xml
 
 # Spread tests
-.spread-reuse.yaml
+.spread-reuse.*yaml
 
 # Translations
 *.mo
@@ -148,6 +148,7 @@ dmypy.json
 # sphinx
 docs/warnings.txt
 docs/.sphinx/.wordlist.dic
+docs/reference/commands
 .DS_Store
 __pycache__
 .idea/

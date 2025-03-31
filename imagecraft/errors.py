@@ -1,6 +1,6 @@
 # This file is part of imagecraft.
 #
-# Copyright 2023 Canonical Ltd.
+# Copyright 2023-2025 Canonical Ltd.
 #
 # This program is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 3, as published
@@ -23,5 +23,13 @@ class ImagecraftError(CraftError):
     """Base class for all imagecraft errors."""
 
 
-class UbuntuImageError(ImagecraftError):
-    """Raised when an error occurs while using ubuntu-image."""
+class ImageError(ImagecraftError):
+    """Raised when an error occurs when dealing with the Image class."""
+
+
+class GRUBInstallError(ImagecraftError):
+    """Raised when an error occurs when installing grub."""
+
+
+class ChrootExecutionError(ImagecraftError):
+    """Raised when an error occurs when dealing with the chroot."""

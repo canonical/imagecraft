@@ -467,8 +467,8 @@ toml = [
 
 [[package]]
 name = "craft-application"
-version = "4.9.1.post15+gfb9c1c8"
-source = { git = "https://github.com/canonical/craft-application.git?rev=feature%2Fhybrid-commands#fb9c1c85b44800f23c07b50f25d56e8bffbeeebe" }
+version = "4.10.0.post21+ge53ef22"
+source = { git = "https://github.com/canonical/craft-application.git?rev=main#e53ef22020d3c80024d4a66479b40bcc88008fcb" }
 dependencies = [
     { name = "annotated-types" },
     { name = "craft-archives" },
@@ -538,7 +538,7 @@ wheels = [
 
 [[package]]
 name = "craft-parts"
-version = "2.6.2"
+version = "2.7.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "overrides" },
@@ -548,9 +548,9 @@ dependencies = [
     { name = "requests" },
     { name = "requests-unixsocket2" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/fb/d7/f8d6c8aca83d1c751b0ed30c7e5b70f119f5d020569ae91626c37347caa9/craft_parts-2.6.2.tar.gz", hash = "sha256:937ac0f5a4abc7b2a1c9b236652b95a7d39de95bb76c380e0fb1249a8b4df0ea", size = 642416 }
+sdist = { url = "https://files.pythonhosted.org/packages/e2/d8/9ba8f33084e5c39744dd0e4b6db85937d118f65ebbf149b4990176883e8e/craft_parts-2.7.0.tar.gz", hash = "sha256:aa9e9e88ad893e12046c86a484fd7acf064d03039b6ce9907597dc093835baa4", size = 648642 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/af/f0/c5795b199fd3db6a246a6609da69d4649c2f9347cc48c963b5589c8c307b/craft_parts-2.6.2-py3-none-any.whl", hash = "sha256:f6f0a58e3f31f0933f392b7bebc8f5fd335005db1404bb1ab27fce3f87172a15", size = 454557 },
+    { url = "https://files.pythonhosted.org/packages/75/7d/24aeba828d96431eb1d1813747c65c8ebc00a58de4c55cd66d19c0469432/craft_parts-2.7.0-py3-none-any.whl", hash = "sha256:c230386314fb8d50e410372df1edec3d0d87a1ea53b2d5c92357f7755828b84b", size = 456889 },
 ]
 
 [[package]]
@@ -833,7 +833,7 @@ types = [
 
 [package.metadata]
 requires-dist = [
-    { name = "craft-application", git = "https://github.com/canonical/craft-application.git?rev=feature%2Fhybrid-commands" },
+    { name = "craft-application", git = "https://github.com/canonical/craft-application.git?rev=main" },
     { name = "craft-cli", specifier = "~=2.15" },
     { name = "craft-grammar", specifier = "~=2.0.3" },
     { name = "craft-parts", specifier = "~=2.6" },

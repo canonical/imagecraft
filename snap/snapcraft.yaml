@@ -23,7 +23,7 @@ apps:
   imagecraft:
     command: bin/python3 $SNAP/bin/imagecraft
     environment:
-      PATH: "$SNAP/libexec/imagecraft:/snap/core24/current/bin:/snap/core24/current/sbin:/snap/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+      PATH: "$SNAP/libexec/imagecraft:/snap/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
       PERL5LIB: $SNAP/usr/share/perl5:$SNAP/usr/share/perl:$PERL5LIB
     completer: completion.sh
 
@@ -84,12 +84,16 @@ parts:
       - dosfstools
       - e2fsprogs
       - fdisk
+      - coreutils
+      - util-linux
     organize:
       "usr/bin/fuse-overlayfs": "libexec/imagecraft/fuse-overlayfs"
       "usr/lib/python3/dist-packages/apt*": "lib/python3.12/site-packages/"
       "usr/sbin/sfdisk": "libexec/imagecraft/sfdisk"
       "usr/bin/mcopy": "libexec/imagecraft/mcopy"
       "usr/bin/mtools": "libexec/imagecraft/mtools"
+      "usr/bin/dd": "libexec/imagecraft/dd"
+      "usr/bin/fallocate": "libexec/imagecraft/fallocate"
       "usr/sbin/mkfs*": "libexec/imagecraft/"
   imagecraft:
     after: [imagecraft-libs, libgit2]
@@ -105,6 +109,7 @@ parts:
     build-snaps:
       - astral-uv
     build-environment:
+      - "CFLAGS": "$(pkg-config python-3.12 yaml-0.1 --cflags)"
       - UV_COMPILE_BYTECODE: "1"
       - UV_NO_BINARY: "1"
       - MAKEOPTS: -j$(nproc --all)
@@ -115,6 +120,10 @@ parts:
       sed -i -e '1 s|^#!/.*|#!/snap/imagecraft/current/bin/python -E|' $CRAFT_PART_INSTALL/bin/craftctl
       version="$(PYTHONPATH=$CRAFT_PART_INSTALL/lib/python3.12/site-packages "${CRAFT_STAGE}/usr/bin/python3" -c "import imagecraft;print(imagecraft.__version__)")"
       ${SNAP}/libexec/snapcraft/craftctl set version="$version"
+
+      rm $CRAFT_PART_INSTALL/bin/python*
+      ln -s ../usr/bin/python3 $CRAFT_PART_INSTALL/bin/python3
+      ln -s python3 $CRAFT_PART_INSTALL/bin/python
 
   bash-completion:
     after: [imagecraft]

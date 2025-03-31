@@ -54,7 +54,7 @@ def test_application(
     new_dir: Path,
     custom_project_file: Path,
     default_application: Imagecraft,
-    enable_partitions_feature,
+    enable_features,
 ):
     project = cast(Project, default_application.services.get("project").get())
 
@@ -144,7 +144,7 @@ def test_application_grammar(
     grammar_project_file,
     default_factory,
     default_application: Imagecraft,
-    enable_partitions_feature,
+    enable_features,
 ):
     project = cast(Project, default_application.services.get("project").get())
 

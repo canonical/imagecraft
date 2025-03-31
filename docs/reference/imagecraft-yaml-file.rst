@@ -3,8 +3,6 @@
 ``imagecraft.yaml`` file
 ========================
 
-.. include:: image_parts/toc.rst
-
 An Imagecraft project is defined in a YAML file named ``imagecraft.yaml``
 at the root of the project tree in the filesystem.
 
@@ -12,8 +10,8 @@ This Reference section is for when you need to know which options can be
 used, and how, in this ``imagecraft.yaml`` file.
 
 
-``name``
---------
+name
+----
 
 **Type**: string
 
@@ -27,8 +25,8 @@ The name of the image. This value must:
 - not end with a hyphen, and must not contain two or more consecutive
   hyphens.
 
-``title``
----------
+title
+-----
 
 **Type**: string
 
@@ -36,8 +34,8 @@ The name of the image. This value must:
 
 The human-readable title of the image. If omitted, defaults to ``name``.
 
-``summary``
------------
+summary
+-------
 
 **Type**: string
 
@@ -45,8 +43,8 @@ The human-readable title of the image. If omitted, defaults to ``name``.
 
 A short summary describing the image.
 
-``description``
----------------
+description
+-----------
 
 **Type**: string
 
@@ -54,8 +52,8 @@ A short summary describing the image.
 
 A longer, possibly multi-line description of the image.
 
-``version``
------------
+version
+-------
 
 **Type**: string
 
@@ -63,9 +61,44 @@ A longer, possibly multi-line description of the image.
 
 The imagecraft configuration version, used to track changes to the configuration file.
 
+base
+----
 
-``platforms``
--------------
+**Type**: string ``bare``
+
+**Required**: Yes
+
+Base to use as a first layer for the image.
+
+build-base
+----------
+
+**Type**: One of ``ubuntu@20.04 | ubuntu@22.04 | ubuntu@24.04 | devel``
+
+**Required**: Yes
+
+The system and version that will be used during the build, but not
+included in the final image itself. It comprises the set of tools and libraries
+that Imagecraft will use when building the image contents.
+
+.. note::
+   ``devel`` is a "special" value that means "the next Ubuntu version, currently
+   in development". This means that the contents of this system changes
+   frequently and should not be relied on for production images.
+
+license
+-------
+
+**Type**: string, in `SPDX format <https://spdx.org/licenses/>`_
+
+**Required**: No
+
+The license of the software packaged inside the image. This must either be
+"proprietary" or match the SPDX format. It is case insensitive (e.g. both
+``MIT`` and ``mit`` are valid).
+
+platforms
+---------
 
 **Type**: dict
 
@@ -82,30 +115,30 @@ supported architecture (in Debian format).
    the host where Imagecraft is being executed (i.e. emulation is not supported
    at the moment).
 
-``platforms.<entry>.build-for``
--------------------------------
+platforms.<platform>.build-for
+------------------------------
 
 **Type**: string | list[string]
 
-**Required**: Yes, if ``<entry>`` is not a supported architecture name.
+**Required**: Yes, if ``<platform>`` is not a supported architecture name.
 
-Target architecture the image will be built for. Defaults to ``<entry>`` that
-is a valid, supported architecture name.
+Target architecture the image will be built for. Defaults to ``<platform>`` that is a
+valid, supported architecture name.
 
 .. note::
    At the moment Imagecraft will only build for a single architecture, so
    if provided ``build-for`` must be a single string or a list with exactly one
    element.
 
-``platforms.<entry>.build-on``
-------------------------------
+platforms.<platform>.build-on
+-----------------------------
 
 **Type**: string | list[string]
 
-**Required**: Yes, if ``build-for`` is specified *or* if ``<entry>`` is not a
+**Required**: Yes, if ``build-for`` is specified *or* if ``<platform>`` is not a
 supported architecture name.
 
-Host architectures where the image will be built. Defaults to ``<entry>`` if that
+Host architectures where the image will be built. Defaults to ``<platform>`` if that
 is a valid, supported architecture name.
 
 .. note::
@@ -113,15 +146,120 @@ is a valid, supported architecture name.
    if provided ``build-on`` must be a single string or a list with exactly one
    element.
 
-``parts``
----------
+parts
+-----
 
 **Type**: dict
 
 **Required**: Yes
 
-The set of parts that compose the image's contents
-(see :doc:`/common/craft-parts/reference/part_properties`).
+The set of parts that compose the image's contents. See :ref:`part_properties`
+for more details.
+
+volumes
+-------
+
+**Type**: dict (single entry)
+
+**Required**: Yes
+
+Structure and content of the image. A volume represents a "disk".
+
+volumes.<volume>.schema
+-----------------------
+
+**Type**: string ``gpt``
+
+**Required**: Yes
+
+Partitioning schema to use.
+
+volumes.<volume>.structure
+--------------------------
+
+**Type**: dict (at least one node entry)
+
+**Required**: Yes
+
+Structure of the image, defining partitions.
+
+volumes.<volume>.structure.<item>.name
+---------------------------------------
+
+**Type**: string
+
+**Required**: Yes
+
+Structure item name. Must respect the following:
+- contain only lowercase letters [a-z] or hyphens;
+- cannot start or end with a hyphen;
+- maximum length: 36 characters (maximum of a partition name
+for GPT in the UTF-16 character set);
+
+Structure names must be unique in a volume.
+
+volumes.<volume>.structure.<item>.id
+------------------------------------
+
+**Type**: string
+
+**Required**: No
+
+GPT unique partition id.
+
+volumes.<volume>.structure.<item>.role
+--------------------------------------
+
+**Type**: One of ``system-boot | system-data``
+
+**Required**: Yes
+
+Role defines a special role for this item in the image.
+- ``system-boot``: Partition holding the boot assets.
+- ``system-data``: Partition holding the main operating system data.
+
+volumes.<volume>.structure.<item>.type
+--------------------------------------
+
+**Type**: string
+
+**Required**: Yes
+
+Type of structure. A GPT partition type GUID.
+
+volumes.<volume>.structure.<item>.size
+--------------------------------------
+
+**Type**: string
+
+**Required**: Yes
+
+Size for structure item. Conforms to the IEC 80000-13 Standard.
+
+.. collapse:: Example
+
+    .. code-block:: yaml
+
+        size: "6GiB"
+
+volumes.<volume>.structure.<item>.filesystem
+--------------------------------------------
+
+**Type**: One of ``fat16 | vfat | ext4 | ext3``
+
+**Required**: Yes
+
+Filesystem type.
+
+volumes.<volume>.structure.<item>.filesystem-label
+--------------------------------------------------
+
+**Type**: string
+
+**Required**: No
+
+Filesystem label. Defaults to name of structure item.
+Labels must be unique in a volume.
 
 
 Example file

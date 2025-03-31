@@ -38,7 +38,7 @@ publish-pypi: clean package-pip lint-twine  ##- Publish Python packages to pypi
 	uv tool run twine upload dist/*
 
 # Find dependencies that need installing
-APT_PACKAGES := mtools
+APT_PACKAGES := mtools fuse-overlayfs
 ifeq ($(wildcard /usr/include/libxml2/libxml/xpath.h),)
 APT_PACKAGES += libxml2-dev libgit2-dev
 endif

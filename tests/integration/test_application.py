@@ -39,12 +39,18 @@ platforms:
 parts:
   rootfs:
     plugin: nil
-    override-build: |
-      echo "build a rootfs" > $CRAFT_PART_INSTALL/a.txt
-      echo "build a rootfs" > $CRAFT_PART_INSTALL/b.txt
-    organize:
-      a.txt: (volume/pc/rootfs)/a.txt
-      b.txt: (volume/pc/efi)/b.txt
+    overlay-script: |
+      mkdir $CRAFT_OVERLAY/{etc,bin,boot}
+      echo "test" > $CRAFT_OVERLAY/bin/a
+      echo "test" > $CRAFT_OVERLAY/etc/b
+  bootloader:
+    plugin: nil
+    after: [rootfs]
+    overlay-script: |
+      echo "boot files" > $CRAFT_OVERLAY/boot/c
+
+      mv $CRAFT_OVERLAY/boot/* $CRAFT_VOLUME_PC_EFI_OVERLAY/
+      mv $CRAFT_OVERLAY/* $CRAFT_VOLUME_PC_ROOTFS_OVERLAY/
 volumes:
   pc:
     schema: gpt
@@ -98,13 +104,20 @@ def test_imagecraft_build(
     check.is_true((project_path / "prime").exists())
     check.is_true((project_path / "parts").exists())
     check.is_true((project_path / "stage").exists())
+    check.is_true((project_path / "parts/rootfs/layer/bin/a").exists())
+    check.is_true((project_path / "parts/rootfs/layer/etc/b").exists())
+    check.is_true(
+        (project_path / "partitions/volume/pc/efi/parts/bootloader/layer/c").exists()
+    )
     check.is_true(
         (
-            project_path / "partitions/volume/pc/rootfs/parts/rootfs/install/a.txt"
+            project_path / "partitions/volume/pc/rootfs/parts/bootloader/layer/bin/a"
         ).exists()
     )
     check.is_true(
-        (project_path / "partitions/volume/pc/efi/parts/rootfs/install/b.txt").exists()
+        (
+            project_path / "partitions/volume/pc/rootfs/parts/bootloader/layer/etc/b"
+        ).exists()
     )
 
 
@@ -113,10 +126,13 @@ def test_imagecraft_pack(
     imagecraft_app: application.Imagecraft,
     monkeypatch: pytest.MonkeyPatch,
     check,
+    mocker,
 ):
     """Test imagecraft."""
     monkeypatch.setenv("CRAFT_DEBUG", "1")
 
+    mocker.patch("imagecraft.services.pack.Image")
+    mocker.patch("imagecraft.services.pack.grubutil.setup_grub")
     project_file = project_path / "imagecraft.yaml"
     project_file.write_text(IMAGECRAFT_YAML)
 

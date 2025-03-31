@@ -7,12 +7,12 @@ Imagecraft
    :maxdepth: 1
    :hidden:
 
+   how-to-guides/index
    reference/index
    explanation/index
    release-notes/index
 
 ..   tutorials/index
-   how-to-guides/index
 
 .. list-table::
 
@@ -20,11 +20,12 @@ Imagecraft
         | **Technical information** about Imagecraft
     * - | :ref:`Explanation <explanation>`
         | **Discussion and clarification** of key topics
+    * - | :ref:`How-to guides <how-to-guides>`
+        | **Step-by-step guides** covering key operations and common tasks
 
 ..    * - | :ref:`Tutorial <tutorials>`
         | **Get started** with a hands-on introduction to Imagecraft
-    * - | :ref:`How-to guides <how-to-guides>`
-        | **Step-by-step guides** covering key operations and common tasks
+
 
 
 Project and community
