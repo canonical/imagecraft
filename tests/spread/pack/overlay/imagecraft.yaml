@@ -32,10 +32,10 @@ volumes:
         filesystem: vfat
         role: system-boot
         filesystem-label: EFI System
-        size: 256MiB
+        size: 256M
       - name: rootfs
         type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
         filesystem: ext4
         filesystem-label: writable
         role: system-data
-        size: 3GiB
+        size: 3G

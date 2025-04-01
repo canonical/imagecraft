@@ -30,7 +30,7 @@ def volume():
                 "role": "system-boot",
                 "type": "C12A7328-F81F-11D2-BA4B-00A0C93EC93B",
                 "filesystem": "vfat",
-                "size": "6GiB",
+                "size": "6G",
                 "filesystem-label": "",
             },
             {
@@ -120,7 +120,7 @@ def test_create_empty_gpt_image(mocker, volume, tmp_path):
     )
     create_zero_image.assert_called_with(
         imagepath=imagepath,
-        disk_size=diskutil.DiskSize(bytesize=6463517184, sector_size=512),
+        disk_size=diskutil.DiskSize(bytesize=6464488448, sector_size=512),
     )
 
 

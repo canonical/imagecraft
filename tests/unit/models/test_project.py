@@ -46,7 +46,7 @@ volumes:
         role: system-boot
         type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
         filesystem: vfat
-        size: 500 MiB
+        size: 500 M
 """
 
 IMAGECRAFT_YAML_SIMPLE_PLATFORM = """
@@ -70,7 +70,7 @@ volumes:
         role: system-boot
         type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
         filesystem: vfat
-        size: 500 MiB
+        size: 500 M
 """
 
 IMAGECRAFT_YAML_MINIMAL_PLATFORM = """
@@ -92,7 +92,7 @@ volumes:
         role: system-boot
         type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
         filesystem: vfat
-        size: 500 MiB
+        size: 500 M
 """
 
 IMAGECRAFT_YAML_NO_BUILD_FOR_PLATFORM = """
@@ -115,7 +115,7 @@ volumes:
         role: system-boot
         type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
         filesystem: vfat
-        size: 500 MiB
+        size: 500 M
 """
 
 IMAGECRAFT_YAML_INVALID_BASE = """
@@ -138,7 +138,7 @@ volumes:
         role: system-boot
         type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
         filesystem: vfat
-        size: 500 MiB
+        size: 500 M
 """
 
 IMAGECRAFT_YAML_MISSING_BUILD_BASE = """
@@ -160,7 +160,7 @@ volumes:
         role: system-boot
         type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
         filesystem: vfat
-        size: 500 MiB
+        size: 500 M
 """
 
 pytestmark = [pytest.mark.usefixtures("enable_features")]
@@ -313,7 +313,7 @@ volumes:
         role: system-boot
         type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
         filesystem: vfat
-        size: 500MiB
+        size: 500M
   pc2:
     schema: gpt
     structure:
@@ -321,7 +321,7 @@ volumes:
         role: system-boot
         type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
         filesystem: vfat
-        size: 500MiB
+        size: 500M
 """
 
 IMAGECRAFT_YAML_INVALID_VOLUME_NAME = """
@@ -345,7 +345,7 @@ volumes:
         role: system-boot
         type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
         filesystem: vfat
-        size: 500MiB
+        size: 500M
 """
 
 

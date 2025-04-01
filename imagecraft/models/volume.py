@@ -47,6 +47,7 @@ PARTITION_COMPILED_STRICT_REGEX = re.compile(
 
 VOLUME_NAME_COMPILED_REGEX = PARTITION_COMPILED_STRICT_REGEX
 STRUCTURE_NAME_COMPILED_REGEX = PARTITION_COMPILED_STRICT_REGEX
+STRUCTURE_SIZE_COMPILED_REGEX = re.compile(r"^(?P<size>\d+)\s*(?P<unit>[M,G]{0,1})$")
 
 GPT_NAME_MAX_LENGTH = 36
 
@@ -55,12 +56,46 @@ VOLUME_INVALID_MSG = (
     "and hyphens, and may not begin or end with a hyphen."
 )
 
+SIZE_INVALID_MSG = "size must be expressed in bytes, optionally with M or G unit."
+
 StructureName = typing.Annotated[
     str,
     StringConstraints(
         max_length=GPT_NAME_MAX_LENGTH, pattern=STRUCTURE_NAME_COMPILED_REGEX
     ),
 ]
+
+
+def _validate_structure_size(value: str) -> str:
+    """Validate and convert the structure size.
+
+    The Volume specification does not respect the IEC 80000-13 Standard:
+    M means MiB (2^20) in the Volume spec. (means 10^2 in the standard).
+    So this validation converts the unit before the conversion to the ByteSize
+    type (respecting the IEC 80000-13 Standard).
+    """
+    value = str(value)
+    match = STRUCTURE_SIZE_COMPILED_REGEX.match(value)
+
+    if not match:
+        raise ValueError(SIZE_INVALID_MSG)
+
+    # convert M/G to MiB/GiB
+    unit: str = ""
+    unit_matched = match.group("unit")
+    if unit_matched == "M":
+        unit = "MiB"
+    elif unit_matched == "G":
+        unit = "GiB"
+
+    return match.group("size") + unit
+
+
+StructureSize = typing.Annotated[
+    ByteSize,
+    BeforeValidator(_validate_structure_size),
+]
+
 
 VolumeName = typing.Annotated[
     str,
@@ -103,7 +138,7 @@ class StructureItem(CraftBaseModel):
     id: uuid.UUID | None = None
     role: Role
     structure_type: GptType = Field(alias="type")
-    size: ByteSize
+    size: StructureSize
     filesystem: FileSystem
     filesystem_label: str | None = None
 
