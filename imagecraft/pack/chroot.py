@@ -107,6 +107,7 @@ def _runner(
     logger.debug("[pid=%d] child process: target=%r", pid, target)
     try:
         logger.debug("[pid=%d] chroot to %r", pid, path)
+        os.chdir(path)
         os.chroot(path)
         res = target(*args, **kwargs)
     except Exception as exc:  # noqa: BLE001
