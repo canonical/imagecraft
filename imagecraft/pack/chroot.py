@@ -127,14 +127,8 @@ class Chroot:
         self.path = path
         self.mounts = mounts
 
-    def _setup_chroot(self) -> None:
+    def _setup(self) -> None:
         """Chroot environment preparation."""
-        # Some images (such as cloudimgs) symlink ``/etc/resolv.conf`` to
-        # ``/run/systemd/resolve/stub-resolv.conf``. We want resolv.conf to be
-        # a regular file to bind-mount the host resolver configuration on.
-        #
-        # There's no need to restore the file to its original condition because
-        # this operation happens on a temporary filesystem layer.
         logger.debug("setup chroot: %r", self.path)
 
         for entry in self.mounts:
@@ -142,13 +136,13 @@ class Chroot:
 
         logger.debug("chroot setup complete")
 
-    def _cleanup_chroot(self) -> None:
+    def _cleanup(self) -> None:
         """Chroot environment cleanup."""
         logger.debug("cleanup chroot: %r", self.path)
         for entry in reversed(self.mounts):
             entry.umount()
 
-    def chroot(
+    def execute(
         self, target: Callable[..., str | None], *args: Any, **kwargs: Any
     ) -> Any:  # noqa: ANN401
         """Execute a callable in a chroot environment.
@@ -165,14 +159,14 @@ class Chroot:
             target=_runner, args=(self.path, child_conn, target, args, kwargs)
         )
         logger.debug("[pid=%d] set up chroot", os.getpid())
-        self._setup_chroot()
+        self._setup()
         try:
             child.start()
             res, err = parent_conn.recv()
             child.join()
         finally:
             logger.debug("[pid=%d] clean up chroot", os.getpid())
-            self._cleanup_chroot()
+            self._cleanup()
 
         if isinstance(err, str):
             raise errors.ChrootExecutionError(err)
