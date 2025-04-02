@@ -147,7 +147,7 @@ def setup_grub(image: Image, workdir: Path, arch: str) -> None:
     chroot = Chroot(path=mount_dir, mounts=mounts)
 
     try:
-        chroot.chroot(
+        chroot.execute(
             target=_grub_install,
             grub_target=_ARCH_TO_GRUB_EFI_TARGET[arch],
             loop_dev=loop_dev,
