@@ -13,6 +13,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import multiprocessing
+import subprocess
 from pathlib import Path
 from unittest.mock import ANY, call
 
@@ -106,6 +107,62 @@ class TestChroot:
             call(f"{new_root}/existent", "--make-rprivate"),
         ]
         assert mock_umount.mock_calls == [
+            call(f"{new_root}/existent", "--recursive"),
+        ]
+
+    def test_chroot_cleanup_exception(self, mocker, new_dir, mock_chroot):
+        mock_mount = mocker.patch("imagecraft.pack.chroot.os_utils.mount")
+        mock_umount = mocker.patch(
+            "imagecraft.pack.chroot.os_utils.umount",
+            side_effect=subprocess.CalledProcessError(
+                cmd=["some", "command"], returncode=42, stderr="unable to umount"
+            ),
+        )
+
+        mock_process = mocker.patch("imagecraft.pack.chroot.multiprocessing.Process")
+        new_root = Path(new_dir, "dir1")
+
+        new_root.mkdir()
+        Path(new_root, "existent").mkdir()
+        Path(new_root, "existent2").mkdir()
+
+        mounts: list[Mount] = [
+            Mount(fstype="sys", src="sys-build", relative_mountpoint="existent"),
+            Mount(fstype="sys", src="test-build", relative_mountpoint="existent2"),
+            Mount(fstype="proc", src="proc-build", relative_mountpoint="inexistent"),
+        ]
+
+        chroot = Chroot(path=new_root, mounts=mounts)
+
+        with pytest.raises(errors.ChrootExecutionError) as raised:
+            chroot.execute(
+                target=target_func,
+                content="content",
+            )
+        assert str(raised.value) == "Failed to clean chroot"
+        # Check a umount attempt happen for every valid mountpoints (2)
+        assert (
+            raised.value.details
+            == """Command '['some', 'command']' returned non-zero exit status 42. (unable to umount)
+Command '['some', 'command']' returned non-zero exit status 42. (unable to umount)"""
+        )
+
+        assert mock_process.mock_calls == [
+            call(
+                target=_runner,
+                args=(new_root, ANY, target_func, (), {"content": "content"}),
+            )
+        ]
+        mock_process.start.assert_not_called()
+
+        assert mock_mount.mock_calls == [
+            call("sys-build", f"{new_root}/existent", "-tsys"),
+            call("test-build", f"{new_root}/existent2", "-tsys"),
+            call(f"{new_root}/existent2", "--make-rprivate"),
+            call(f"{new_root}/existent", "--make-rprivate"),
+        ]
+        assert mock_umount.mock_calls == [
+            call(f"{new_root}/existent2", "--recursive"),
             call(f"{new_root}/existent", "--recursive"),
         ]
 

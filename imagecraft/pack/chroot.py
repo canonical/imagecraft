@@ -135,16 +135,21 @@ class Chroot:
 
     def _cleanup(self) -> None:
         """Chroot environment cleanup."""
-        umount_errors: list[Exception] = []
+        umount_errors: list[str] = []
         logger.debug("cleanup chroot: %r", self.path)
         for entry in reversed(self.mounts):
             try:
                 entry.umount()
             except subprocess.CalledProcessError as err:  # noqa: PERF203
-                umount_errors.append(err)
+                msg = str(err)
+                if err.stderr:
+                    msg += f" ({err.stderr.strip()!s})"
+                umount_errors.append(msg)
 
         if umount_errors:
-            raise errors.ChrootExecutionError(umount_errors)
+            raise errors.ChrootExecutionError(
+                message="Failed to clean chroot", details="\n".join(umount_errors)
+            )
 
     def execute(
         self, target: Callable[..., str | None], *args: Any, **kwargs: Any
