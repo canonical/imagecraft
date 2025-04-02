@@ -67,6 +67,48 @@ class TestChroot:
             call(f"{new_root}/proc", "--recursive"),
         ]
 
+    def test_chroot_missing_mountpoint(self, mocker, new_dir, mock_chroot):
+        mock_mount = mocker.patch("imagecraft.pack.chroot.os_utils.mount")
+        mock_umount = mocker.patch("imagecraft.pack.chroot.os_utils.umount")
+
+        spy_process = mocker.spy(multiprocessing, "Process")
+        new_root = Path(new_dir, "dir1")
+
+        new_root.mkdir()
+        Path(new_root, "existent").mkdir()
+
+        mounts: list[Mount] = [
+            Mount(fstype="sys", src="sys-build", relative_mountpoint="existent"),
+            Mount(fstype="proc", src="proc-build", relative_mountpoint="inexistent"),
+        ]
+
+        chroot = Chroot(path=new_root, mounts=mounts)
+
+        with pytest.raises(errors.ChrootExecutionError) as raised:
+            chroot.execute(
+                target=target_func,
+                content="content",
+            )
+        assert (
+            str(raised.value) == f"mountpoint {new_dir}/dir1/inexistent does not exist."
+        )
+
+        assert not (new_root / Path("foo.txt")).exists()
+        assert spy_process.mock_calls == [
+            call(
+                target=_runner,
+                args=(new_root, ANY, target_func, (), {"content": "content"}),
+            )
+        ]
+
+        assert mock_mount.mock_calls == [
+            call("sys-build", f"{new_root}/existent", "-tsys"),
+            call(f"{new_root}/existent", "--make-rprivate"),
+        ]
+        assert mock_umount.mock_calls == [
+            call(f"{new_root}/existent", "--recursive"),
+        ]
+
 
 @pytest.fixture
 def relative_path():
