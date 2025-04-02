@@ -41,6 +41,10 @@ html_context = {
     "github_url": "https://github.com/canonical/imagecraft",
 }
 
+html_theme_options = {
+    "source_edit_link": "https://github.com/canonical/imagecraft",
+}
+
 extensions = [
     "canonical_sphinx",
     "notfound.extension",
@@ -82,7 +86,6 @@ exclude_patterns = [
     # errors).
     # Disable sections and pages that are currently empty
     "tutorials/index.rst",
-    "how-to-guides/index.rst",
     "reference/plugins.rst",
     # We do not use the overlay command, yet...
     "reference/commands/overlay.rst",
@@ -97,6 +100,7 @@ exclude_patterns = [
     "common/craft-parts/how-to/craftctl.rst",
     "common/craft-parts/how-to/include_files.rst",
     "common/craft-parts/how-to/override_build.rst",
+    "common/craft-parts/how-to/use_parts.rst",
     "common/craft-parts/reference/step_execution_environment.rst",
     "common/craft-parts/reference/step_output_directories.rst",
     "common/craft-parts/reference/parts_steps.rst",
@@ -119,6 +123,7 @@ exclude_patterns = [
     "common/craft-parts/reference/plugins/scons_plugin.rst",
     "common/craft-parts/reference/plugins/go_use_plugin.rst",
     "common/craft-parts/reference/plugins/uv_plugin.rst",
+    "common/craft-parts/reference/plugins/jlink_plugin.rst",
 ]
 
 linkcheck_ignore = ["http://127.0.0.1:8000", "https://apt-repo.com"]

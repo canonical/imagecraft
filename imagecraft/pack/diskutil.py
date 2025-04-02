@@ -89,6 +89,8 @@ def create_zero_image(*, imagepath: Path, disk_size: DiskSize) -> None:
     :param disk_size: Disk size attributes.
     :raises CalledProcessError: If fallocate fails.
     """
+    # Remove possibly pre-existing image
+    imagepath.unlink(missing_ok=True)
     run("fallocate", f"-l {disk_size.bytesize}", str(imagepath))
 
 

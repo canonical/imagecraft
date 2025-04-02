@@ -467,8 +467,8 @@ toml = [
 
 [[package]]
 name = "craft-application"
-version = "4.9.1.post15+gfb9c1c8"
-source = { git = "https://github.com/canonical/craft-application.git?rev=feature%2Fhybrid-commands#fb9c1c85b44800f23c07b50f25d56e8bffbeeebe" }
+version = "5.0.0"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "annotated-types" },
     { name = "craft-archives" },
@@ -486,6 +486,10 @@ dependencies = [
     { name = "requests" },
     { name = "snap-helpers" },
     { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/19/77/287fe72535446edc09f562dbd869593dbf3922886ea38e923556afa28c5b/craft_application-5.0.0.tar.gz", hash = "sha256:0bd33481ec34e7e359623f6a0a4835794ed958f726f7c7ab3c1a4ae7b024e20f", size = 337815 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/75/7a/6d93a2d3e471cef9df5be0af77b2653f815b0564451468c2c76980704de6/craft_application-5.0.0-py3-none-any.whl", hash = "sha256:da0d9f544a3adcf13d6951296b70f1d19abb6c656124e7078850de1251bc1ce3", size = 171084 },
 ]
 
 [[package]]
@@ -508,19 +512,18 @@ wheels = [
 
 [[package]]
 name = "craft-cli"
-version = "2.15.0"
+version = "3.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jinja2" },
     { name = "overrides" },
     { name = "platformdirs" },
     { name = "pywin32", marker = "sys_platform == 'win32' or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-oracular') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-oracular' and extra == 'group-10-imagecraft-dev-plucky')" },
-    { name = "pyyaml" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9e/a7/32b8170deaefb28a8ec4cbccbaa0fbc4fac019cf3edf3682079af271ffa9/craft_cli-2.15.0.tar.gz", hash = "sha256:83c94e521c597c0836eb4a649c68105827006731d2032ca925cf1aea27d9fc9c", size = 116960 }
+sdist = { url = "https://files.pythonhosted.org/packages/96/64/86c6310c29a2b58470ee2ddef188a03250bdb2cffa07229e55776b63ac8c/craft_cli-3.0.0.tar.gz", hash = "sha256:9dd847d62648fd312284e63237386ff99fc4d24f1adfa0100fe08b003abfe6d9", size = 120469 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f8/1c/9786bc93f1d210eadf6513868d27b75996ab6c3a40013782a4be86f5a98e/craft_cli-2.15.0-py3-none-any.whl", hash = "sha256:4ed2f7e409acce8f66a60d7038645431b38b2320d2eb88e133b7b9af1ce9843a", size = 46437 },
+    { url = "https://files.pythonhosted.org/packages/8e/16/edbd11dd952300973231b0efa6af27469bcb3f6cc55647f6179c1135bfe4/craft_cli-3.0.0-py3-none-any.whl", hash = "sha256:8a3395ad8df17f70bd80752a60488b52f8fa1ef694576801bfec0b2e9f1f6c4e", size = 46521 },
 ]
 
 [[package]]
@@ -833,8 +836,8 @@ types = [
 
 [package.metadata]
 requires-dist = [
-    { name = "craft-application", git = "https://github.com/canonical/craft-application.git?rev=feature%2Fhybrid-commands" },
-    { name = "craft-cli", specifier = "~=2.15" },
+    { name = "craft-application", specifier = "~=5.0" },
+    { name = "craft-cli", specifier = "~=3.0" },
     { name = "craft-grammar", specifier = "~=2.0.3" },
     { name = "craft-parts", specifier = "~=2.6" },
     { name = "craft-platforms", specifier = "~=0.6" },
@@ -849,7 +852,7 @@ dev = [
     { name = "build" },
     { name = "coverage", extras = ["toml"], specifier = "~=7.4" },
     { name = "mypy", extras = ["reports"], specifier = "~=1.15.0" },
-    { name = "pyright", specifier = "==1.1.396" },
+    { name = "pyright", specifier = "==1.1.398" },
     { name = "pytest", specifier = "~=8.0" },
     { name = "pytest-check", specifier = ">=2.4" },
     { name = "pytest-cov", specifier = "~=6.0" },
@@ -1653,15 +1656,15 @@ wheels = [
 
 [[package]]
 name = "pyright"
-version = "1.1.396"
+version = "1.1.398"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "nodeenv" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/bd/73/f20cb1dea1bdc1774e7f860fb69dc0718c7d8dea854a345faec845eb086a/pyright-1.1.396.tar.gz", hash = "sha256:142901f5908f5a0895be3d3befcc18bedcdb8cc1798deecaec86ef7233a29b03", size = 3814400 }
+sdist = { url = "https://files.pythonhosted.org/packages/24/d6/48740f1d029e9fc4194880d1ad03dcf0ba3a8f802e0e166b8f63350b3584/pyright-1.1.398.tar.gz", hash = "sha256:357a13edd9be8082dc73be51190913e475fa41a6efb6ec0d4b7aab3bc11638d8", size = 3892675 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/80/be/ecb7cfb42d242b7ee764b52e6ff4782beeec00e3b943a3ec832b281f9da6/pyright-1.1.396-py3-none-any.whl", hash = "sha256:c635e473095b9138c471abccca22b9fedbe63858e0b40d4fc4b67da041891844", size = 5689355 },
+    { url = "https://files.pythonhosted.org/packages/58/e0/5283593f61b3c525d6d7e94cfb6b3ded20b3df66e953acaf7bb4f23b3f6e/pyright-1.1.398-py3-none-any.whl", hash = "sha256:0a70bfd007d9ea7de1cf9740e1ad1a40a122592cfe22a3f6791b06162ad08753", size = 5780235 },
 ]
 
 [[package]]

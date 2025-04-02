@@ -163,7 +163,7 @@ volumes:
         size: 500 MiB
 """
 
-pytestmark = [pytest.mark.usefixtures("enable_partitions_feature")]
+pytestmark = [pytest.mark.usefixtures("enable_features")]
 
 
 @pytest.fixture
