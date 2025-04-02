@@ -155,8 +155,8 @@ class Chroot:
             target=_runner, args=(self.path, child_conn, target, args, kwargs)
         )
         logger.debug("[pid=%d] set up chroot", os.getpid())
-        self._setup()
         try:
+            self._setup()
             child.start()
             res, err = parent_conn.recv()
             child.join()
