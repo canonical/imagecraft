@@ -45,15 +45,12 @@ class Mount:
         relative_mountpoint: str,
         *,
         options: list[str] | None = None,
-        mountpoint: Path | None = None,
     ) -> None:
         self._fstype = fstype
         self._src = src
         self._relative_mountpoint = relative_mountpoint
         if options:
             self._options = options
-        if mountpoint:
-            self._mountpoint = mountpoint
 
     def mount(self, base_path: Path) -> None:
         """Mount the mountpoint.
