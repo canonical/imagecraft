@@ -71,7 +71,7 @@ class TestChroot:
         mock_mount = mocker.patch("imagecraft.pack.chroot.os_utils.mount")
         mock_umount = mocker.patch("imagecraft.pack.chroot.os_utils.umount")
 
-        spy_process = mocker.spy(multiprocessing, "Process")
+        mock_process = mocker.patch("imagecraft.pack.chroot.multiprocessing.Process")
         new_root = Path(new_dir, "dir1")
 
         new_root.mkdir()
@@ -93,13 +93,13 @@ class TestChroot:
             str(raised.value) == f"mountpoint {new_dir}/dir1/inexistent does not exist."
         )
 
-        assert not (new_root / Path("foo.txt")).exists()
-        assert spy_process.mock_calls == [
+        assert mock_process.mock_calls == [
             call(
                 target=_runner,
                 args=(new_root, ANY, target_func, (), {"content": "content"}),
             )
         ]
+        mock_process.start.assert_not_called()
 
         assert mock_mount.mock_calls == [
             call("sys-build", f"{new_root}/existent", "-tsys"),
