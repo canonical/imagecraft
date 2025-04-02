@@ -17,6 +17,7 @@
 import logging
 import multiprocessing
 import os
+import subprocess
 from collections.abc import Callable
 from multiprocessing.connection import Connection
 from pathlib import Path
@@ -134,9 +135,16 @@ class Chroot:
 
     def _cleanup(self) -> None:
         """Chroot environment cleanup."""
+        umount_errors: list[Exception] = []
         logger.debug("cleanup chroot: %r", self.path)
         for entry in reversed(self.mounts):
-            entry.umount()
+            try:
+                entry.umount()
+            except subprocess.CalledProcessError as err:  # noqa: PERF203
+                umount_errors.append(err)
+
+        if umount_errors:
+            raise errors.ChrootExecutionError(umount_errors)
 
     def execute(
         self, target: Callable[..., str | None], *args: Any, **kwargs: Any
