@@ -17,6 +17,7 @@
 import os
 import types
 from pathlib import Path
+from unittest import mock
 
 import pytest
 from craft_application import ProjectService, ServiceFactory
@@ -86,6 +87,13 @@ def new_dir(tmpdir):
     yield tmpdir
 
     os.chdir(cwd)
+
+
+@pytest.fixture
+def mock_chroot(monkeypatch):
+    mock_fn = mock.Mock(spec=os.chroot)
+    monkeypatch.setattr(os, "chroot", mock_fn)
+    return mock_fn
 
 
 @pytest.fixture

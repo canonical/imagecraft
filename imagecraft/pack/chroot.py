@@ -65,14 +65,13 @@ class Mount:
 
         self._mountpoint = base_path / self._relative_mountpoint.lstrip("/")
         pid = os.getpid()
-        # Only mount if mountpoint exists.
-        if self._mountpoint.exists():
-            logger.debug("[pid=%d] mount %r on chroot", pid, str(self._mountpoint))
-            os_utils.mount(self._src, str(self._mountpoint), *args)
-        else:
-            logger.debug(
-                "[pid=%d] mountpoint %r does not exist", pid, str(self._mountpoint)
+        if not self._mountpoint.exists():
+            raise errors.ChrootExecutionError(
+                f"mountpoint {str(self._mountpoint)} does not exist."
             )
+
+        logger.debug("[pid=%d] mount %r on chroot", pid, str(self._mountpoint))
+        os_utils.mount(self._src, str(self._mountpoint), *args)
 
     def umount(self, *, lazy: bool = False) -> None:
         """Umount the mountpoint."""
