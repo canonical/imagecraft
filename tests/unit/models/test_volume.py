@@ -50,10 +50,10 @@ def test_volume_valid():
     )
     assert volume.volume_schema == "gpt"
     assert len(volume.structure) == 3
-    assert volume.structure[0].size == 3221225472
+    assert volume.structure[0].size == 3 * 1024**3
     assert volume.structure[0].role == Role.SYSTEM_BOOT
     assert volume.structure[0].filesystem_label == "efi"
-    assert volume.structure[1].size == 6442450944
+    assert volume.structure[1].size == 6 * 1024**3
     assert volume.structure[1].filesystem_label == "boot"
     assert volume.structure[2].role == Role.SYSTEM_DATA
     assert volume.structure[2].size == 0
