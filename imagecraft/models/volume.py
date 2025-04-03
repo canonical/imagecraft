@@ -40,6 +40,9 @@ from pydantic import (
     model_validator,
 )
 
+MIB = 1 << 20  # 1 MiB (2^20)
+GIB = 1 << 30  # 1 GiB (2^30)
+
 # Avoid matches on substrings when validating Volume/Structure names.
 PARTITION_COMPILED_STRICT_REGEX = re.compile(
     r"^" + VALID_PARTITION_REGEX.pattern + r"$", re.ASCII
@@ -69,10 +72,12 @@ StructureName = typing.Annotated[
 def _validate_structure_size(value: str) -> str:
     """Validate and convert the structure size.
 
-    The Volume specification does not respect the IEC 80000-13 Standard:
-    M means MiB (2^20) in the Volume spec. (means 10^2 in the standard).
-    So this validation converts the unit before the conversion to the ByteSize
-    type (respecting the IEC 80000-13 Standard).
+    The Volumes specification supports the following values for size:
+    - <bytes>
+    - <bytes/2^20>M
+    - <bytes/2^30>G
+
+    Validate the unit and convert it to a multiplier applied to the numerical value.
     """
     value = str(value)
     match = STRUCTURE_SIZE_COMPILED_REGEX.match(value)
@@ -80,15 +85,16 @@ def _validate_structure_size(value: str) -> str:
     if not match:
         raise ValueError(SIZE_INVALID_MSG)
 
-    # convert M/G to MiB/GiB
-    unit: str = ""
-    unit_matched = match.group("unit")
-    if unit_matched == "M":
-        unit = "MiB"
-    elif unit_matched == "G":
-        unit = "GiB"
+    size = int(match.group("size"))
+    unit = match.group("unit")
 
-    return match.group("size") + unit
+    # convert M/G to MiB/GiB
+    if unit == "M":
+        size = size * MIB
+    elif unit == "G":
+        size = size * GIB
+
+    return str(size)
 
 
 StructureSize = typing.Annotated[
