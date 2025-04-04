@@ -3,9 +3,14 @@ summary: Pack a complex image
 systems: [ubuntu-24.04-64]
 
 execute: |
+  # Check that work dirs *don't* exist
+  test ! -d parts -a ! -d stage -a ! -d prime
+
   imagecraft pack --verbose --destructive-mode
   test -f pc.img
-  test ! -d parts -a ! -d stage -a ! -d prime
+
+  # Check that work dirs *do* exist
+  test -d parts -a -d stage -a -d prime
 
 restore: |
   imagecraft clean --destructive-mode
