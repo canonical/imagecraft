@@ -14,18 +14,15 @@
 
 """Imagecraft subprocess utility functions."""
 
-import shlex
 import subprocess
 from subprocess import PIPE, CompletedProcess
 from typing import Any, cast
-
-from craft_cli import emit
 
 
 def run(cmd: str, *args: Any, **kwargs: Any) -> CompletedProcess[str]:
     """Thin wrapper around subprocess.run.
 
-    That emits commandline and then executes it, with useful defaults.
+    Execute a command line with useful defaults.
 
     :raises CalledProcessError: If the command fails.
     """
@@ -39,12 +36,6 @@ def run(cmd: str, *args: Any, **kwargs: Any) -> CompletedProcess[str]:
         if key not in kwargs:
             kwargs[key] = value
 
-    msg = f"Command: {cmd} {shlex.join(str(a) for a in args)}"
-    try:
-        emit.debug(msg)
-    except RuntimeError:
-        # Emitter not initialized
-        print(msg)
     return cast(
         CompletedProcess[str],
         subprocess.run([cmd, *(str(a) for a in args)], **kwargs),  # noqa: PLW1510

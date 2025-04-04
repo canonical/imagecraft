@@ -1,0 +1,10 @@
+summary: imagecraft init test
+
+execute: |
+  imagecraft init --name=my-image-name > output.txt
+
+  # Output of init must be exactly this line, and nothing else.
+  echo "Successfully initialised project." > expected.txt
+  diff output.txt expected.txt
+
+  test -f imagecraft.yaml
