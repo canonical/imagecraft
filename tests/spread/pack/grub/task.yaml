@@ -11,7 +11,7 @@ execute: |
   # Check that work dirs *don't* exist
   test ! -d parts -a ! -d stage -a ! -d prime
 
-  imagecraft pack --verbosity debug --destructive-mode
+  imagecraft pack --verbose --destructive-mode
 
   IMG_NAME=pc.img
   test -f ${IMG_NAME}

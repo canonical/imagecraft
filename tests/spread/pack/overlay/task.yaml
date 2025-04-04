@@ -8,7 +8,7 @@ execute: |
   mkdir -p ${TMP_MOUNT}
   echo ${TMP_MOUNT} >> tmpmount.txt
 
-  imagecraft pack --verbosity debug --destructive-mode
+  imagecraft pack --verbose --destructive-mode
 
   IMG_NAME=pc.img
   test -f ${IMG_NAME}
