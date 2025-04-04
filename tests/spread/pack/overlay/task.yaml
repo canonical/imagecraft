@@ -1,11 +1,14 @@
 summary: Pack an image using overlays
+
+systems: [ubuntu-24.04-64]
+
 execute: |
   TMPDIR="$(mktemp -d)"
   TMP_MOUNT=${TMPDIR}/mount
   mkdir -p ${TMP_MOUNT}
   echo ${TMP_MOUNT} >> tmpmount.txt
 
-  imagecraft pack --verbosity debug
+  imagecraft pack --verbosity debug --destructive-mode
 
   IMG_NAME=pc.img
   test -f ${IMG_NAME}
@@ -43,6 +46,7 @@ restore: |
       losetup -l | NOMATCH "$LOOP"
       rm loop.txt
   fi
+  imagecraft clean --destructive-mode
   rm -rf pc.img || true
 
 debug: |

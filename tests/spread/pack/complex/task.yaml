@@ -1,5 +1,12 @@
 summary: Pack a complex image
+
+systems: [ubuntu-24.04-64]
+
 execute: |
-  imagecraft pack --verbosity trace
-  test -f party.img
+  imagecraft pack --verbosity debug --destructive-mode
+  test -f pc.img
   test ! -d parts -a ! -d stage -a ! -d prime
+
+restore: |
+  imagecraft clean --destructive-mode
+  rm -rf pc.img || true
