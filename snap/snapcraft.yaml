@@ -93,7 +93,7 @@ parts:
       "usr/bin/mcopy": "libexec/imagecraft/mcopy"
       "usr/bin/mtools": "libexec/imagecraft/mtools"
       "usr/bin/dd": "libexec/imagecraft/dd"
-      "usr/bin/fallocate": "libexec/imagecraft/fallocate"
+      "usr/bin/truncate": "libexec/imagecraft/truncate"
       "usr/sbin/mkfs*": "libexec/imagecraft/"
   imagecraft:
     after: [imagecraft-libs, libgit2]

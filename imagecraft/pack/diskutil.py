@@ -87,11 +87,11 @@ def create_zero_image(*, imagepath: Path, disk_size: DiskSize) -> None:
 
     :param imagepath: Path to image file.
     :param disk_size: Disk size attributes.
-    :raises CalledProcessError: If fallocate fails.
+    :raises CalledProcessError: If truncate fails.
     """
     # Remove possibly pre-existing image
     imagepath.unlink(missing_ok=True)
-    run("fallocate", f"-l {disk_size.bytesize}", str(imagepath))
+    run("truncate", f"-s {disk_size.bytesize}", str(imagepath))
 
 
 def _format_populate_ext_partition(  # pylint: disable=too-many-arguments
