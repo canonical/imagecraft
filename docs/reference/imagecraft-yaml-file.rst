@@ -240,7 +240,7 @@ Size for structure item. Conforms to the IEC 80000-13 Standard.
 
     .. code-block:: yaml
 
-        size: "6GiB"
+        size: "6G"
 
 volumes.<volume>.structure.<item>.filesystem
 --------------------------------------------

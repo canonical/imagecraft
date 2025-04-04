@@ -41,7 +41,7 @@ def test_get_grammar_aware_volume_keywords():
                         "filesystem": "ext4",
                         "filesystem-label": "writable",
                         "role": "system-data",
-                        "size": "6GiB",
+                        "size": "6G",
                     },
                     {
                         "name": "rootfs",
@@ -49,7 +49,7 @@ def test_get_grammar_aware_volume_keywords():
                         "filesystem": "ext4",
                         "filesystem-label": "writable",
                         "role": "system-data",
-                        "size": "6GiB",
+                        "size": "6G",
                     },
                 ],
             }

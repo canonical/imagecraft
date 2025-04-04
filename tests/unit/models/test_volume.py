@@ -28,7 +28,7 @@ def test_volume_valid():
                 "role": "system-boot",
                 "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
                 "filesystem": "vfat",
-                "size": "6GiB",
+                "size": "3G",
                 "filesystem-label": "",
             },
             {
@@ -50,10 +50,10 @@ def test_volume_valid():
     )
     assert volume.volume_schema == "gpt"
     assert len(volume.structure) == 3
-    assert volume.structure[0].size == 6442450944
+    assert volume.structure[0].size == 3 * 1024**3
     assert volume.structure[0].role == Role.SYSTEM_BOOT
     assert volume.structure[0].filesystem_label == "efi"
-    assert volume.structure[1].size == 6000000000
+    assert volume.structure[1].size == 6 * 1024**3
     assert volume.structure[1].filesystem_label == "boot"
     assert volume.structure[2].role == Role.SYSTEM_DATA
     assert volume.structure[2].size == 0
@@ -254,7 +254,7 @@ def test_volume_valid():
             },
         ),
         (
-            "1 validation error for Volume\nstructure.0.size\n  could not parse value and unit from byte string",
+            "1 validation error for Volume\nstructure.0.size\n  Value error, size must be expressed in bytes, optionally with M or G unit.",
             ValidationError,
             {
                 "schema": "gpt",
@@ -265,6 +265,22 @@ def test_volume_valid():
                         "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
                         "filesystem": "ext4",
                         "size": "invalid",
+                    }
+                ],
+            },
+        ),
+        (
+            "1 validation error for Volume\nstructure.0.size\n  Value error, size must be expressed in bytes, optionally with M or G unit.",
+            ValidationError,
+            {
+                "schema": "gpt",
+                "structure": [
+                    {
+                        "name": "test",
+                        "role": "system-data",
+                        "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+                        "filesystem": "ext4",
+                        "size": "6GiB",
                     }
                 ],
             },

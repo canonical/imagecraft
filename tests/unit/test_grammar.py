@@ -33,7 +33,7 @@ pc:
       filesystem: ext4
       filesystem-label: writable
       role: system-data
-      size: 6GiB
+      size: 6G
     """,
             "amd64",
             "amd64",
@@ -47,7 +47,7 @@ pc:
                             "filesystem": "ext4",
                             "filesystem-label": "writable",
                             "role": "system-data",
-                            "size": "6GiB",
+                            "size": "6G",
                         }
                     ],
                 },
@@ -63,13 +63,13 @@ pc:
         role: system-boot
         type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
         filesystem: vfat
-        size: 500 MiB
+        size: 500 M
     - name: rootfs
       type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
       filesystem: ext4
       filesystem-label: writable
       role: system-data
-      size: 6GiB
+      size: 6G
     """,
             "amd64",
             "arm64",
@@ -82,7 +82,7 @@ pc:
                             "type": "C12A7328-F81F-11D2-BA4B-00A0C93EC93B",
                             "filesystem": "vfat",
                             "role": "system-boot",
-                            "size": "500 MiB",
+                            "size": "500 M",
                         },
                         {
                             "name": "rootfs",
@@ -90,7 +90,7 @@ pc:
                             "filesystem": "ext4",
                             "filesystem-label": "writable",
                             "role": "system-data",
-                            "size": "6GiB",
+                            "size": "6G",
                         },
                     ],
                 },
@@ -122,7 +122,7 @@ pc:
           filesystem: ext4
           filesystem-label: writable
           role: system-data
-          size: 6GiB
+          size: 6G
     - else:
     """,
             "amd64",

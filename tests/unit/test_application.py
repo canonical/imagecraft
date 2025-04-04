@@ -39,7 +39,7 @@ volumes:
         role: system-boot
         type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
         filesystem: vfat
-        size: 500 MiB
+        size: 500 M
 """
 
 
@@ -84,19 +84,19 @@ volumes:
           role: system-boot
           type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
           filesystem: vfat
-          size: 500 MiB
+          size: 500 M
       - to riscv64:
         - name: uboot
           role: system-boot
           type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
           filesystem: vfat
-          size: 200 MiB
+          size: 200 M
       - name: rootfs
         type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
         filesystem: ext4
         filesystem-label: writable
         role: system-data
-        size: 6GiB
+        size: 6G
 """
 
 
