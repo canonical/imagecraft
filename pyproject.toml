@@ -10,7 +10,7 @@ dependencies = [
     "craft-platforms~=0.6",
     "craft-application~=5.0",
     "craft-grammar~=2.0.3",
-    "craft-providers~=2.0",
+    "craft-providers @ git+https://github.com/canonical/craft-providers.git@work/experiment-lxd-vm#egg=craft-providers",
     "pydantic~=2.8",
 ]
 classifiers = [
