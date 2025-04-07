@@ -7,11 +7,6 @@ platforms:
   amd64:
 
 parts:
-  kernel:
-    plugin: nil
-    stage-packages: [linux-image]
-    organize:
-      "*": (volume/pc/efi)/
   rootfs:
     plugin: nil
     stage-packages: [busybox-static]
