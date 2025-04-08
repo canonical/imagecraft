@@ -7,19 +7,14 @@ platforms:
   amd64:
 
 parts:
-  kernel:
-    plugin: nil
-    stage-packages: [linux-image]
-    organize:
-      "*": (volume/party/efi)/
   rootfs:
     plugin: nil
     stage-packages: [busybox-static]
     organize:
-      "*": (volume/party/rootfs)/
+      "*": (volume/pc/rootfs)/
 
 volumes:
-  party:
+  pc:
     schema: gpt
     structure:
       - name: efi
