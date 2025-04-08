@@ -96,17 +96,19 @@ def test_format_populate_partition(
         "imagecraft.pack.gptutil.subprocess.run",
         autospec=True,
     )
+    sector_size = 512
+    disk_size = 512000000
     diskutil.format_populate_partition(
         fstype=fstype,
         content_dir=content,
         partitionpath=imagepath,
-        disk_size=diskutil.DiskSize(bytesize=512000000, sector_size=512),
+        disk_size=diskutil.DiskSize(bytesize=disk_size, sector_size=sector_size),
         label=label,
     )
 
     create_zero_image.assert_called_with(
         imagepath=imagepath,
-        disk_size=diskutil.DiskSize(bytesize=512000000, sector_size=512),
+        disk_size=diskutil.DiskSize(bytesize=disk_size, sector_size=sector_size),
     )
 
     calls = [call(e, text=True, check=True, stdout=-1) for e in expected_values]

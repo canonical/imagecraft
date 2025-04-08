@@ -40,6 +40,9 @@ from pydantic import (
     model_validator,
 )
 
+MIB = 1 << 20  # 1 MiB (2^20)
+GIB = 1 << 30  # 1 GiB (2^30)
+
 # Avoid matches on substrings when validating Volume/Structure names.
 PARTITION_COMPILED_STRICT_REGEX = re.compile(
     r"^" + VALID_PARTITION_REGEX.pattern + r"$", re.ASCII
@@ -47,6 +50,7 @@ PARTITION_COMPILED_STRICT_REGEX = re.compile(
 
 VOLUME_NAME_COMPILED_REGEX = PARTITION_COMPILED_STRICT_REGEX
 STRUCTURE_NAME_COMPILED_REGEX = PARTITION_COMPILED_STRICT_REGEX
+STRUCTURE_SIZE_COMPILED_REGEX = re.compile(r"^(?P<size>\d+)\s*(?P<unit>[M,G]{0,1})$")
 
 GPT_NAME_MAX_LENGTH = 36
 
@@ -55,12 +59,49 @@ VOLUME_INVALID_MSG = (
     "and hyphens, and may not begin or end with a hyphen."
 )
 
+SIZE_INVALID_MSG = "size must be expressed in bytes, optionally with M or G unit."
+
 StructureName = typing.Annotated[
     str,
     StringConstraints(
         max_length=GPT_NAME_MAX_LENGTH, pattern=STRUCTURE_NAME_COMPILED_REGEX
     ),
 ]
+
+
+def _validate_structure_size(value: str) -> str:
+    """Validate and convert the structure size.
+
+    The Volumes specification supports the following values for size:
+    - <bytes>
+    - <bytes/2^20>M
+    - <bytes/2^30>G
+
+    Validate the unit and convert it to a multiplier applied to the numerical value.
+    """
+    value = str(value)
+    match = STRUCTURE_SIZE_COMPILED_REGEX.match(value)
+
+    if not match:
+        raise ValueError(SIZE_INVALID_MSG)
+
+    size = int(match.group("size"))
+    unit = match.group("unit")
+
+    # convert M/G to MiB/GiB
+    if unit == "M":
+        size = size * MIB
+    elif unit == "G":
+        size = size * GIB
+
+    return str(size)
+
+
+StructureSize = typing.Annotated[
+    ByteSize,
+    BeforeValidator(_validate_structure_size),
+]
+
 
 VolumeName = typing.Annotated[
     str,
@@ -103,7 +144,7 @@ class StructureItem(CraftBaseModel):
     id: uuid.UUID | None = None
     role: Role
     structure_type: GptType = Field(alias="type")
-    size: ByteSize
+    size: StructureSize
     filesystem: FileSystem
     filesystem_label: str | None = None
 

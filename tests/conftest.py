@@ -114,7 +114,7 @@ volumes:
         role: system-boot
         type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
         filesystem: vfat
-        size: 500MiB
+        size: 500M
 """
 
 
