@@ -90,16 +90,16 @@ Pack the image
 
 The packing can be run in two different environments:
 
-- in a ``multipass`` VM:
+- In a ``multipass`` VM:
 
-  .. code-block::
+  .. code-block:: bash
 
       CRAFT_BUILD_ENVIRONMENT=multipass imagecraft --verbosity debug pack
 
-- on the local machine, with destructive mode. In this case the machine must be
+- On the local machine, with destructive mode. In this case the machine must be
   of the series of the ``build-base`` declared in the ``imagecraft.yaml`` file.
 
-  .. code-block::
+  .. code-block:: bash
 
       sudo imagecraft --verbosity debug pack --destructive-mode
 
