@@ -541,8 +541,8 @@ wheels = [
 
 [[package]]
 name = "craft-parts"
-version = "2.7.0"
-source = { registry = "https://pypi.org/simple" }
+version = "2.7.0.post13+g94f92fc"
+source = { git = "https://github.com/canonical/craft-parts.git?rev=work%2Fexperiment-chroot#94f92fcaad756072f3411beb1ef499ce6e908d27" }
 dependencies = [
     { name = "overrides" },
     { name = "pydantic" },
@@ -550,10 +550,6 @@ dependencies = [
     { name = "pyyaml" },
     { name = "requests" },
     { name = "requests-unixsocket2" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/e2/d8/9ba8f33084e5c39744dd0e4b6db85937d118f65ebbf149b4990176883e8e/craft_parts-2.7.0.tar.gz", hash = "sha256:aa9e9e88ad893e12046c86a484fd7acf064d03039b6ce9907597dc093835baa4", size = 648642 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/75/7d/24aeba828d96431eb1d1813747c65c8ebc00a58de4c55cd66d19c0469432/craft_parts-2.7.0-py3-none-any.whl", hash = "sha256:c230386314fb8d50e410372df1edec3d0d87a1ea53b2d5c92357f7755828b84b", size = 456889 },
 ]
 
 [[package]]
@@ -840,7 +836,7 @@ requires-dist = [
     { name = "craft-application", specifier = "~=5.0" },
     { name = "craft-cli", specifier = "~=3.0" },
     { name = "craft-grammar", specifier = "~=2.0.3" },
-    { name = "craft-parts", specifier = "~=2.6" },
+    { name = "craft-parts", git = "https://github.com/canonical/craft-parts.git?rev=work%2Fexperiment-chroot" },
     { name = "craft-platforms", specifier = "~=0.6" },
     { name = "craft-providers", specifier = "~=2.0" },
     { name = "pydantic", specifier = "~=2.8" },

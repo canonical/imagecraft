@@ -19,10 +19,11 @@ import subprocess
 from pathlib import Path
 
 from craft_cli import emit
+from craft_parts.errors import SandboxMountError
+from craft_parts.sandbox import Mount, Sandbox
 from craft_platforms import DebianArchitecture
 
 from imagecraft import errors
-from imagecraft.pack.chroot import Chroot, Mount
 from imagecraft.pack.image import Image
 from imagecraft.subprocesses import run
 
@@ -147,15 +148,15 @@ def setup_grub(image: Image, workdir: Path, arch: str) -> None:
         Mount(fstype="sysfs", src="sysfs-build", relative_mountpoint="/sys"),
         Mount(fstype=None, src="/run", relative_mountpoint="/run", options=["--bind"]),
     ]
-    chroot = Chroot(path=mount_dir, mounts=mounts)
+    sandbox = Sandbox(root=mount_dir, mounts=mounts)
 
     try:
-        chroot.execute(
+        sandbox.execute(
             target=_grub_install,
             grub_target=_ARCH_TO_GRUB_EFI_TARGET[arch],
             loop_dev=loop_dev,
         )
-    except errors.ChrootMountError as err:
+    except SandboxMountError as err:
         # Ignore mounting errors indicating the rootfs does not have
         # the needed structure to install grub.
         emit.message(f"Cannot install GRUB on this rootfs: {err}")
