@@ -109,7 +109,7 @@ def setup_grub(image: Image, workdir: Path, arch: str) -> None:
         emit.message("Skipping GRUB installation because no boot partition was found")
         return
     if rootfs_partition_num is None:
-        emit.message("Skipping GRUB installation because data partition was found")
+        emit.message("Skipping GRUB installation because no data partition was found")
         return
 
     if arch not in _ARCH_TO_GRUB_EFI_TARGET:
