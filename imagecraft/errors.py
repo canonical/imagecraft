@@ -31,5 +31,24 @@ class GRUBInstallError(ImagecraftError):
     """Raised when an error occurs when installing grub."""
 
 
-class ChrootExecutionError(ImagecraftError):
+class ChrootError(ImagecraftError):
+    """Base class for chroot handler errors."""
+
+
+class ChrootMountError(ChrootError):
+    """Failed to mount in the chroot.
+
+    :param mountpoint: The filesystem mount point.
+    :param message: The error message.
+    """
+
+    def __init__(self, mountpoint: str, message: str) -> None:
+        self.mountpoint = mountpoint
+        self.message = message
+        message = f"Failed to mount on {mountpoint}: {message}"
+
+        super().__init__(message=message)
+
+
+class ChrootExecutionError(ChrootError):
     """Raised when an error occurs when dealing with the chroot."""

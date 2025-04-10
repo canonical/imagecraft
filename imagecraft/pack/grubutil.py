@@ -155,5 +155,9 @@ def setup_grub(image: Image, workdir: Path, arch: str) -> None:
             grub_target=_ARCH_TO_GRUB_EFI_TARGET[arch],
             loop_dev=loop_dev,
         )
+    except errors.ChrootMountError as err:
+        # Ignore mounting errors indicating the rootfs does not have
+        # the needed structure to install grub.
+        emit.message(f"Cannot install GRUB on this rootfs: {err}")
     finally:
         image.detach_loopdevs()

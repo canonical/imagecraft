@@ -67,8 +67,8 @@ class Mount:
         self._mountpoint = base_path / self._relative_mountpoint.lstrip("/")
         pid = os.getpid()
         if not self._mountpoint.exists():
-            raise errors.ChrootExecutionError(
-                f"mountpoint {str(self._mountpoint)} does not exist."
+            raise errors.ChrootMountError(
+                mountpoint=str(self._mountpoint), message="mountpoint does not exist."
             )
 
         logger.debug("[pid=%d] mount %r on chroot", pid, str(self._mountpoint))
