@@ -85,13 +85,14 @@ class TestChroot:
 
         chroot = Chroot(path=new_root, mounts=mounts)
 
-        with pytest.raises(errors.ChrootExecutionError) as raised:
+        with pytest.raises(errors.ChrootMountError) as raised:
             chroot.execute(
                 target=target_func,
                 content="content",
             )
         assert (
-            str(raised.value) == f"mountpoint {new_dir}/dir1/inexistent does not exist."
+            str(raised.value)
+            == f"Failed to mount on {new_dir}/dir1/inexistent: mountpoint does not exist."
         )
 
         assert mock_process.mock_calls == [
@@ -246,9 +247,9 @@ class TestMount:
 
         mount = Mount(fstype=None, src="source", relative_mountpoint="/destination")
 
-        with pytest.raises(errors.ChrootExecutionError) as raised:
+        with pytest.raises(errors.ChrootMountError) as raised:
             mount.mount(base_path=new_dir / "inexistent")
         assert (
             str(raised.value)
-            == f"mountpoint {new_dir}/inexistent/destination does not exist."
+            == f"Failed to mount on {new_dir}/inexistent/destination: mountpoint does not exist."
         )
