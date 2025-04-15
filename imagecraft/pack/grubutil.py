@@ -14,7 +14,6 @@
 
 """GRUB utils."""
 
-import logging
 import subprocess
 from pathlib import Path
 
@@ -31,8 +30,6 @@ _ARCH_TO_GRUB_EFI_TARGET: dict[str, str] = {
     DebianArchitecture.ARM64: "arm64-efi",
     DebianArchitecture.ARMHF: "arm-efi",
 }
-
-logger = logging.getLogger(__name__)
 
 
 def _grub_install(grub_target: str, loop_dev: str) -> None:
@@ -80,14 +77,17 @@ def _grub_install(grub_target: str, loop_dev: str) -> None:
     try:
         run(*check_grub_install)
     except FileNotFoundError:
-        logger.debug("Skipping GRUB installation because grub-install is not available")
+        emit.progress(
+            "Skipping GRUB installation because grub-install is not available",
+            permanent=True,
+        )
         return
 
     try:
-        run(*grub_install_command)
-        run(*divert_os_prober_command)
-        run(*update_grub_command)
-        run(*undivert_os_prober_command)
+        run(*grub_install_command, stderr=subprocess.STDOUT)
+        run(*divert_os_prober_command, stderr=subprocess.STDOUT)
+        run(*update_grub_command, stderr=subprocess.STDOUT)
+        run(*undivert_os_prober_command, stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as err:
         raise errors.GRUBInstallError("Fail to install grub") from err
     except FileNotFoundError as err:

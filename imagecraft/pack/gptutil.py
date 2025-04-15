@@ -107,7 +107,7 @@ def _create_gpt_layout(
     stdin_lines: str = "\n".join(_create_sfdisk_lines(header, partitions))
 
     emit.trace(f"Stdin for sfdisk:\n{stdin_lines}")
-    emit.message("Partition the image")
+    emit.progress("Partition the image")
     run("sfdisk", imagepath, input=stdin_lines)
 
 
