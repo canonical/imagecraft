@@ -116,6 +116,7 @@ def _format_populate_ext_partition(  # pylint: disable=too-many-arguments
 
     # Create and copy
     mke2fs_args = [
+        "-q",
         "-t",
         fstype,
         "-d",
@@ -254,5 +255,6 @@ def inject_partition_into_image(
         f"of={str(imagepath)}",
         f"bs={disk_size.sector_size}",
         f"seek={sector_offset}",
+        "status=none",
         "conv=notrunc,sparse",
     )

@@ -78,7 +78,7 @@ def _grub_install(grub_target: str, loop_dev: str) -> None:
 
     # Check if grub-install is available, otherwise skip the installation without error
     try:
-        run(*check_grub_install, logger.debug)
+        run(*check_grub_install)
     except FileNotFoundError:
         logger.debug("Skipping GRUB installation because grub-install is not available")
         return
@@ -105,15 +105,23 @@ def setup_grub(image: Image, workdir: Path, arch: str) -> None:
     rootfs_partition_num = image.data_partition_number
     boot_partition_num = image.boot_partition_number
 
+    emit.progress("Setup GRUB in the image")
+
     if boot_partition_num is None:
-        emit.message("Skipping GRUB installation because no boot partition was found")
+        emit.progress(
+            "Skipping GRUB installation because no boot partition was found",
+            permanent=True,
+        )
         return
     if rootfs_partition_num is None:
-        emit.message("Skipping GRUB installation because no data partition was found")
+        emit.progress(
+            "Skipping GRUB installation because no data partition was found",
+            permanent=True,
+        )
         return
 
     if arch not in _ARCH_TO_GRUB_EFI_TARGET:
-        emit.message("Cannot install GRUB on this architecture")
+        emit.progress("Cannot install GRUB on this architecture", permanent=True)
         return
 
     mount_dir = workdir / "mount"
