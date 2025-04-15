@@ -16,7 +16,12 @@
 
 """Main Imagecraft Application."""
 
+from typing import Any
+
+import craft_application
+import craft_cli
 from craft_application import Application, AppMetadata
+from craft_application.services import service_factory
 from craft_parts.plugins.plugins import PluginType
 from overrides import override  # type: ignore[reportUnknownVariableType]
 
@@ -32,6 +37,16 @@ APP_METADATA = AppMetadata(
 
 class Imagecraft(Application):
     """Imagecraft application definition."""
+
+    def __init__(
+        self,
+        app: craft_application.AppMetadata,
+        services: service_factory.ServiceFactory,
+    ) -> None:
+        super().__init__(app=app, services=services, extra_loggers={"imagecraft"})
+        self._global_args: dict[str, Any] = {}
+        self._dispatcher: craft_cli.Dispatcher | None = None
+        self._cli_loggers |= {"imagecraft"}
 
     @override
     def _get_app_plugins(self) -> dict[str, PluginType]:
