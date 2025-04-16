@@ -84,10 +84,15 @@ def _grub_install(grub_target: str, loop_dev: str) -> None:
         return
 
     try:
-        run(*grub_install_command, stderr=subprocess.STDOUT)
-        run(*divert_os_prober_command, stderr=subprocess.STDOUT)
-        run(*update_grub_command, stderr=subprocess.STDOUT)
-        run(*undivert_os_prober_command, stderr=subprocess.STDOUT)
+        for cmd in [
+            grub_install_command,
+            divert_os_prober_command,
+            update_grub_command,
+            undivert_os_prober_command,
+        ]:
+            res = run(*cmd, stderr=subprocess.STDOUT)
+            if res.stdout:
+                emit.debug(res.stdout)
     except subprocess.CalledProcessError as err:
         raise errors.GRUBInstallError("Fail to install grub") from err
     except FileNotFoundError as err:
