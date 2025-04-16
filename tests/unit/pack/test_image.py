@@ -49,18 +49,20 @@ class TestImage:
     def test_loopdev(self, mocker, new_dir: Path):
         mock_run = mocker.patch("imagecraft.pack.image.run", side_effect=run)
 
-        volume = Volume(
-            schema="gpt",  # pyright: ignore[reportArgumentType]
-            structure=[  # pyright: ignore[reportArgumentType]
-                {
-                    "name": "efi",
-                    "role": "system-boot",
-                    "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
-                    "filesystem": "vfat",
-                    "size": "3G",
-                    "filesystem-label": "",
-                },
-            ],
+        volume = Volume.unmarshal(
+            {
+                "schema": "gpt",
+                "structure": [
+                    {
+                        "name": "efi",
+                        "role": "system-boot",
+                        "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+                        "filesystem": "vfat",
+                        "size": "3G",
+                        "filesystem-label": "",
+                    },
+                ],
+            }
         )
         disk_path = Path(new_dir, "pc.img")
         disk_path.touch(exist_ok=True)

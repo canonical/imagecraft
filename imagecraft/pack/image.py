@@ -16,7 +16,7 @@
 
 import contextlib
 import json
-from collections.abc import Generator
+from collections.abc import Generator, Iterator
 from pathlib import Path
 from typing import Any, cast
 
@@ -85,7 +85,7 @@ class Image:
         return None
 
     @contextlib.contextmanager
-    def attach_loopdev(self) -> Generator[str]:
+    def attach_loopdev(self) -> Iterator[str]:
         """Attach a loop device for this image file."""
         if not hasattr(self, "loop_device"):
             # This command attaches a loop device and returns the path in /dev
