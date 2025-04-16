@@ -80,7 +80,7 @@ def test_setup_grub(mocker, new_dir, volume):
 
 
 @pytest.mark.parametrize(
-    ("volume", "message"),
+    ("volume", "arch", "message"),
     [
         (
             Volume.unmarshal(
@@ -98,6 +98,7 @@ def test_setup_grub(mocker, new_dir, volume):
                     ],
                 }
             ),
+            DebianArchitecture.AMD64,
             "Skipping GRUB installation because no boot partition was found",
         ),
         (
@@ -116,12 +117,40 @@ def test_setup_grub(mocker, new_dir, volume):
                     ],
                 }
             ),
+            DebianArchitecture.AMD64,
             "Skipping GRUB installation because no data partition was found",
+        ),
+        (
+            Volume.unmarshal(
+                {
+                    "schema": "gpt",
+                    "structure": [
+                        {
+                            "name": "efi",
+                            "role": "system-boot",
+                            "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+                            "filesystem": "vfat",
+                            "size": "3G",
+                            "filesystem-label": "",
+                        },
+                        {
+                            "name": "rootfs",
+                            "role": "system-data",
+                            "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+                            "filesystem": "ext4",
+                            "size": "0",
+                            "filesystem-label": "writable",
+                        },
+                    ],
+                }
+            ),
+            DebianArchitecture.S390X,
+            "Cannot install GRUB on this architecture",
         ),
     ],
 )
 @pytest.mark.usefixtures("new_dir")
-def test_setup_grub_partitions(mocker, new_dir, volume, emitter, message):
+def test_setup_grub_partitions(mocker, new_dir, volume, arch, emitter, message):
     disk_path = Path(new_dir, "pc.img")
     disk_path.touch(exist_ok=True)
     image = Image(
@@ -133,8 +162,8 @@ def test_setup_grub_partitions(mocker, new_dir, volume, emitter, message):
     mock_chroot = mocker.patch("imagecraft.pack.grubutil.Chroot")
     mocker.patch.object(image, "attach_loopdev", side_effect=fake_loopdev_handler)
 
-    setup_grub(image=image, workdir=workdir, arch=DebianArchitecture.AMD64)
+    setup_grub(image=image, workdir=workdir, arch=arch)
 
     mock_chroot.return_value.execute.assert_not_called()
 
-    emitter.assert_message(message)
+    emitter.assert_progress(message, permanent=True)
