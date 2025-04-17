@@ -11,7 +11,7 @@ execute: |
   # Check that work dirs *don't* exist
   test ! -d parts -a ! -d stage -a ! -d prime
 
-  GRUB_INSTALL_LOG="Setup GRUB in the image"
+  GRUB_INSTALL_LOG="Setting up GRUB in the image"
 
   imagecraft pack --verbose --destructive-mode 2>&1 >/dev/null | MATCH "$GRUB_INSTALL_LOG"
 
