@@ -119,45 +119,44 @@ def setup_grub(image: Image, workdir: Path, arch: str) -> None:
     mount_dir = workdir / "mount"
     mount_dir.mkdir(exist_ok=True)
 
-    loop_dev = image.attach_loopdev()
+    with image.attach_loopdev() as loop_dev:
+        mounts: list[Mount] = [
+            Mount(
+                fstype=None,
+                src=f"{loop_dev}p{rootfs_partition_num}",
+                relative_mountpoint="/",
+            ),
+            Mount(
+                fstype=None,
+                src=f"{loop_dev}p{boot_partition_num}",
+                relative_mountpoint="/boot/efi",
+            ),
+            Mount(
+                fstype="devtmpfs",
+                src="devtmpfs-build",
+                relative_mountpoint="/dev",
+            ),
+            Mount(
+                fstype="devpts",
+                src="devpts-build",
+                relative_mountpoint="/dev/pts",
+                options=["-o", "nodev,nosuid"],
+            ),
+            Mount(fstype="proc", src="proc-build", relative_mountpoint="proc"),
+            Mount(fstype="sysfs", src="sysfs-build", relative_mountpoint="/sys"),
+            Mount(
+                fstype=None, src="/run", relative_mountpoint="/run", options=["--bind"]
+            ),
+        ]
+        chroot = Chroot(path=mount_dir, mounts=mounts)
 
-    mounts: list[Mount] = [
-        Mount(
-            fstype=None,
-            src=f"{loop_dev}p{rootfs_partition_num}",
-            relative_mountpoint="/",
-        ),
-        Mount(
-            fstype=None,
-            src=f"{loop_dev}p{boot_partition_num}",
-            relative_mountpoint="/boot/efi",
-        ),
-        Mount(
-            fstype="devtmpfs",
-            src="devtmpfs-build",
-            relative_mountpoint="/dev",
-        ),
-        Mount(
-            fstype="devpts",
-            src="devpts-build",
-            relative_mountpoint="/dev/pts",
-            options=["-o", "nodev,nosuid"],
-        ),
-        Mount(fstype="proc", src="proc-build", relative_mountpoint="proc"),
-        Mount(fstype="sysfs", src="sysfs-build", relative_mountpoint="/sys"),
-        Mount(fstype=None, src="/run", relative_mountpoint="/run", options=["--bind"]),
-    ]
-    chroot = Chroot(path=mount_dir, mounts=mounts)
-
-    try:
-        chroot.execute(
-            target=_grub_install,
-            grub_target=_ARCH_TO_GRUB_EFI_TARGET[arch],
-            loop_dev=loop_dev,
-        )
-    except errors.ChrootMountError as err:
-        # Ignore mounting errors indicating the rootfs does not have
-        # the needed structure to install grub.
-        emit.progress(f"Cannot install GRUB on this rootfs: {err}", permanent=True)
-    finally:
-        image.detach_loopdevs()
+        try:
+            chroot.execute(
+                target=_grub_install,
+                grub_target=_ARCH_TO_GRUB_EFI_TARGET[arch],
+                loop_dev=loop_dev,
+            )
+        except errors.ChrootMountError as err:
+            # Ignore mounting errors indicating the rootfs does not have
+            # the needed structure to install grub.
+            emit.progress(f"Cannot install GRUB on this rootfs: {err}", permanent=True)

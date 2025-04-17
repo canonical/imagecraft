@@ -22,34 +22,36 @@ from imagecraft.pack import diskutil, gptutil
 
 @pytest.fixture
 def volume():
-    return Volume(
-        schema="gpt",  # pyright: ignore[reportArgumentType]
-        structure=[  # pyright: ignore[reportArgumentType]
-            {
-                "name": "efi",
-                "role": "system-boot",
-                "type": "C12A7328-F81F-11D2-BA4B-00A0C93EC93B",
-                "filesystem": "vfat",
-                "size": "6G",
-                "filesystem-label": "",
-            },
-            {
-                "name": "boot",
-                "role": "system-boot",
-                "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
-                "filesystem": "fat16",
-                "size": "20M",
-            },
-            {
-                "name": "rootfs",
-                "role": "system-data",
-                "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
-                "id": "6fa819a0-a35a-487a-82d4-a86d1a46b2bb",
-                "filesystem": "ext4",
-                "size": "0",
-                "filesystem-label": "writable",
-            },
-        ],
+    return Volume.unmarshal(
+        {
+            "schema": "gpt",
+            "structure": [
+                {
+                    "name": "efi",
+                    "role": "system-boot",
+                    "type": "C12A7328-F81F-11D2-BA4B-00A0C93EC93B",
+                    "filesystem": "vfat",
+                    "size": "6G",
+                    "filesystem-label": "",
+                },
+                {
+                    "name": "boot",
+                    "role": "system-boot",
+                    "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+                    "filesystem": "fat16",
+                    "size": "20M",
+                },
+                {
+                    "name": "rootfs",
+                    "role": "system-data",
+                    "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+                    "id": "6fa819a0-a35a-487a-82d4-a86d1a46b2bb",
+                    "filesystem": "ext4",
+                    "size": "0",
+                    "filesystem-label": "writable",
+                },
+            ],
+        }
     )
 
 

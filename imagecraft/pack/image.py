@@ -16,7 +16,7 @@
 
 import contextlib
 import json
-from collections.abc import Generator
+from collections.abc import Generator, Iterator
 from pathlib import Path
 from typing import Any, cast
 
@@ -84,7 +84,8 @@ class Image:
                 return i + 1
         return None
 
-    def attach_loopdev(self) -> str:
+    @contextlib.contextmanager
+    def attach_loopdev(self) -> Iterator[str]:
         """Attach a loop device for this image file."""
         if not hasattr(self, "loop_device"):
             # This command attaches a loop device and returns the path in /dev
@@ -98,16 +99,19 @@ class Image:
             emit.debug(
                 f"Attached image {self.disk_path} as loop device {self.loop_device}"
             )
-        return self.loop_device
+        try:
+            yield self.loop_device
+        finally:
+            self._detach_loopdevs()
 
-    def get_loopdevs(self) -> Generator[dict[str, Any]]:
+    def _get_loopdevs(self) -> Generator[dict[str, Any]]:
         """Return the loop devices attached from this image file."""
         for loop_device in _get_loop_devices():
             with contextlib.suppress(FileNotFoundError):
                 if self.disk_path.samefile(Path(loop_device["back-file"])):
                     yield loop_device
 
-    def detach_loopdevs(self) -> None:
+    def _detach_loopdevs(self) -> None:
         """Detach all loop devices that are attached from this image file."""
-        for loop_device in self.get_loopdevs():
+        for loop_device in self._get_loopdevs():
             _detach_loop_device(loop_device["name"], file=loop_device["back-file"])
