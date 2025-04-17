@@ -61,7 +61,7 @@ class ImagecraftPackService(PackageService):
         with tempfile.TemporaryDirectory() as tmp_dir:
             for structure_item in volume.structure:
                 partition_name = get_partition_name(volume_name, structure_item)
-                emit.verbose(f"Prepare partition {partition_name}")
+                emit.verbose(f"Preparing partition {partition_name}")
                 partition_prime_dir = project_dirs.get_prime_dir(
                     partition=partition_name
                 )
@@ -80,7 +80,7 @@ class ImagecraftPackService(PackageService):
                     disk_size=partition_size,
                     label=structure_item.filesystem_label,
                 )
-                emit.verbose(f"Add partition {partition_name} to the image")
+                emit.verbose(f"Adding partition {partition_name} to the image")
                 diskutil.inject_partition_into_image(
                     partition=partition_img,
                     imagepath=disk_image_file,

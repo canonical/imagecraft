@@ -110,7 +110,7 @@ def setup_grub(image: Image, workdir: Path, arch: str) -> None:
     rootfs_partition_num = image.data_partition_number
     boot_partition_num = image.boot_partition_number
 
-    emit.progress("Setup GRUB in the image")
+    emit.progress("Setting up GRUB in the image")
 
     if boot_partition_num is None:
         emit.progress(

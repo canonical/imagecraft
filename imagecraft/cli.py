@@ -61,7 +61,7 @@ def _create_app() -> Imagecraft:
         app=APP_METADATA,
     )  # type: ignore[assignment]
 
-    return Imagecraft(app=APP_METADATA, services=services)
+    return Imagecraft(app=APP_METADATA, services=services, extra_loggers={"imagecraft"})
 
 
 def get_app_info() -> tuple[Dispatcher, dict[str, Any]]:
