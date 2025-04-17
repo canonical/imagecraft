@@ -14,7 +14,6 @@
 
 """GRUB utils."""
 
-import logging
 import subprocess
 from pathlib import Path
 
@@ -31,8 +30,6 @@ _ARCH_TO_GRUB_EFI_TARGET: dict[str, str] = {
     DebianArchitecture.ARM64: "arm64-efi",
     DebianArchitecture.ARMHF: "arm-efi",
 }
-
-logger = logging.getLogger(__name__)
 
 
 def _grub_install(grub_target: str, loop_dev: str) -> None:
@@ -78,16 +75,24 @@ def _grub_install(grub_target: str, loop_dev: str) -> None:
 
     # Check if grub-install is available, otherwise skip the installation without error
     try:
-        run(*check_grub_install, logger.debug)
+        run(*check_grub_install)
     except FileNotFoundError:
-        logger.debug("Skipping GRUB installation because grub-install is not available")
+        emit.progress(
+            "Skipping GRUB installation because grub-install is not available",
+            permanent=True,
+        )
         return
 
     try:
-        run(*grub_install_command)
-        run(*divert_os_prober_command)
-        run(*update_grub_command)
-        run(*undivert_os_prober_command)
+        for cmd in [
+            grub_install_command,
+            divert_os_prober_command,
+            update_grub_command,
+            undivert_os_prober_command,
+        ]:
+            res = run(*cmd, stderr=subprocess.STDOUT)
+            if res.stdout:
+                emit.debug(res.stdout)
     except subprocess.CalledProcessError as err:
         raise errors.GRUBInstallError("Fail to install grub") from err
     except FileNotFoundError as err:
@@ -105,15 +110,23 @@ def setup_grub(image: Image, workdir: Path, arch: str) -> None:
     rootfs_partition_num = image.data_partition_number
     boot_partition_num = image.boot_partition_number
 
+    emit.progress("Setting up GRUB in the image")
+
     if boot_partition_num is None:
-        emit.message("Skipping GRUB installation because no boot partition was found")
+        emit.progress(
+            "Skipping GRUB installation because no boot partition was found",
+            permanent=True,
+        )
         return
     if rootfs_partition_num is None:
-        emit.message("Skipping GRUB installation because no data partition was found")
+        emit.progress(
+            "Skipping GRUB installation because no data partition was found",
+            permanent=True,
+        )
         return
 
     if arch not in _ARCH_TO_GRUB_EFI_TARGET:
-        emit.message("Cannot install GRUB on this architecture")
+        emit.progress("Cannot install GRUB on this architecture", permanent=True)
         return
 
     mount_dir = workdir / "mount"

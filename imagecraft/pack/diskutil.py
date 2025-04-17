@@ -14,11 +14,12 @@
 
 """Disk-related utility functions."""
 
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, cast
 
-from craft_cli import CraftError
+from craft_cli import CraftError, emit
 
 from imagecraft.models import FileSystem
 from imagecraft.subprocesses import run
@@ -116,6 +117,7 @@ def _format_populate_ext_partition(  # pylint: disable=too-many-arguments
 
     # Create and copy
     mke2fs_args = [
+        "-q",
         "-t",
         fstype,
         "-d",
@@ -248,11 +250,25 @@ def inject_partition_into_image(
             f"(actual: {part_size} vs. expected: {requested_size})."
         )
 
-    run(
+    cmd = [
         "dd",
         f"if={str(partition)}",
         f"of={str(imagepath)}",
         f"bs={disk_size.sector_size}",
         f"seek={sector_offset}",
+        "status=progress",
         "conv=notrunc,sparse",
-    )
+    ]
+    with subprocess.Popen(
+        cmd,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    ) as dd_proc:
+        if not dd_proc.stdout:
+            return
+        for line in iter(dd_proc.stdout.readline, ""):
+            emit.trace(line)
+        ret = dd_proc.wait()
+    if ret:
+        raise subprocess.CalledProcessError(ret, cmd)

@@ -106,7 +106,8 @@ def _create_gpt_layout(
         start += sectors
     stdin_lines: str = "\n".join(_create_sfdisk_lines(header, partitions))
 
-    emit.debug(f"Stdin (sfdisk):\n{stdin_lines}")
+    emit.trace(f"Stdin for sfdisk:\n{stdin_lines}")
+    emit.progress("Partitioning the image")
     run("sfdisk", imagepath, input=stdin_lines)
 
 
@@ -166,7 +167,8 @@ def create_empty_gpt_image(
     """
     image_bytes = image_size(sector_size=sector_size, layout=layout)
     disk_size = diskutil.DiskSize(bytesize=image_bytes, sector_size=sector_size)
-    emit.trace(f"Creating {image_bytes} byte empty image")
+    emit.debug("Creating an empty image")
+    emit.trace(f"Image size: {image_bytes} bytes")
 
     diskutil.create_zero_image(imagepath=imagepath, disk_size=disk_size)
 

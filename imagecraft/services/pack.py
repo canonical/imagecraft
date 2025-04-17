@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import cast
 
 from craft_application import PackageService, models
+from craft_cli import emit
 from overrides import override  # type: ignore[reportUnknownVariableType]
 
 from imagecraft.models import Project, get_partition_name
@@ -60,6 +61,7 @@ class ImagecraftPackService(PackageService):
         with tempfile.TemporaryDirectory() as tmp_dir:
             for structure_item in volume.structure:
                 partition_name = get_partition_name(volume_name, structure_item)
+                emit.verbose(f"Preparing partition {partition_name}")
                 partition_prime_dir = project_dirs.get_prime_dir(
                     partition=partition_name
                 )
@@ -78,6 +80,7 @@ class ImagecraftPackService(PackageService):
                     disk_size=partition_size,
                     label=structure_item.filesystem_label,
                 )
+                emit.verbose(f"Adding partition {partition_name} to the image")
                 diskutil.inject_partition_into_image(
                     partition=partition_img,
                     imagepath=disk_image_file,
