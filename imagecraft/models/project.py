@@ -77,7 +77,6 @@ class Project(BaseProject):
 
     base: BaseT  # type: ignore[reportIncompatibleVariableOverride]
     build_base: BuildBaseT  # type: ignore[reportIncompatibleVariableOverride]
-    platforms: dict[str, Platform] | None = None  # type: ignore[assignment, reportIncompatibleVariableOverride]
     volumes: VolumeDictT
 
     model_config = ConfigDict(

@@ -182,12 +182,12 @@ def test_project_unmarshal(yaml_data):
             {"build-on": ["amd64", "amd64"]},
         ),
         (
-            "build-for\n  List should have at most 1 item after validation, not 2",
+            "2 validation errors for Platform\nbuild-for.list[str]\n  List should have at most 1 item after validation, not 2",
             ValidationError,
             {"build-for": ["amd64", "amd64"], "build-on": ["amd64"]},
         ),
         (
-            "build-for\n  List should have at most 1 item after validation, not 2",
+            "2 validation errors for Platform\nbuild-for.list[str]\n  List should have at most 1 item after validation, not 2",
             ValidationError,
             {"build-on": ["amd64"], "build-for": ["amd64", "arm64"]},
         ),
