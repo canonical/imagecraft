@@ -40,7 +40,10 @@ publish-pypi: clean package-pip lint-twine  ##- Publish Python packages to pypi
 # Find dependencies that need installing
 APT_PACKAGES := mtools fuse-overlayfs
 ifeq ($(wildcard /usr/include/libxml2/libxml/xpath.h),)
-APT_PACKAGES += libxml2-dev libgit2-dev
+APT_PACKAGES += libxml2-dev
+endif
+ifeq ($(wildcard /usr/share/doc/libgit2-dev/copyright),)
+APT_PACKAGES += libgit2-dev
 endif
 ifeq ($(wildcard /usr/include/libxslt/xslt.h),)
 APT_PACKAGES += libxslt1-dev
