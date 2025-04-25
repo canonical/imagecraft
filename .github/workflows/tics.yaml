@@ -1,0 +1,12 @@
+name: TICS
+on:
+  push:
+    branches:
+      - "main"
+
+jobs:
+  TICS:
+    uses: canonical/starflow/.github/workflows/tics.yaml@main
+    with:
+      project: "imagecraft"
+    secrets: inherit

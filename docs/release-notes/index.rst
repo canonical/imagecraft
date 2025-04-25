@@ -273,7 +273,18 @@ development keeps pace with the OS's new releases and support lifecycle.
   Fixed bugs and issues
   ---------------------
 
-  The following issues have been resolved in Imagecraft 2.0:
+  The following issues have been resolved in Imagecraft 2.0.
+
+
+  Imagecraft 2.0.0
+  ~~~~~~~~~~~~~~~
+
+  - `ID <link>`_ <Title>
+  - `ID <link>`_ <Title>
+
+
+  Imagecraft 2.0.1
+  ~~~~~~~~~~~~~~~
 
   - `ID <link>`_ <Title>
   - `ID <link>`_ <Title>

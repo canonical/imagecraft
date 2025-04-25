@@ -41,6 +41,7 @@ html_context = {
     "github_url": "https://github.com/canonical/imagecraft",
 }
 
+# Target repository for the edit button on pages
 html_theme_options = {
     "source_edit_link": "https://github.com/canonical/imagecraft",
 }
