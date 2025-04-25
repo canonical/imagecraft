@@ -47,7 +47,7 @@ class Platform(BasePlatform):
     @model_validator(mode="after")  # pyright: ignore[reportUntypedFunctionDecorator]
     def _validate_platform_set(self) -> Self:
         """Validate the build_on build_for combination."""
-        build_on: list[str] = self.build_on if self.build_on else []
+        build_on: list[str] | str = self.build_on if self.build_on else []
 
         # We can only build on 1 arch at the moment
         if len(build_on) > 1:
