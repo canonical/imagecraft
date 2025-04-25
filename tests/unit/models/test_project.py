@@ -95,29 +95,6 @@ volumes:
         size: 500 M
 """
 
-IMAGECRAFT_YAML_NO_BUILD_FOR_PLATFORM = """
-name: ubuntu-server-amd64
-version: "1"
-base: bare
-build-base: ubuntu@24.04
-
-platforms:
-  amd64:
-    build-on: amd64
-parts:
-  rootfs:
-    plugin: nil
-volumes:
-  pc:
-    schema: gpt
-    structure:
-      - name: efi
-        role: system-boot
-        type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
-        filesystem: vfat
-        size: 500 M
-"""
-
 IMAGECRAFT_YAML_INVALID_BASE = """
 name: ubuntu-server-amd64
 version: "1"
@@ -126,7 +103,6 @@ build-base: ubuntu@24.04
 
 platforms:
   amd64:
-    build-on: amd64
 parts:
   rootfs:
     plugin: nil
@@ -148,7 +124,6 @@ base: bare
 
 platforms:
   amd64:
-    build-on: amd64
 parts:
   rootfs:
     plugin: nil
@@ -181,7 +156,6 @@ def load_project_yaml(yaml_loaded_data) -> Project:
         IMAGECRAFT_YAML_GENERIC,
         IMAGECRAFT_YAML_SIMPLE_PLATFORM,
         IMAGECRAFT_YAML_MINIMAL_PLATFORM,
-        IMAGECRAFT_YAML_NO_BUILD_FOR_PLATFORM,
     ],
 )
 def test_project_unmarshal(yaml_data):
@@ -208,14 +182,19 @@ def test_project_unmarshal(yaml_data):
             {"build-on": ["amd64", "amd64"]},
         ),
         (
-            "build-for\n  List should have at most 1 item after validation, not 2",
+            "2 validation errors for Platform\nbuild-for.list[str]\n  List should have at most 1 item after validation, not 2",
             ValidationError,
             {"build-for": ["amd64", "amd64"], "build-on": ["amd64"]},
         ),
         (
-            "build-for\n  List should have at most 1 item after validation, not 2",
+            "2 validation errors for Platform\nbuild-for.list[str]\n  List should have at most 1 item after validation, not 2",
             ValidationError,
             {"build-on": ["amd64"], "build-for": ["amd64", "arm64"]},
+        ),
+        (
+            "build-for\n  Field required",
+            ValidationError,
+            {"build-on": ["amd64"]},
         ),
         (
             "multiple architectures",
