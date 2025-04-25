@@ -212,6 +212,10 @@ endif
 	# for backwards compatibility
 	# https://github.com/canonical/starflow/blob/3447d302cb7883cbb966ce0ec7e5b3dfd4bb3019/.github/workflows/test-python.yaml#L109
 	cp results/coverage.xml coverage.xml
+	# This is an Imagecraft related hack for UNITTESTCOVERAGE
+	ln -s ./. results/unit
+	# This is an Imagecraft related hack for INTEGRATIONTESTCOVERAGE
+	ln -s ./. results/integration
 	uv run coverage report -m
 	uv run coverage html
 
