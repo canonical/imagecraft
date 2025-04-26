@@ -60,7 +60,7 @@ dev = [
     "pytest-check>=2.4",
     "pytest-mock~=3.12",
     "mypy[reports]~=1.15.0",
-    "pyright==1.1.399",
+    "pyright==1.1.400",
     "types-Pygments",
     "types-colorama",
     "types-setuptools",
