@@ -17,7 +17,7 @@
 import pytest
 import yaml
 from craft_application.errors import CraftValidationError
-from imagecraft.grammar import process_volumes
+from imagecraft.grammar import process_filesystems, process_volumes
 
 
 @pytest.mark.parametrize(
@@ -135,4 +135,74 @@ def test_process_volumes_fail(volumes_yaml, arch, target_arch):
     with pytest.raises(CraftValidationError):
         process_volumes(
             volumes_yaml_data=yaml_loaded, arch=arch, target_arch=target_arch
+        )
+
+
+@pytest.mark.parametrize(
+    ("filesystems_yaml", "arch", "target_arch", "expected"),
+    [
+        (
+            """
+filesystems:
+  default:
+  - mount: /
+    device: (default)
+    """,
+            "amd64",
+            "amd64",
+            {"default": [{"mount": "/", "device": "(default)"}]},
+        ),
+        (
+            """
+filesystems:
+  default:
+  - to arm64:
+    - mount: /
+      device: (foo)
+  - to amd64:
+    - mount: /
+      device: (bar)
+    """,
+            "amd64",
+            "amd64",
+            {"default": [{"mount": "/", "device": "(bar)"}]},
+        ),
+    ],
+)
+def test_process_filesystems(filesystems_yaml, arch, target_arch, expected):
+    yaml_loaded = yaml.safe_load(filesystems_yaml)
+    assert (
+        process_filesystems(
+            filesystems_yaml_data=yaml_loaded["filesystems"],
+            arch=arch,
+            target_arch=target_arch,
+        )
+        == expected
+    )
+
+
+@pytest.mark.parametrize(
+    ("filesystems_yaml", "arch", "target_arch"),
+    [
+        (
+            """
+filesystems:
+  default:
+  - to arm64:
+    - mount: /
+      device: (foo)
+  - else:
+    """,
+            "amd64",
+            "amd64",
+        ),
+    ],
+)
+def test_process_filesystems_fail(filesystems_yaml, arch, target_arch):
+    yaml_loaded = yaml.safe_load(filesystems_yaml)
+    with pytest.raises(CraftValidationError):
+        process_filesystems(
+            filesystems_yaml_data=yaml_loaded["filesystems"],
+            arch=arch,
+            target_arch=target_arch,
         )
