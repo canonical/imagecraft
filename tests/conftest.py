@@ -114,6 +114,10 @@ platforms:
 parts:
   my-part:
     plugin: nil
+filesystems:
+  default:
+  - mount: /
+    device: (default)
 volumes:
   pc:
     schema: gpt
