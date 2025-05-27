@@ -167,6 +167,28 @@ filesystems:
             "amd64",
             {"default": [{"mount": "/", "device": "(bar)"}]},
         ),
+        (
+            """
+filesystems:
+  default:
+  - mount: /
+    device: foo
+  - to amd64:
+    - mount: /bar
+      device: baz
+  - mount: /qux
+    device: bla
+    """,
+            "amd64",
+            "amd64",
+            {
+                "default": [
+                    {"mount": "/", "device": "foo"},
+                    {"mount": "/bar", "device": "baz"},
+                    {"mount": "/qux", "device": "bla"},
+                ]
+            },
+        ),
     ],
 )
 def test_process_filesystems(filesystems_yaml, arch, target_arch, expected):
