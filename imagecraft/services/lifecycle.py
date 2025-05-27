@@ -18,9 +18,12 @@
 
 import hashlib
 from pathlib import Path
+from typing import cast
 
 from craft_application import LifecycleService
 from overrides import override  # type: ignore[reportUnknownVariableType]
+
+from imagecraft import models
 
 
 class ImagecraftLifecycleService(LifecycleService):
@@ -30,7 +33,7 @@ class ImagecraftLifecycleService(LifecycleService):
     def setup(self) -> None:
         """Initialize the LifecycleManager with previously-set arguments."""
         # Configure extra args to the LifecycleManager
-        project = self._services.get("project").get()
+        project = cast(models.Project, self._services.get("project").get())
 
         base_layer_name = "bare_base_layer"
         base_layer_dir = self._work_dir / Path(base_layer_name)
@@ -43,6 +46,7 @@ class ImagecraftLifecycleService(LifecycleService):
             project_name=project.name,
             base_layer_dir=base_layer_dir,
             base_layer_hash=hasher.digest(),
+            layouts=project.filesystems,
         )
 
         super().setup()
