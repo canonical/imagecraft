@@ -61,9 +61,21 @@ def transform_yaml(
     """Resolve the grammar in the Volumes section."""
     build_for = build_for or build_on
     if "volumes" in yaml_data:
-        craft_cli.emit.debug(f"Processing grammar (on {build_on} for {build_for})")
+        craft_cli.emit.debug(
+            f"Processing grammar (on {build_on} for {build_for}) on volumes section"
+        )
         yaml_data["volumes"] = grammar.process_volumes(
             volumes_yaml_data=yaml_data["volumes"],
+            arch=build_on,
+            target_arch=build_for,
+        )
+
+    if "filesystems" in yaml_data:
+        craft_cli.emit.debug(
+            f"Processing grammar (on {build_on} for {build_for}) on filesystems section"
+        )
+        yaml_data["filesystems"] = grammar.process_filesystems(
+            filesystems_yaml_data=yaml_data["filesystems"],
             arch=build_on,
             target_arch=build_for,
         )

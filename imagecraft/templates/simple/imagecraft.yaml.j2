@@ -15,6 +15,12 @@ platforms: # the platforms this image should be built on and run on
 parts:
     my-part:
         plugin: nil
+
+filesystems:
+    default:
+    - mount: /
+      device: (volume/disk/rootfs)
+
 volumes:
     disk:
         schema: gpt
