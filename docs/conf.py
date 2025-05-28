@@ -29,6 +29,10 @@ sys.path.insert(0, str(project_dir.absolute()))
 model_dir = (project_dir / "imagecraft/models").resolve()
 sys.path.append(str(model_dir.absolute()))
 
+library_dir = (project_dir / ".venv/lib/python3.12/site-packages").resolve()
+sys.path.append(str(library_dir.absolute()))
+
+
 project = "Imagecraft"
 author = "Canonical"
 
