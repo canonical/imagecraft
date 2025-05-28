@@ -22,9 +22,12 @@ import sys
 import craft_parts_docs  # type: ignore
 
 
-project_dir = pathlib.Path("..").resolve()
+project_dir = pathlib.Path(__file__).parent.parent.resolve()
 sys.path.insert(0, str(project_dir.absolute()))
 
+# Add directories to sys path to simplify kitbash arguments
+model_dir = (project_dir / "imagecraft/models").resolve()
+sys.path.append(str(model_dir.absolute()))
 
 project = "Imagecraft"
 author = "Canonical"
@@ -48,6 +51,7 @@ html_theme_options = {
 
 extensions = [
     "canonical_sphinx",
+    "pydantic_kitbash",
     "notfound.extension",
 ]
 # endregion
@@ -108,6 +112,7 @@ exclude_patterns = [
     "common/craft-parts/reference/partition_specific_output_directory_variables.rst",
     "common/craft-parts/reference/plugins/ant_plugin.rst",
     "common/craft-parts/reference/plugins/autotools_plugin.rst",
+    "common/craft-parts/reference/plugins/cargo_use_plugin.rst",
     "common/craft-parts/reference/plugins/cmake_plugin.rst",
     "common/craft-parts/reference/plugins/dotnet_plugin.rst",
     "common/craft-parts/reference/plugins/dump_plugin.rst",
