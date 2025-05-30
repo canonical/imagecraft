@@ -116,37 +116,113 @@ class GptType(str, enum.Enum):
     """Supported GUID Partition types."""
 
     LINUX_DATA = "0FC63DAF-8483-4772-8E79-3D69D8477DE4"
+    """The identifier for Linux filesystems in a GPT schema."""
+
     WINDOWS_BASIC = "EBD0A0A2-B9E5-4433-87C0-68B6B72699C7"
+    """The identifier for Microsoft basic data partitions in a GPT schema."""
+
     EFI_SYSTEM = "C12A7328-F81F-11D2-BA4B-00A0C93EC93B"
+    """The identifier for EFI system partitions in a GPT schema."""
+
     BIOS_BOOT = "21686148-6449-6E6F-744E-656564454649"
+    """The identifier for BIOS boot partitions in a GPT schema."""
 
 
 class FileSystem(enum.Enum):
     """Supported filesystem types."""
 
     EXT4 = "ext4"
+    """A journaling file system for Linux platforms."""
+
     EXT3 = "ext3"
+    """A journaling file system for Linux platforms. The predecessor to ext4."""
+
     FAT16 = "fat16"
+    """A legacy DOS/Windows filesystem."""
+
     VFAT = "vfat"
+    """An extension of the FAT file system allowing for more complex filenames."""
 
 
 class Role(str, enum.Enum):
-    """Role describes the role of given structure."""
+    """The role of a given structure."""
 
     SYSTEM_DATA = "system-data"
+    """Denotes that the partition contains the image's primary operating system data."""
+
     SYSTEM_BOOT = "system-boot"
+    """Denotes that the partition contains the image's boot assets."""
 
 
 class StructureItem(CraftBaseModel):
     """Structure item of the image."""
 
-    name: StructureName
-    id: uuid.UUID | None = None
-    role: Role
-    structure_type: GptType = Field(alias="type")
-    size: StructureSize
-    filesystem: FileSystem
-    filesystem_label: str | None = None
+    name: StructureName = Field(
+        description="The name of the partition.",
+        examples=["efi", "rootfs"],
+    )
+    """The name of the partition.
+
+    The name must:
+
+    * contain only lower case letters and hyphens
+    * contain at least one letter
+    * not start or end with a hyphen
+    * not exceed 36 characters in the UTF-16 character set
+
+    """
+
+    id: uuid.UUID | None = Field(
+        default=None,
+        description="The partition's unique GPT identifier (UUID).",
+        examples=[
+            "6F8C47A6-1C2D-4B35-8B1E-9DE3C4E9E3FF",
+            "E3B0C442-98FC-1FC0-9B42-9AC7E5BD4B35",
+        ],
+    )
+
+    role: Role = Field(
+        description="The partition's function within the image.",
+        examples=["system-data", "system-boot"],
+    )
+
+    structure_type: GptType = Field(
+        alias="type",
+        description="The partition's type identifier (GUID).",
+        examples=[
+            "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+            "EBD0A0A2-B9E5-4433-87C0-68B6B72699C7",
+        ],
+    )
+
+    size: StructureSize = Field(
+        description="The size of the structure item.", examples=["256M", "6G"]
+    )
+    """The size of the partition.
+
+    The assigned value should conform to the ISO/IEC 80000-13 standard.
+    """
+
+    filesystem: FileSystem = Field(
+        description="The filesystem type used by the partition.",
+        examples=["ext4", "fat16"],
+    )
+    """The filesystem type used by the partition.
+
+    This key should be set in accordance with the partition's purpose. For example, you
+    may use fat16 for your EFI system partition and ext4 for your root filesystem.
+    """
+
+    filesystem_label: str | None = Field(
+        default=None,
+        description="A human-readable name to assign the partition.",
+        examples=["EFI System", "writable"],
+    )
+    """A human-readable name to assign the partition.
+
+    If unset, the label will default to the name of the parent structure item. Labels
+    must be unique to their volume.
+    """
 
     def __hash__(self) -> int:
         return hash(self.name)
@@ -168,6 +244,7 @@ class PartitionSchema(str, enum.Enum):
     """Supported partition schemas."""
 
     GPT = "gpt"
+    """The GUID partition table (GPT) schema."""
 
 
 StructureList = UniqueList[StructureItem]
@@ -176,8 +253,27 @@ StructureList = UniqueList[StructureItem]
 class Volume(CraftBaseModel):
     """Volume defining properties of the image."""
 
-    volume_schema: Literal[PartitionSchema.GPT] = Field(alias="schema")
-    structure: StructureList = Field(min_length=1)
+    volume_schema: Literal[PartitionSchema.GPT] = Field(
+        alias="schema",
+        description="The partitioning schema used by the image.",
+        examples=["gpt"],
+    )
+    """The partitioning schema used by the image.
+
+    Imagecraft currently supports GUID partition tables (GPT).
+    """
+
+    structure: StructureList = Field(
+        min_length=1,
+        description="The list of partitions that comprise the image.",
+        examples=[
+            "[{name: efi, type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B, filesystem: vfat, role: system-boot, filesystem-label: EFI System, size: 256M}, {name: rootfs, type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4, filesystem: ext4, filesystem-label: writable, role: system-data, size: 6G}]"
+        ],
+    )
+    """The list of partitions that comprise the image.
+
+    Valid Imagecraft projects must contain at least one partition.
+    """
 
     @field_validator("structure", mode="after")
     @classmethod

@@ -75,9 +75,48 @@ VolumeDictT = Annotated[dict[VolumeName, Volume], Field(min_length=1, max_length
 class Project(BaseProject):
     """Definition of imagecraft.yaml configuration."""
 
-    base: BaseT  # type: ignore[reportIncompatibleVariableOverride]
-    build_base: BuildBaseT  # type: ignore[reportIncompatibleVariableOverride]
-    volumes: VolumeDictT
+    base: BaseT = Field(  # type: ignore[reportIncompatibleVariableOverride]
+        description="The base layer the image is built on.",
+        examples=["bare"],
+    )
+
+    build_base: BuildBaseT = Field(  # type: ignore[reportIncompatibleVariableOverride]
+        description="The build environment to use when building the image.",
+        examples=["ubuntu@24.04", "devel"],
+    )
+    """The build base determines the image's build environment. This system and version
+    will be used when assembling the image's contents, but will not be included in the
+    final image.
+
+    **Values**
+
+    .. list-table::
+        :header-rows: 1
+
+        * - Value
+          - Description
+        * - ``ubuntu@20.04``
+          - The Ubuntu 20.04 build environment.
+        * - ``ubuntu@22.04``
+          - The Ubuntu 22.04 build environment.
+        * - ``ubuntu@24.04``
+          - The Ubuntu 24.04 build environment.
+        * - ``devel``
+          - The version of Ubuntu currently being developed. The contents of this system
+            change frequently and should not be relied upon for production images.
+
+    """
+
+    volumes: VolumeDictT = Field(
+        description="The structure and content of the image.",
+        examples=[
+            "{pc: {schema: gpt, structure: [{name: efi, type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B, filesystem: vfat, role: system-boot, filesystem-label: UEFI, size: 256M}, {name: rootfs, type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4, filesystem: ext4, filesystem-label: writable, role: system-data, size: 5G}]}}"
+        ],
+    )
+    """The structure and content of the image.
+
+    This key expects a single entry defining the image's schema and partitions.
+    """
 
     model_config = ConfigDict(
         validate_assignment=True,

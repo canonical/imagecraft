@@ -7,6 +7,7 @@ Imagecraft
    :maxdepth: 1
    :hidden:
 
+   imagecraft-yaml
    how-to-guides/index
    reference/index
    explanation/index
