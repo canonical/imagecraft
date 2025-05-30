@@ -44,6 +44,7 @@ types = [
 ]
 docs = [
     "canonical-sphinx[full]~=0.4.0",
+    "pydantic-kitbash==0.0.4",
     "sphinx-autobuild~=2024.2",
     "sphinx-pydantic==0.1.1",
     "sphinx-toolbox~=4.0",
