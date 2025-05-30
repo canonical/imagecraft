@@ -174,12 +174,17 @@ class StructureItem(CraftBaseModel):
 
     id: uuid.UUID | None = Field(
         default=None,
-        description="The partition's unique GPT identifier (UUID).",
+        description="The partition's unique GPT identifier.",
         examples=[
             "6F8C47A6-1C2D-4B35-8B1E-9DE3C4E9E3FF",
             "E3B0C442-98FC-1FC0-9B42-9AC7E5BD4B35",
         ],
     )
+    """The partition's unique GPT identifier.
+
+    This must be a 16-byte number that is unique to the volume, as it will be used to
+    identify the partition in the final image.
+    """
 
     role: Role = Field(
         description="The partition's function within the image.",
@@ -188,12 +193,20 @@ class StructureItem(CraftBaseModel):
 
     structure_type: GptType = Field(
         alias="type",
-        description="The partition's type identifier (GUID).",
+        description="The partition's type identifier.",
         examples=[
             "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
             "EBD0A0A2-B9E5-4433-87C0-68B6B72699C7",
         ],
     )
+    """The partition's type identifier.
+
+    This is a pre-defined 16-byte number that allows the system to identify the type
+    of the partition.
+
+    Note that this is distinct from the value of the ``id`` key, which is assigned
+    an identifier unique to the partition, regardless of type.
+    """
 
     size: StructureSize = Field(
         description="The size of the structure item.",
