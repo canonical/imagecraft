@@ -196,11 +196,13 @@ class StructureItem(CraftBaseModel):
     )
 
     size: StructureSize = Field(
-        description="The size of the structure item.", examples=["256M", "6G"]
+        description="The size of the structure item.",
+        examples=["256M", "6G"],
     )
-    """The size of the partition.
+    """The size of the partition expressed in bytes.
 
-    The assigned value should conform to the ISO/IEC 80000-13 standard.
+    The size can be appended with a "G" or "M" to denote the unit as gibibytes or
+    mebibytes, respectively.
     """
 
     filesystem: FileSystem = Field(
