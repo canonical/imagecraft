@@ -65,7 +65,11 @@ class Platform(BasePlatform):
 BaseT = Literal["bare"]
 BuildBaseT = typing.Annotated[
     Literal["ubuntu@20.04", "ubuntu@22.04", "ubuntu@24.04", "devel"] | None,
-    Field(validate_default=True),
+    Field(
+        validate_default=True,
+        description="The build environment to use when building the image.",
+        examples=["ubuntu@22.04", "ubuntu@24.04"],
+    ),
 ]
 
 
@@ -79,11 +83,13 @@ class Project(BaseProject):
         description="The base layer the image is built on.",
         examples=["bare"],
     )
+    """The base layer the image is built on.
 
-    build_base: BuildBaseT = Field(  # type: ignore[reportIncompatibleVariableOverride]
-        description="The build environment to use when building the image.",
-        examples=["ubuntu@24.04", "devel"],
-    )
+    The value ``bare`` denotes that the project will start with an empty directory and,
+    in the case of overlays, an empty base layer.
+    """
+
+    build_base: BuildBaseT  # type: ignore[reportIncompatibleVariableOverride]
     """The build base determines the image's build environment. This system and version
     will be used when assembling the image's contents, but will not be included in the
     final image.
@@ -101,19 +107,16 @@ class Project(BaseProject):
           - The Ubuntu 22.04 build environment.
         * - ``ubuntu@24.04``
           - The Ubuntu 24.04 build environment.
-        * - ``devel``
-          - The version of Ubuntu currently being developed. The contents of this system
-            change frequently and should not be relied upon for production images.
 
     """
 
     volumes: VolumeDictT = Field(
-        description="The structure and content of the image.",
+        description="The structure and properties of the image.",
         examples=[
             "{pc: {schema: gpt, structure: [{name: efi, type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B, filesystem: vfat, role: system-boot, filesystem-label: UEFI, size: 256M}, {name: rootfs, type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4, filesystem: ext4, filesystem-label: writable, role: system-data, size: 5G}]}}"
         ],
     )
-    """The structure and content of the image.
+    """The structure and properties of the image.
 
     This key expects a single entry defining the image's schema and partitions.
     """

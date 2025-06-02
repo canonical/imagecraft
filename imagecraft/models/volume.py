@@ -132,39 +132,40 @@ class FileSystem(enum.Enum):
     """Supported filesystem types."""
 
     EXT4 = "ext4"
-    """A journaling file system for Linux platforms."""
+    """The ext4 filesystem."""
 
     EXT3 = "ext3"
-    """A journaling file system for Linux platforms. The predecessor to ext4."""
+    """The ext3 filesystem."""
 
     FAT16 = "fat16"
-    """A legacy DOS/Windows filesystem."""
+    """The FAT16 filesystem."""
 
     VFAT = "vfat"
-    """An extension of the FAT file system allowing for more complex filenames."""
+    """The VFAT filesystem."""
 
 
 class Role(str, enum.Enum):
-    """The role of a given structure."""
+    """Role describes the role of a given structure."""
 
     SYSTEM_DATA = "system-data"
-    """Denotes that the partition contains the image's primary operating system data."""
+    """Denotes that the structure contains the image's primary operating system data."""
 
     SYSTEM_BOOT = "system-boot"
-    """Denotes that the partition contains the image's boot assets."""
+    """Denotes that the structure contains the image's boot assets."""
 
 
 class StructureItem(CraftBaseModel):
     """Structure item of the image."""
 
     name: StructureName = Field(
-        description="The name of the partition.",
+        description="The name of the structure.",
         examples=["efi", "rootfs"],
     )
-    """The name of the partition.
+    """The name of the structure.
 
     The name must:
 
+    * be unique to the volume
     * contain only lower case letters and hyphens
     * contain at least one letter
     * not start or end with a hyphen
@@ -174,66 +175,62 @@ class StructureItem(CraftBaseModel):
 
     id: uuid.UUID | None = Field(
         default=None,
-        description="The partition's unique GPT identifier.",
+        description="The structure's unique identifier.",
         examples=[
             "6F8C47A6-1C2D-4B35-8B1E-9DE3C4E9E3FF",
             "E3B0C442-98FC-1FC0-9B42-9AC7E5BD4B35",
         ],
     )
-    """The partition's unique GPT identifier.
+    """The structure's unique identifier.
 
     This must be a 16-byte number that is unique to the volume, as it will be used to
-    identify the partition in the final image.
+    identify the structure in the final image.
     """
 
     role: Role = Field(
-        description="The partition's function within the image.",
+        description="The structure's role within the image.",
         examples=["system-data", "system-boot"],
     )
 
     structure_type: GptType = Field(
         alias="type",
-        description="The partition's type identifier.",
+        description="The structure's type identifier.",
         examples=[
             "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
             "EBD0A0A2-B9E5-4433-87C0-68B6B72699C7",
         ],
     )
-    """The partition's type identifier.
+    """The structure's type identifier.
 
-    This is a pre-defined 16-byte number that allows the system to identify the type
-    of the partition.
+    For GPT partitions, this is a pre-defined 16-byte number that allows the system to
+    identify the partition's type.
 
-    Note that this is distinct from the value of the ``id`` key, which is assigned
-    an identifier unique to the partition, regardless of type.
+    Note that this is distinct from the value of a GPT partition's ``id`` key, which
+    is assigned an identifier unique to the partition, regardless of type.
     """
 
     size: StructureSize = Field(
-        description="The size of the structure item.",
+        description="The size of the structure item expressed in bytes.",
         examples=["256M", "6G"],
     )
-    """The size of the partition expressed in bytes.
+    """The size of the structure item expressed in bytes.
 
-    The size can be appended with a "G" or "M" to denote the unit as gibibytes or
-    mebibytes, respectively.
+    The size can be appended with a "M" or "G" to denote the unit as mebibytes or
+    gibibytes, respectively.
     """
 
     filesystem: FileSystem = Field(
-        description="The filesystem type used by the partition.",
+        description="The filesystem type used by the structure.",
         examples=["ext4", "fat16"],
     )
-    """The filesystem type used by the partition.
-
-    This key should be set in accordance with the partition's purpose. For example, you
-    may use fat16 for your EFI system partition and ext4 for your root filesystem.
-    """
+    """The filesystem type used by the structure item."""
 
     filesystem_label: str | None = Field(
         default=None,
-        description="A human-readable name to assign the partition.",
+        description="A human-readable name to assign the structure.",
         examples=["EFI System", "writable"],
     )
-    """A human-readable name to assign the partition.
+    """A human-readable name to assign the structure.
 
     If unset, the label will default to the name of the parent structure item. Labels
     must be unique to their volume.
@@ -280,14 +277,14 @@ class Volume(CraftBaseModel):
 
     structure: StructureList = Field(
         min_length=1,
-        description="The list of partitions that comprise the image.",
+        description="The list of structure items that comprise the image.",
         examples=[
             "[{name: efi, type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B, filesystem: vfat, role: system-boot, filesystem-label: EFI System, size: 256M}, {name: rootfs, type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4, filesystem: ext4, filesystem-label: writable, role: system-data, size: 6G}]"
         ],
     )
-    """The list of partitions that comprise the image.
+    """The list of structure items that comprise the image.
 
-    Valid Imagecraft projects must contain at least one partition.
+    Valid Imagecraft projects must contain at least one structure item.
     """
 
     @field_validator("structure", mode="after")
