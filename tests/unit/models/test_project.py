@@ -419,6 +419,31 @@ def test_project_invalid_volumes(error_value, yaml_data):
                 ]
             },
         ),
+        (
+            [
+                "- list should have at least 1 item after validation, not 0 (in field 'filesystems.test')",
+            ],
+            {"test": []},
+        ),
+        (
+            [
+                "- dictionary should have at most 1 item after validation, not 2 (in field 'filesystems')",
+            ],
+            {
+                "default": [
+                    {
+                        "mount": "/",
+                        "device": "(default)",
+                    },
+                ],
+                "foo": [
+                    {
+                        "mount": "/",
+                        "device": "(default)",
+                    }
+                ],
+            },
+        ),
     ],
 )
 def test_project_invalid_filesystems(error_lines, filesystems_val):
