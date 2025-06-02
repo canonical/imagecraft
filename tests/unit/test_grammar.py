@@ -203,6 +203,18 @@ def test_process_volumes_fail(volumes_yaml, arch, target_arch):
                 ]
             },
         ),
+        # Grammar processor ignores invalid filesystems
+        (
+            textwrap.dedent(
+                """
+                filesystems:
+                  default: False
+                """
+            ),
+            "amd64",
+            "amd64",
+            {"default": False},
+        ),
     ],
 )
 def test_process_filesystems(filesystems_yaml, arch, target_arch, expected):

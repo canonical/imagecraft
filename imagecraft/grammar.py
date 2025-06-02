@@ -129,8 +129,11 @@ def process_filesystems(
     )
 
     for filesystem_name, filesystem_data in filesystems_yaml_data.items():
+        if not isinstance(filesystem_data, list):
+            continue
         filesystems_yaml_data[filesystem_name] = process_filesystem(
-            filesystem_yaml_data=filesystem_data, processor=processor
+            filesystem_yaml_data=filesystem_data,  # type: ignore[reportUnknownArgumentType]
+            processor=processor,
         )
 
     return filesystems_yaml_data
