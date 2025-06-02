@@ -394,7 +394,7 @@ def test_project_invalid_volumes(error_value, yaml_data):
         ),
         (
             [
-                "- a filesystem first entry must map the '/' mount. (in field 'filesystems.test')"
+                "- the first entry in a filesystem must map the '/' mount. (in field 'filesystems.test')"
             ],
             {
                 "test": [
