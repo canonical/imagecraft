@@ -121,7 +121,7 @@ def process_filesystems(
 ) -> dict[str, Any]:
     """Process grammar for filesystems.
 
-    :param yaml_data: unprocessed filesystems section of imagecraft.yaml.
+    :param filesystems_yaml_data: unprocessed filesystems section of imagecraft.yaml.
     :returns: processed filesystems section of imagecraft.yaml.
     """
     processor = GrammarProcessor(
@@ -141,7 +141,7 @@ def process_filesystem(
 ) -> list[dict[str, Any]]:
     """Process grammar for a filesystem.
 
-    :param filesystems_yaml_data: unprocessed filesystem entry.
+    :param filesystem_yaml_data: unprocessed filesystem entry.
     :returns: processed filesystem entry.
     """
     craft_cli.emit.debug(f"Processing grammar for filesystem {filesystem_yaml_data}")
