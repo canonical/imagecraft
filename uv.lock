@@ -553,8 +553,8 @@ wheels = [
 
 [[package]]
 name = "craft-parts"
-version = "2.10.0.post15+g4e78cbe"
-source = { git = "https://github.com/canonical/craft-parts.git?rev=work%2FCRAFT-4529-Add-the-filesystems-model#4e78cbe79afd179fbdc5d8cdc678a88f12871721" }
+version = "2.10.0.post27+g2a4e3b1"
+source = { git = "https://github.com/canonical/craft-parts.git?rev=work%2FCRAFT-4529-Add-the-filesystems-model#2a4e3b140453114c4cc97c825e33f3a393370e27" }
 dependencies = [
     { name = "overrides" },
     { name = "pydantic" },
