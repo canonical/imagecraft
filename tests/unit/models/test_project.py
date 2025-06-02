@@ -66,6 +66,10 @@ platforms:
 parts:
   rootfs:
     plugin: nil
+filesystems:
+  default:
+  - mount: /
+    device: (default)
 volumes:
   pc:
     schema: gpt
@@ -88,6 +92,10 @@ platforms:
 parts:
   rootfs:
     plugin: nil
+filesystems:
+  default:
+  - mount: /
+    device: (default)
 volumes:
   pc:
     schema: gpt
@@ -110,6 +118,10 @@ platforms:
 parts:
   rootfs:
     plugin: nil
+filesystems:
+  default:
+  - mount: /
+    device: (default)
 volumes:
   pc:
     schema: gpt
@@ -131,6 +143,10 @@ platforms:
 parts:
   rootfs:
     plugin: nil
+filesystems:
+  default:
+  - mount: /
+    device: (default)
 volumes:
   pc:
     schema: gpt
@@ -291,6 +307,10 @@ platforms:
 parts:
   rootfs:
     plugin: nil
+filesystems:
+  default:
+  - mount: /
+    device: (default)
 volumes:
   pc:
     schema: gpt
@@ -323,6 +343,10 @@ platforms:
 parts:
   rootfs:
     plugin: nil
+filesystems:
+  default:
+  - mount: /
+    device: (default)
 volumes:
   invalid_test-:
     schema: gpt

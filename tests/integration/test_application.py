@@ -51,6 +51,10 @@ parts:
 
       mv $CRAFT_OVERLAY/boot/* $CRAFT_VOLUME_PC_EFI_OVERLAY/
       mv $CRAFT_OVERLAY/* $CRAFT_VOLUME_PC_ROOTFS_OVERLAY/
+filesystems:
+  default:
+  - mount: /
+    device: (default)
 volumes:
   pc:
     schema: gpt
