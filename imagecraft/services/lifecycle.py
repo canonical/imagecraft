@@ -46,7 +46,7 @@ class ImagecraftLifecycleService(LifecycleService):
             project_name=project.name,
             base_layer_dir=base_layer_dir,
             base_layer_hash=hasher.digest(),
-            layouts=project.filesystems,
+            filesystem_mounts=project.filesystems,
         )
 
         super().setup()

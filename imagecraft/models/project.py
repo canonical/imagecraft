@@ -73,18 +73,20 @@ BuildBaseT = typing.Annotated[
 VolumeDictT = Annotated[dict[VolumeName, Volume], Field(min_length=1, max_length=1)]
 
 
-def _validate_layout(layout: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Validate a layout item.
+def _validate_filesystem(filesystem: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Validate a filesystem item.
 
-    :param layout: a list representing a layout.
+    :param filesystem: a list representing a filesystem.
     :returns: That same list, if valid.
-    :raises: ValueError if the layout is not valid.
+    :raises: ValueError if the filesystem is not valid.
     """
     # This check is not always used, import it here to avoid unnecessary import
-    from craft_parts.layouts import validate_layout  # type: ignore[import-untyped]
+    from craft_parts.filesystem_mounts import (
+        validate_filesystem_mount,  # type: ignore[import-untyped]
+    )
 
-    validate_layout(layout)
-    return layout
+    validate_filesystem_mount(filesystem)
+    return filesystem
 
 
 FilesystemsDictT = dict[
@@ -92,7 +94,7 @@ FilesystemsDictT = dict[
     Annotated[
         list[dict[str, Any]],
         Field(min_length=1),
-        AfterValidator(_validate_layout),
+        AfterValidator(_validate_filesystem),
     ],
 ]
 
@@ -103,8 +105,7 @@ class Project(BaseProject):
     base: BaseT  # type: ignore[reportIncompatibleVariableOverride]
     build_base: BuildBaseT  # type: ignore[reportIncompatibleVariableOverride]
     volumes: VolumeDictT
-
-    filesystems: FilesystemsDictT | None = None
+    filesystems: FilesystemsDictT
 
     model_config = ConfigDict(
         validate_assignment=True,
