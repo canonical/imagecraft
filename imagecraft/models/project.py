@@ -86,7 +86,7 @@ class Project(BaseProject):
     """The base layer the image is built on.
 
     The value ``bare`` denotes that the project will start with an empty directory and,
-    in the case of overlays, an empty base layer.
+    if overlays are used, an empty base layer.
     """
 
     build_base: BuildBaseT  # type: ignore[reportIncompatibleVariableOverride]
