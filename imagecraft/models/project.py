@@ -93,13 +93,16 @@ def _validate_filesystem(filesystem: list[dict[str, Any]]) -> list[dict[str, Any
     return filesystem
 
 
-FilesystemsDictT = dict[
-    str,
-    Annotated[
-        list[dict[str, Any]],
-        Field(min_length=1),
-        AfterValidator(_validate_filesystem),
+FilesystemsDictT = Annotated[
+    dict[
+        str,
+        Annotated[
+            list[dict[str, Any]],
+            Field(min_length=1),
+            AfterValidator(_validate_filesystem),
+        ],
     ],
+    Field(min_length=1, max_length=1),
 ]
 
 
