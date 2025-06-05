@@ -232,7 +232,7 @@ class StructureItem(CraftBaseModel):
     )
     """A human-readable name to assign the partition.
 
-    If unset, the label will default to the name of the partition. Labels
+    If unset, the label will default to the value of ``structure.<item>.name``. Labels
     must be unique to their volume.
     """
 
