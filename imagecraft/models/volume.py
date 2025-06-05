@@ -215,7 +215,7 @@ class StructureItem(CraftBaseModel):
     )
     """The size of the partition, in bytes.
 
-    You can append an ``M`` or a ``G`` to the size to specify the unit as mebibytes or
+    You can append an ``M`` or a ``G`` to the size to specify the unit in mebibytes or
     gibibytes, respectively.
     """
 
