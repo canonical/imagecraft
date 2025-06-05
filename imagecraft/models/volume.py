@@ -215,8 +215,8 @@ class StructureItem(CraftBaseModel):
     )
     """The size of the partition expressed in bytes.
 
-    You can append an ``M`` or a ``G`` to express the size in mebibytes or gibibytes,
-    respectively.
+    You can append an ``M`` or a ``G`` to the size to specify the unit as mebibytes or
+    gibibytes, respectively.
     """
 
     filesystem: FileSystem = Field(
