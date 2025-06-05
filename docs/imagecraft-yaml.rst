@@ -7,8 +7,20 @@ This reference describes the purpose, usage, and examples of all available keys 
 an image's project file, ``imagecraft.yaml``.
 
 
-``Project`` keys
-----------------
+Top-level keys
+==============
+
+.. kitbash-field:: craft_application.models.Project name
+
+.. kitbash-field:: craft_application.models.Project title
+
+.. kitbash-field:: craft_application.models.Project license
+
+.. kitbash-field:: craft_application.models.Project summary
+
+.. kitbash-field:: craft_application.models.Project description
+
+.. kitbash-field:: craft_application.models.Project version
 
 .. kitbash-field:: project.Project base
 
@@ -17,9 +29,12 @@ an image's project file, ``imagecraft.yaml``.
 .. kitbash-field:: project.Project volumes
     :override-type: dict[str, Volume]
 
+.. kitbash-field:: craft_application.models.Project parts
+    :override-type: dict[str, Part]
 
-``Volume`` keys
----------------
+
+Volume keys
+===========
 
 .. kitbash-field:: volume.Volume volume_schema
     :prepend-name: volumes.<volume-name>
@@ -28,8 +43,8 @@ an image's project file, ``imagecraft.yaml``.
     :prepend-name: volumes.<volume-name>
 
 
-``StructureItem`` keys
-----------------------
+Structure item keys
+===================
 
 .. kitbash-field:: volume.StructureItem name
     :prepend-name: volumes.<volume-name>.structure.<item-name>
