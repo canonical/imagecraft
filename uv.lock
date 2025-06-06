@@ -553,8 +553,8 @@ wheels = [
 
 [[package]]
 name = "craft-parts"
-version = "2.10.0.post27+g2a4e3b1"
-source = { git = "https://github.com/canonical/craft-parts.git?rev=work%2FCRAFT-4529-Add-the-filesystems-model#2a4e3b140453114c4cc97c825e33f3a393370e27" }
+version = "2.12.0"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "overrides" },
     { name = "pydantic" },
@@ -562,6 +562,10 @@ dependencies = [
     { name = "pyyaml" },
     { name = "requests" },
     { name = "requests-unixsocket2" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f0/6f/e562ab023757609671fe1c1093a469b982bb86297aa610a6a49a6b3424f0/craft_parts-2.12.0.tar.gz", hash = "sha256:cd20fbb1d0b2b8476d162d939d26100c60d912d0a55b876b56464dee635226fb", size = 739230, upload-time = "2025-06-06T17:50:45.54Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/08/30/b19fdbe20db1c1fe503d0c7cd32ed62b98a8cea06639a666e8e046d7476a/craft_parts-2.12.0-py3-none-any.whl", hash = "sha256:25dbfd6e0805e6fa3070e349820790f482d78aa34f9adde87d8e7da7d69b534f", size = 475124, upload-time = "2025-06-06T17:50:43.602Z" },
 ]
 
 [[package]]
@@ -877,7 +881,7 @@ requires-dist = [
     { name = "craft-application", specifier = "~=5.0" },
     { name = "craft-cli", specifier = "~=3.0" },
     { name = "craft-grammar", specifier = "~=2.0.3" },
-    { name = "craft-parts", git = "https://github.com/canonical/craft-parts.git?rev=work%2FCRAFT-4529-Add-the-filesystems-model" },
+    { name = "craft-parts", specifier = "~=2.12" },
     { name = "craft-platforms", specifier = "~=0.6" },
     { name = "craft-providers", specifier = "~=2.0" },
     { name = "pydantic", specifier = "~=2.8" },
