@@ -66,7 +66,11 @@ class Platform(BasePlatform):
 BaseT = Literal["bare"]
 BuildBaseT = typing.Annotated[
     Literal["ubuntu@20.04", "ubuntu@22.04", "ubuntu@24.04", "devel"] | None,
-    Field(validate_default=True),
+    Field(
+        validate_default=True,
+        description="The build environment to use when building the image.",
+        examples=["ubuntu@22.04", "ubuntu@24.04"],
+    ),
 ]
 
 
@@ -105,10 +109,58 @@ FilesystemsDictT = Annotated[
 class Project(BaseProject):
     """Definition of imagecraft.yaml configuration."""
 
-    base: BaseT  # type: ignore[reportIncompatibleVariableOverride]
+    base: BaseT = Field(  # type: ignore[reportIncompatibleVariableOverride]
+        description="The base layer the image is built on.",
+        examples=["bare"],
+    )
+    """The base layer the image is built on.
+
+    The value ``bare`` denotes that the project will start with an empty directory and,
+    if overlays are used, an empty base layer.
+    """
+
     build_base: BuildBaseT  # type: ignore[reportIncompatibleVariableOverride]
-    volumes: VolumeDictT
-    filesystems: FilesystemsDictT
+    """The build base determines the image's build environment. This system and version
+    will be used when assembling the image's contents, but will not be included in the
+    final image.
+
+    **Values**
+
+    .. list-table::
+        :header-rows: 1
+
+        * - Value
+          - Description
+        * - ``ubuntu@20.04``
+          - The Ubuntu 20.04 build environment.
+        * - ``ubuntu@22.04``
+          - The Ubuntu 22.04 build environment.
+        * - ``ubuntu@24.04``
+          - The Ubuntu 24.04 build environment.
+
+    """
+
+    volumes: VolumeDictT = Field(
+        description="The structure and properties of the image.",
+        examples=[
+            "{pc: {schema: gpt, structure: [{name: efi, type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B, filesystem: vfat, role: system-boot, filesystem-label: UEFI, size: 256M}, {name: rootfs, type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4, filesystem: ext4, filesystem-label: writable, role: system-data, size: 5G}]}}"
+        ],
+    )
+    """The structure and properties of the image.
+
+    This key expects a single entry defining the image's schema and partitions.
+    """
+
+    filesystems: FilesystemsDictT = Field(
+        description="A mapping of where partitions are mounted in the filesystem.",
+        examples=[
+            "{default: [{mount: /, device: (default)}, {mount: /boot/efi, device: (volume/pc/efi)}]}",
+        ],
+    )
+    """The mapping of where partitions are mounted in the filesystem.
+
+    Only a "default" filesystem is allowed. The first entry in the default filesystem must map the '/' mount.
+    """
 
     model_config = ConfigDict(
         validate_assignment=True,

@@ -11,7 +11,7 @@ settings:
   # Nothing goes from JIRA to Github
   sync_comments: true
   # epic_key: "MTC-296"
-  jira_project_key: "CRAFT"
+  jira_project_key: "IMAGECRAFT"
   status_mapping:
     opened: Triaged
     closed: done
