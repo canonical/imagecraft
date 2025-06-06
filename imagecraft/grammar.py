@@ -34,6 +34,12 @@ _NON_SCALAR_VALUES = [
 _DICT_ONLY_VALUES: list[str] = []
 
 
+def _self_check(value: Any) -> bool:  # noqa: ANN401
+    return bool(
+        value == value  # pylint: disable=comparison-with-itself  # noqa: PLR0124
+    )
+
+
 def process_volumes(
     *, volumes_yaml_data: dict[str, Any], arch: str, target_arch: str
 ) -> dict[str, Any]:
@@ -42,14 +48,10 @@ def process_volumes(
     :param yaml_data: unprocessed volumes section of imagecraft.yaml.
     :returns: processed volumes section of imagecraft.yaml.
     """
-
-    def self_check(value: Any) -> bool:  # noqa: ANN401
-        return bool(
-            value == value  # pylint: disable=comparison-with-itself  # noqa: PLR0124
-        )
-
     # TODO: make checker optional in craft-grammar.  # noqa: FIX002
-    processor = GrammarProcessor(arch=arch, target_arch=target_arch, checker=self_check)
+    processor = GrammarProcessor(
+        arch=arch, target_arch=target_arch, checker=_self_check
+    )
 
     for volume_name, volume_data in volumes_yaml_data.items():
         volumes_yaml_data[volume_name] = process_volume(
@@ -112,3 +114,59 @@ def process_volume(
         volume_yaml_data[key] = processed_grammar
 
     return volume_yaml_data
+
+
+def process_filesystems(
+    *, filesystems_yaml_data: dict[str, Any], arch: str, target_arch: str
+) -> dict[str, Any]:
+    """Process grammar for filesystems.
+
+    :param filesystems_yaml_data: unprocessed filesystems section of imagecraft.yaml.
+    :returns: processed filesystems section of imagecraft.yaml.
+    """
+    processor = GrammarProcessor(
+        arch=arch, target_arch=target_arch, checker=_self_check
+    )
+
+    for filesystem_name, filesystem_data in filesystems_yaml_data.items():
+        if not isinstance(filesystem_data, list):
+            continue
+        filesystems_yaml_data[filesystem_name] = process_filesystem(
+            filesystem_yaml_data=filesystem_data,  # type: ignore[reportUnknownArgumentType]
+            processor=processor,
+        )
+
+    return filesystems_yaml_data
+
+
+def process_filesystem(
+    *, filesystem_yaml_data: list[dict[str, Any]], processor: GrammarProcessor
+) -> list[dict[str, Any]]:
+    """Process grammar for a filesystem.
+
+    :param filesystem_yaml_data: unprocessed filesystem entry.
+    :returns: processed filesystem entry.
+    """
+    craft_cli.emit.debug(f"Processing grammar for filesystem {filesystem_yaml_data}")
+
+    unprocessed_grammar = filesystem_yaml_data
+    # all items in the list must be dicts
+    if any(not isinstance(d, dict) for d in unprocessed_grammar):  # type: ignore[reportUnknownVariableType]
+        return filesystem_yaml_data
+
+    # all keys in the dictionary must be a string
+    for item in unprocessed_grammar:  # type: ignore[reportUnknownVariableType]
+        if isinstance(item, dict) and any(  # type: ignore[reportUnnecessesaryIsInstance]
+            not isinstance(key, str)  # type: ignore[reportUnnecessesaryIsInstance]
+            for key in item  # type: ignore[reportUnknownVariableType]
+        ):
+            return filesystem_yaml_data
+
+    try:
+        processed_grammar = processor.process(grammar=unprocessed_grammar)
+    except GrammarSyntaxError as e:
+        raise CraftValidationError(
+            f"Invalid grammar syntax while processing filesystems in '{unprocessed_grammar}': {e}"
+        ) from e
+
+    return cast(list[dict[str, Any]], processed_grammar)

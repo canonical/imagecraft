@@ -31,6 +31,10 @@ platforms:
   amd64:
     build-for: amd64
     build-on: amd64
+filesystems:
+  default:
+  - mount: /
+    device: (default)
 volumes:
   pc:
     schema: gpt
@@ -75,6 +79,10 @@ platforms:
   riscv64:
     build-on: [amd64]
     build-for: [riscv64]
+filesystems:
+  default:
+  - mount: /
+    device: (default)
 volumes:
   pc:
     schema: gpt
