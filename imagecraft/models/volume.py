@@ -205,7 +205,7 @@ class StructureItem(CraftBaseModel):
     For GPT partitions, the value must be the standard 32-digit hexadecimal number
     associated with the type.
 
-    This is distinct from the ``structure.<item>.id`` key, which is unique among
+    This is distinct from the ``structure.<partition>.id`` key, which is unique among
     all partitions, regardless of type.
     """
 
@@ -232,8 +232,8 @@ class StructureItem(CraftBaseModel):
     )
     """A human-readable name to assign the partition.
 
-    If unset, the label will default to the value of ``structure.<item>.name``. Labels
-    must be unique to their volume.
+    If unset, the label will default to the value of ``structure.<partition>.name``.
+    Labels must be unique to their volume.
     """
 
     def __hash__(self) -> int:
