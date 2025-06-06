@@ -1,271 +1,195 @@
-.. _imagecraft-yaml-file:
+.. _reference-imagecraft-yaml:
 
-``imagecraft.yaml`` file
-========================
+imagecraft.yaml
+===============
 
-An Imagecraft project is defined in a YAML file named ``imagecraft.yaml``
-at the root of the project tree in the filesystem.
-
-This Reference section is for when you need to know which options can be
-used, and how, in this ``imagecraft.yaml`` file.
+This reference describes the purpose, usage, and examples of all available keys in
+an image's project file, ``imagecraft.yaml``.
 
 
-name
-----
+Top-level keys
+--------------
 
-**Type**: string
+An Imagecraft project's top-level keys declare the image's descriptors and the
+essential details of how it builds.
 
-**Required**: Yes
+Top-level descriptors include the image's name, version, description, and license,
+alongside operational values such as its supported architectures and build environment.
 
-The name of the image. This value must:
+.. kitbash-field:: craft_application.models.Project name
 
-- start with a lowercase letter [a-z];
-- contain at least one letter;
-- contain only lowercase letters [a-z], numbers [0-9] or hyphens;
-- not end with a hyphen, and must not contain two or more consecutive
-  hyphens.
+.. kitbash-field:: craft_application.models.Project title
 
-title
------
+.. kitbash-field:: craft_application.models.Project version
 
-**Type**: string
+.. kitbash-field:: craft_application.models.Project license
 
-**Required**: No
+.. kitbash-field:: craft_application.models.Project summary
 
-The human-readable title of the image. If omitted, defaults to ``name``.
+.. kitbash-field:: craft_application.models.Project description
 
-summary
--------
+.. kitbash-field:: project.Project base
 
-**Type**: string
+.. kitbash-field:: project.Project build_base
+    :override-type: Literal['ubuntu@20.04', 'ubuntu@22.04', 'ubuntu@24.04']
 
-**Required**: Yes
+.. kitbash-field:: craft_application.models.Project platforms
+    :override-type: dict[str, Platform]
 
-A short summary describing the image.
+.. kitbash-field:: craft_application.models.Project parts
+    :override-type: dict[str, Part]
 
-description
------------
+.. kitbash-field:: project.Project volumes
+    :override-type: dict[str, Volume]
 
-**Type**: string
 
-**Required**: Yes
-
-A longer, possibly multi-line description of the image.
-
-version
--------
-
-**Type**: string
-
-**Required**: Yes
-
-The imagecraft configuration version, used to track changes to the configuration file.
-
-base
-----
-
-**Type**: string ``bare``
-
-**Required**: Yes
-
-Base to use as a first layer for the image.
-
-build-base
-----------
-
-**Type**: One of ``ubuntu@20.04 | ubuntu@22.04 | ubuntu@24.04 | devel``
-
-**Required**: Yes
-
-The system and version that will be used during the build, but not
-included in the final image itself. It comprises the set of tools and libraries
-that Imagecraft will use when building the image contents.
-
-.. note::
-   ``devel`` is a "special" value that means "the next Ubuntu version, currently
-   in development". This means that the contents of this system changes
-   frequently and should not be relied on for production images.
-
-license
--------
-
-**Type**: string, in `SPDX format <https://spdx.org/licenses/>`_
-
-**Required**: No
-
-The license of the software packaged inside the image. This must either be
-"proprietary" or match the SPDX format. It is case insensitive (e.g. both
-``MIT`` and ``mit`` are valid).
-
-platforms
+Part keys
 ---------
 
-**Type**: dict
+The ``parts`` key and its values declare the image's :ref:`parts <explanation-parts>`
+and detail how they're built.
 
-**Required**: Yes
+.. kitbash-field:: craft_parts.parts.PartSpec plugin
+    :prepend-name: parts.<part-name>
 
-The architecture of the image to create. Supported architectures are:
-``amd64``, ``arm64``, ``armhf``, ``i386``, ``ppc64el``, ``riscv64`` and ``s390x``.
+.. kitbash-field:: craft_parts.parts.PartSpec source
+    :prepend-name: parts.<part-name>
 
-Entries in the ``platforms`` dict can be free-form strings, or the name of a
-supported architecture (in Debian format).
+.. kitbash-field:: craft_parts.parts.PartSpec source_checksum
+    :prepend-name: parts.<part-name>
 
-.. warning::
-   **All** target architectures must be compatible with the architecture of
-   the host where Imagecraft is being executed (i.e. emulation is not supported
-   at the moment).
+.. kitbash-field:: craft_parts.parts.PartSpec source_type
+    :prepend-name: parts.<part-name>
 
-platforms.<platform>.build-for
-------------------------------
+.. kitbash-field:: craft_parts.parts.PartSpec source_tag
+    :prepend-name: parts.<part-name>
 
-**Type**: string | list[string]
+.. kitbash-field:: craft_parts.parts.PartSpec source_branch
+    :prepend-name: parts.<part-name>
 
-**Required**: Yes, if ``<platform>`` is not a supported architecture name.
+.. kitbash-field:: craft_parts.parts.PartSpec source_channel
+    :prepend-name: parts.<part-name>
 
-Target architecture the image will be built for. Defaults to ``<platform>`` that is a
-valid, supported architecture name.
+.. kitbash-field:: craft_parts.parts.PartSpec source_commit
+    :prepend-name: parts.<part-name>
 
-.. note::
-   At the moment Imagecraft will only build for a single architecture, so
-   if provided ``build-for`` must be a single string or a list with exactly one
-   element.
+.. kitbash-field:: craft_parts.parts.PartSpec source_depth
+    :prepend-name: parts.<part-name>
 
-platforms.<platform>.build-on
------------------------------
+.. kitbash-field:: craft_parts.parts.PartSpec source_submodules
+    :prepend-name: parts.<part-name>
 
-**Type**: string | list[string]
+.. kitbash-field:: craft_parts.parts.PartSpec source_subdir
+    :prepend-name: parts.<part-name>
 
-**Required**: Yes, if ``build-for`` is specified *or* if ``<platform>`` is not a
-supported architecture name.
+.. kitbash-field:: craft_parts.parts.PartSpec disable_parallel
+    :prepend-name: parts.<part-name>
 
-Host architectures where the image will be built. Defaults to ``<platform>`` if that
-is a valid, supported architecture name.
+.. kitbash-field:: craft_parts.parts.PartSpec after
+    :prepend-name: parts.<part-name>
 
-.. note::
-   At the moment Imagecraft will only build on a single architecture, so
-   if provided ``build-on`` must be a single string or a list with exactly one
-   element.
+.. kitbash-field:: craft_parts.parts.PartSpec overlay_packages
+    :prepend-name: parts.<part-name>
 
-parts
------
+.. kitbash-field:: craft_parts.parts.PartSpec overlay_script
+    :prepend-name: parts.<part-name>
 
-**Type**: dict
+.. kitbash-field:: craft_parts.parts.PartSpec overlay_files
+    :prepend-name: parts.<part-name>
 
-**Required**: Yes
+.. kitbash-field:: craft_parts.parts.PartSpec build_packages
+    :prepend-name: parts.<part-name>
 
-The set of parts that compose the image's contents. See :ref:`part_properties`
-for more details.
+.. kitbash-field:: craft_parts.parts.PartSpec build_snaps
+    :prepend-name: parts.<part-name>
 
-volumes
--------
+.. kitbash-field:: craft_parts.parts.PartSpec build_environment
+    :prepend-name: parts.<part-name>
 
-**Type**: dict (single entry)
+.. kitbash-field:: craft_parts.parts.PartSpec build_attributes
+    :prepend-name: parts.<part-name>
 
-**Required**: Yes
+.. kitbash-field:: craft_parts.parts.PartSpec organize_files
+    :prepend-name: parts.<part-name>
 
-Structure and content of the image. A volume represents a "disk".
+.. kitbash-field:: craft_parts.parts.PartSpec stage_files
+    :prepend-name: parts.<part-name>
+    :override-type: list[str]
 
-volumes.<volume>.schema
------------------------
+.. kitbash-field:: craft_parts.parts.PartSpec stage_packages
+    :prepend-name: parts.<part-name>
 
-**Type**: string ``gpt``
+.. kitbash-field:: craft_parts.parts.PartSpec stage_snaps
+    :prepend-name: parts.<part-name>
 
-**Required**: Yes
+.. kitbash-field:: craft_parts.parts.PartSpec prime_files
+    :prepend-name: parts.<part-name>
+    :override-type: list[str]
 
-Partitioning schema to use.
+.. kitbash-field:: craft_parts.parts.PartSpec override_pull
+    :prepend-name: parts.<part-name>
 
-volumes.<volume>.structure
---------------------------
+.. kitbash-field:: craft_parts.parts.PartSpec override_build
+    :prepend-name: parts.<part-name>
 
-**Type**: dict (at least one node entry)
+.. kitbash-field:: craft_parts.parts.PartSpec override_stage
+    :prepend-name: parts.<part-name>
 
-**Required**: Yes
+.. kitbash-field:: craft_parts.parts.PartSpec override_prime
+    :prepend-name: parts.<part-name>
 
-Structure of the image, defining partitions.
+.. kitbash-field:: craft_parts.parts.PartSpec permissions
+    :prepend-name: parts.<part-name>
 
-volumes.<volume>.structure.<item>.name
----------------------------------------
+.. kitbash-field:: craft_parts.permissions.Permissions path
+    :prepend-name: parts.<part-name>.permissions.<permission>
 
-**Type**: string
+.. kitbash-field:: craft_parts.permissions.Permissions owner
+    :prepend-name: parts.<part-name>.permissions.<permission>
 
-**Required**: Yes
+.. kitbash-field:: craft_parts.permissions.Permissions group
+    :prepend-name: parts.<part-name>.permissions.<permission>
 
-Structure item name. Must respect the following:
-- contain only lowercase letters [a-z] or hyphens;
-- cannot start or end with a hyphen;
-- maximum length: 36 characters (maximum of a partition name
-for GPT in the UTF-16 character set);
+.. kitbash-field:: craft_parts.permissions.Permissions mode
+    :prepend-name: parts.<part-name>.permissions.<permission>
 
-Structure names must be unique in a volume.
 
-volumes.<volume>.structure.<item>.id
-------------------------------------
+Volume keys
+-----------
 
-**Type**: string
+The ``volumes`` key and its values declare the schema and layout of the image's
+partitions.
 
-**Required**: No
+.. kitbash-field:: volume.Volume volume_schema
+    :prepend-name: volumes.<volume-name>
 
-GPT unique partition id.
+.. kitbash-field:: volume.Volume structure
+    :prepend-name: volumes.<volume-name>
+    :override-type: list[Partition]
 
-volumes.<volume>.structure.<item>.role
---------------------------------------
 
-**Type**: One of ``system-boot | system-data``
+Partition keys
+--------------
 
-**Required**: Yes
+The following keys can be declared for each partition listed in the ``structure`` key.
 
-Role defines a special role for this item in the image.
-- ``system-boot``: Partition holding the boot assets.
-- ``system-data``: Partition holding the main operating system data.
+.. kitbash-field:: volume.StructureItem name
+    :prepend-name: volumes.<volume-name>.structure.<partition>
 
-volumes.<volume>.structure.<item>.type
---------------------------------------
+.. kitbash-field:: volume.StructureItem id
+    :prepend-name: volumes.<volume-name>.structure.<partition>
 
-**Type**: string
+.. kitbash-field:: volume.StructureItem role
+    :prepend-name: volumes.<volume-name>.structure.<partition>
 
-**Required**: Yes
+.. kitbash-field:: volume.StructureItem structure_type
+    :prepend-name: volumes.<volume-name>.structure.<partition>
 
-Type of structure. A GPT partition type GUID.
+.. kitbash-field:: volume.StructureItem size
+    :prepend-name: volumes.<volume-name>.structure.<partition>
 
-volumes.<volume>.structure.<item>.size
---------------------------------------
+.. kitbash-field:: volume.StructureItem filesystem
+    :prepend-name: volumes.<volume-name>.structure.<partition>
 
-**Type**: string
-
-**Required**: Yes
-
-Size for structure item. Conforms to the IEC 80000-13 Standard.
-
-.. collapse:: Example
-
-    .. code-block:: yaml
-
-        size: "6G"
-
-volumes.<volume>.structure.<item>.filesystem
---------------------------------------------
-
-**Type**: One of ``fat16 | vfat | ext4 | ext3``
-
-**Required**: Yes
-
-Filesystem type.
-
-volumes.<volume>.structure.<item>.filesystem-label
---------------------------------------------------
-
-**Type**: string
-
-**Required**: No
-
-Filesystem label. Defaults to name of structure item.
-Labels must be unique in a volume.
-
-
-Example file
-------------
-
-.. collapse:: imagecraft.yaml
-
-    .. literalinclude:: code/example/imagecraft.yaml
-       :language: yaml
+.. kitbash-field:: volume.StructureItem filesystem_label
+    :prepend-name: volumes.<volume-name>.structure.<partition>

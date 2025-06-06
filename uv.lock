@@ -908,7 +908,7 @@ dev-plucky = [{ name = "python-apt", marker = "sys_platform == 'linux'", specifi
 docs = [
     { name = "canonical-sphinx", extras = ["full"], specifier = "~=0.4.0" },
     { name = "matplotlib" },
-    { name = "pydantic-kitbash", specifier = "==0.0.4" },
+    { name = "pydantic-kitbash", specifier = "==0.0.5" },
     { name = "sphinx-autobuild", specifier = "~=2024.2" },
     { name = "sphinx-lint", specifier = "==1.0.0" },
     { name = "sphinx-pydantic", specifier = "==0.1.1" },
@@ -1711,7 +1711,7 @@ wheels = [
 
 [[package]]
 name = "pydantic-kitbash"
-version = "0.0.4"
+version = "0.0.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "docutils" },
@@ -1719,9 +1719,9 @@ dependencies = [
     { name = "pyyaml" },
     { name = "sphinx" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b6/57/991ba8c4600772a1dc11d93a678fc686a6302693d438d1b0b990503f0ca1/pydantic_kitbash-0.0.4.tar.gz", hash = "sha256:7c9ec96489f35248ba1281bd0430dceb7d60c907e0bbcd73cdbc1b156b4175fa", size = 122610, upload-time = "2025-05-23T21:33:14.131Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/91/b9/e2c676013cadbddd1c935dd18e15b7863f87257e9a69f1b2c72b15000652/pydantic_kitbash-0.0.5.tar.gz", hash = "sha256:550194b663ffda882db4496e109a6ac4dac191fcce4493026f06fea01f322c23", size = 123504, upload-time = "2025-06-06T21:22:40.929Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/37/46/aa146636b9534193d609e973bf1bd09c74ab491b80469555a83a1937dd4c/pydantic_kitbash-0.0.4-py3-none-any.whl", hash = "sha256:0267f113c37a7db958f3471da94e701c8534ef56a6c5a8842fdb3ceadc1e9166", size = 12660, upload-time = "2025-05-23T21:33:12.43Z" },
+    { url = "https://files.pythonhosted.org/packages/13/71/9d31ae8e94b9d324ed143d8d6982685669c680e9efe2214963e2f9a68fc9/pydantic_kitbash-0.0.5-py3-none-any.whl", hash = "sha256:05bcdbb96d59df832915c2ca3f6da9a505275badd351c06fc978e6954a317822", size = 12804, upload-time = "2025-06-06T21:22:39.511Z" },
 ]
 
 [[package]]
