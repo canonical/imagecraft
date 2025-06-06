@@ -31,6 +31,7 @@ alongside operational values such as its supported architectures and build envir
 .. kitbash-field:: project.Project base
 
 .. kitbash-field:: project.Project build_base
+    :override-type: Literal['ubuntu@20.04', 'ubuntu@22.04', 'ubuntu@24.04']
 
 .. kitbash-field:: craft_application.models.Project platforms
     :override-type: dict[str, Platform]
@@ -96,6 +97,18 @@ and detail how they're built.
 .. kitbash-field:: craft_parts.parts.PartSpec overlay_files
     :prepend-name: parts.<part-name>
 
+.. kitbash-field:: craft_parts.parts.PartSpec build_packages
+    :prepend-name: parts.<part-name>
+
+.. kitbash-field:: craft_parts.parts.PartSpec build_snaps
+    :prepend-name: parts.<part-name>
+
+.. kitbash-field:: craft_parts.parts.PartSpec build_environment
+    :prepend-name: parts.<part-name>
+
+.. kitbash-field:: craft_parts.parts.PartSpec build_attributes
+    :prepend-name: parts.<part-name>
+
 .. kitbash-field:: craft_parts.parts.PartSpec organize_files
     :prepend-name: parts.<part-name>
 
@@ -113,18 +126,6 @@ and detail how they're built.
     :prepend-name: parts.<part-name>
     :override-type: list[str]
 
-.. kitbash-field:: craft_parts.parts.PartSpec build_packages
-    :prepend-name: parts.<part-name>
-
-.. kitbash-field:: craft_parts.parts.PartSpec build_snaps
-    :prepend-name: parts.<part-name>
-
-.. kitbash-field:: craft_parts.parts.PartSpec build_environment
-    :prepend-name: parts.<part-name>
-
-.. kitbash-field:: craft_parts.parts.PartSpec build_attributes
-    :prepend-name: parts.<part-name>
-
 .. kitbash-field:: craft_parts.parts.PartSpec override_pull
     :prepend-name: parts.<part-name>
 
@@ -139,6 +140,18 @@ and detail how they're built.
 
 .. kitbash-field:: craft_parts.parts.PartSpec permissions
     :prepend-name: parts.<part-name>
+
+.. kitbash-field:: craft_parts.permissions.Permissions path
+    :prepend-name: parts.<part-name>.permissions.<permission>
+
+.. kitbash-field:: craft_parts.permissions.Permissions owner
+    :prepend-name: parts.<part-name>.permissions.<permission>
+
+.. kitbash-field:: craft_parts.permissions.Permissions group
+    :prepend-name: parts.<part-name>.permissions.<permission>
+
+.. kitbash-field:: craft_parts.permissions.Permissions mode
+    :prepend-name: parts.<part-name>.permissions.<permission>
 
 
 Volume keys
