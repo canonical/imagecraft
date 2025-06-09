@@ -151,7 +151,17 @@ class Project(BaseProject):
     This key expects a single entry defining the image's schema and partitions.
     """
 
-    filesystems: FilesystemsDictT
+    filesystems: FilesystemsDictT = Field(
+        description="A mapping of where partitions are mounted in the filesystem.",
+        examples=[
+            "{default: [{mount: /, device: (default)}, {mount: /boot/efi, device: (volume/pc/efi)}]}",
+        ],
+    )
+    """The mapping of the image's partitions to mount points.
+
+    This mapping can only contain a single filesystem, named ``default``. The first
+    entry of ``default`` must map a partition to the ``/`` mount point.
+    """
 
     model_config = ConfigDict(
         validate_assignment=True,
