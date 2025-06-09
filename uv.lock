@@ -913,7 +913,7 @@ docs = [
     { name = "sphinx-autobuild", specifier = "~=2024.2" },
     { name = "sphinx-lint", specifier = "==1.0.0" },
     { name = "sphinx-pydantic", specifier = "==0.1.1" },
-    { name = "sphinx-sitemap", specifier = "==2.6.0" },
+    { name = "sphinx-sitemap", specifier = ">=2.6.0" },
     { name = "sphinx-toolbox", specifier = "~=4.0" },
     { name = "sphinxcontrib-details-directive" },
     { name = "sphinxext-rediraffe", specifier = "==0.2.7" },
