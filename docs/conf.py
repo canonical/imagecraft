@@ -46,6 +46,7 @@ ogp_image = "https://assets.ubuntu.com/v1/253da317-image-document-ubuntudocs.svg
 html_context = {
     "product_page": "github.com/canonical/imagecraft",
     "github_url": "https://github.com/canonical/imagecraft",
+    "github_issues": "https://github.com/canonical/charmcraft/issues",
 }
 
 # Target repository for the edit button on pages
