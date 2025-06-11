@@ -60,4 +60,5 @@ def test_lifecycle_args(
         project_name="default",
         base_layer_dir=Path("work/bare_base_layer"),
         base_layer_hash=b"i\x8e\x9c\xa4\x12\x1e\xe8\x97\xe4g\x08\xbc\x88\xddjb\x07\x8cp\xec",
+        filesystem_mounts={"default": [{"device": "(default)", "mount": "/"}]},
     )

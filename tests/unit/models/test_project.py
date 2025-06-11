@@ -38,6 +38,10 @@ platforms:
 parts:
   rootfs:
     plugin: nil
+filesystems:
+  default:
+  - mount: /
+    device: (default)
 volumes:
   pc:
     schema: gpt
@@ -62,6 +66,10 @@ platforms:
 parts:
   rootfs:
     plugin: nil
+filesystems:
+  default:
+  - mount: /
+    device: (default)
 volumes:
   pc:
     schema: gpt
@@ -84,6 +92,10 @@ platforms:
 parts:
   rootfs:
     plugin: nil
+filesystems:
+  default:
+  - mount: /
+    device: (default)
 volumes:
   pc:
     schema: gpt
@@ -106,6 +118,10 @@ platforms:
 parts:
   rootfs:
     plugin: nil
+filesystems:
+  default:
+  - mount: /
+    device: (default)
 volumes:
   pc:
     schema: gpt
@@ -127,6 +143,10 @@ platforms:
 parts:
   rootfs:
     plugin: nil
+filesystems:
+  default:
+  - mount: /
+    device: (default)
 volumes:
   pc:
     schema: gpt
@@ -168,6 +188,9 @@ def test_project_unmarshal(yaml_data):
             assert getattr(project, attr).keys() == v.keys()
             continue
         if attr == "volumes":
+            assert getattr(project, attr).keys() == v.keys()
+            continue
+        if attr == "filesystems":
             assert getattr(project, attr).keys() == v.keys()
             continue
         assert getattr(project, attr.replace("-", "_")) == v
@@ -284,6 +307,10 @@ platforms:
 parts:
   rootfs:
     plugin: nil
+filesystems:
+  default:
+  - mount: /
+    device: (default)
 volumes:
   pc:
     schema: gpt
@@ -316,6 +343,10 @@ platforms:
 parts:
   rootfs:
     plugin: nil
+filesystems:
+  default:
+  - mount: /
+    device: (default)
 volumes:
   invalid_test-:
     schema: gpt
@@ -348,3 +379,80 @@ def test_project_invalid_volumes(error_value, yaml_data):
         Project.from_yaml_data(yaml_loaded, project_path)
 
     assert error_value == str(err.value)
+
+
+@pytest.mark.parametrize(
+    ("error_lines", "filesystems_val"),
+    [
+        (
+            ["- input should be a valid dictionary (in field 'filesystems')"],
+            [],
+        ),
+        (
+            ["- input should be a valid list (in field 'filesystems.test')"],
+            {"test": {}},
+        ),
+        (
+            [
+                "- the first entry in a filesystem must map the '/' mount. (in field 'filesystems.test')"
+            ],
+            {
+                "test": [
+                    {
+                        "mount": "/test",
+                        "device": "(default)",
+                    }
+                ]
+            },
+        ),
+        (
+            [
+                "- field 'mount' required in 'filesystems.test' configuration",
+                "- field 'device' required in 'filesystems.test' configuration",
+                "- extra inputs are not permitted (in field 'filesystems.test.test')",
+            ],
+            {
+                "test": [
+                    {
+                        "test": "foo",
+                    }
+                ]
+            },
+        ),
+        (
+            [
+                "- list should have at least 1 item after validation, not 0 (in field 'filesystems.test')",
+            ],
+            {"test": []},
+        ),
+        (
+            [
+                "- dictionary should have at most 1 item after validation, not 2 (in field 'filesystems')",
+            ],
+            {
+                "default": [
+                    {
+                        "mount": "/",
+                        "device": "(default)",
+                    },
+                ],
+                "foo": [
+                    {
+                        "mount": "/",
+                        "device": "(default)",
+                    }
+                ],
+            },
+        ),
+    ],
+)
+def test_project_invalid_filesystems(error_lines, filesystems_val):
+    yaml_loaded = yaml.safe_load(IMAGECRAFT_YAML_GENERIC)
+    yaml_loaded["filesystems"] = filesystems_val
+    project_path = pathlib.Path("myproject.yaml")
+    with pytest.raises(CraftValidationError) as error:
+        Project.from_yaml_data(yaml_loaded, project_path)
+
+    assert error.value.args[0] == "\n".join(
+        ("Bad myproject.yaml content:", *error_lines)
+    )
