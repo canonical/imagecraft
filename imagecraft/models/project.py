@@ -28,6 +28,7 @@ from craft_application.models import Platform as BasePlatform
 from craft_application.models import Project as BaseProject
 from craft_providers import bases
 from pydantic import (
+    AfterValidator,
     ConfigDict,
     Field,
     model_validator,
@@ -76,6 +77,35 @@ BuildBaseT = typing.Annotated[
 VolumeDictT = Annotated[dict[VolumeName, Volume], Field(min_length=1, max_length=1)]
 
 
+def _validate_filesystem(filesystem: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Validate a filesystem item.
+
+    :param filesystem: a list representing a filesystem.
+    :returns: That same list, if valid.
+    :raises: ValueError if the filesystem is not valid.
+    """
+    # This check is not always used, import it here to avoid unnecessary import
+    from craft_parts.filesystem_mounts import (
+        validate_filesystem_mount,  # type: ignore[import-untyped]
+    )
+
+    validate_filesystem_mount(filesystem)
+    return filesystem
+
+
+FilesystemsDictT = Annotated[
+    dict[
+        str,
+        Annotated[
+            list[dict[str, Any]],
+            Field(min_length=1),
+            AfterValidator(_validate_filesystem),
+        ],
+    ],
+    Field(min_length=1, max_length=1),
+]
+
+
 class Project(BaseProject):
     """Definition of imagecraft.yaml configuration."""
 
@@ -119,6 +149,18 @@ class Project(BaseProject):
     """The structure and properties of the image.
 
     This key expects a single entry defining the image's schema and partitions.
+    """
+
+    filesystems: FilesystemsDictT = Field(
+        description="A mapping of where partitions are mounted in the filesystem.",
+        examples=[
+            "{default: [{mount: /, device: (default)}, {mount: /boot/efi, device: (volume/pc/efi)}]}",
+        ],
+    )
+    """The mapping of the image's partitions to mount points.
+
+    This mapping can only contain a single filesystem, named ``default``. The first
+    entry of ``default`` must map a partition to the ``/`` mount point.
     """
 
     model_config = ConfigDict(

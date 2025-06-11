@@ -553,7 +553,7 @@ wheels = [
 
 [[package]]
 name = "craft-parts"
-version = "2.8.0"
+version = "2.12.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "overrides" },
@@ -563,9 +563,9 @@ dependencies = [
     { name = "requests" },
     { name = "requests-unixsocket2" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/38/af/3a36df71dd40f0267e5f7c5d2b0dbe92886a5170475e3a9876dbf88b2eb4/craft_parts-2.8.0.tar.gz", hash = "sha256:689c0baf4465eed5366bd02580867973cb3285ae3dc43dc9842c87ec37fbd7bc", size = 653143, upload-time = "2025-04-10T15:38:13.132Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f0/6f/e562ab023757609671fe1c1093a469b982bb86297aa610a6a49a6b3424f0/craft_parts-2.12.0.tar.gz", hash = "sha256:cd20fbb1d0b2b8476d162d939d26100c60d912d0a55b876b56464dee635226fb", size = 739230, upload-time = "2025-06-06T17:50:45.54Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/06/0e/c6f4a2b148e35fe80a3bfbbd4f58d501a3d65b9a974fd4263f4144505e4f/craft_parts-2.8.0-py3-none-any.whl", hash = "sha256:e0a9d97d673859a7b67eed2df4a7e2202191b4aa87366c9a6831b82ee50dacf9", size = 460069, upload-time = "2025-04-10T15:38:10.917Z" },
+    { url = "https://files.pythonhosted.org/packages/08/30/b19fdbe20db1c1fe503d0c7cd32ed62b98a8cea06639a666e8e046d7476a/craft_parts-2.12.0-py3-none-any.whl", hash = "sha256:25dbfd6e0805e6fa3070e349820790f482d78aa34f9adde87d8e7da7d69b534f", size = 475124, upload-time = "2025-06-06T17:50:43.602Z" },
 ]
 
 [[package]]
@@ -881,7 +881,7 @@ requires-dist = [
     { name = "craft-application", specifier = "~=5.0" },
     { name = "craft-cli", specifier = "~=3.0" },
     { name = "craft-grammar", specifier = "~=2.0.3" },
-    { name = "craft-parts", specifier = "~=2.6" },
+    { name = "craft-parts", specifier = "~=2.12" },
     { name = "craft-platforms", specifier = "~=0.6" },
     { name = "craft-providers", specifier = "~=2.0" },
     { name = "pydantic", specifier = "~=2.8" },
