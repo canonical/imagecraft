@@ -5,7 +5,6 @@ dynamic = ["version", "readme"]
 authors = [{ name = "Canonical Ltd.", email = "snapcraft@lists.snapcraft.io" }]
 license = { file = "LICENSE" }
 dependencies = [
-    # "craft-parts @ file:///${PROJECT_ROOT}/../craft-parts/",
     "craft-parts~=2.12",
     "craft-cli~=3.0",
     "craft-platforms~=0.6",
