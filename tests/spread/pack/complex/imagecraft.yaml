@@ -6,6 +6,11 @@ build-base: ubuntu@24.04
 platforms:
   amd64:
 
+filesystems:
+  default:
+    - mount: /
+      device: (volume/pc/rootfs)
+
 parts:
   rootfs:
     plugin: nil
