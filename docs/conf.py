@@ -22,7 +22,7 @@ import sys
 import craft_parts_docs  # type: ignore
 
 
-project_dir = pathlib.Path(__file__).parent.parent.resolve()
+project_dir = pathlib.Path(__file__).parents[1].resolve()
 sys.path.insert(0, str(project_dir.absolute()))
 
 # Add directories to sys path to simplify kitbash arguments
@@ -46,6 +46,7 @@ ogp_image = "https://assets.ubuntu.com/v1/253da317-image-document-ubuntudocs.svg
 html_context = {
     "product_page": "github.com/canonical/imagecraft",
     "github_url": "https://github.com/canonical/imagecraft",
+    "github_issues": "https://github.com/canonical/imagecraft/issues",
 }
 
 # Target repository for the edit button on pages
