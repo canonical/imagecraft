@@ -114,7 +114,14 @@ Run the image
 
 Finally, test your new image with QEMU.
 
-First, copy the UEFI variables to a temporary directory:
+First, install QEMU and the Open Virtual Machine Firmware UEFI firmware for
+64-bit x86 virtual machines:
+
+.. code-block:: bash
+
+    sudo apt install ovmf qemu-system-x86
+
+Then, copy the UEFI variables to a temporary directory:
 
 .. code-block::
 
