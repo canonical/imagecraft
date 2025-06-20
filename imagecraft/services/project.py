@@ -19,6 +19,7 @@ from typing import Any, cast
 import craft_cli
 import craft_platforms
 from craft_application import ProjectService
+from craft_parts.partitions import PartitionMap
 from overrides import override  # type: ignore[reportUnknownVariableType]
 
 from imagecraft import grammar
@@ -46,7 +47,7 @@ class ImagecraftProjectService(ProjectService):
         platform: str,
         build_for: str,
         build_on: craft_platforms.DebianArchitecture,
-    ) -> list[str] | None:
+    ) -> PartitionMap | None:
         project = self._preprocess(
             build_for=build_for, build_on=cast(str, build_on), platform=platform
         )

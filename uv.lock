@@ -483,8 +483,8 @@ toml = [
 
 [[package]]
 name = "craft-application"
-version = "5.3.0.post280+gf332dd5"
-source = { git = "https://github.com/canonical/craft-application.git?rev=work%2Fprototype-alias#f332dd55da702830ac4a6812264616627b5022fb" }
+version = "5.3.0.post281+g0df6640"
+source = { git = "https://github.com/canonical/craft-application.git?rev=work%2Fprototype-alias#0df66406d0f1fea8d1fdf472b909a5bc239c5dce" }
 dependencies = [
     { name = "annotated-types" },
     { name = "craft-archives" },
@@ -553,8 +553,8 @@ wheels = [
 
 [[package]]
 name = "craft-parts"
-version = "2.12.0.post32+g5c31df0"
-source = { git = "https://github.com/canonical/craft-parts.git?rev=work%2FCRAFT-4559-Prototype-the-alias-mechanism#5c31df062fa590f823b503dc0549a6acc232eae1" }
+version = "2.13.0.post13+g66917ff"
+source = { git = "https://github.com/canonical/craft-parts.git?rev=work%2FCRAFT-4559-Prototype-the-alias-mechanism#66917ff3f33794a3ae2366dd44e9f9d5a9352b19" }
 dependencies = [
     { name = "overrides" },
     { name = "pydantic" },
