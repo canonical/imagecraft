@@ -6,9 +6,10 @@ authors = [{ name = "Canonical Ltd.", email = "snapcraft@lists.snapcraft.io" }]
 license = { file = "LICENSE" }
 dependencies = [
     "craft-parts~=2.12",
+    "craft-parts @ git+https://github.com/canonical/craft-parts.git@work/CRAFT-4559-Prototype-the-alias-mechanism",
     "craft-cli~=3.0",
     "craft-platforms~=0.6",
-    "craft-application~=5.0",
+    "craft-application @ git+https://github.com/canonical/craft-application.git@work/prototype-alias",
     "craft-grammar~=2.0.3",
     "craft-providers~=2.0",
     "pydantic~=2.8",

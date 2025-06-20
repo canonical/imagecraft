@@ -186,20 +186,21 @@ class Project(BaseProject):
 
         :returns: A list of partitions formatted as ['default', 'volume/<name>', ...]
         """
-        return _get_partitions_from_volumes(self.volumes)
+        return _get_partitions_from_volumes(self.volumes, self.filesystems)
 
 
-class VolumeProject(CraftBaseModel, extra="ignore"):
+class VolumeFilesystemMountsProject(CraftBaseModel, extra="ignore"):
     """Project definition containing only volumes data."""
 
     volumes: VolumeDictT
+    filesystems: FilesystemsDictT
 
     def get_partitions(self) -> list[str]:
         """Get a list of partitions based on the project's volumes.
 
         :returns: A list of partitions formatted as ['default', 'volume/<name>', ...]
         """
-        return _get_partitions_from_volumes(self.volumes)
+        return _get_partitions_from_volumes(self.volumes, self.filesystems)
 
 
 def get_partition_name(volume_name: str, structure: StructureItem) -> str:
@@ -209,17 +210,28 @@ def get_partition_name(volume_name: str, structure: StructureItem) -> str:
 
 def _get_partitions_from_volumes(
     volumes_data: dict[str, Any],
+    filesystems: dict[str, Any],
 ) -> list[str]:
     """Get a list of partitions based on the project's volumes.
 
     :returns: A list of partitions formatted as ['default', 'volume/<name>', ...]
     """
+    # The alias to default must be excluded
+    default_alias = get_alias_to_default(filesystems)
+
     partitions: list[str] = ["default"]
     for volume_name, volume in volumes_data.items():
-        partitions.extend(
-            [
-                get_partition_name(volume_name, structure)
-                for structure in volume.structure
-            ]
-        )
+        for structure in volume.structure:
+            name = get_partition_name(volume_name, structure)
+            if name != default_alias:
+                partitions.append(name)
     return partitions
+
+
+def get_alias_to_default(filesystems: dict[str, Any]) -> str:
+    """Get the alias to the default partition defined in the Filesystems."""
+    default_filesystem_mount: list[dict[str, Any]] | None = filesystems.get("default")
+    if default_filesystem_mount is None:
+        return ""
+
+    return str(default_filesystem_mount[0].get("device"))
