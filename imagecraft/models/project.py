@@ -185,7 +185,7 @@ class Project(BaseProject):
     def get_partitions(self) -> PartitionMap:
         """Get a list of partitions based on the project's volumes and filessystems.
 
-        :returns: A list of partitions formatted as ['default', 'volume/<name>', ...]
+        :returns: A PartitionMap holding partitions and aliases
         """
         return _get_partitions(self.volumes, self.filesystems)
 
@@ -199,7 +199,7 @@ class VolumeFilesystemMountsProject(CraftBaseModel, extra="ignore"):
     def get_partitions(self) -> PartitionMap:
         """Get a list of partitions based on the project's volumes.
 
-        :returns: A list of partitions formatted as ['default', 'volume/<name>', ...]
+        :returns: A PartitionMap holding partitions and aliases
         """
         return _get_partitions(self.volumes, self.filesystems)
 
@@ -213,9 +213,9 @@ def _get_partitions(
     volumes_data: dict[str, Any],
     filesystems: dict[str, Any],
 ) -> PartitionMap:
-    """Get a list of partitions based on the project's volumes.
+    """Get a partitions map based on the project's volumes.
 
-    :returns: A list of partitions formatted as ['default', 'volume/<name>', ...]
+    :returns: A PartitionMap holding partitions and aliases
     """
     default_alias = get_alias_to_default(filesystems)
 
@@ -225,13 +225,21 @@ def _get_partitions(
             name = get_partition_name(volume_name, structure)
             if name != default_alias:
                 partitions.append(name)
-    return PartitionMap(partitions=partitions, aliases={default_alias: "default"})
+    aliases: dict[str, str] | None = None
+    if default_alias:
+        aliases = {default_alias: "default"}
+
+    return PartitionMap(partitions=partitions, aliases=aliases)
 
 
-def get_alias_to_default(filesystems: dict[str, Any]) -> str:
+def get_alias_to_default(filesystems: dict[str, Any]) -> str | None:
     """Get the alias to the default partition defined in the Filesystems."""
     default_filesystem_mount: list[dict[str, Any]] | None = filesystems.get("default")
     if default_filesystem_mount is None:
-        return ""
+        return None
 
-    return str(default_filesystem_mount[0].get("device")).strip("()")
+    alias = default_filesystem_mount[0].get("device")
+    if alias is not None:
+        alias = str(alias).strip("()")
+
+    return alias
