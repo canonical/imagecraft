@@ -5,22 +5,36 @@ on:
   push:
     branches:
       - "feature/**"
+  # allow manual re-publishing as branches expire after 30 days
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout imagecraft
+      - name: Decision to Publish
+        id: decisions
+        run: |
+          # Secrets cannot be used in conditionals, so this is our dance:
+          # https://github.com/actions/runner/issues/520
+          if [[ -n "${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}" ]]; then
+            echo PUBLISH=true >> $GITHUB_OUTPUT
+          else
+            echo PUBLISH= >> $GITHUB_OUTPUT
+          fi
+      - if: steps.decisions.outputs.PUBLISH == 'true'
+        name: Checkout imagecraft
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Build imagecraft snap
+      - if: steps.decisions.outputs.PUBLISH == 'true'
+        name: Build imagecraft snap
         uses: canonical/action-build@v1
         id: build-imagecraft
 
-      - name: Upload imagecraft snap artifact
+      - if: steps.decisions.outputs.PUBLISH == 'true'
+        name: Upload imagecraft snap artifact
         uses: actions/upload-artifact@v4
         with:
           name: snap
@@ -37,8 +51,8 @@ jobs:
             echo "branch=$branch" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Publish feature branch to edge/${{ steps.vars.outputs.branch }}
-        if: ${{ env.SNAPCRAFT_STORE_CREDENTIALS != '' }}
+      - if: steps.decisions.outputs.PUBLISH == 'true'
+        name: Publish feature branch to edge/${{ steps.vars.outputs.branch }}
         uses: canonical/action-publish@v1
         env:
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
