@@ -17,9 +17,8 @@
 from pathlib import Path
 from unittest.mock import ANY
 
-from craft_parts import (
-    LifecycleManager,
-)
+from craft_parts import LifecycleManager
+from craft_parts.partitions import PartitionList
 from craft_platforms import DebianArchitecture
 from imagecraft.services.lifecycle import ImagecraftLifecycleService
 
@@ -54,7 +53,7 @@ def test_lifecycle_args(
         project_vars_part_name=None,
         project_vars={"version": "1.0"},
         track_stage_packages=True,
-        partitions=["default", "volume/pc/efi"],
+        partitions=PartitionList(["default", "volume/pc/efi"]),
         build_for="amd64",
         platform="amd64",
         project_name="default",

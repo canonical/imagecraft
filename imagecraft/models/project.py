@@ -26,6 +26,7 @@ from craft_application.errors import CraftValidationError
 from craft_application.models import CraftBaseModel
 from craft_application.models import Platform as BasePlatform
 from craft_application.models import Project as BaseProject
+from craft_parts.partitions import PartitionMap
 from craft_providers import bases
 from pydantic import (
     AfterValidator,
@@ -181,25 +182,26 @@ class Project(BaseProject):
         """
         return None
 
-    def get_partitions(self) -> list[str]:
-        """Get a list of partitions based on the project's volumes.
+    def get_partitions(self) -> PartitionMap:
+        """Get a list of partitions based on the project's volumes and filessystems.
 
-        :returns: A list of partitions formatted as ['default', 'volume/<name>', ...]
+        :returns: A PartitionMap holding partitions and aliases
         """
-        return _get_partitions_from_volumes(self.volumes)
+        return _get_partitions(self.volumes, self.filesystems)
 
 
-class VolumeProject(CraftBaseModel, extra="ignore"):
-    """Project definition containing only volumes data."""
+class VolumeFilesystemMountsProject(CraftBaseModel, extra="ignore"):
+    """Project definition containing only volumes and filesystems data."""
 
     volumes: VolumeDictT
+    filesystems: FilesystemsDictT
 
-    def get_partitions(self) -> list[str]:
+    def get_partitions(self) -> PartitionMap:
         """Get a list of partitions based on the project's volumes.
 
-        :returns: A list of partitions formatted as ['default', 'volume/<name>', ...]
+        :returns: A PartitionMap holding partitions and aliases
         """
-        return _get_partitions_from_volumes(self.volumes)
+        return _get_partitions(self.volumes, self.filesystems)
 
 
 def get_partition_name(volume_name: str, structure: StructureItem) -> str:
@@ -207,19 +209,37 @@ def get_partition_name(volume_name: str, structure: StructureItem) -> str:
     return f"volume/{volume_name}/{structure.name}"
 
 
-def _get_partitions_from_volumes(
+def _get_partitions(
     volumes_data: dict[str, Any],
-) -> list[str]:
-    """Get a list of partitions based on the project's volumes.
+    filesystems: dict[str, Any],
+) -> PartitionMap:
+    """Get a partitions map based on the project's volumes.
 
-    :returns: A list of partitions formatted as ['default', 'volume/<name>', ...]
+    :returns: A PartitionMap holding partitions and aliases
     """
+    default_alias = get_alias_to_default(filesystems)
+
     partitions: list[str] = ["default"]
     for volume_name, volume in volumes_data.items():
-        partitions.extend(
-            [
-                get_partition_name(volume_name, structure)
-                for structure in volume.structure
-            ]
-        )
-    return partitions
+        for structure in volume.structure:
+            name = get_partition_name(volume_name, structure)
+            if name != default_alias:
+                partitions.append(name)
+    aliases: dict[str, str] | None = None
+    if default_alias:
+        aliases = {default_alias: "default"}
+
+    return PartitionMap(partitions=partitions, aliases=aliases)
+
+
+def get_alias_to_default(filesystems: dict[str, Any]) -> str | None:
+    """Get the alias to the default partition defined in the Filesystems."""
+    default_filesystem_mount: list[dict[str, Any]] | None = filesystems.get("default")
+    if default_filesystem_mount is None:
+        return None
+
+    alias = default_filesystem_mount[0].get("device")
+    if alias is not None:
+        alias = str(alias).strip("()")
+
+    return alias

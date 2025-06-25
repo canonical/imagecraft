@@ -19,10 +19,11 @@ from typing import Any, cast
 import craft_cli
 import craft_platforms
 from craft_application import ProjectService
+from craft_parts.partitions import PartitionMap
 from overrides import override  # type: ignore[reportUnknownVariableType]
 
 from imagecraft import grammar
-from imagecraft.models import VolumeProject
+from imagecraft.models import VolumeFilesystemMountsProject
 
 
 class ImagecraftProjectService(ProjectService):
@@ -46,11 +47,11 @@ class ImagecraftProjectService(ProjectService):
         platform: str,
         build_for: str,
         build_on: craft_platforms.DebianArchitecture,
-    ) -> list[str] | None:
+    ) -> PartitionMap | None:
         project = self._preprocess(
             build_for=build_for, build_on=cast(str, build_on), platform=platform
         )
-        volumes = VolumeProject.unmarshal(project)
+        volumes = VolumeFilesystemMountsProject.unmarshal(project)
 
         return volumes.get_partitions()
 
