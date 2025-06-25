@@ -8,6 +8,10 @@ on:
   # allow manual re-publishing as branches expire after 30 days
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
