@@ -53,7 +53,7 @@ def _create_app() -> Imagecraft:
     # pylint: disable=import-outside-toplevel
     # Import these here so that the script that generates the docs for the
     # commands doesn't need to know *too much* of the application.
-    from .application import APP_METADATA, Imagecraft
+    from .application import APP_METADATA, Imagecraft  # noqa: PLC0415
 
     register_services()
 

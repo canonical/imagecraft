@@ -85,7 +85,7 @@ def _validate_filesystem(filesystem: list[dict[str, Any]]) -> list[dict[str, Any
     :raises: ValueError if the filesystem is not valid.
     """
     # This check is not always used, import it here to avoid unnecessary import
-    from craft_parts.filesystem_mounts import (
+    from craft_parts.filesystem_mounts import (  # noqa: PLC0415
         validate_filesystem_mount,  # type: ignore[import-untyped]
     )
 
