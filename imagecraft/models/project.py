@@ -186,20 +186,21 @@ class Project(BaseProject):
 
         :returns: A list of partitions formatted as ['default', 'volume/<name>', ...]
         """
-        return _get_partitions_from_volumes(self.volumes)
+        return _get_partitions(self.volumes, self.filesystems)
 
 
-class VolumeProject(CraftBaseModel, extra="ignore"):
-    """Project definition containing only volumes data."""
+class VolumeFilesystemMountsProject(CraftBaseModel, extra="ignore"):
+    """Project definition containing only volumes and filesystems data."""
 
     volumes: VolumeDictT
+    filesystems: FilesystemsDictT
 
     def get_partitions(self) -> list[str]:
         """Get a list of partitions based on the project's volumes.
 
         :returns: A list of partitions formatted as ['default', 'volume/<name>', ...]
         """
-        return _get_partitions_from_volumes(self.volumes)
+        return _get_partitions(self.volumes, self.filesystems)
 
 
 def get_partition_name(volume_name: str, structure: StructureItem) -> str:
@@ -207,19 +208,32 @@ def get_partition_name(volume_name: str, structure: StructureItem) -> str:
     return f"volume/{volume_name}/{structure.name}"
 
 
-def _get_partitions_from_volumes(
+def _get_partitions(
     volumes_data: dict[str, Any],
+    filesystems: dict[str, Any],
 ) -> list[str]:
     """Get a list of partitions based on the project's volumes.
 
-    :returns: A list of partitions formatted as ['default', 'volume/<name>', ...]
+    :returns: A list of partitions formatted as ['foo', 'volume/<name>', ...]
     """
-    partitions: list[str] = ["default"]
+    default_alias = _get_alias_to_default(filesystems)
+    partitions: list[str] = [default_alias]
+
     for volume_name, volume in volumes_data.items():
-        partitions.extend(
-            [
-                get_partition_name(volume_name, structure)
-                for structure in volume.structure
-            ]
-        )
+        for structure in volume.structure:
+            name = get_partition_name(volume_name, structure)
+            if name != default_alias:
+                partitions.append(name)
     return partitions
+
+
+def _get_alias_to_default(filesystems: dict[str, Any]) -> str:
+    """Get the alias to the default partition defined in the Filesystems."""
+    default_alias = "default"
+    default_filesystem_mount: list[dict[str, Any]] | None = filesystems.get("default")
+    if default_filesystem_mount is None:
+        return default_alias
+
+    alias = default_filesystem_mount[0].get("device", default_alias)
+
+    return str(alias).strip("()")
