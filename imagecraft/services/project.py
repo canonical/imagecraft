@@ -22,7 +22,7 @@ from craft_application import ProjectService
 from overrides import override  # type: ignore[reportUnknownVariableType]
 
 from imagecraft import grammar
-from imagecraft.models import VolumeProject
+from imagecraft.models import VolumeFilesystemMountsProject
 
 
 class ImagecraftProjectService(ProjectService):
@@ -50,7 +50,7 @@ class ImagecraftProjectService(ProjectService):
         project = self._preprocess(
             build_for=build_for, build_on=cast(str, build_on), platform=platform
         )
-        volumes = VolumeProject.unmarshal(project)
+        volumes = VolumeFilesystemMountsProject.unmarshal(project)
 
         return volumes.get_partitions()
 

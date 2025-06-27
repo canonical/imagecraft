@@ -41,6 +41,8 @@ from imagecraft.models.volume import (
     VolumeName,
 )
 
+DEFAULT_FILESYSTEM_MOUNT = "default"
+
 
 class Platform(BasePlatform):
     """Imagecraft project platform definition."""
@@ -154,7 +156,7 @@ class Project(BaseProject):
     filesystems: FilesystemsDictT = Field(
         description="A mapping of where partitions are mounted in the filesystem.",
         examples=[
-            "{default: [{mount: /, device: (default)}, {mount: /boot/efi, device: (volume/pc/efi)}]}",
+            "{default: [{mount: /, device: (volume/pc/rootfs)}, {mount: /boot/efi, device: (volume/pc/efi)}]}",
         ],
     )
     """The mapping of the image's partitions to mount points.
@@ -181,25 +183,19 @@ class Project(BaseProject):
         """
         return None
 
-    def get_partitions(self) -> list[str]:
-        """Get a list of partitions based on the project's volumes.
 
-        :returns: A list of partitions formatted as ['default', 'volume/<name>', ...]
-        """
-        return _get_partitions_from_volumes(self.volumes)
-
-
-class VolumeProject(CraftBaseModel, extra="ignore"):
-    """Project definition containing only volumes data."""
+class VolumeFilesystemMountsProject(CraftBaseModel, extra="ignore"):
+    """Project definition containing only volumes and filesystems data."""
 
     volumes: VolumeDictT
+    filesystems: FilesystemsDictT
 
     def get_partitions(self) -> list[str]:
         """Get a list of partitions based on the project's volumes.
 
         :returns: A list of partitions formatted as ['default', 'volume/<name>', ...]
         """
-        return _get_partitions_from_volumes(self.volumes)
+        return _get_partitions(self.volumes, self.filesystems)
 
 
 def get_partition_name(volume_name: str, structure: StructureItem) -> str:
@@ -207,19 +203,46 @@ def get_partition_name(volume_name: str, structure: StructureItem) -> str:
     return f"volume/{volume_name}/{structure.name}"
 
 
-def _get_partitions_from_volumes(
+def _get_partitions(
     volumes_data: dict[str, Any],
+    filesystems: dict[str, Any],
 ) -> list[str]:
     """Get a list of partitions based on the project's volumes.
 
-    :returns: A list of partitions formatted as ['default', 'volume/<name>', ...]
+    :returns: A list of partitions formatted as ['foo', 'volume/<name>', ...]
     """
-    partitions: list[str] = ["default"]
+    default_alias = _get_alias_to_default(filesystems)
+    partitions: list[str] = []
+    valid_default_alias = False
+
     for volume_name, volume in volumes_data.items():
-        partitions.extend(
-            [
-                get_partition_name(volume_name, structure)
-                for structure in volume.structure
-            ]
+        for structure in volume.structure:
+            name = get_partition_name(volume_name, structure)
+            if name == default_alias:
+                partitions.insert(0, name)
+                valid_default_alias = True
+                continue
+            partitions.append(name)
+
+    if not valid_default_alias:
+        raise ValueError(
+            f"device {default_alias} associated to the root does not reference a valid partition"
         )
     return partitions
+
+
+def _get_alias_to_default(filesystems: dict[str, Any]) -> str:
+    """Get the alias to the default partition defined in the Filesystems."""
+    default_filesystem_mount: list[dict[str, Any]] | None = filesystems.get(
+        DEFAULT_FILESYSTEM_MOUNT
+    )
+    if default_filesystem_mount is None:
+        raise ValueError("invalid filesystems")
+
+    device = default_filesystem_mount[0].get("device")
+    alias = str(device).strip("()")
+
+    if len(alias) == 0:
+        raise ValueError(f"invalid default partition: {device}")
+
+    return alias
