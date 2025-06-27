@@ -18,7 +18,7 @@
 from imagecraft.models.project import (
     Project,
     Platform,
-    VolumeProject,
+    VolumeFilesystemMountsProject,
     get_partition_name,
 )
 
@@ -30,7 +30,7 @@ __all__ = [
     "Project",
     "Platform",
     "Volume",
-    "VolumeProject",
+    "VolumeFilesystemMountsProject",
     "Role",
     "get_partition_name",
     "get_grammar_aware_volume_keywords",
