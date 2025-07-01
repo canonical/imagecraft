@@ -95,10 +95,13 @@ and detail how they're built.
 .. Overlay step keys
 
 .. kitbash-field:: craft_parts.parts.PartSpec overlay_files
+    :prepend-name: parts.<part-name>
 
 .. kitbash-field:: craft_parts.parts.PartSpec overlay_packages
+    :prepend-name: parts.<part-name>
 
 .. kitbash-field:: craft_parts.parts.PartSpec overlay_script
+    :prepend-name: parts.<part-name>
 
 .. Build step keys
 
