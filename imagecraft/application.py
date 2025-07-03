@@ -40,6 +40,6 @@ class Imagecraft(Application):
     @override
     def _enable_craft_parts_features(self) -> None:
         # pylint: disable=import-outside-toplevel
-        from craft_parts.features import Features
+        from craft_parts.features import Features  # noqa: PLC0415
 
         Features(enable_partitions=True, enable_overlay=True)
