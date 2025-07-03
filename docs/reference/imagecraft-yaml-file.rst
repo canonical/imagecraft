@@ -49,25 +49,32 @@ Part keys
 The ``parts`` key and its values declare the image's :ref:`parts <explanation-parts>`
 and detail how they're built.
 
+.. Main keys
+
 .. kitbash-field:: craft_parts.parts.PartSpec plugin
     :prepend-name: parts.<part-name>
 
-.. kitbash-field:: craft_parts.parts.PartSpec source
+.. kitbash-field:: craft_parts.parts.PartSpec after
     :prepend-name: parts.<part-name>
 
-.. kitbash-field:: craft_parts.parts.PartSpec source_checksum
+.. kitbash-field:: craft_parts.parts.PartSpec disable_parallel
+    :prepend-name: parts.<part-name>
+
+.. Pull step keys
+
+.. kitbash-field:: craft_parts.parts.PartSpec source
     :prepend-name: parts.<part-name>
 
 .. kitbash-field:: craft_parts.parts.PartSpec source_type
     :prepend-name: parts.<part-name>
 
-.. kitbash-field:: craft_parts.parts.PartSpec source_tag
+.. kitbash-field:: craft_parts.parts.PartSpec source_checksum
     :prepend-name: parts.<part-name>
 
 .. kitbash-field:: craft_parts.parts.PartSpec source_branch
     :prepend-name: parts.<part-name>
 
-.. kitbash-field:: craft_parts.parts.PartSpec source_channel
+.. kitbash-field:: craft_parts.parts.PartSpec source_tag
     :prepend-name: parts.<part-name>
 
 .. kitbash-field:: craft_parts.parts.PartSpec source_commit
@@ -82,10 +89,12 @@ and detail how they're built.
 .. kitbash-field:: craft_parts.parts.PartSpec source_subdir
     :prepend-name: parts.<part-name>
 
-.. kitbash-field:: craft_parts.parts.PartSpec disable_parallel
+.. kitbash-field:: craft_parts.parts.PartSpec override_pull
     :prepend-name: parts.<part-name>
 
-.. kitbash-field:: craft_parts.parts.PartSpec after
+.. Overlay step keys
+
+.. kitbash-field:: craft_parts.parts.PartSpec overlay_files
     :prepend-name: parts.<part-name>
 
 .. kitbash-field:: craft_parts.parts.PartSpec overlay_packages
@@ -94,7 +103,9 @@ and detail how they're built.
 .. kitbash-field:: craft_parts.parts.PartSpec overlay_script
     :prepend-name: parts.<part-name>
 
-.. kitbash-field:: craft_parts.parts.PartSpec overlay_files
+.. Build step keys
+
+.. kitbash-field:: craft_parts.parts.PartSpec build_environment
     :prepend-name: parts.<part-name>
 
 .. kitbash-field:: craft_parts.parts.PartSpec build_packages
@@ -103,14 +114,30 @@ and detail how they're built.
 .. kitbash-field:: craft_parts.parts.PartSpec build_snaps
     :prepend-name: parts.<part-name>
 
-.. kitbash-field:: craft_parts.parts.PartSpec build_environment
-    :prepend-name: parts.<part-name>
-
-.. kitbash-field:: craft_parts.parts.PartSpec build_attributes
-    :prepend-name: parts.<part-name>
-
 .. kitbash-field:: craft_parts.parts.PartSpec organize_files
     :prepend-name: parts.<part-name>
+    :skip-examples:
+
+Files from the build environment can be organized into specific partitions
+by prepending the destination path with the partition name, enclosed in parentheses.
+Source paths always reference the default partition.
+
+**Examples**
+
+.. code-block:: yaml
+
+    organize:
+      hello.py: bin/hello
+
+.. code-block:: yaml
+
+    organize:
+      vmlinuz-6.2.0-39-generic: (boot)/vmlinuz
+
+.. kitbash-field:: craft_parts.parts.PartSpec override_build
+    :prepend-name: parts.<part-name>
+
+.. Stage step keys
 
 .. kitbash-field:: craft_parts.parts.PartSpec stage_files
     :prepend-name: parts.<part-name>
@@ -122,21 +149,19 @@ and detail how they're built.
 .. kitbash-field:: craft_parts.parts.PartSpec stage_snaps
     :prepend-name: parts.<part-name>
 
+.. kitbash-field:: craft_parts.parts.PartSpec override_stage
+    :prepend-name: parts.<part-name>
+
+.. Prime step keys
+
 .. kitbash-field:: craft_parts.parts.PartSpec prime_files
     :prepend-name: parts.<part-name>
     :override-type: list[str]
 
-.. kitbash-field:: craft_parts.parts.PartSpec override_pull
-    :prepend-name: parts.<part-name>
-
-.. kitbash-field:: craft_parts.parts.PartSpec override_build
-    :prepend-name: parts.<part-name>
-
-.. kitbash-field:: craft_parts.parts.PartSpec override_stage
-    :prepend-name: parts.<part-name>
-
 .. kitbash-field:: craft_parts.parts.PartSpec override_prime
     :prepend-name: parts.<part-name>
+
+.. Permission keys
 
 .. kitbash-field:: craft_parts.parts.PartSpec permissions
     :prepend-name: parts.<part-name>
