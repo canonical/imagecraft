@@ -35,7 +35,7 @@ def project_main_module() -> types.ModuleType:
     """
     try:
         # This should be the project's main package; downstream projects must update this.
-        import imagecraft
+        import imagecraft  # noqa: PLC0415
 
         main_module = imagecraft
     except ImportError:
@@ -52,7 +52,7 @@ def app_metadata():
 
 @pytest.fixture(autouse=True)
 def reset_features():
-    from craft_parts import Features
+    from craft_parts import Features  # noqa: PLC0415
 
     Features.reset()
     yield
@@ -62,7 +62,7 @@ def reset_features():
 @pytest.fixture
 def enable_features(reset_features):
     """Enable both features."""
-    from craft_parts import Features
+    from craft_parts import Features  # noqa: PLC0415
 
     Features(enable_overlay=True, enable_partitions=True)
 
@@ -155,7 +155,7 @@ def default_factory(default_project_file, app_metadata):
 
 @pytest.fixture
 def default_application(default_factory, app_metadata):
-    from imagecraft.application import Imagecraft
+    from imagecraft.application import Imagecraft  # noqa: PLC0415
 
     return Imagecraft(app_metadata, default_factory)
 
