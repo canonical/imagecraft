@@ -10,6 +10,8 @@ filesystems:
   default:
     - mount: /
       device: (volume/pc/rootfs)
+    - mount: /boot/
+      device: (volume/pc/efi)
 
 parts:
   # build a simple rootfs
@@ -18,6 +20,7 @@ parts:
     build-packages: ["mmdebstrap"]
     overlay-script: |
       mmdebstrap --arch amd64 --mode=sudo --format=dir --variant=minbase --include=apt noble $CRAFT_OVERLAY/ http://archive.ubuntu.com/ubuntu/
+      mkdir $CRAFT_OVERLAY/boot/efi
 
   # add packages using chroot and apt to have maintainer scripts run
   packages:
@@ -47,17 +50,15 @@ parts:
       mount --make-rprivate $CRAFT_OVERLAY/dev
       umount --recursive $CRAFT_OVERLAY/dev
 
-  # prepare needed directory to install grub, fix fstab and organize content to the partition
-  organizer:
+  # Define a fstab
+  fstab:
     plugin: nil
     after: [packages]
     overlay-script: |
-      mkdir $CRAFT_OVERLAY/boot/efi
       cat << EOF > $CRAFT_OVERLAY/etc/fstab
       LABEL=writable	/	ext4	discard,errors=remount-ro	0	1
       LABEL=UEFI	/boot/efi	vfat	umask=0077	0 1
       EOF
-      mv $CRAFT_OVERLAY/* $CRAFT_VOLUME_PC_ROOTFS_OVERLAY/
 
 volumes:
   pc:
