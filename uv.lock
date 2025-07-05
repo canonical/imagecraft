@@ -829,9 +829,9 @@ dependencies = [
 
 [package.optional-dependencies]
 apt = [
-    { name = "python-apt", version = "2.7.7+ubuntu3", source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }, marker = "(sys_platform == 'linux' and extra == 'group-10-imagecraft-dev-noble') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-oracular') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-oracular' and extra == 'group-10-imagecraft-dev-plucky')" },
-    { name = "python-apt", version = "2.9.0+ubuntu1", source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }, marker = "(sys_platform == 'linux' and extra == 'group-10-imagecraft-dev-oracular') or (extra == 'group-10-imagecraft-dev-oracular' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-oracular') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky')" },
-    { name = "python-apt", version = "3.0.0", source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }, marker = "(sys_platform == 'linux' and extra != 'group-10-imagecraft-dev-noble' and extra != 'group-10-imagecraft-dev-oracular') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-oracular') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-oracular' and extra == 'group-10-imagecraft-dev-plucky')" },
+    { name = "python-apt", version = "2.7.7+ubuntu3", source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels" }, marker = "(sys_platform == 'linux' and extra == 'group-10-imagecraft-dev-noble') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-oracular') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-oracular' and extra == 'group-10-imagecraft-dev-plucky')" },
+    { name = "python-apt", version = "2.9.0+ubuntu1", source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels" }, marker = "(sys_platform == 'linux' and extra == 'group-10-imagecraft-dev-oracular') or (extra == 'group-10-imagecraft-dev-oracular' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-oracular') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky')" },
+    { name = "python-apt", version = "3.0.0", source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels" }, marker = "(sys_platform == 'linux' and extra != 'group-10-imagecraft-dev-noble' and extra != 'group-10-imagecraft-dev-oracular') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-oracular') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-oracular' and extra == 'group-10-imagecraft-dev-plucky')" },
 ]
 
 [package.dev-dependencies]
@@ -849,13 +849,13 @@ dev = [
     { name = "types-setuptools" },
 ]
 dev-noble = [
-    { name = "python-apt", version = "2.7.7+ubuntu3", source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }, marker = "sys_platform == 'linux'" },
+    { name = "python-apt", version = "2.7.7+ubuntu3", source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels" }, marker = "sys_platform == 'linux'" },
 ]
 dev-oracular = [
-    { name = "python-apt", version = "2.9.0+ubuntu1", source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }, marker = "sys_platform == 'linux'" },
+    { name = "python-apt", version = "2.9.0+ubuntu1", source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels" }, marker = "sys_platform == 'linux'" },
 ]
 dev-plucky = [
-    { name = "python-apt", version = "3.0.0", source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }, marker = "sys_platform == 'linux'" },
+    { name = "python-apt", version = "3.0.0", source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels" }, marker = "sys_platform == 'linux'" },
 ]
 docs = [
     { name = "canonical-sphinx", extra = ["full"] },
@@ -889,7 +889,7 @@ requires-dist = [
     { name = "craft-platforms", specifier = "~=0.6" },
     { name = "craft-providers", specifier = "~=2.0" },
     { name = "pydantic", specifier = "~=2.8" },
-    { name = "python-apt", marker = "sys_platform == 'linux' and extra == 'apt'", specifier = ">=2.7.0", index = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" },
+    { name = "python-apt", marker = "sys_platform == 'linux' and extra == 'apt'", specifier = ">=2.7.0", index = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels" },
 ]
 provides-extras = ["apt"]
 
@@ -907,13 +907,13 @@ dev = [
     { name = "types-pygments" },
     { name = "types-setuptools" },
 ]
-dev-noble = [{ name = "python-apt", marker = "sys_platform == 'linux'", specifier = "~=2.7.0", index = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }]
-dev-oracular = [{ name = "python-apt", marker = "sys_platform == 'linux'", specifier = ">=2.9.0,<2.9.9", index = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }]
-dev-plucky = [{ name = "python-apt", marker = "sys_platform == 'linux'", specifier = ">=2.9.0", index = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }]
+dev-noble = [{ name = "python-apt", marker = "sys_platform == 'linux'", specifier = "~=2.7.0", index = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels" }]
+dev-oracular = [{ name = "python-apt", marker = "sys_platform == 'linux'", specifier = ">=2.9.0,<2.9.9", index = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels" }]
+dev-plucky = [{ name = "python-apt", marker = "sys_platform == 'linux'", specifier = ">=2.9.0", index = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels" }]
 docs = [
     { name = "canonical-sphinx", extras = ["full"], specifier = "~=0.4.0" },
     { name = "matplotlib" },
-    { name = "pydantic-kitbash", specifier = "==0.0.5" },
+    { name = "pydantic-kitbash", specifier = "==0.0.6" },
     { name = "sphinx-autobuild", specifier = "~=2024.2" },
     { name = "sphinx-lint", specifier = "==1.0.0" },
     { name = "sphinx-pydantic", specifier = "==0.1.1" },
@@ -1727,7 +1727,7 @@ wheels = [
 
 [[package]]
 name = "pydantic-kitbash"
-version = "0.0.5"
+version = "0.0.6"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "docutils" },
@@ -1735,9 +1735,9 @@ dependencies = [
     { name = "pyyaml" },
     { name = "sphinx" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/91/b9/e2c676013cadbddd1c935dd18e15b7863f87257e9a69f1b2c72b15000652/pydantic_kitbash-0.0.5.tar.gz", hash = "sha256:550194b663ffda882db4496e109a6ac4dac191fcce4493026f06fea01f322c23", size = 123504, upload-time = "2025-06-06T21:22:40.929Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4a/c0/48066291bb9db968d42d6419fa666be077c893d17cdca0eac44cedb2e3d1/pydantic_kitbash-0.0.6.tar.gz", hash = "sha256:60b18ce727f06b6c5a3f8db5675bb6c423449bb59832c3e04cfef4b1568a84e9", size = 124406, upload-time = "2025-07-03T19:24:33.841Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/13/71/9d31ae8e94b9d324ed143d8d6982685669c680e9efe2214963e2f9a68fc9/pydantic_kitbash-0.0.5-py3-none-any.whl", hash = "sha256:05bcdbb96d59df832915c2ca3f6da9a505275badd351c06fc978e6954a317822", size = 12804, upload-time = "2025-06-06T21:22:39.511Z" },
+    { url = "https://files.pythonhosted.org/packages/46/4e/4f492ee0d832eb9d8ebd9915e35bff6fd09d658bc6fdb1f31d70495492cf/pydantic_kitbash-0.0.6-py3-none-any.whl", hash = "sha256:e16fa65ebfebe7d295e9b476641e253e02b18686e52bedc2ec65c46421d9875d", size = 13156, upload-time = "2025-07-03T19:24:32.342Z" },
 ]
 
 [[package]]
@@ -1905,7 +1905,7 @@ wheels = [
 [[package]]
 name = "python-apt"
 version = "2.7.7+ubuntu3"
-source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }
+source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels" }
 resolution-markers = [
     "python_full_version >= '3.13'",
     "python_full_version == '3.12.*'",
@@ -1930,7 +1930,7 @@ wheels = [
 [[package]]
 name = "python-apt"
 version = "2.9.0+ubuntu1"
-source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }
+source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels" }
 resolution-markers = [
     "python_full_version >= '3.13'",
     "python_full_version == '3.12.*'",
@@ -1955,7 +1955,7 @@ wheels = [
 [[package]]
 name = "python-apt"
 version = "3.0.0"
-source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }
+source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels" }
 resolution-markers = [
     "python_full_version >= '3.13'",
     "python_full_version == '3.12.*'",
