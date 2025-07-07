@@ -10,6 +10,8 @@ filesystems:
   default:
     - mount: /
       device: (volume/pc/rootfs)
+    - mount: /boot/
+      device: (volume/pc/efi)
 
 parts:
   rootfs:
@@ -24,9 +26,6 @@ parts:
     after: [rootfs]
     overlay-script: |
       echo "boot files" > $CRAFT_OVERLAY/boot/test
-
-      mv $CRAFT_OVERLAY/boot/* $CRAFT_VOLUME_PC_EFI_OVERLAY/
-      mv $CRAFT_OVERLAY/* $CRAFT_VOLUME_PC_ROOTFS_OVERLAY/
 
 volumes:
   pc:
