@@ -22,12 +22,12 @@ Prerequisites
 Install Imagecraft
 ~~~~~~~~~~~~~~~~~~
 
-Imagecraft is only available as a snap on the ``latest/edge`` channel
-in the `Snap Store <https://snapcraft.io/imagecraft>`_. Install it with:
+Imagecraft is available as a snap on the ``latest/beta`` channel in the
+`Snap Store <https://snapcraft.io/imagecraft>`_. Install it with:
 
 .. code-block::
 
-    sudo snap install imagecraft --channel=edge --classic
+    sudo snap install imagecraft --channel=beta --classic
 
 Verify that Imagecraft is properly installed:
 
