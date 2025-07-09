@@ -5,7 +5,7 @@ dynamic = ["version", "readme"]
 authors = [{ name = "Canonical Ltd.", email = "snapcraft@lists.snapcraft.io" }]
 license = { file = "LICENSE" }
 dependencies = [
-    "craft-parts~=2.16",
+    "craft-parts @ git+https://github.com/canonical/craft-parts.git@work/CRAFT-4640-create-symlinks-to-default-dirs-in-the-workdir",
     "craft-cli~=3.0",
     "craft-platforms~=0.6",
     "craft-application~=5.0",
