@@ -49,12 +49,13 @@ parts:
     overlay-script: |
       echo "boot files" > $CRAFT_OVERLAY/boot/c
 
-      mv $CRAFT_OVERLAY/boot/* $CRAFT_VOLUME_PC_EFI_OVERLAY/
-      mv $CRAFT_OVERLAY/* $CRAFT_VOLUME_PC_ROOTFS_OVERLAY/
 filesystems:
   default:
   - mount: /
-    device: (default)
+    device: (volume/pc/rootfs)
+  - mount: /boot/
+    device: (volume/pc/efi)
+
 volumes:
   pc:
     schema: gpt
@@ -101,28 +102,18 @@ def test_imagecraft_build(
     project = imagecraft_app.services.get("project")
 
     assert project.partitions == [
-        "default",
-        "volume/pc/efi",
         "volume/pc/rootfs",
+        "volume/pc/efi",
     ]
     check.is_true((project_path / "prime").exists())
     check.is_true((project_path / "parts").exists())
     check.is_true((project_path / "stage").exists())
     check.is_true((project_path / "parts/rootfs/layer/bin/a").exists())
     check.is_true((project_path / "parts/rootfs/layer/etc/b").exists())
-    check.is_true(
-        (project_path / "partitions/volume/pc/efi/parts/bootloader/layer/c").exists()
-    )
-    check.is_true(
-        (
-            project_path / "partitions/volume/pc/rootfs/parts/bootloader/layer/bin/a"
-        ).exists()
-    )
-    check.is_true(
-        (
-            project_path / "partitions/volume/pc/rootfs/parts/bootloader/layer/etc/b"
-        ).exists()
-    )
+    check.is_true((project_path / "parts/bootloader/layer/boot/c").exists())
+    check.is_true((project_path / "partitions/volume/pc/efi/stage/c").exists())
+    check.is_true((project_path / "stage/bin/a").exists())
+    check.is_true((project_path / "stage/etc/b").exists())
 
 
 def test_imagecraft_pack(
