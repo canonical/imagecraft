@@ -181,13 +181,6 @@ class Project(BaseProject):
         """
         return None
 
-    def get_partitions(self) -> list[str]:
-        """Get a list of partitions based on the project's volumes.
-
-        :returns: A list of partitions formatted as ['default', 'volume/<name>', ...]
-        """
-        return _get_partitions(self.volumes, self.filesystems)
-
 
 class VolumeFilesystemMountsProject(CraftBaseModel, extra="ignore"):
     """Project definition containing only volumes and filesystems data."""
