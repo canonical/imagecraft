@@ -31,10 +31,14 @@ platforms:
   amd64:
     build-for: amd64
     build-on: amd64
+
 filesystems:
   default:
   - mount: /
-    device: (default)
+    device: (volume/pc/rootfs)
+  - mount: /boot/efi
+    device: (volume/pc/efi)
+
 volumes:
   pc:
     schema: gpt
@@ -44,6 +48,12 @@ volumes:
         type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
         filesystem: vfat
         size: 500 M
+      - name: rootfs
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        filesystem: ext4
+        filesystem-label: writable
+        role: system-data
+        size: 6G
 """
 
 
