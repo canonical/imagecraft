@@ -155,12 +155,12 @@ def test_process_volumes_fail(volumes_yaml, arch, target_arch):
                 filesystems:
                   default:
                   - mount: /
-                    device: (default)
+                    device: (volume/pc/rootfs)
                 """
             ),
             "amd64",
             "amd64",
-            {"default": [{"mount": "/", "device": "(default)"}]},
+            {"default": [{"mount": "/", "device": "(volume/pc/rootfs)"}]},
         ),
         (
             textwrap.dedent(

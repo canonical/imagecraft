@@ -22,7 +22,7 @@ import pytest
 import yaml
 from craft_application import util
 from craft_application.errors import CraftValidationError
-from imagecraft.models import Platform, Project
+from imagecraft.models import Platform, Project, VolumeFilesystemMountsProject
 from pydantic import ValidationError
 
 IMAGECRAFT_YAML_GENERIC = """
@@ -77,7 +77,7 @@ parts:
 filesystems:
   default:
   - mount: /
-    device: (default)
+    device: (volume/pc/efi)
 volumes:
   pc:
     schema: gpt
@@ -103,7 +103,7 @@ parts:
 filesystems:
   default:
   - mount: /
-    device: (default)
+    device: (volume/pc/efi)
 volumes:
   pc:
     schema: gpt
@@ -129,7 +129,7 @@ parts:
 filesystems:
   default:
   - mount: /
-    device: (default)
+    device: (volume/pc/efi)
 volumes:
   pc:
     schema: gpt
@@ -154,7 +154,7 @@ parts:
 filesystems:
   default:
   - mount: /
-    device: (default)
+    device: (volume/pc/efi)
 volumes:
   pc:
     schema: gpt
@@ -318,7 +318,7 @@ parts:
 filesystems:
   default:
   - mount: /
-    device: (default)
+    device: (volume/pc/efi)
 volumes:
   pc:
     schema: gpt
@@ -354,7 +354,7 @@ parts:
 filesystems:
   default:
   - mount: /
-    device: (default)
+    device: (volume/pc/efi)
 volumes:
   invalid_test-:
     schema: gpt
@@ -464,3 +464,133 @@ def test_project_invalid_filesystems(error_lines, filesystems_val):
     assert error.value.args[0] == "\n".join(
         ("Bad myproject.yaml content:", *error_lines)
     )
+
+
+IMAGECRAFT_YAML_VOLUME_FS_MINIMAL = """
+filesystems:
+  default:
+  - mount: /
+    device: (volume/pc/rootfs)
+  - mount: /boot/efi
+    device: (volume/pc/efi)
+volumes:
+  pc:
+    schema: gpt
+    structure:
+      - name: efi
+        role: system-boot
+        type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
+        filesystem: vfat
+        size: 500 M
+      - name: rootfs
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        filesystem: ext4
+        filesystem-label: writable
+        role: system-data
+        size: 6G
+"""
+
+
+def test_project_volume_fs_mount_partitions():
+    yaml_loaded = yaml.safe_load(IMAGECRAFT_YAML_VOLUME_FS_MINIMAL)
+    volumes = VolumeFilesystemMountsProject.unmarshal(yaml_loaded)
+
+    assert volumes.get_partitions() == ["volume/pc/rootfs", "volume/pc/efi"]
+
+
+IMAGECRAFT_YAML_VOLUME_FS_FOO_AS_DEFAULT = """
+filesystems:
+  default:
+  - mount: /
+    device: (foo)
+  - mount: /boot/efi
+    device: (volume/pc/efi)
+volumes:
+  pc:
+    schema: gpt
+    structure:
+      - name: efi
+        role: system-boot
+        type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
+        filesystem: vfat
+        size: 500 M
+      - name: rootfs
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        filesystem: ext4
+        filesystem-label: writable
+        role: system-data
+        size: 6G
+"""
+
+IMAGECRAFT_YAML_VOLUME_FS_NO_DEFAULT = """
+filesystems:
+  bar:
+  - mount: /
+    device: (volume/pc/rootfs)
+  - mount: /boot/efi
+    device: (volume/pc/efi)
+volumes:
+  pc:
+    schema: gpt
+    structure:
+      - name: efi
+        role: system-boot
+        type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
+        filesystem: vfat
+        size: 500 M
+      - name: rootfs
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        filesystem: ext4
+        filesystem-label: writable
+        role: system-data
+        size: 6G
+"""
+
+IMAGECRAFT_YAML_VOLUME_FS_EMPTY_DEVICE = """
+filesystems:
+  default:
+  - mount: /
+    device: ()
+  - mount: /boot/efi
+    device: (volume/pc/efi)
+volumes:
+  pc:
+    schema: gpt
+    structure:
+      - name: efi
+        role: system-boot
+        type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
+        filesystem: vfat
+        size: 500 M
+      - name: rootfs
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        filesystem: ext4
+        filesystem-label: writable
+        role: system-data
+        size: 6G
+"""
+
+
+@pytest.mark.parametrize(
+    ("yaml_data", "error"),
+    [
+        (
+            IMAGECRAFT_YAML_VOLUME_FS_FOO_AS_DEFAULT,
+            "device foo associated to the root does not reference a valid partition",
+        ),
+        (
+            IMAGECRAFT_YAML_VOLUME_FS_NO_DEFAULT,
+            "invalid filesystems",
+        ),
+        (
+            IMAGECRAFT_YAML_VOLUME_FS_EMPTY_DEVICE,
+            "invalid default partition: ()",
+        ),
+    ],
+)
+def test_project_volume_fs_mount_partitions_error(yaml_data, error):
+    yaml_loaded = yaml.safe_load(yaml_data)
+    volumes = VolumeFilesystemMountsProject.unmarshal(yaml_loaded)
+
+    with pytest.raises(ValueError, match=error):
+        volumes.get_partitions()

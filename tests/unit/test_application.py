@@ -92,7 +92,7 @@ platforms:
 filesystems:
   default:
   - mount: /
-    device: (default)
+    device: (volume/pc/rootfs)
 volumes:
   pc:
     schema: gpt
