@@ -43,7 +43,7 @@ types = [
     "types-setuptools",
 ]
 docs = [
-    "canonical-sphinx[full]~=0.4.0",
+    "canonical-sphinx[full]~=0.5.0",
     "pydantic-kitbash==0.0.6",
     "sphinx-autobuild~=2024.2",
     "sphinx-pydantic==0.1.1",
