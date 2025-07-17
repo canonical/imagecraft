@@ -11,6 +11,7 @@ Imagecraft
    reference/index
    explanation/index
    release-notes/index
+   about-this-documentation
 
 ..   tutorials/index
 
