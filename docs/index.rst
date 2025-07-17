@@ -10,8 +10,8 @@ Imagecraft
    how-to-guides/index
    reference/index
    explanation/index
-   release-notes/index
    about-this-documentation
+   release-notes/index
 
 ..   tutorials/index
 
