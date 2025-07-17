@@ -61,10 +61,10 @@ CODA provides:
 * Direct support for contributions in Imagecraft and other projects
 * Skill development in documentation and writing
 
-Contributors gain experience with open-source software, add to their professional
+Contributors gain experience with open source software, add to their professional
 portfolio, connect with likeminded people, and receive recognition for giving back.
 
-CODA coordinates work for open-source projects everywhere, including Imagecraft. The
+CODA coordinates work for open source projects everywhere, including Imagecraft. The
 best way to get started is to volunteer for a topic in the `task aggregator
 <https://github.com/canonical/open-documentation-academy/issues?q=is%3Aissue%20state%3Aopen%20imagecraft>`_
 and read `Get started as a contributor
