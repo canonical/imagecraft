@@ -21,6 +21,8 @@ from pathlib import Path
 from typing import cast
 
 from craft_application import LifecycleService
+from craft_cli import CraftError
+from craft_parts.executor.errors import EnvironmentChangedError
 from overrides import override  # type: ignore[reportUnknownVariableType]
 
 from imagecraft import models
@@ -50,3 +52,15 @@ class ImagecraftLifecycleService(LifecycleService):
         )
 
         super().setup()
+
+    @override
+    def run(self, step_name: str | None, part_names: list[str] | None = None) -> None:
+        """Run the lifecycle manager for the parts."""
+        try:
+            super().run(step_name, part_names)
+        except EnvironmentChangedError as err:
+            raise CraftError(
+                message="Partitions changed.",
+                details=str(err),
+                resolution="Run imagecraft clean",
+            )
