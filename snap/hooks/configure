@@ -1,0 +1,26 @@
+#!/snap/imagecraft/current/bin/python3
+
+"""Hook to configure imagecraft snap."""
+
+import sys
+
+import snaphelpers
+from craft_application.errors import CraftValidationError
+from craft_application.util import SnapConfig
+
+
+def validate_snap_config() -> None:
+    """Validate snap configuration."""
+    snap_config = snaphelpers.SnapConfigOptions(keys=["provider"])
+    snap_config.fetch()
+
+    try:
+        SnapConfig.unmarshal(snap_config.as_dict())
+    except CraftValidationError as error:
+        reason = str(error)
+        print(f"Could not configure imagecraft: {reason}.", file=sys.stderr)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    validate_snap_config()

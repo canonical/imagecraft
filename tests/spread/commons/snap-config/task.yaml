@@ -1,0 +1,40 @@
+summary: Verify snap configuration and configure hook functionality
+
+prepare: imagecraft init --name=check-hook
+
+execute: |
+  # configure default provider
+  snap set imagecraft provider=lxd
+
+  # verify the value was set
+  if ! [[ $(snap get imagecraft provider) == "lxd" ]]; then
+      echo "configure hook did not run as expected"
+      exit 1
+  fi
+
+  # verify imagecraft executes
+  imagecraft pull
+
+  # unset the value
+  snap unset imagecraft provider
+
+  # 'snap get' should now return an error
+  output="$(snap get imagecraft 2>&1 || true)"
+
+  if ! [[ $output == 'error: snap "imagecraft" has no configuration' ]]; then
+      echo "configure hook did not run as expected"
+      exit 1
+  fi
+
+  # again, verify imagecraft executes
+  imagecraft pull
+
+  # finally, set an invalid value and verify the configure hook exits with an error
+  output="$(sudo snap set imagecraft provider=invalid-value 2>&1 || true)"
+
+  if ! [[ $output =~ "input should be 'lxd' or 'multipass'" ]]; then
+      echo "configure hook did not exit with the expected error message"
+      exit 1
+  fi
+
+restore: rm imagecraft.yaml
