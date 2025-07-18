@@ -30,7 +30,7 @@ execute: |
   # finally, set an invalid value and verify the configure hook exits with an error
   output="$(sudo snap set imagecraft provider=invalid-value 2>&1 || true)"
 
-  if ! [[ $output =~ "Input should be 'lxd' or 'multipass'" ]]; then
+  if ! [[ $output =~ "input should be 'lxd' or 'multipass'" ]]; then
       echo "configure hook did not exit with the expected error message"
       exit 1
   fi
