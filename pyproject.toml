@@ -7,7 +7,7 @@ dependencies = [
     "craft-parts~=2.19.0",
     "craft-cli~=3.0",
     "craft-platforms~=0.6",
-    "craft-application~=5.0",
+    "craft-application @ git+https://github.com/canonical/craft-application.git@work/catch-run-exceptions",
     "craft-grammar~=2.0.3",
     "craft-providers~=2.0",
     "pydantic~=2.8",

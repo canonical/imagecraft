@@ -22,6 +22,7 @@ from typing import cast
 
 from craft_application import LifecycleService
 from craft_cli import CraftError
+from craft_parts import Action
 from craft_parts.executor.errors import EnvironmentChangedError
 from overrides import override  # type: ignore[reportUnknownVariableType]
 
@@ -54,10 +55,10 @@ class ImagecraftLifecycleService(LifecycleService):
         super().setup()
 
     @override
-    def run(self, step_name: str | None, part_names: list[str] | None = None) -> None:
-        """Run the lifecycle manager for the parts."""
+    def _exec(self, actions: list[Action]) -> None:
+        """Execute actions of the lifecycle."""
         try:
-            super().run(step_name, part_names)
+            super()._exec(actions)
         except EnvironmentChangedError as err:
             raise CraftError(
                 message="Partitions changed.",
