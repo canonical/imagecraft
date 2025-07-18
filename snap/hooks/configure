@@ -5,7 +5,7 @@
 import sys
 
 import snaphelpers
-from imagecraft.snap_config import SnapConfig
+from craft_application.util import SnapConfig
 
 
 def validate_snap_config() -> None:
