@@ -3,7 +3,7 @@
 [![tests](https://github.com/canonical/imagecraft/actions/workflows/qa.yaml/badge.svg?branch=main&event=push)](https://github.com/canonical/imagecraft/actions/workflows/qa.yaml)
 [![spread tests](https://github.com/canonical/imagecraft/actions/workflows/spread-test.yaml/badge.svg?branch=main&event=push)](https://github.com/canonical/imagecraft/actions/workflows/spread-test.yaml)
 
-# imagecraft
+# Imagecraft
 
 The base repository for Imagecraft projects.
 
@@ -46,3 +46,27 @@ make docs-auto
 ```
 
 Point your web browser to address `127.0.0.1:8080`.
+
+## Community and support
+
+You can report any issues or bugs on the project's [GitHub
+repository](https://github.com/canonical/imagecraft/issues).
+
+Imagecraft is covered by the [Ubuntu Code of
+Conduct](https://ubuntu.com/community/ethos/code-of-conduct).
+
+## Contribute to Imagecraft
+
+Imagecraft is open source and part of the Canonical family. We would love your help.
+
+If you're interested, start with the [contribution guide](HACKING.md).
+
+We welcome any suggestions and help with the docs. The [Canonical Open Documentation
+Academy](https://github.com/canonical/open-documentation-academy) is the hub for doc
+development, including Imagecraft docs. No prior coding experience is required.
+
+## License and copyright
+
+Imagecraft is released under the [GPL-3.0 license](LICENSE).
+
+© 2023-2025 Canonical Ltd.
