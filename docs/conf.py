@@ -47,6 +47,7 @@ html_context = {
     "product_page": "github.com/canonical/imagecraft",
     "github_url": "https://github.com/canonical/imagecraft",
     "github_issues": "https://github.com/canonical/imagecraft/issues",
+    "discourse": "",  # Leave this blank to hide it from the dropdown
 }
 
 # Target repository for the edit button on pages
@@ -54,21 +55,13 @@ html_theme_options = {
     "source_edit_link": "https://github.com/canonical/imagecraft",
 }
 
-# Sitemap configuration: https://sphinx-sitemap.readthedocs.io/
-html_baseurl = "https://canonical-imagecraft.readthedocs-hosted.com/"
-
-if "READTHEDOCS_VERSION" in os.environ:
-    version = os.environ["READTHEDOCS_VERSION"]
-    sitemap_url_scheme = "{version}{link}"
-else:
-    sitemap_url_scheme = "latest/{link}"
-
 extensions = [
     "canonical_sphinx",
     "notfound.extension",
     "pydantic_kitbash",
     "sphinx_sitemap",
 ]
+
 # endregion
 
 # region General configuration
@@ -82,6 +75,7 @@ extensions.extend(
         "sphinx.ext.doctest",
         "sphinx.ext.ifconfig",
         "sphinx-pydantic",
+        "sphinx_sitemap",
         "sphinx_toolbox",
         "sphinx_toolbox.more_autodoc",
         "sphinx.ext.autodoc",  # Must be loaded after more_autodoc
@@ -196,3 +190,22 @@ craft_parts_docs_path = pathlib.Path(craft_parts_docs.__file__).parent / "craft-
 
 # Client-side page redirects.
 rediraffe_redirects = "redirects.txt"
+
+# The full path to the RTD site.
+# TODO: Change this to your project's RTD URL. If the RTD site isn't live yet, follow
+# the pattern here. If the documentation has moved to documentation.ubuntu.com, enter
+# the URL at that domain. It's OK to use this for private projects.
+# https://sphinx-sitemap.readthedocs.io
+html_baseurl = "https://canonical-imagecraft.readthedocs-hosted.com/"
+
+# Compose the URL for remote RTD and local builds.
+# TODO: If your project doesn't have a `latest` RTD branch set up, change to its default
+# branch.
+# https://sphinx-sitemap.readthedocs.io
+if "READTHEDOCS_VERSION" in os.environ:
+    version = os.environ["READTHEDOCS_VERSION"]
+    sitemap_url_scheme = "{version}{link}"
+else:
+    sitemap_url_scheme = "latest/{link}"
+
+# endregion
