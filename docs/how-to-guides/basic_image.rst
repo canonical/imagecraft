@@ -94,7 +94,8 @@ The packing can be run in two different environments:
 
   .. code-block:: bash
 
-      CRAFT_BUILD_ENVIRONMENT=multipass imagecraft --verbosity debug pack
+      sudo snap set imagecraft provider=multipass
+      imagecraft --verbosity debug pack
 
 - On the local machine, with destructive mode. In this case the machine must be
   of the series of the ``build-base`` declared in the ``imagecraft.yaml`` file.
