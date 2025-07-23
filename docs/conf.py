@@ -157,7 +157,13 @@ exclude_patterns = [
     "common/craft-parts/reference/plugins/jlink_plugin.rst",
 ]
 
-linkcheck_ignore = ["http://127.0.0.1:8000", "https://apt-repo.com"]
+linkcheck_ignore = [
+    "http://127.0.0.1:8000",
+    "https://apt-repo.com",
+    # Linkcheck is unable to properly handled matrix.to URLs containing # and :
+    # See https://github.com/sphinx-doc/sphinx/issues/13620
+    "https://matrix.to"
+]
 
 rst_epilog = """
 .. include:: /reuse/links.txt
