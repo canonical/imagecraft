@@ -24,7 +24,7 @@ import craft_parts_docs  # type: ignore
 
 # Workaround https://github.com/sphinx-toolbox/sphinx-toolbox/issues/190
 try:
-    import sphinx_prompt
+    import sphinx_prompt  # type: ignore
     import sys
     sys.modules['sphinx-prompt'] = sphinx_prompt
 except ImportError:
