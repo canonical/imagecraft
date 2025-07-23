@@ -162,7 +162,10 @@ linkcheck_ignore = [
     "https://apt-repo.com",
     # Linkcheck is unable to properly handled matrix.to URLs containing # and :
     # See https://github.com/sphinx-doc/sphinx/issues/13620
-    "https://matrix.to"
+    "https://matrix.to",
+    # Ignore gnu.org URLs due to a mix of aggressive rate limiting and aggressive/buggy
+    # retry from linkcheck
+    "https://www.gnu.org"
 ]
 
 rst_epilog = """
