@@ -19,6 +19,7 @@ import datetime
 import pathlib
 import sys
 
+import craft_parts
 import craft_parts_docs  # type: ignore
 
 # Workaround https://github.com/sphinx-toolbox/sphinx-toolbox/issues/190
@@ -38,6 +39,9 @@ sys.path.append(str(model_dir.absolute()))
 
 library_dir = (project_dir / ".venv/lib/python3.12/site-packages").resolve()
 sys.path.append(str(library_dir.absolute()))
+
+parts_dir = pathlib.Path(craft_parts.__file__).parent.resolve()
+sys.path.append(str(parts_dir.absolute()))
 
 
 project = "Imagecraft"
@@ -111,6 +115,7 @@ exclude_patterns = [
     # We do not use the overlay command, yet...
     "reference/commands/overlay.rst",
     # Disable unused pages from Craft Parts
+    "common/craft-parts/explanation/file-migration.rst",
     "common/craft-parts/explanation/parts.rst",
     "common/craft-parts/explanation/overlay_parameters.rst",
     "common/craft-parts/explanation/overlays.rst",
