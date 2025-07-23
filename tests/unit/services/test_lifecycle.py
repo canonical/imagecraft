@@ -49,7 +49,7 @@ def test_lifecycle_args(
         arch=str(DebianArchitecture.from_host()),
         cache_dir=Path("cache"),
         work_dir=Path("work"),
-        ignore_local_sources=[],
+        ignore_local_sources=[".craft"],
         parallel_build_count=ANY,  # Value will vary when tests run locally or in CI
         project_vars_part_name=None,
         project_vars={"version": "1.0"},
