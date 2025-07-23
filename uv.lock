@@ -234,7 +234,7 @@ full = [
 
 [[package]]
 name = "canonical-sphinx-extensions"
-version = "0.0.31"
+version = "0.0.33"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "beautifulsoup4" },
@@ -243,9 +243,9 @@ dependencies = [
     { name = "requests" },
     { name = "sphinx" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9c/92/c6834190d942d5b8414ea17453090200c4a3ed52225734f810cb5ebca8d2/canonical_sphinx_extensions-0.0.31.tar.gz", hash = "sha256:932d3e95191853fa88e83e2c05566317126f43913932742519159c0dc138cbcd", size = 34813, upload-time = "2025-07-14T01:17:46.737Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/70/8d/f7a2ca1641586661a948a1fe50e3f0b974789fd94bf9424cda6b8b15d130/canonical_sphinx_extensions-0.0.33.tar.gz", hash = "sha256:45be052b57b4a5bf9fb9be7c16aeb58b790c8519bf9de90736bf75cdfb7c8896", size = 35236, upload-time = "2025-07-22T22:15:26.235Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/05/78/6afffa1df4807d592f7bcff9645d78b3a25cd4eca30048630e2d2a2ce6f8/canonical_sphinx_extensions-0.0.31-py3-none-any.whl", hash = "sha256:a186165a7c60ab374797aa93c9ed6a590a6084786a897eba862e00a1653b69bb", size = 66281, upload-time = "2025-07-14T01:17:45.1Z" },
+    { url = "https://files.pythonhosted.org/packages/86/7f/b1072a29db160299eb6ca3c4b575c0ab4d5c598a8f6fd9c6761117ee9a5d/canonical_sphinx_extensions-0.0.33-py3-none-any.whl", hash = "sha256:33ad410e435e4eabacfdc22f403c012084182e74845b5c964a82485c181a8a70", size = 67114, upload-time = "2025-07-22T22:15:24.802Z" },
 ]
 
 [[package]]
@@ -569,19 +569,16 @@ wheels = [
 
 [[package]]
 name = "craft-parts"
-version = "2.18.0"
-source = { registry = "https://pypi.org/simple" }
+version = "2.18.0.post4+gd903f9d"
+source = { git = "https://github.com/canonical/craft-parts.git?rev=work%2Fbroken-link-docs#d903f9d8bfa72b58682a238d26486d4584526011" }
 dependencies = [
+    { name = "lxml" },
     { name = "overrides" },
     { name = "pydantic" },
     { name = "pyxdg" },
     { name = "pyyaml" },
     { name = "requests" },
     { name = "requests-unixsocket2" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/36/2f/6670bb15a65013643d00eddfa3ae6ee7be2c377fef2fb120062d8cb93f4a/craft_parts-2.18.0.tar.gz", hash = "sha256:bc1575f85f4f93385670adeb9348af7e4c5da068c3b98479de2243a34fe11bc0", size = 788990, upload-time = "2025-07-14T22:53:15.005Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/37/ae/7a67fdecdd226e25bbd3d97ff109b78f70cbef5b1ec693a6c738ae449229/craft_parts-2.18.0-py3-none-any.whl", hash = "sha256:f6785d33d9c02c802938c6559836632dc6c52cf996e0fc21f3aba487e6a07338", size = 502232, upload-time = "2025-07-14T22:53:12.643Z" },
 ]
 
 [[package]]
@@ -898,7 +895,7 @@ requires-dist = [
     { name = "craft-application", specifier = "~=5.0" },
     { name = "craft-cli", specifier = "~=3.0" },
     { name = "craft-grammar", specifier = "~=2.0.3" },
-    { name = "craft-parts", specifier = "~=2.15" },
+    { name = "craft-parts", git = "https://github.com/canonical/craft-parts.git?rev=work%2Fbroken-link-docs" },
     { name = "craft-platforms", specifier = "~=0.6" },
     { name = "craft-providers", specifier = "~=2.0" },
     { name = "pydantic", specifier = "~=2.8" },
