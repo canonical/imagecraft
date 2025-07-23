@@ -191,44 +191,33 @@ class VolumeFilesystemMountsProject(CraftBaseModel, extra="ignore"):
     filesystems: FilesystemsDictT
 
     def get_partitions(self) -> list[str]:
-        """Get a list of partitions based on the project's volumes.
+        """Get a list of partitions based on the project's volumes and filesystems.
 
         :returns: A list of partitions formatted as ['default', 'volume/<name>', ...]
         """
-        return _get_partitions(self.volumes, self.filesystems)
+        default_alias = _get_alias_to_default(self.filesystems)
+        partitions: list[str] = []
+        valid_default_alias = False
+
+        for volume_name, volume in self.volumes.items():
+            for structure in volume.structure:
+                name = get_partition_name(volume_name, structure)
+                if name == default_alias:
+                    partitions.insert(0, name)
+                    valid_default_alias = True
+                    continue
+                partitions.append(name)
+
+        if not valid_default_alias:
+            raise ValueError(
+                f"device {default_alias} associated to the root does not reference a valid partition"
+            )
+        return partitions
 
 
 def get_partition_name(volume_name: str, structure: StructureItem) -> str:
     """Get the name of the partition associated to the StructureItem."""
     return f"volume/{volume_name}/{structure.name}"
-
-
-def _get_partitions(
-    volumes_data: dict[str, Any],
-    filesystems: dict[str, Any],
-) -> list[str]:
-    """Get a list of partitions based on the project's volumes.
-
-    :returns: A list of partitions formatted as ['foo', 'volume/<name>', ...]
-    """
-    default_alias = _get_alias_to_default(filesystems)
-    partitions: list[str] = []
-    valid_default_alias = False
-
-    for volume_name, volume in volumes_data.items():
-        for structure in volume.structure:
-            name = get_partition_name(volume_name, structure)
-            if name == default_alias:
-                partitions.insert(0, name)
-                valid_default_alias = True
-                continue
-            partitions.append(name)
-
-    if not valid_default_alias:
-        raise ValueError(
-            f"device {default_alias} associated to the root does not reference a valid partition"
-        )
-    return partitions
 
 
 def _get_alias_to_default(filesystems: dict[str, Any]) -> str:
