@@ -19,7 +19,6 @@ import datetime
 import pathlib
 import sys
 
-import craft_parts
 import craft_parts_docs  # type: ignore
 
 # Workaround https://github.com/sphinx-toolbox/sphinx-toolbox/issues/190
@@ -39,9 +38,6 @@ sys.path.append(str(model_dir.absolute()))
 
 library_dir = (project_dir / ".venv/lib/python3.12/site-packages").resolve()
 sys.path.append(str(library_dir.absolute()))
-
-parts_dir = pathlib.Path(craft_parts.__file__).parent.resolve()
-sys.path.append(str(parts_dir.absolute()))
 
 
 project = "Imagecraft"
@@ -132,6 +128,7 @@ exclude_patterns = [
     "common/craft-parts/reference/step_execution_environment.rst",
     "common/craft-parts/reference/step_output_directories.rst",
     "common/craft-parts/reference/parts_steps.rst",
+    "common/craft-parts/reference/part_properties.rst",
     "common/craft-parts/reference/partition_specific_output_directory_variables.rst",
     "common/craft-parts/reference/plugins/ant_plugin.rst",
     "common/craft-parts/reference/plugins/autotools_plugin.rst",
