@@ -4,7 +4,7 @@ description = "Create Ubuntu bootable images."
 dynamic = ["version"]
 authors = [{ name = "Canonical Ltd.", email = "snapcraft@lists.snapcraft.io" }]
 dependencies = [
-    "craft-parts @ git+https://github.com/canonical/craft-parts.git@work/broken-link-docs",
+    "craft-parts~=2.19.0",
     "craft-cli~=3.0",
     "craft-platforms~=0.6",
     "craft-application~=5.0",

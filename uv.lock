@@ -569,8 +569,8 @@ wheels = [
 
 [[package]]
 name = "craft-parts"
-version = "2.18.0.post4+gd903f9d"
-source = { git = "https://github.com/canonical/craft-parts.git?rev=work%2Fbroken-link-docs#d903f9d8bfa72b58682a238d26486d4584526011" }
+version = "2.19.0"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "lxml" },
     { name = "overrides" },
@@ -579,6 +579,10 @@ dependencies = [
     { name = "pyyaml" },
     { name = "requests" },
     { name = "requests-unixsocket2" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/61/1d/e8667ccdf3468278d01b84e91e7b7749491bffd24bf02816509651113b9a/craft_parts-2.19.0.tar.gz", hash = "sha256:4d0221afd95571386a40b465586b6d995b263f522fdeaffe3a12e9182a0e8c08", size = 792264, upload-time = "2025-07-24T14:21:01.727Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/bc/a0/362161d1d3f9db531ef385988e9211086858fee4ee02035e5cbc825f2995/craft_parts-2.19.0-py3-none-any.whl", hash = "sha256:5bdb1a8691266780fdb0c0d4c9c153918b0f0dd0be8ab7fd91fe8ebebf30a344", size = 504030, upload-time = "2025-07-24T14:20:58.324Z" },
 ]
 
 [[package]]
@@ -895,7 +899,7 @@ requires-dist = [
     { name = "craft-application", specifier = "~=5.0" },
     { name = "craft-cli", specifier = "~=3.0" },
     { name = "craft-grammar", specifier = "~=2.0.3" },
-    { name = "craft-parts", git = "https://github.com/canonical/craft-parts.git?rev=work%2Fbroken-link-docs" },
+    { name = "craft-parts", specifier = "~=2.19.0" },
     { name = "craft-platforms", specifier = "~=0.6" },
     { name = "craft-providers", specifier = "~=2.0" },
     { name = "pydantic", specifier = "~=2.8" },
