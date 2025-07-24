@@ -1,11 +1,10 @@
 [project]
 name = "imagecraft"
 description = "Create Ubuntu bootable images."
-dynamic = ["version", "readme"]
+dynamic = ["version"]
 authors = [{ name = "Canonical Ltd.", email = "snapcraft@lists.snapcraft.io" }]
-license = { file = "LICENSE" }
 dependencies = [
-    "craft-parts~=2.15",
+    "craft-parts~=2.19.0",
     "craft-cli~=3.0",
     "craft-platforms~=0.6",
     "craft-application~=5.0",
@@ -18,7 +17,9 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.12",
 ]
+license = { file = "LICENSE" }
 requires-python = ">=3.11"
+readme = { file = "README.md", content-type = "text/markdown" }
 
 [project.urls]
 Homepage = "https://github.com/canonical/imagecraft"
@@ -47,7 +48,9 @@ docs = [
     "pydantic-kitbash==0.0.6",
     "sphinx-autobuild~=2024.2",
     "sphinx-pydantic==0.1.1",
-    "sphinx-sitemap>=2.6.0",
+    # sphinx-sitemap is pinned to 2.6 because https://github.com/jdillard/sphinx-sitemap/pull/95
+    # conflicts with our vendoring of craft-parts docs.
+    "sphinx-sitemap~=2.6.0",
     "sphinx-toolbox~=4.0",
     "sphinx-lint==1.0.0",
     "sphinxcontrib-details-directive",
@@ -129,8 +132,6 @@ conflicts = [
 requires = ["setuptools>=69.0", "setuptools_scm[toml]>=7.1"]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools.dynamic]
-readme = { file = "README.rst" }
 
 [tool.setuptools_scm]
 write_to = "imagecraft/_version.py"
@@ -293,9 +294,9 @@ select = [ # Base linting rule selections.
     "SLF",    # Prevent accessing private class members.
     "SIM",    # Code simplification
     "TID",    # Tidy imports
-    # The team have chosen to only use type-checking blocks when necessary to prevent circular imports.
-    # As such, the only enabled type-checking checks are those that warn of an import that needs to be
-    # removed from a type-checking block.
+    "TC001",  # Checks for first-party imports that are only used for type annotations
+    "TC002",  # Checks for third-party imports that are only used for type annotations
+    "TC003",  # Checks for standard library imports that are only used for type annotations
     "TC004",  # Remove imports from type-checking guard blocks if used at runtime
     "TC005",  # Delete empty type-checking blocks
     "ARG",    # Unused arguments
@@ -329,6 +330,7 @@ ignore = [
     "A003",   # Class attribute shadowing built-in (reason: Class attributes don't often get bare references)
     "SIM117", # Use a single `with` statement with multiple contexts instead of nested `with` statements
     # (reason: this creates long lines that get wrapped and reduces readability)
+    "PLW1641", # eq-without-hash (most of our classes should be unhashable)
 
     # Ignored due to conflicts with ruff's formatter:
     # https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules

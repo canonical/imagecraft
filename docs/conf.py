@@ -21,6 +21,13 @@ import sys
 
 import craft_parts_docs  # type: ignore
 
+# Workaround https://github.com/sphinx-toolbox/sphinx-toolbox/issues/190
+try:
+    import sphinx_prompt  # type: ignore
+    import sys
+    sys.modules['sphinx-prompt'] = sphinx_prompt
+except ImportError:
+    pass
 
 project_dir = pathlib.Path(__file__).parents[1].resolve()
 sys.path.insert(0, str(project_dir.absolute()))
@@ -47,6 +54,7 @@ html_context = {
     "product_page": "github.com/canonical/imagecraft",
     "github_url": "https://github.com/canonical/imagecraft",
     "github_issues": "https://github.com/canonical/imagecraft/issues",
+    "discourse": "",  # Leave this blank to hide it from the dropdown
 }
 
 # Target repository for the edit button on pages
@@ -54,21 +62,13 @@ html_theme_options = {
     "source_edit_link": "https://github.com/canonical/imagecraft",
 }
 
-# Sitemap configuration: https://sphinx-sitemap.readthedocs.io/
-html_baseurl = "https://canonical-imagecraft.readthedocs-hosted.com/"
-
-if "READTHEDOCS_VERSION" in os.environ:
-    version = os.environ["READTHEDOCS_VERSION"]
-    sitemap_url_scheme = "{version}{link}"
-else:
-    sitemap_url_scheme = "latest/{link}"
-
 extensions = [
     "canonical_sphinx",
     "notfound.extension",
     "pydantic_kitbash",
     "sphinx_sitemap",
 ]
+
 # endregion
 
 # region General configuration
@@ -82,6 +82,7 @@ extensions.extend(
         "sphinx.ext.doctest",
         "sphinx.ext.ifconfig",
         "sphinx-pydantic",
+        "sphinx_sitemap",
         "sphinx_toolbox",
         "sphinx_toolbox.more_autodoc",
         "sphinx.ext.autodoc",  # Must be loaded after more_autodoc
@@ -110,6 +111,7 @@ exclude_patterns = [
     # We do not use the overlay command, yet...
     "reference/commands/overlay.rst",
     # Disable unused pages from Craft Parts
+    "common/craft-parts/explanation/file-migration.rst",
     "common/craft-parts/explanation/parts.rst",
     "common/craft-parts/explanation/overlay_parameters.rst",
     "common/craft-parts/explanation/overlays.rst",
@@ -126,6 +128,7 @@ exclude_patterns = [
     "common/craft-parts/reference/step_execution_environment.rst",
     "common/craft-parts/reference/step_output_directories.rst",
     "common/craft-parts/reference/parts_steps.rst",
+    "common/craft-parts/reference/part_properties.rst",
     "common/craft-parts/reference/partition_specific_output_directory_variables.rst",
     "common/craft-parts/reference/plugins/ant_plugin.rst",
     "common/craft-parts/reference/plugins/autotools_plugin.rst",
@@ -151,7 +154,16 @@ exclude_patterns = [
     "common/craft-parts/reference/plugins/jlink_plugin.rst",
 ]
 
-linkcheck_ignore = ["http://127.0.0.1:8000", "https://apt-repo.com"]
+linkcheck_ignore = [
+    "http://127.0.0.1:8000",
+    "https://apt-repo.com",
+    # Linkcheck is unable to properly handled matrix.to URLs containing # and :
+    # See https://github.com/sphinx-doc/sphinx/issues/13620
+    "https://matrix.to",
+    # Ignore gnu.org URLs due to a mix of aggressive rate limiting and aggressive/buggy
+    # retry from linkcheck
+    "https://www.gnu.org"
+]
 
 rst_epilog = """
 .. include:: /reuse/links.txt
@@ -196,3 +208,22 @@ craft_parts_docs_path = pathlib.Path(craft_parts_docs.__file__).parent / "craft-
 
 # Client-side page redirects.
 rediraffe_redirects = "redirects.txt"
+
+# The full path to the RTD site.
+# TODO: Change this to your project's RTD URL. If the RTD site isn't live yet, follow
+# the pattern here. If the documentation has moved to documentation.ubuntu.com, enter
+# the URL at that domain. It's OK to use this for private projects.
+# https://sphinx-sitemap.readthedocs.io
+html_baseurl = "https://canonical-imagecraft.readthedocs-hosted.com/"
+
+# Compose the URL for remote RTD and local builds.
+# TODO: If your project doesn't have a `latest` RTD branch set up, change to its default
+# branch.
+# https://sphinx-sitemap.readthedocs.io
+if "READTHEDOCS_VERSION" in os.environ:
+    version = os.environ["READTHEDOCS_VERSION"]
+    sitemap_url_scheme = "{version}{link}"
+else:
+    sitemap_url_scheme = "latest/{link}"
+
+# endregion

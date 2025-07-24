@@ -7,7 +7,6 @@ Reference
     :maxdepth: 1
 
     imagecraft-yaml-file
-    /common/craft-parts/reference/part_properties
     commands
     parts-steps
     part-lifecycle-details
