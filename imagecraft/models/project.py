@@ -184,8 +184,8 @@ class Project(BaseProject):
         return None
 
 
-class VolumeFilesystemMountsProject(CraftBaseModel, extra="ignore"):
-    """Project definition containing only volumes and filesystems data."""
+class VolumeFilesystemsModel(CraftBaseModel, extra="ignore"):
+    """Project model containing only volumes and filesystems data."""
 
     volumes: VolumeDictT
     filesystems: FilesystemsDictT

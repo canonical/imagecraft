@@ -22,7 +22,7 @@ import pytest
 import yaml
 from craft_application import util
 from craft_application.errors import CraftValidationError
-from imagecraft.models import Platform, Project, VolumeFilesystemMountsProject
+from imagecraft.models import Platform, Project, VolumeFilesystemsModel
 from pydantic import ValidationError
 
 IMAGECRAFT_YAML_GENERIC = """
@@ -491,11 +491,11 @@ volumes:
 """
 
 
-def test_project_volume_fs_mount_partitions():
+def test_volumes_fs_partitions():
     yaml_loaded = yaml.safe_load(IMAGECRAFT_YAML_VOLUME_FS_MINIMAL)
-    volumes = VolumeFilesystemMountsProject.unmarshal(yaml_loaded)
+    volume_filesystems = VolumeFilesystemsModel.unmarshal(yaml_loaded)
 
-    assert volumes.get_partitions() == ["volume/pc/rootfs", "volume/pc/efi"]
+    assert volume_filesystems.get_partitions() == ["volume/pc/rootfs", "volume/pc/efi"]
 
 
 IMAGECRAFT_YAML_VOLUME_FS_FOO_AS_DEFAULT = """
@@ -588,9 +588,9 @@ volumes:
         ),
     ],
 )
-def test_project_volume_fs_mount_partitions_error(yaml_data, error):
+def test_volumes_fs_partitions_error(yaml_data, error):
     yaml_loaded = yaml.safe_load(yaml_data)
-    volumes = VolumeFilesystemMountsProject.unmarshal(yaml_loaded)
+    volume_filesystems = VolumeFilesystemsModel.unmarshal(yaml_loaded)
 
     with pytest.raises(ValueError, match=error):
-        volumes.get_partitions()
+        volume_filesystems.get_partitions()
