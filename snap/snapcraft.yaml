@@ -31,6 +31,8 @@ build-packages:
   - git
   - libapt-pkg-dev
   - libyaml-dev
+  - libxml2-dev
+  - libxslt1-dev
   - python3.12-dev
   - python3.12-venv
   - pkg-config
@@ -70,6 +72,8 @@ parts:
       - libpython3-stdlib
       - libpython3.12-stdlib
       - libpython3.12-minimal
+      - libxml2
+      - libxslt1.1
       - python-apt-common
       - python3-apt
       - python3-pip
@@ -85,6 +89,11 @@ parts:
       - fdisk
       - coreutils
       - util-linux
+    stage:
+      - "-usr/lib/x86_64-linux-gnu/libicuio.so.*"
+      - "-usr/lib/x86_64-linux-gnu/libicutest.so.*"
+      - "-usr/lib/x86_64-linux-gnu/libicutu.so.*"
+      - "-usr/lib/x86_64-linux-gnu/libicui18n.so.*"
     organize:
       "usr/lib/python3/dist-packages/apt*": "lib/python3.12/site-packages/"
       "usr/sbin/sfdisk": "libexec/imagecraft/sfdisk"
