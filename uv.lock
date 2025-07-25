@@ -495,8 +495,8 @@ toml = [
 
 [[package]]
 name = "craft-application"
-version = "5.5.0.post3+gffa3237"
-source = { git = "https://github.com/canonical/craft-application.git?rev=work%2Fcatch-run-exceptions#ffa3237767f74bc58fbfd1f941ac909f3e087e93" }
+version = "5.6.0"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "annotated-types" },
     { name = "craft-archives" },
@@ -514,6 +514,10 @@ dependencies = [
     { name = "requests" },
     { name = "snap-helpers" },
     { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/bd/b5/7fd4c7fde3f053ed4f1b8a530de8acd85bb54977def913d5472590106bf8/craft_application-5.6.0.tar.gz", hash = "sha256:be7b17b108c19d33045a750d58080d740eeb67d2e9326723d40b634796ded381", size = 408857, upload-time = "2025-07-25T06:01:34.981Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/dd/dc/1ca33e43e5926d447349b80b52917d4359cb78580ecc046392e9b0be7518/craft_application-5.6.0-py3-none-any.whl", hash = "sha256:e77aa17ba0f8170d7ef7be0f9762b9df6bd5400e686d0e05856ae2b09dfb9b84", size = 180166, upload-time = "2025-07-25T06:01:33.064Z" },
 ]
 
 [[package]]
@@ -892,7 +896,7 @@ types = [
 
 [package.metadata]
 requires-dist = [
-    { name = "craft-application", git = "https://github.com/canonical/craft-application.git?rev=work%2Fcatch-run-exceptions" },
+    { name = "craft-application", specifier = "~=5.6" },
     { name = "craft-cli", specifier = "~=3.0" },
     { name = "craft-grammar", specifier = "~=2.0.3" },
     { name = "craft-parts", specifier = "~=2.19.0" },
