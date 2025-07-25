@@ -15,8 +15,6 @@ parts:
   rootfs:
     plugin: nil
     stage-packages: [busybox-static]
-    organize:
-      "*": (volume/pc/rootfs)/
 
 volumes:
   pc:
