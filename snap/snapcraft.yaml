@@ -79,7 +79,6 @@ parts:
       - python3.12-venv
       - python3.12-minimal
       - python3-minimal
-      - fuse-overlayfs
       - mtools
       - dosfstools
       - e2fsprogs
@@ -87,7 +86,6 @@ parts:
       - coreutils
       - util-linux
     organize:
-      "usr/bin/fuse-overlayfs": "libexec/imagecraft/fuse-overlayfs"
       "usr/lib/python3/dist-packages/apt*": "lib/python3.12/site-packages/"
       "usr/sbin/sfdisk": "libexec/imagecraft/sfdisk"
       "usr/bin/mcopy": "libexec/imagecraft/mcopy"
@@ -95,6 +93,21 @@ parts:
       "usr/bin/dd": "libexec/imagecraft/dd"
       "usr/bin/truncate": "libexec/imagecraft/truncate"
       "usr/sbin/mkfs*": "libexec/imagecraft/"
+  # Build our own version of fuse-overlayfs due to https://github.com/containers/fuse-overlayfs/issues/429
+  # The apt and Launchpad repositories as of 23/07/25 do not have a sufficiently new version to get this patch
+  fuse-overlayfs:
+    source: https://github.com/containers/fuse-overlayfs.git
+    source-tag: v1.15
+    plugin: autotools
+    build-attributes:
+      - enable-patchelf
+    build-packages:
+      - libfuse3-dev
+      - pkgconf
+    stage-packages:
+      - libfuse3-3
+    organize:
+      "usr/local/bin/fuse-overlayfs": "libexec/imagecraft/fuse-overlayfs"
   imagecraft:
     after: [imagecraft-libs, libgit2]
     source: .
