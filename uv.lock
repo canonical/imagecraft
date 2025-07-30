@@ -569,8 +569,8 @@ wheels = [
 
 [[package]]
 name = "craft-parts"
-version = "2.19.0.post5+g70303e6"
-source = { git = "https://github.com/canonical/craft-parts.git?rev=work%2FCRAFT-4659-Whiteout-files-migration#70303e6846f703aecb8abfebe3f4a9ac28517487" }
+version = "2.19.0.post6+ge4880da"
+source = { git = "https://github.com/canonical/craft-parts.git?rev=work%2FCRAFT-4659-Whiteout-files-migration#e4880da07119410c48527b88a2f50804d8339a24" }
 dependencies = [
     { name = "lxml" },
     { name = "overrides" },
