@@ -10,7 +10,7 @@ filesystems:
   default:
     - mount: /
       device: (volume/pc/rootfs)
-    - mount: /boot/
+    - mount: /boot/efi/
       device: (volume/pc/efi)
 
 parts:
