@@ -1,0 +1,49 @@
+name: bootstrap-overlay
+version: "0.1"
+base: bare
+build-base: ubuntu@24.04
+
+platforms:
+  amd64:
+
+filesystems:
+  default:
+    - mount: /
+      device: (volume/pc/rootfs)
+    - mount: /boot/
+      device: (volume/pc/efi)
+
+volumes:
+  pc:
+    schema: gpt
+    structure:
+      - name: efi
+        type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
+        filesystem: vfat
+        role: system-boot
+        filesystem-label: EFI System
+        size: 256M
+      - name: rootfs
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        filesystem: ext4
+        filesystem-label: writable
+        role: system-data
+        size: 3G
+
+parts:
+  rootfs-bootstrap-overlay:
+    plugin: nil
+    overlay-script: |
+      echo "placeholder to force enabling overlay"
+    override-build: |
+      mkdir $CRAFT_PART_INSTALL/{etc,bin,boot}
+      echo "bina" > $CRAFT_PART_INSTALL/bin/a
+      echo "confb" > $CRAFT_PART_INSTALL/etc/b
+    organize:
+      "*": "(overlay)/"
+
+  bootloader:
+    plugin: nil
+    after: [rootfs-bootstrap-overlay]
+    overlay-script: |
+      echo "boot files" > $CRAFT_OVERLAY/boot/test

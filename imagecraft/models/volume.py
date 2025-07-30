@@ -30,7 +30,7 @@ from craft_application.models.constraints import (
     UniqueList,
     get_validator_by_regex,
 )
-from craft_parts.utils.partition_utils import VALID_PARTITION_REGEX
+from craft_parts.utils.partition_utils import VALID_AREA_REGEX
 from pydantic import (
     BeforeValidator,
     ByteSize,
@@ -45,7 +45,7 @@ GIB = 1 << 30  # 1 GiB (2^30)
 
 # Avoid matches on substrings when validating Volume/Structure names.
 PARTITION_COMPILED_STRICT_REGEX = re.compile(
-    r"^" + VALID_PARTITION_REGEX.pattern + r"$", re.ASCII
+    r"^" + VALID_AREA_REGEX.pattern + r"$", re.ASCII
 )
 
 VOLUME_NAME_COMPILED_REGEX = PARTITION_COMPILED_STRICT_REGEX
