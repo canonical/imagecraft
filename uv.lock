@@ -569,8 +569,8 @@ wheels = [
 
 [[package]]
 name = "craft-parts"
-version = "2.19.0.post6+ge4880da"
-source = { git = "https://github.com/canonical/craft-parts.git?rev=work%2FCRAFT-4659-Whiteout-files-migration#e4880da07119410c48527b88a2f50804d8339a24" }
+version = "2.20.0"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "lxml" },
     { name = "overrides" },
@@ -579,6 +579,10 @@ dependencies = [
     { name = "pyyaml" },
     { name = "requests" },
     { name = "requests-unixsocket2" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/90/bd/445ea92cb9f17a288d45b2b349b1469e71b9800b03c3bfce65f99cd4a2d9/craft_parts-2.20.0.tar.gz", hash = "sha256:e1099252509eecfe56b841de16ed2430df6effbd271c9899756e17af66314b55", size = 798993, upload-time = "2025-08-04T18:00:37.142Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e6/fb/217fe2188184179aeaf370d191902274f267fa963ab4e0347f75f7acd68d/craft_parts-2.20.0-py3-none-any.whl", hash = "sha256:7b43007c7487b7b08f329f714399d8c52941f5f891a25071c18821dba52880e5", size = 507126, upload-time = "2025-08-04T18:00:34.481Z" },
 ]
 
 [[package]]
@@ -895,7 +899,7 @@ requires-dist = [
     { name = "craft-application", specifier = "~=5.6" },
     { name = "craft-cli", specifier = "~=3.0" },
     { name = "craft-grammar", specifier = "~=2.0.3" },
-    { name = "craft-parts", git = "https://github.com/canonical/craft-parts.git?rev=work%2FCRAFT-4659-Whiteout-files-migration" },
+    { name = "craft-parts", specifier = "~=2.20.0" },
     { name = "craft-platforms", specifier = "~=0.6" },
     { name = "craft-providers", specifier = "~=2.0" },
     { name = "pydantic", specifier = "~=2.8" },
