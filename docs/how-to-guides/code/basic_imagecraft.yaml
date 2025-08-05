@@ -73,8 +73,7 @@ parts:
       umount --recursive $CRAFT_OVERLAY/dev/pts
       mount --make-rprivate $CRAFT_OVERLAY/dev
       umount --recursive $CRAFT_OVERLAY/dev
-    overlay:
-      - -etc/cloud/cloud.cfg.d/90_dpkg.cfg
+      rm $CRAFT_OVERLAY/etc/cloud/cloud.cfg.d/90_dpkg.cfg
 
   # prepare snaps
   snaps:
