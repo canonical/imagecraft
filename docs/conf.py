@@ -133,6 +133,7 @@ exclude_patterns = [
     "common/craft-parts/reference/plugins/gradle_plugin.rst",
     "common/craft-parts/reference/plugins/make_plugin.rst",
     "common/craft-parts/reference/plugins/maven_plugin.rst",
+    "common/craft-parts/reference/plugins/maven_use_plugin.rst",
     "common/craft-parts/reference/plugins/meson_plugin.rst",
     "common/craft-parts/reference/plugins/nil_plugin.rst",
     "common/craft-parts/reference/plugins/npm_plugin.rst",
