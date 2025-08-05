@@ -23,6 +23,13 @@ volumes:
         role: system-data
         size: 5G
 
+filesystems:
+  default:
+    - mount: "/"
+      device: "(volume/pc/rootfs)"
+    - mount: "/boot/efi"
+      device: "(volume/pc/efi)"
+
 parts:
   # build a simple rootfs
   rootfs:
@@ -86,10 +93,7 @@ parts:
       LABEL=writable	/	ext4	discard,errors=remount-ro	0	1
       LABEL=UEFI	/boot/efi	vfat	umask=0077	0	1
       EOF
-      mv $CRAFT_OVERLAY/* $CRAFT_VOLUME_PC_ROOTFS_OVERLAY/
 
   cloud-init:
     plugin: dump
     source: cloud-init/
-    organize:
-      '*': (volume/pc/rootfs)/
