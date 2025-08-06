@@ -1,13 +1,10 @@
-[![Release](https://github.com/canonical/imagecraft/actions/workflows/release-publish.yaml/badge.svg?branch=main&event=push)](https://github.com/canonical/imagecraft/actions/workflows/release-publish.yaml)
-[![Documentation](https://readthedocs.com/projects/canonical-imagecraft/badge/?version=latest)](https://canonical-imagecraft.readthedocs-hosted.com/en/latest/?badge=latest)
-[![tests](https://github.com/canonical/imagecraft/actions/workflows/qa.yaml/badge.svg?branch=main&event=push)](https://github.com/canonical/imagecraft/actions/workflows/qa.yaml)
-[![spread tests](https://github.com/canonical/imagecraft/actions/workflows/spread-test.yaml/badge.svg?branch=main&event=push)](https://github.com/canonical/imagecraft/actions/workflows/spread-test.yaml)
-
 # Imagecraft
 
-The base repository for Imagecraft projects.
-
-## Description
+[![Imagecraft][imagecraft-badge]][imagecraft-site]
+[![tests][qa-badge]][qa-status]
+[![Documentation Status][rtd-badge]][rtd-latest]
+[![Codecov Status][codecov-badge]][codecov-status]
+[![Ruff status][ruff-badge]][ruff-site]
 
 Imagecraft is a craft tool used to create Ubuntu bootable images. It
 follows the same principles as Snapcraft, but is focused on creating
@@ -70,3 +67,14 @@ development, including Imagecraft docs. No prior coding experience is required.
 Imagecraft is released under the [GPL-3.0 license](LICENSE).
 
 © 2023-2025 Canonical Ltd.
+
+[imagecraft-badge]: https://snapcraft.io/imagecraft/badge.svg
+[imagecraft-site]: https://snapcraft.io/imagecraft
+[rtd-badge]: https://readthedocs.com/projects/canonical-imagecraft/badge/?version=latest
+[rtd-latest]: https://canonical-imagecraft.readthedocs-hosted.com/latest/
+[ruff-badge]: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json
+[ruff-site]: https://github.com/astral-sh/ruff
+[codecov-badge]: https://codecov.io/github/canonical/imagecraft/coverage.svg?branch=main
+[codecov-status]: https://codecov.io/github/canonical/imagecraft?branch=main
+[qa-badge]: https://github.com/canonical/imagecraft/actions/workflows/qa.yaml/badge.svg?branch=main&event=push
+[qa-status]: https://github.com/canonical/imagecraft/actions/workflows/qa.yaml
