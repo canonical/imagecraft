@@ -246,6 +246,8 @@ The following keys can be declared for each filesystem mount listed.
 .. kitbash-field:: FilesystemMountItem mount
     :prepend-name: filesystems.<filesystem-name>.<filesystem>
 
+    Mountpoint to mount the device at.
+
 **Examples**
 
 .. code-block:: yaml
@@ -258,6 +260,8 @@ The following keys can be declared for each filesystem mount listed.
 
 .. kitbash-field:: FilesystemMountItem device
     :prepend-name: filesystems.<filesystem-name>.<filesystem>
+
+    Device to be mounted. Must reference a partition.
 
 **Examples**
 
