@@ -265,7 +265,8 @@ The device's mount point.
 
 **Description**
 
-The device to be mounted. This must reference one of the partitions defined in `volumes.<volume-name>.structure`.
+The device to be mounted. This must reference one of the partitions defined
+in ``volumes.<volume-name>.structure``.
 
 **Examples**
 
