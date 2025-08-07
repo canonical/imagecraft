@@ -244,9 +244,11 @@ The following keys can be declared for each filesystem mount listed.
 .. py:currentmodule:: craft_parts.filesystem_mounts
 
 .. kitbash-field:: FilesystemMountItem mount
-    :prepend-name: filesystems.<filesystem-name>.<filesystem>
+    :prepend-name: filesystems.<filesystem-name>.<mount>
 
-    Mountpoint to mount the device at.
+**Description**
+
+The device's mount point.
 
 **Examples**
 
@@ -259,9 +261,11 @@ The following keys can be declared for each filesystem mount listed.
     mount: "/boot/efi"
 
 .. kitbash-field:: FilesystemMountItem device
-    :prepend-name: filesystems.<filesystem-name>.<filesystem>
+    :prepend-name: filesystems.<filesystem-name>.<mount>
 
-    Device to be mounted. Must reference a partition.
+**Description**
+
+The device to be mounted. This must reference one of the partitions defined in `volumes.<volume-name>.structure`.
 
 **Examples**
 
