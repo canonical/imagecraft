@@ -1,10 +1,10 @@
 # Imagecraft
 
 [![Imagecraft][imagecraft-badge]][imagecraft-site]
-[![tests][qa-badge]][qa-status]
+[![Tests][qa-badge]][qa-status]
 [![Documentation Status][rtd-badge]][rtd-latest]
 [![Codecov Status][codecov-badge]][codecov-status]
-[![Ruff status][ruff-badge]][ruff-site]
+[![Code Style][ruff-badge]][ruff-site]
 
 Imagecraft is a craft tool used to create Ubuntu bootable images. It
 follows the same principles as Snapcraft, but is focused on creating
