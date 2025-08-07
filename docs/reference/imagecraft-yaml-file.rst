@@ -50,6 +50,8 @@ alongside operational values such as its supported architectures and build envir
 .. kitbash-field:: Project volumes
     :override-type: dict[str, Volume]
 
+.. kitbash-field:: Project filesystems
+    :override-type: dict[str, FilesystemMount]
 
 Part keys
 ---------
@@ -232,3 +234,46 @@ The following keys can be declared for each partition listed in the ``structure`
 
 .. kitbash-field:: StructureItem filesystem_label
     :prepend-name: volumes.<volume-name>.structure.<partition>
+
+
+Filesystem keys
+---------------
+
+The following keys can be declared for each filesystem mount listed.
+
+.. py:currentmodule:: craft_parts.filesystem_mounts
+
+.. kitbash-field:: FilesystemMountItem mount
+    :prepend-name: filesystems.<filesystem-name>.<mount>
+
+**Description**
+
+The device's mount point.
+
+**Examples**
+
+.. code-block:: yaml
+
+    mount: "/"
+
+.. code-block:: yaml
+
+    mount: "/boot/efi"
+
+.. kitbash-field:: FilesystemMountItem device
+    :prepend-name: filesystems.<filesystem-name>.<mount>
+
+**Description**
+
+The device to be mounted. This must reference one of the partitions defined
+in ``volumes.<volume-name>.structure``.
+
+**Examples**
+
+.. code-block:: yaml
+
+    device: "(default)"
+
+.. code-block:: yaml
+
+    device: "(volume/pc/rootfs)"
