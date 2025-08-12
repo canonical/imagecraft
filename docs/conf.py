@@ -66,15 +66,6 @@ html_js_files = [
     'js/bundle.js',
 ]
 
-# Sitemap configuration: https://sphinx-sitemap.readthedocs.io/
-html_baseurl = "https://canonical-imagecraft.readthedocs-hosted.com/"
-
-if "READTHEDOCS_VERSION" in os.environ:
-    version = os.environ["READTHEDOCS_VERSION"]
-    sitemap_url_scheme = "{version}{link}"
-else:
-    sitemap_url_scheme = "latest/{link}"
-
 extensions = [
     "canonical_sphinx",
     "notfound.extension",
