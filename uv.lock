@@ -605,15 +605,15 @@ wheels = [
 
 [[package]]
 name = "craft-grammar"
-version = "2.0.3"
+version = "2.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "overrides" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/4f/75/f4851b02aacbf77ff581c4e09f338920ed0786cf4846c16ae3a65534b9fd/craft_grammar-2.0.3.tar.gz", hash = "sha256:90bb9a8a2bf97df866798e634ec6d365c3bee01183c2e1a16394282b411b96a7", size = 49775, upload-time = "2025-03-18T07:23:48.294Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c5/84/3b7e90ea2e8b4e95510784f20682d3723a4800e8c8d08d90b890e1df372f/craft_grammar-2.1.0.tar.gz", hash = "sha256:fb4673dbf0e14ee82f1ada8b9228fea13940c765f2a67635b7fbadfe7d235be5", size = 145391, upload-time = "2025-08-20T16:57:49.378Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/37/b6/297d522164e1900eca2f37fed4f804c2028cc2fa18013f927835ad912df6/craft_grammar-2.0.3-py3-none-any.whl", hash = "sha256:bed81cda7381f522251c3f2424f7cb9ae2398659d0c018de518c74ae0f215801", size = 24879, upload-time = "2025-03-18T07:23:46.812Z" },
+    { url = "https://files.pythonhosted.org/packages/68/11/6a51c0c3d3b97318b922b59dad015879efac5a6246c59bda3312cac90415/craft_grammar-2.1.0-py3-none-any.whl", hash = "sha256:04960fc6839de8bcc402bfffc26bb0260e615a5d3d06d93ec33513e1b5d47fee", size = 27119, upload-time = "2025-08-20T16:57:47.463Z" },
 ]
 
 [[package]]
@@ -947,7 +947,7 @@ types = [
 requires-dist = [
     { name = "craft-application", specifier = "~=5.6" },
     { name = "craft-cli", specifier = "~=3.0" },
-    { name = "craft-grammar", specifier = "~=2.0.3" },
+    { name = "craft-grammar", specifier = "~=2.1.0" },
     { name = "craft-parts", specifier = "~=2.20.0" },
     { name = "craft-platforms", specifier = "~=0.6" },
     { name = "craft-providers", specifier = "~=2.0" },
