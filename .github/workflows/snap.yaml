@@ -28,7 +28,7 @@ jobs:
           fi
       - if: steps.decisions.outputs.PUBLISH == 'true'
         name: Checkout imagecraft
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
