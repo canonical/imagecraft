@@ -25,7 +25,7 @@ from imagecraft.grammar import process_filesystems, process_volumes
 @pytest.mark.parametrize(
     ("volumes_yaml", "arch", "target_arch", "expected"),
     [
-        (
+        pytest.param(
             textwrap.dedent(
                 """
                 pc:
@@ -56,8 +56,9 @@ from imagecraft.grammar import process_filesystems, process_volumes
                     ],
                 },
             },
+            id="no grammar",
         ),
-        (
+        pytest.param(
             textwrap.dedent(
                 """
                 pc:
@@ -101,6 +102,7 @@ from imagecraft.grammar import process_filesystems, process_volumes
                     ],
                 },
             },
+            id="to grammar",
         ),
     ],
 )
@@ -117,7 +119,7 @@ def test_process_volumes(volumes_yaml, arch, target_arch, expected):
 @pytest.mark.parametrize(
     ("volumes_yaml", "arch", "target_arch"),
     [
-        (
+        pytest.param(
             textwrap.dedent(
                 """
                 pc:
@@ -135,6 +137,7 @@ def test_process_volumes(volumes_yaml, arch, target_arch, expected):
             ),
             "amd64",
             "amd64",
+            id="incomplete else statement",
         ),
     ],
 )
@@ -149,7 +152,7 @@ def test_process_volumes_fail(volumes_yaml, arch, target_arch):
 @pytest.mark.parametrize(
     ("filesystems_yaml", "arch", "target_arch", "expected"),
     [
-        (
+        pytest.param(
             textwrap.dedent(
                 """
                 filesystems:
@@ -161,8 +164,9 @@ def test_process_volumes_fail(volumes_yaml, arch, target_arch):
             "amd64",
             "amd64",
             {"default": [{"mount": "/", "device": "(volume/pc/rootfs)"}]},
+            id="no grammar",
         ),
-        (
+        pytest.param(
             textwrap.dedent(
                 """
                 filesystems:
@@ -178,8 +182,9 @@ def test_process_volumes_fail(volumes_yaml, arch, target_arch):
             "amd64",
             "amd64",
             {"default": [{"mount": "/", "device": "(bar)"}]},
+            id="to grammar",
         ),
-        (
+        pytest.param(
             textwrap.dedent(
                 """
                 filesystems:
@@ -202,9 +207,9 @@ def test_process_volumes_fail(volumes_yaml, arch, target_arch):
                     {"mount": "/qux", "device": "bla"},
                 ]
             },
+            id="to grammar in the middle of a list",
         ),
-        # Grammar processor ignores invalid filesystems
-        (
+        pytest.param(
             textwrap.dedent(
                 """
                 filesystems:
@@ -214,6 +219,7 @@ def test_process_volumes_fail(volumes_yaml, arch, target_arch):
             "amd64",
             "amd64",
             {"default": False},
+            id="ignore invalid filesystem",
         ),
     ],
 )
@@ -232,7 +238,7 @@ def test_process_filesystems(filesystems_yaml, arch, target_arch, expected):
 @pytest.mark.parametrize(
     ("filesystems_yaml", "arch", "target_arch"),
     [
-        (
+        pytest.param(
             textwrap.dedent(
                 """
                 filesystems:
@@ -245,6 +251,7 @@ def test_process_filesystems(filesystems_yaml, arch, target_arch, expected):
             ),
             "amd64",
             "amd64",
+            id="incomplete else statement",
         ),
     ],
 )
