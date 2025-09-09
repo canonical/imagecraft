@@ -7,9 +7,9 @@ dependencies = [
     "craft-parts~=2.22.1",
     "craft-cli~=3.0",
     "craft-platforms~=0.6",
-    "craft-application~=5.6",
+    "craft-application~=5.9",
     "craft-grammar~=2.2.0",
-    "craft-providers~=2.0",
+    "craft-providers~=3.0",
     "pydantic~=2.8",
 ]
 classifiers = [
