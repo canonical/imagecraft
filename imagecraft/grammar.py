@@ -35,7 +35,11 @@ _DICT_ONLY_VALUES: list[str] = []
 
 
 def process_volumes(
-    *, volumes_yaml_data: dict[str, Any], arch: str, target_arch: str
+    *,
+    volumes_yaml_data: dict[str, Any],
+    arch: str,
+    target_arch: str,
+    platform_ids: set[str],
 ) -> dict[str, Any]:
     """Process grammar for volumes.
 
@@ -45,11 +49,16 @@ def process_volumes(
         selector for the 'on' statement.
     :param target_arch: The architecture the system is to build for. This
         is the selector for the 'to' statement.
+    :param platform_ids: The identifiers for the current platform to build.
+        These are the selectors for the 'for' statement.
 
     :returns: The processed volumes section of imagecraft.yaml.
     """
     processor = GrammarProcessor(
-        arch=arch, target_arch=target_arch, checker=lambda _: True
+        arch=arch,
+        target_arch=target_arch,
+        platforms=platform_ids,
+        checker=lambda _: True,
     )
 
     for volume_name, volume_data in volumes_yaml_data.items():
@@ -123,7 +132,11 @@ def process_volume(
 
 
 def process_filesystems(
-    *, filesystems_yaml_data: dict[str, Any], arch: str, target_arch: str
+    *,
+    filesystems_yaml_data: dict[str, Any],
+    arch: str,
+    target_arch: str,
+    platform_ids: set[str],
 ) -> dict[str, Any]:
     """Process grammar for filesystems.
 
@@ -139,7 +152,10 @@ def process_filesystems(
     :returns: The processed filesystems section of imagecraft.yaml.
     """
     processor = GrammarProcessor(
-        arch=arch, target_arch=target_arch, checker=lambda _: True
+        arch=arch,
+        target_arch=target_arch,
+        platforms=platform_ids,
+        checker=lambda _: True,
     )
 
     for filesystem_name, filesystem_data in filesystems_yaml_data.items():

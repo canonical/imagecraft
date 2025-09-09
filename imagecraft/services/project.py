@@ -35,9 +35,14 @@ class ImagecraftProjectService(ProjectService):
         *,
         build_on: str,
         build_for: str,
-        platform: str,  # noqa: ARG004
+        platform: str,
     ) -> None:
-        transform_yaml(build_on=build_on, build_for=build_for, yaml_data=project)
+        transform_yaml(
+            build_on=build_on,
+            build_for=build_for,
+            platform=platform,
+            yaml_data=project,
+        )
 
     @override
     def get_partitions_for(
@@ -56,7 +61,7 @@ class ImagecraftProjectService(ProjectService):
 
 
 def transform_yaml(
-    build_on: str, build_for: str | None, yaml_data: dict[str, Any]
+    build_on: str, build_for: str | None, platform: str, yaml_data: dict[str, Any]
 ) -> dict[str, Any]:
     """Resolve the grammar in the Volumes section."""
     build_for = build_for or build_on
@@ -68,6 +73,7 @@ def transform_yaml(
             volumes_yaml_data=yaml_data["volumes"],
             arch=build_on,
             target_arch=build_for,
+            platform_ids={platform},
         )
 
     if "filesystems" in yaml_data:
@@ -78,6 +84,7 @@ def transform_yaml(
             filesystems_yaml_data=yaml_data["filesystems"],
             arch=build_on,
             target_arch=build_for,
+            platform_ids={platform},
         )
 
     return yaml_data
