@@ -61,7 +61,7 @@ dev = [
     "build",
     "coverage[toml]~=7.4",
     "pytest~=8.0",
-    "pytest-cov~=6.0",
+    "pytest-cov~=7.0",
     "pytest-check>=2.4",
     "pytest-mock~=3.12",
     "mypy[reports]~=1.17.1",
