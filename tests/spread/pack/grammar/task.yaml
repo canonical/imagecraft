@@ -1,5 +1,14 @@
 summary: Pack an image with advanced grammar
+
+systems: [ubuntu-24.04-64]
+
 execute: |
-  imagecraft pack --verbose --platform amd64-generic
-  test -f disk.img
-  test ! -d parts -a ! -d stage -a ! -d prime
+  imagecraft pack --verbose --platform amd64-generic --destructive-mode
+  test -f pc.img
+
+  sfdisk --json pc.img | jq '.partitiontable.partitions[0].name' | MATCH "efi"
+  sfdisk --json pc.img | jq '.partitiontable.partitions[1].name' | MATCH "rootfs"
+
+restore: |
+  imagecraft clean --destructive-mode
+  rm -rf pc.img || true

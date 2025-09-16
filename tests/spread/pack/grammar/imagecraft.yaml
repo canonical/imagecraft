@@ -14,17 +14,26 @@ platforms:
 filesystems:
   default:
     - mount: /
-      device: (volume/disk/rootfs)
+      device: (volume/pc/rootfs)
+    - for amd64-generic:
+        - mount: /boot/efi/
+          device: (volume/pc/efi)
 
 parts:
   my-part:
     plugin: nil
 
 volumes:
-  disk:
+  pc:
     schema: gpt
     structure:
       - for amd64-generic:
+          - name: efi
+            type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
+            filesystem: vfat
+            role: system-boot
+            filesystem-label: EFI System
+            size: 256M
           - name: rootfs
             type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
             filesystem: ext4
