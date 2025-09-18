@@ -89,7 +89,7 @@ prepare: |
       cat "$tempfile"
       exit 1
   fi
-  tests.pkgs install snapd libc6-dev git make
+  tests.pkgs install snapd libc6-dev git make fdisk jq
   if [[ ! "$SPREAD_BACKEND" == *-arm ]]; then
       tests.pkgs install gcc-multilib binfmt-support qemu-user-static
   fi

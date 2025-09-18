@@ -1,0 +1,49 @@
+name: grammar-project
+version: "0.1"
+base: bare
+build-base: ubuntu@24.04
+
+platforms:
+  amd64-generic:
+    build-on: [amd64]
+    build-for: [amd64]
+  raspi-arm64:
+    build-on: [amd64, arm64]
+    build-for: [arm64]
+
+filesystems:
+  default:
+    - mount: /
+      device: (volume/pc/rootfs)
+    - for amd64-generic:
+        - mount: /boot/efi/
+          device: (volume/pc/efi)
+
+parts:
+  my-part:
+    plugin: nil
+
+volumes:
+  pc:
+    schema: gpt
+    structure:
+      - for amd64-generic:
+          - name: efi
+            type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
+            filesystem: vfat
+            role: system-boot
+            filesystem-label: EFI System
+            size: 256M
+          - name: rootfs
+            type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+            filesystem: ext4
+            filesystem-label: writable
+            role: system-data
+            size: 200M
+      - for raspi-arm64:
+          - name: rootfs
+            type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+            filesystem: ext4
+            filesystem-label: writable
+            role: system-data
+            size: 200M

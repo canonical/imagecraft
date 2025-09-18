@@ -27,6 +27,7 @@ APP_METADATA = AppMetadata(
     name="imagecraft",
     summary="A tool to create Ubuntu bootable images",
     ProjectClass=project.Project,
+    enable_for_grammar=True,
 )
 
 

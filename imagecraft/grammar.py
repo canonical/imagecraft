@@ -34,23 +34,31 @@ _NON_SCALAR_VALUES = [
 _DICT_ONLY_VALUES: list[str] = []
 
 
-def _self_check(value: Any) -> bool:  # noqa: ANN401
-    return bool(
-        value == value  # pylint: disable=comparison-with-itself  # noqa: PLR0124
-    )
-
-
 def process_volumes(
-    *, volumes_yaml_data: dict[str, Any], arch: str, target_arch: str
+    *,
+    volumes_yaml_data: dict[str, Any],
+    arch: str,
+    target_arch: str,
+    platform_ids: set[str],
 ) -> dict[str, Any]:
     """Process grammar for volumes.
 
-    :param yaml_data: unprocessed volumes section of imagecraft.yaml.
-    :returns: processed volumes section of imagecraft.yaml.
+    :param volumes_yaml_data: Unprocessed volumes section of an imagecraft.yaml.
+        Grammar is processed in-place in this dictionary.
+    :param arch: The architecture the system is on. This is used as the
+        selector for the 'on' statement.
+    :param target_arch: The architecture the system is to build for. This
+        is the selector for the 'to' statement.
+    :param platform_ids: The identifiers for the current platform to build.
+        These are the selectors for the 'for' statement.
+
+    :returns: The processed volumes section of imagecraft.yaml.
     """
-    # TODO: make checker optional in craft-grammar.  # noqa: FIX002
     processor = GrammarProcessor(
-        arch=arch, target_arch=target_arch, checker=_self_check
+        arch=arch,
+        target_arch=target_arch,
+        platforms=platform_ids,
+        checker=lambda _: True,
     )
 
     for volume_name, volume_data in volumes_yaml_data.items():
@@ -64,7 +72,14 @@ def process_volumes(
 def process_volume(
     *, volume_yaml_data: dict[str, Any], processor: GrammarProcessor
 ) -> dict[str, Any]:
-    """Process grammar for a given volume."""
+    """Process grammar for a given volume.
+
+    :param volume_yaml_data: An unprocessed volume entry.
+        Grammar is processed in-place in this dictionary.
+    :param processor: The GrammarProcessor to use.
+
+    :returns: The processed volume entry.
+    """
     for key, volume_data in volume_yaml_data.items():
         unprocessed_grammar = volume_data
 
@@ -117,15 +132,30 @@ def process_volume(
 
 
 def process_filesystems(
-    *, filesystems_yaml_data: dict[str, Any], arch: str, target_arch: str
+    *,
+    filesystems_yaml_data: dict[str, Any],
+    arch: str,
+    target_arch: str,
+    platform_ids: set[str],
 ) -> dict[str, Any]:
     """Process grammar for filesystems.
 
-    :param filesystems_yaml_data: unprocessed filesystems section of imagecraft.yaml.
-    :returns: processed filesystems section of imagecraft.yaml.
+    :param filesystems_yaml_data: Unprocessed filesystems section of an imagecraft.yaml.
+        Grammar is processed in-place in this dictionary.
+    :param arch: The architecture the system is on. This is used as the
+        selector for the 'on' statement.
+    :param target_arch: The architecture the system is to build for. This
+        is the selector for the 'to' statement.
+    :param platform_ids: The identifiers for the current platform to build.
+        These are the selectors for the 'for' statement.
+
+    :returns: The processed filesystems section of imagecraft.yaml.
     """
     processor = GrammarProcessor(
-        arch=arch, target_arch=target_arch, checker=_self_check
+        arch=arch,
+        target_arch=target_arch,
+        platforms=platform_ids,
+        checker=lambda _: True,
     )
 
     for filesystem_name, filesystem_data in filesystems_yaml_data.items():
@@ -144,8 +174,10 @@ def process_filesystem(
 ) -> list[dict[str, Any]]:
     """Process grammar for a filesystem.
 
-    :param filesystem_yaml_data: unprocessed filesystem entry.
-    :returns: processed filesystem entry.
+    :param filesystem_yaml_data: An unprocessed filesystem entry.
+    :param processor: The GrammarProcessor to use.
+
+    :returns: The processed filesystem entry.
     """
     craft_cli.emit.debug(f"Processing grammar for filesystem {filesystem_yaml_data}")
 
