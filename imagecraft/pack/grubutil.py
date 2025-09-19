@@ -18,9 +18,11 @@ import subprocess
 from pathlib import Path
 
 from craft_cli import emit
+from craft_parts.filesystem_mounts import FilesystemMount
 from craft_platforms import DebianArchitecture
 
 from imagecraft import errors
+from imagecraft.models.volume import StructureList
 from imagecraft.pack.chroot import Chroot, Mount
 from imagecraft.pack.image import Image
 from imagecraft.subprocesses import run
@@ -99,7 +101,9 @@ def _grub_install(grub_target: str, loop_dev: str) -> None:
         raise errors.GRUBInstallError("Missing tool to install grub") from err
 
 
-def setup_grub(image: Image, workdir: Path, arch: str) -> None:
+def setup_grub(
+    image: Image, workdir: Path, arch: str, filesystem_mount: FilesystemMount
+) -> None:
     """Setups GRUB in the image.
 
     :param image: Image object handling the actual disk file
@@ -107,18 +111,15 @@ def setup_grub(image: Image, workdir: Path, arch: str) -> None:
     :param arch: architecture the image is built for
 
     """
-    rootfs_partition_num = image.data_partition_number
-    boot_partition_num = image.boot_partition_number
-
     emit.progress("Setting up GRUB in the image")
 
-    if boot_partition_num is None:
+    if not image.has_boot_partition:
         emit.progress(
             "Skipping GRUB installation because no boot partition was found",
             permanent=True,
         )
         return
-    if rootfs_partition_num is None:
+    if not image.has_data_partition:
         emit.progress(
             "Skipping GRUB installation because no data partition was found",
             permanent=True,
@@ -134,16 +135,7 @@ def setup_grub(image: Image, workdir: Path, arch: str) -> None:
 
     with image.attach_loopdev() as loop_dev:
         mounts: list[Mount] = [
-            Mount(
-                fstype=None,
-                src=f"{loop_dev}p{rootfs_partition_num}",
-                relative_mountpoint="/",
-            ),
-            Mount(
-                fstype=None,
-                src=f"{loop_dev}p{boot_partition_num}",
-                relative_mountpoint="/boot/efi",
-            ),
+            *image_mounts(loop_dev, image, filesystem_mount),
             Mount(
                 fstype="devtmpfs",
                 src="devtmpfs-build",
@@ -173,3 +165,37 @@ def setup_grub(image: Image, workdir: Path, arch: str) -> None:
             # Ignore mounting errors indicating the rootfs does not have
             # the needed structure to install grub.
             emit.progress(f"Cannot install GRUB on this rootfs: {err}", permanent=True)
+
+
+def image_mounts(
+    loop_dev: str, image: Image, filesystem_mount: FilesystemMount
+) -> list[Mount]:
+    """Generate a list of mounts for the image and based on the given filesystem_mount."""
+    image_mounts: list[Mount] = []
+    for entry in filesystem_mount:
+        structure_name = _structure_name_from_partition(entry.device)
+        partnum = _part_num(structure_name, image.volume.structure)
+        if partnum is None:
+            raise errors.ImageError(
+                message=f"Cannot find a partition with the name {structure_name}"
+            )
+        image_mounts.append(
+            Mount(
+                fstype=None,
+                src=f"{loop_dev}p{partnum}",
+                relative_mountpoint=entry.mount,
+            )
+        )
+    return image_mounts
+
+
+def _part_num(name: str, structure: StructureList) -> int | None:
+    for i, structure_item in enumerate(structure):
+        if structure_item.name == name:
+            # Partition numbers start at 1, so offset the index
+            return i + 1
+    return None
+
+
+def _structure_name_from_partition(partition_name: str) -> str:
+    return partition_name.strip("()").split("/")[-1]

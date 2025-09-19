@@ -1,0 +1,66 @@
+summary: Pack an image with GRUB and a dedicated boot partition
+
+systems: [ubuntu-24.04-64]
+
+execute: |
+  TMPDIR="$(mktemp -d)"
+  TMP_MOUNT=${TMPDIR}/mount
+  mkdir -p ${TMP_MOUNT}
+  echo ${TMP_MOUNT} >> tmpmount.txt
+
+  GRUB_INSTALL_LOG="Setting up GRUB in the image"
+
+  imagecraft pack --verbose --destructive-mode 2>&1 >/dev/null | MATCH "$GRUB_INSTALL_LOG"
+
+  # Check that the message was actually written to the logfile.
+  imagecraft_log_file=$(find /root/.local/state/imagecraft/log/ -name 'imagecraft*.log' | sort -n | tail -n1)
+  MATCH "$GRUB_INSTALL_LOG" "$imagecraft_log_file"
+  # Also check detailed of the installation were logged
+  MATCH "Generating grub configuration file" "$imagecraft_log_file"
+  MATCH "Adding boot menu entry for UEFI Firmware Settings" "$imagecraft_log_file"
+
+  IMG_NAME=pc.img
+  test -f ${IMG_NAME}
+
+  losetup --find --show --partscan ${IMG_NAME}
+  losetup -a | grep ${IMG_NAME} | cut -f1 -d: >> loop.txt
+  LOOP="$(cat loop.txt)"
+
+  for l in `ls -d "$LOOP"p*`
+  do
+      p=${l#"$LOOP"}
+      mkdir ${TMP_MOUNT}/$p
+      mount $l ${TMP_MOUNT}/$p || true
+  done
+
+restore: |
+  if [ -f loop.txt -a -f tmpmount.txt ]; then
+      LOOP="$(cat loop.txt)"
+      TMP_MOUNT="$(cat tmpmount.txt)"
+
+      for l in `ls -d "$LOOP"p*`
+      do
+          p=${l#"$LOOP"}
+          mount --make-rprivate ${TMP_MOUNT}/$p || true
+          umount --recursive ${TMP_MOUNT}/$p || true
+      done
+
+      losetup -d "$LOOP"
+      sync
+      losetup -l | NOMATCH "$LOOP"
+      rm loop.txt
+  fi
+  imagecraft clean --destructive-mode
+  rm -rf pc.img || true
+
+debug: |
+  df -h
+  du -h -d 1 /tmp/
+  mount  -l
+  if [ -f loop.txt ]; then
+      cat loop.txt
+  fi
+  if [ -f tmpmount.txt ]; then
+      cat loop.txt
+  fi
+  losetup -l

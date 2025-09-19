@@ -92,9 +92,17 @@ class ImagecraftPackService(PackageService):
                 )
         gptutil.verify_partition_tables(disk_image_file)
 
+        filesystem_mount = self._services.get(
+            "lifecycle"
+        ).project_info.default_filesystem_mount
         image = Image(volume=volume, disk_path=disk_image_file)
         arch = self._services.get("lifecycle").project_info.target_arch
-        grubutil.setup_grub(image=image, workdir=project_dirs.work_dir, arch=arch)
+        grubutil.setup_grub(
+            image=image,
+            workdir=project_dirs.work_dir,
+            arch=arch,
+            filesystem_mount=filesystem_mount,
+        )
 
         return [disk_image_file]
 
