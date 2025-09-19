@@ -16,6 +16,7 @@ import contextlib
 from pathlib import Path
 
 import pytest
+from craft_parts.filesystem_mounts import FilesystemMount
 from craft_platforms import DebianArchitecture
 from imagecraft.models import Volume
 from imagecraft.pack.grubutil import setup_grub
@@ -61,8 +62,26 @@ def fake_loopdev_handler():
     yield "loop99"
 
 
+@pytest.mark.parametrize(
+    ("filesystem_mount"),
+    [
+        FilesystemMount.unmarshal(
+            [
+                {"mount": "/", "device": "(volume/pc/rootfs)"},
+                {"mount": "/boot", "device": "(volume/pc/boot)"},
+                {"mount": "/boot/efi", "device": "(volume/pc/efi)"},
+            ]
+        ),
+        FilesystemMount.unmarshal(
+            [
+                {"mount": "/", "device": "(volume/pc/rootfs)"},
+                {"mount": "/boot/efi", "device": "(volume/pc/efi)"},
+            ]
+        ),
+    ],
+)
 @pytest.mark.usefixtures("new_dir")
-def test_setup_grub(mocker, new_dir, volume):
+def test_setup_grub(mocker, new_dir, volume, filesystem_mount):
     disk_path = Path(new_dir, "pc.img")
     disk_path.touch(exist_ok=True)
     image = Image(
@@ -74,7 +93,12 @@ def test_setup_grub(mocker, new_dir, volume):
     mock_chroot = mocker.patch("imagecraft.pack.grubutil.Chroot")
     mocker.patch.object(image, "attach_loopdev", side_effect=fake_loopdev_handler)
 
-    setup_grub(image=image, workdir=workdir, arch=DebianArchitecture.AMD64)
+    setup_grub(
+        image=image,
+        workdir=workdir,
+        arch=DebianArchitecture.AMD64,
+        filesystem_mount=filesystem_mount,
+    )
 
     assert mock_chroot.return_value.execute.called
 
@@ -153,6 +177,11 @@ def test_setup_grub(mocker, new_dir, volume):
 def test_setup_grub_partitions(mocker, new_dir, volume, arch, emitter, message):
     disk_path = Path(new_dir, "pc.img")
     disk_path.touch(exist_ok=True)
+    filesystem_mount = FilesystemMount.unmarshal(
+        [
+            {"mount": "/", "device": "(volume/pc/rootfs)"},
+        ]
+    )
     image = Image(
         volume=volume,
         disk_path=disk_path,
@@ -162,7 +191,9 @@ def test_setup_grub_partitions(mocker, new_dir, volume, arch, emitter, message):
     mock_chroot = mocker.patch("imagecraft.pack.grubutil.Chroot")
     mocker.patch.object(image, "attach_loopdev", side_effect=fake_loopdev_handler)
 
-    setup_grub(image=image, workdir=workdir, arch=arch)
+    setup_grub(
+        image=image, workdir=workdir, arch=arch, filesystem_mount=filesystem_mount
+    )
 
     mock_chroot.return_value.execute.assert_not_called()
 
