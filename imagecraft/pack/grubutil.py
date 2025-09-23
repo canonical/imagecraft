@@ -109,6 +109,7 @@ def setup_grub(
     :param image: Image object handling the actual disk file
     :param workdir: working directory
     :param arch: architecture the image is built for
+    :param filesystem_mount: order in which partitions should be mounted
 
     """
     emit.progress("Setting up GRUB in the image")
@@ -135,7 +136,7 @@ def setup_grub(
 
     with image.attach_loopdev() as loop_dev:
         mounts: list[Mount] = [
-            *image_mounts(loop_dev, image, filesystem_mount),
+            *_image_mounts(loop_dev, image.volume.structure, filesystem_mount),
             Mount(
                 fstype="devtmpfs",
                 src="devtmpfs-build",
@@ -167,17 +168,23 @@ def setup_grub(
             emit.progress(f"Cannot install GRUB on this rootfs: {err}", permanent=True)
 
 
-def image_mounts(
-    loop_dev: str, image: Image, filesystem_mount: FilesystemMount
+def _image_mounts(
+    loop_dev: str, structure: StructureList, filesystem_mount: FilesystemMount
 ) -> list[Mount]:
-    """Generate a list of mounts for the image and based on the given filesystem_mount."""
+    """Generate a list of mounts for the structure, based on the given filesystem_mount.
+
+    :param loop_dev: loop device the disk is associated to
+    :param structure: StructureList describing the partition layout of the image
+    :param filesystem_mount: order in which partitions should be mounted
+    """
     image_mounts: list[Mount] = []
+
     for entry in filesystem_mount:
-        structure_name = _structure_name_from_partition(entry.device)
-        partnum = _part_num(structure_name, image.volume.structure)
+        partition_name = _partition_name_from_device(entry.device)
+        partnum = _part_num(partition_name, structure)
         if partnum is None:
             raise errors.ImageError(
-                message=f"Cannot find a partition with the name {structure_name}"
+                message=f"Cannot find a partition named {partition_name}"
             )
         image_mounts.append(
             Mount(
@@ -190,6 +197,7 @@ def image_mounts(
 
 
 def _part_num(name: str, structure: StructureList) -> int | None:
+    """Get the partition number for a given name based on its position."""
     for i, structure_item in enumerate(structure):
         if structure_item.name == name:
             # Partition numbers start at 1, so offset the index
@@ -197,5 +205,12 @@ def _part_num(name: str, structure: StructureList) -> int | None:
     return None
 
 
-def _structure_name_from_partition(partition_name: str) -> str:
-    return partition_name.strip("()").split("/")[-1]
+def _partition_name_from_device(device: str) -> str:
+    """Extract the partition name from the device name.
+
+    Works under the assumption that the full device name references
+    the correct volume and the device name follows the
+    (volume/<volume_name>/<structure_name>) syntax.
+
+    """
+    return device.strip("()").split("/")[-1]
