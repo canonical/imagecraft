@@ -1,0 +1,16 @@
+summary: Pack an image organizing to the overlay
+
+systems: [ubuntu-24.04-64]
+
+execute: |
+  imagecraft pack --verbose --destructive-mode
+
+  test -f pc.img
+
+restore: |
+  imagecraft clean --destructive-mode
+  rm -rf pc.img || true
+
+debug: |
+  df -h
+  mount  -l

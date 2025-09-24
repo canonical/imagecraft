@@ -1,0 +1,95 @@
+name: organize-to-overlay
+version: "0.1"
+base: bare
+build-base: ubuntu@24.04
+
+platforms:
+  amd64:
+
+volumes:
+  pc:
+    schema: gpt
+    structure:
+      - name: efi
+        type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
+        filesystem: vfat
+        role: system-boot
+        filesystem-label: UEFI
+        size: 256M
+      - name: rootfs
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        filesystem: ext4
+        filesystem-label: writable
+        role: system-data
+        size: 5G
+
+filesystems:
+  default:
+    - mount: /
+      device: (volume/pc/rootfs)
+    - mount: /boot/efi/
+      device: (volume/pc/efi)
+
+parts:
+  # bootstrap a simple rootfs
+  rootfs:
+    plugin: nil
+    build-packages: ["mmdebstrap"]
+    override-build: |
+      mmdebstrap --arch $CRAFT_ARCH_BUILD_FOR \
+       --mode=sudo \
+       --format=dir \
+       --variant=minbase \
+       --include=apt \
+       noble \
+       $CRAFT_PART_INSTALL/ \
+       http://archive.ubuntu.com/ubuntu/
+      # mmdebstrap filed /dev with special files. Clean it.
+      rm -r $CRAFT_PART_INSTALL/dev/*
+      # Prepare needed directory for EFI
+      mkdir $CRAFT_PART_INSTALL/boot/efi
+    organize:
+      "*": (overlay)/
+
+  # add packages using chroot and apt to have maintainer scripts run
+  packages:
+    plugin: nil
+    overlay-script: |
+      mkdir -p $CRAFT_OVERLAY/dev $CRAFT_OVERLAY/sys $CRAFT_OVERLAY/proc
+      mount -t devtmpfs devtmpfs-build $CRAFT_OVERLAY/dev
+      mount -t devpts devpts-build -o nodev,nosuid $CRAFT_OVERLAY/dev/pts
+      mount -t sysfs sysfs-build $CRAFT_OVERLAY/sys
+      mount -t proc proc-build $CRAFT_OVERLAY/proc
+      mount --bind /run $CRAFT_OVERLAY/run
+
+      DEBIAN_FRONTEND=noninteractive chroot $CRAFT_OVERLAY apt update
+      DEBIAN_FRONTEND=noninteractive chroot $CRAFT_OVERLAY apt install --assume-yes --quiet \
+        --option=Dpkg::options::=--force-unsafe-io --option=Dpkg::Options::=--force-confold \
+        ubuntu-server-minimal grub2-common grub-pc shim-signed linux-image-generic
+
+      mount --make-rprivate $CRAFT_OVERLAY/run
+      umount --recursive $CRAFT_OVERLAY/run
+      mount --make-rprivate $CRAFT_OVERLAY/sys
+      umount --recursive $CRAFT_OVERLAY/sys
+      mount --make-rprivate $CRAFT_OVERLAY/proc
+      umount --recursive $CRAFT_OVERLAY/proc
+      mount --make-rprivate $CRAFT_OVERLAY/dev/pts
+      umount --recursive $CRAFT_OVERLAY/dev/pts
+      mount --make-rprivate $CRAFT_OVERLAY/dev
+      umount --recursive $CRAFT_OVERLAY/dev
+
+  # Define a fstab
+  fstab:
+    plugin: nil
+    after: [packages]
+    overlay-script: |
+      cat << EOF > $CRAFT_OVERLAY/etc/fstab
+      LABEL=writable	/	ext4	discard,errors=remount-ro	0	1
+      LABEL=UEFI	/boot/efi	vfat	umask=0077	0 1
+      EOF
+
+  # Addition of arbitrary content. Exercise having a part not explicitly
+  # after any other and still overlaid and built after the rootfs one.
+  content:
+    plugin: dump
+    source: some-content/
