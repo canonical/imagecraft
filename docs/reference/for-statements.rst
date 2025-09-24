@@ -47,10 +47,9 @@ corresponding values will be appended to the parent key. Values that aren't nest
 
 .. .. code-block:: yaml
 
-..   <list>:
-  <key>:
-    - for <platform-1>: <value-1>
-    - else: <default>
+..     <key>:
+..       - for <platform-1>: <value-1>
+..       - else: <default>
 
 .. The body of the ``else`` statement will only be assigned to the parent key if the target
 .. platform does not match the platform specified by the preceding ``for`` statement.
