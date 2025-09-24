@@ -8,6 +8,7 @@ Reference
 
     imagecraft-yaml-file
     commands
+    for-statements
     parts-steps
     part-lifecycle-details
     /common/craft-parts/explanation/filesets
