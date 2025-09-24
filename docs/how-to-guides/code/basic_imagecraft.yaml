@@ -31,25 +31,28 @@ filesystems:
       device: "(volume/pc/efi)"
 
 parts:
-  # build a simple rootfs
+  # bootstrap a simple rootfs
   rootfs:
     plugin: nil
     build-packages: ["mmdebstrap"]
-    overlay-script: |
+    override-build: |
       mmdebstrap --arch $CRAFT_ARCH_BUILD_FOR \
        --mode=sudo \
        --format=dir \
        --variant=minbase \
        --include=apt \
        noble \
-       $CRAFT_OVERLAY/ \
+       $CRAFT_PART_INSTALL/ \
        http://archive.ubuntu.com/ubuntu/
-       mkdir $CRAFT_OVERLAY/boot/efi
+      # mmdebstrap filed /dev with special files. Clean it.
+      rm -r $CRAFT_PART_INSTALL/dev/*
+      mkdir $CRAFT_PART_INSTALL/boot/efi
+    organize:
+      '*': (overlay)/
 
   # add packages using chroot and apt to have maintainer scripts properly run
   packages:
     plugin: nil
-    after: [rootfs]
     overlay-script: |
       mkdir -p $CRAFT_OVERLAY/dev $CRAFT_OVERLAY/sys $CRAFT_OVERLAY/proc
       mount -t devtmpfs devtmpfs-build $CRAFT_OVERLAY/dev
