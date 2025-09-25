@@ -177,7 +177,7 @@ following single-platform project files:
 
 .. Revise and uncomment once we've built a bootable, multi-platform image
 
-.. When crafting an image, the ``for`` statement is used to customize the image's
+.. When crafting an image, ``for`` statements are used to customize the image's
 .. partitions and filesystem mount points, declared with the ``structure`` and
 .. ``filesystems`` keys.
 
