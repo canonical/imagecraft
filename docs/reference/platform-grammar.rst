@@ -1,11 +1,11 @@
-.. _reference-grammar:
+.. _reference-platform-grammar:
 
-Grammar
-=======
+Platform grammar
+================
 
-*Grammar* describes statements that select a project file's key values based on the
-build target. This allows for an image to be catered to the needs of each platform
-declared in its project file.
+*Platform grammar* describes statements that select a project file's key values based on
+the build's target platform. This allows for an image to be catered to the needs of each
+platform declared in its project file.
 
 
 ``for`` statements
