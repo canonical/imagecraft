@@ -100,7 +100,7 @@ that comes immediately before it.
         - make
 
 For a build targeting the ``laptop`` platform, the ``build-packages`` key would include
-both ``git`` and ``make``. Despite the ``for laptop`` matching, the ``else`` statement's
+both ``git`` and ``make``. Despite ``for laptop`` matching, the ``else`` statement's
 values are still appended, as the ``for dev-board`` statement didn't match.
 
 
