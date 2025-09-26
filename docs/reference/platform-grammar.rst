@@ -125,7 +125,7 @@ Example
 
 The following project file snippet declares two platforms, ``laptop`` and ``dev-board``,
 and platform-specific values for the ``source`` and ``build-environment`` keys in the
-``node`` part.
+``ffmpeg`` part.
 
 .. code-block:: yaml
     :caption: imagecraft.yaml
@@ -141,24 +141,24 @@ and platform-specific values for the ``source`` and ``build-environment`` keys i
     [...]
 
     parts:
-      node:
+      ffmpeg:
         plugin: dump
         source:
-        - for laptop: https://nodejs.org/dist/v20.11.0/node-v20.11.0-linux-x64.tar.gz
-        - for dev-board: https://nodejs.org/dist/v20.11.0/node-v20.11.0-linux-arm64.tar.gz
+        - for laptop: https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v6.1/ffmpeg-6.1-linux-64.zip
+        - for dev-board: https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v6.1/ffmpeg-6.1-linux-arm-64.zip
         build-environment:
         - for laptop:
           - DISPLAY: Idle
         - for dev-board:
           - BOARD_STATUS: Ready
-        - NAME: Node.js part
+        - NAME: FFmpeg part
     [...]
 
-The build for the ``laptop`` platform pulls the x64 source for the ``node`` part and
+The build for the ``laptop`` platform pulls the x64 source for the ``ffmpeg`` part and
 sets the ``DISPLAY`` build environment variable to ``Idle``. The build for the
-``dev-board`` platform pulls the arm64 source and sets the ``BOARD_STATUS`` build
+``dev-board`` platform pulls the ARM64 source and sets the ``BOARD_STATUS`` build
 environment variable to ``Ready``. The builds for both platforms set the ``NAME``
-environment variable to ``Node.js part``.
+environment variable to ``FFmpeg part``.
 
 After the grammar is resolved, the two builds are equivalent to those produced by the
 following single-platform project files:
@@ -176,12 +176,12 @@ following single-platform project files:
         [...]
 
         parts:
-          node:
+          ffmpeg:
             plugin: dump
-            source: https://nodejs.org/dist/v20.11.0/node-v20.11.0-linux-x64.tar.gz
+            source: https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v6.1/ffmpeg-6.1-linux-64.zip
             build-environment:
               - DISPLAY: Idle
-              - NAME: Node.js part
+              - NAME: FFmpeg part
         [...]
 
 .. dropdown:: ``dev-board`` project file after grammar resolution
@@ -197,12 +197,12 @@ following single-platform project files:
         [...]
 
         parts:
-          node:
+          ffmpeg:
             plugin: dump
-            source: https://nodejs.org/dist/v20.11.0/node-v20.11.0-linux-arm64.tar.gz
+            source: https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v6.1/ffmpeg-6.1-linux-arm-64.zip
             build-environment:
               - BOARD_STATUS: Ready
-              - NAME: Node.js part
+              - NAME: FFmpeg part
         [...]
 
 .. Revise and uncomment once we've built a bootable, multi-platform image
