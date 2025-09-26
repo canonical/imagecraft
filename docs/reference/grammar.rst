@@ -24,7 +24,7 @@ accepts a single platform as its argument.
 If a ``for`` statement matches against the build's target platform, its value is
 assigned.
 
-The same logic applies when assigning values to lists.
+Similar logic applies when assigning values to lists.
 
 .. code-block:: yaml
 
@@ -41,8 +41,8 @@ appended to the list. Values that aren't nested in a ``for`` statement are appen
 regardless of the target platform.
 
 
-The ``any`` platform
---------------------
+``any`` platform
+----------------
 
 ``any`` is a platform that, when included in a ``for`` statement, will always match
 against the build's target platform.
@@ -54,8 +54,10 @@ against the build's target platform.
       - for any: <default>
 
 If no other ``for`` statements match against the build's target platform, the ``for
-any`` statement's value is assigned. If multiple ``for`` statements match against the
-build's target platform, the value of the first match is assigned.
+any`` statement's value is assigned. If the key expects a single value and multiple
+``for`` statements match against the build's target platform, the value of the first
+match is assigned. If a ``for any`` statement is included in a list, its items will
+always be appended.
 
 
 ``else`` clauses
@@ -77,40 +79,48 @@ an ``else`` clause won't consider the outcome of any ``for`` statements besides 
 that comes immediately before it.
 
 .. code-block:: yaml
+    :caption: imagecraft.yaml
 
     platforms:
-      amd64:
-      arm64:
+      laptop:
+        build-on: amd64
+        build-for: amd64
+      dev-board:
+        build-on: [amd64, arm64]
+        build-for: arm64
 
     [...]
 
     build-packages:
-      - for amd64:
+      - for laptop:
         - git
-      - for arm64:
+      - for dev-board:
         - python3-dev
       - else:
         - make
 
-For a build targeting the ``amd64`` platform, the ``build-packages`` key would include
-both ``git`` and ``make``. Despite the ``for amd64`` matching, the ``else`` statement's
-values are still appended, as the ``for arm64`` statement didn't match.
+For a build targeting the ``laptop`` platform, the ``build-packages`` key would include
+both ``git`` and ``make``. Despite the ``for laptop`` matching, the ``else`` statement's
+values are still appended, as the ``for dev-board`` statement didn't match.
 
 
 Example
 -------
 
-The following project file snippet declares two platforms, ``device`` and ``amd64``, and
-platform-specific values for the ``source`` and ``build-environment`` keys in the
+The following project file snippet declares two platforms, ``laptop`` and ``dev-board``,
+and platform-specific values for the ``source`` and ``build-environment`` keys in the
 ``node`` part.
 
 .. code-block:: yaml
+    :caption: imagecraft.yaml
 
     platforms:
-      microwave:
+      laptop:
+        build-on: amd64
+        build-for: amd64
+      dev-board:
         build-on: [amd64, arm64]
         build-for: arm64
-      amd64:
 
     [...]
 
@@ -118,31 +128,53 @@ platform-specific values for the ``source`` and ``build-environment`` keys in th
       node:
         plugin: dump
         source:
-        - for microwave: https://nodejs.org/dist/v20.11.0/node-v20.11.0-linux-arm64.tar.gz
-        - for amd64: https://nodejs.org/dist/v20.11.0/node-v20.11.0-linux-x64.tar.gz
+        - for laptop: https://nodejs.org/dist/v20.11.0/node-v20.11.0-linux-x64.tar.gz
+        - for dev-board: https://nodejs.org/dist/v20.11.0/node-v20.11.0-linux-arm64.tar.gz
         build-environment:
-        - for microwave:
-          - TARGET_ARCH: ARM64
-        - for amd64:
-          - TARGET_ARCH: AMD64
+        - for laptop:
+          - DISPLAY: Idle
+        - for dev-board:
+          - BOARD_STATUS: Ready
         - NAME: Node.js part
     [...]
 
-The build for the ``microwave`` platform pulls the ARM64 source for the ``node`` part
-and sets the ``TARGET_ARCH`` build environment variable to 'ARM64'. The build for the
-``amd64`` platform pulls the x64 source and sets the ``TARGET_ARCH`` build environment
-variable to 'AMD64'. The builds for both platforms set the ``NAME`` environment variable
-to 'Node.js part'.
+The build for the ``laptop`` platform pulls the x64 source for the ``node`` part and
+sets the ``DISPLAY`` build environment variable to ``Idle``. The build for the
+``dev-board`` platform pulls the arm64 source and sets the ``BOARD_STATUS`` build
+environment variable to ``Ready``. The builds for both platforms set the ``NAME``
+environment variable to ``Node.js part``.
 
 After the grammar is resolved, the two builds are equivalent to those produced by the
 following single-platform project files:
 
-.. dropdown:: ``microwave`` project file after grammar resolution
+.. dropdown:: ``laptop`` project file after grammar resolution
 
     .. code-block:: yaml
+        :caption: imagecraft.yaml:
 
         platforms:
-          microwave:
+          laptop:
+            build-on: amd64
+            build-for: amd64
+
+        [...]
+
+        parts:
+          node:
+            plugin: dump
+            source: https://nodejs.org/dist/v20.11.0/node-v20.11.0-linux-x64.tar.gz
+            build-environment:
+              - DISPLAY: Idle
+              - NAME: Node.js part
+        [...]
+
+.. dropdown:: ``dev-board`` project file after grammar resolution
+
+    .. code-block:: yaml
+        :caption: imagecraft.yaml
+
+        platforms:
+          dev-board:
             build-on: [amd64, arm64]
             build-for: arm64
 
@@ -153,25 +185,7 @@ following single-platform project files:
             plugin: dump
             source: https://nodejs.org/dist/v20.11.0/node-v20.11.0-linux-arm64.tar.gz
             build-environment:
-              - TARGET_ARCH: ARM64
-              - NAME: Node.js part
-        [...]
-
-.. dropdown:: ``amd64`` project file after grammar resolution
-
-    .. code-block:: yaml
-
-        platforms:
-          amd64:
-
-        [...]
-
-        parts:
-          node:
-            plugin: dump
-            source: https://nodejs.org/dist/v20.11.0/node-v20.11.0-linux-x64.tar.gz
-            build-environment:
-              - TARGET_ARCH: AMD64
+              - BOARD_STATUS: Ready
               - NAME: Node.js part
         [...]
 
