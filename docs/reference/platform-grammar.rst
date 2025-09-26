@@ -74,9 +74,8 @@ A ``for`` statement can be followed by an optional ``else`` clause.
 The body of the ``else`` clause is only assigned if the preceding ``for`` statement
 doesn't match against the build's target platform.
 
-An ``else`` clause can only be attached to a single ``for`` statement. This means that
-an ``else`` clause won't consider the outcome of any ``for`` statements besides the one
-that comes immediately before it.
+An ``else`` clause only considers the outcome of the ``for`` statement that comes
+immediately before it.
 
 .. code-block:: yaml
     :caption: imagecraft.yaml
