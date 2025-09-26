@@ -56,23 +56,8 @@ against the build's target platform.
 If no other ``for`` statements match against the build's target platform, the ``for
 any`` statement's value is assigned. If the key expects a single value and multiple
 ``for`` statements match against the build's target platform, the value of the first
-match is assigned.
-
-If a ``for any`` statement is included in a list, its items will always be appended.
-
-.. code-block:: yaml
-
-    <key>:
-      - for <platform-1>:
-        - <value-1>
-      [...]
-      - for <platform-n>:
-        - <value-n>
-      - for any:
-        - <default>
-
-Placing list items in a ``for any`` statement is equivalent to placing them in the
-list without a ``for`` statement.
+match is assigned. If a ``for any`` statement is included in a list, its items will
+always be appended.
 
 
 ``else`` clauses
@@ -117,6 +102,23 @@ that comes immediately before it.
 For a build targeting the ``laptop`` platform, the ``build-packages`` key would include
 both ``git`` and ``make``. Despite ``for laptop`` matching, the ``else`` statement's
 values are still appended, as the ``for dev-board`` statement didn't match.
+
+``else`` clauses can be placed after any ``for`` statement, regardless of its position.
+The following ``build-packages`` declaration yields the same results as the previous
+example:
+
+.. code-block:: yaml
+    :caption: imagecraft.yaml
+
+    [...]
+
+    build-packages:
+      - for dev-board:
+        - python3-dev
+      - else:
+        - make
+      - for laptop:
+        - git
 
 
 Example
