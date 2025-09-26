@@ -1,4 +1,4 @@
-name: ubuntu-minimal
+name: organize-to-overlay
 version: "0.1"
 base: bare
 build-base: ubuntu@24.04
@@ -25,10 +25,10 @@ volumes:
 
 filesystems:
   default:
-    - mount: "/"
-      device: "(volume/pc/rootfs)"
-    - mount: "/boot/efi"
-      device: "(volume/pc/efi)"
+    - mount: /
+      device: (volume/pc/rootfs)
+    - mount: /boot/efi/
+      device: (volume/pc/efi)
 
 parts:
   # bootstrap a simple rootfs
@@ -46,11 +46,12 @@ parts:
        http://archive.ubuntu.com/ubuntu/
       # mmdebstrap filed /dev with special files. Clean it.
       rm -r $CRAFT_PART_INSTALL/dev/*
+      # Prepare needed directory for EFI
       mkdir $CRAFT_PART_INSTALL/boot/efi
     organize:
-      '*': (overlay)/
+      "*": (overlay)/
 
-  # add packages using chroot and apt to have maintainer scripts properly run
+  # add packages using chroot and apt to have maintainer scripts run
   packages:
     plugin: nil
     overlay-script: |
@@ -76,26 +77,19 @@ parts:
       umount --recursive $CRAFT_OVERLAY/dev/pts
       mount --make-rprivate $CRAFT_OVERLAY/dev
       umount --recursive $CRAFT_OVERLAY/dev
-      rm $CRAFT_OVERLAY/etc/cloud/cloud.cfg.d/90_dpkg.cfg
 
-  # prepare snaps
-  snaps:
+  # Define a fstab
+  fstab:
     plugin: nil
     after: [packages]
     overlay-script: |
-      snap prepare-image --classic --arch=amd64 \
-        --snap snapd --snap core24 "" $CRAFT_OVERLAY
-
-  # fix fstab and organize content to the partition
-  fstab:
-    plugin: nil
-    after: [snaps]
-    overlay-script: |
       cat << EOF > $CRAFT_OVERLAY/etc/fstab
       LABEL=writable	/	ext4	discard,errors=remount-ro	0	1
-      LABEL=UEFI	/boot/efi	vfat	umask=0077	0	1
+      LABEL=UEFI	/boot/efi	vfat	umask=0077	0 1
       EOF
 
-  cloud-init:
+  # Addition of arbitrary content. Exercise having a part not explicitly
+  # after any other and still overlaid and built after the rootfs one.
+  content:
     plugin: dump
-    source: cloud-init/
+    source: some-content/

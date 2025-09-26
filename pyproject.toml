@@ -4,11 +4,11 @@ description = "Create Ubuntu bootable images."
 dynamic = ["version"]
 authors = [{ name = "Canonical Ltd.", email = "snapcraft@lists.snapcraft.io" }]
 dependencies = [
-    "craft-parts~=2.22.1",
+    "craft-parts~=2.23.0",
     "craft-cli~=3.0",
     "craft-platforms~=0.6",
     "craft-application~=5.9",
-    "craft-grammar~=2.2.0",
+    "craft-grammar~=2.3.0",
     "craft-providers~=3.0",
     "pydantic~=2.8",
 ]
@@ -38,7 +38,7 @@ lint = [
     # Left empty for scaffolding and Makefile compatibility
 ]
 types = [
-    "mypy[reports]~=1.17.1",
+    "mypy[reports]~=1.18.2",
     "types-Pygments",
     "types-colorama",
     "types-setuptools",
@@ -64,7 +64,7 @@ dev = [
     "pytest-cov~=6.0",
     "pytest-check>=2.4",
     "pytest-mock~=3.12",
-    "mypy[reports]~=1.17.1",
+    "mypy[reports]~=1.18.2",
     "pyright==1.1.403",
     "types-Pygments",
     "types-colorama",
