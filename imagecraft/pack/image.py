@@ -67,22 +67,14 @@ class Image:
             )
 
     @property
-    def data_partition_number(self) -> int | None:
-        """The partition number associated to the data partition of the image."""
-        for i, structure_item in enumerate(self.volume.structure):
-            if structure_item.role == Role.SYSTEM_DATA:
-                # Partition numbers start at 1, so offset the index
-                return i + 1
-        return None
+    def has_data_partition(self) -> bool:
+        """Check if a data partition is present in the image."""
+        return any(s.role == Role.SYSTEM_DATA for s in self.volume.structure)
 
     @property
-    def boot_partition_number(self) -> int | None:
-        """The partition number associated to the boot partition of the image."""
-        for i, structure_item in enumerate(self.volume.structure):
-            if structure_item.role == Role.SYSTEM_BOOT:
-                # Partition numbers start at 1, so offset the index
-                return i + 1
-        return None
+    def has_boot_partition(self) -> bool:
+        """Check if a boot partition is present in the image."""
+        return any(s.role == Role.SYSTEM_BOOT for s in self.volume.structure)
 
     @contextlib.contextmanager
     def attach_loopdev(self) -> Iterator[str]:
