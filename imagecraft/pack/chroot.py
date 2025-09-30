@@ -53,6 +53,17 @@ class Mount:
         if options:
             self._options = options
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Mount):
+            return False
+        return (
+            self._fstype == other._fstype
+            and self._src == other._src
+            and self._relative_mountpoint == other._relative_mountpoint
+            and self._options == other._options
+            and self._mountpoint == other._mountpoint
+        )
+
     def mount(self, base_path: Path) -> None:
         """Mount the mountpoint.
 

@@ -18,9 +18,11 @@ import subprocess
 from pathlib import Path
 
 from craft_cli import emit
+from craft_parts.filesystem_mounts import FilesystemMount
 from craft_platforms import DebianArchitecture
 
 from imagecraft import errors
+from imagecraft.models.volume import StructureList
 from imagecraft.pack.chroot import Chroot, Mount
 from imagecraft.pack.image import Image
 from imagecraft.subprocesses import run
@@ -99,26 +101,26 @@ def _grub_install(grub_target: str, loop_dev: str) -> None:
         raise errors.GRUBInstallError("Missing tool to install grub") from err
 
 
-def setup_grub(image: Image, workdir: Path, arch: str) -> None:
+def setup_grub(
+    image: Image, workdir: Path, arch: str, filesystem_mount: FilesystemMount
+) -> None:
     """Setups GRUB in the image.
 
     :param image: Image object handling the actual disk file
     :param workdir: working directory
     :param arch: architecture the image is built for
+    :param filesystem_mount: order in which partitions should be mounted
 
     """
-    rootfs_partition_num = image.data_partition_number
-    boot_partition_num = image.boot_partition_number
-
     emit.progress("Setting up GRUB in the image")
 
-    if boot_partition_num is None:
+    if not image.has_boot_partition:
         emit.progress(
             "Skipping GRUB installation because no boot partition was found",
             permanent=True,
         )
         return
-    if rootfs_partition_num is None:
+    if not image.has_data_partition:
         emit.progress(
             "Skipping GRUB installation because no data partition was found",
             permanent=True,
@@ -134,16 +136,7 @@ def setup_grub(image: Image, workdir: Path, arch: str) -> None:
 
     with image.attach_loopdev() as loop_dev:
         mounts: list[Mount] = [
-            Mount(
-                fstype=None,
-                src=f"{loop_dev}p{rootfs_partition_num}",
-                relative_mountpoint="/",
-            ),
-            Mount(
-                fstype=None,
-                src=f"{loop_dev}p{boot_partition_num}",
-                relative_mountpoint="/boot/efi",
-            ),
+            *_image_mounts(loop_dev, image.volume.structure, filesystem_mount),
             Mount(
                 fstype="devtmpfs",
                 src="devtmpfs-build",
@@ -173,3 +166,51 @@ def setup_grub(image: Image, workdir: Path, arch: str) -> None:
             # Ignore mounting errors indicating the rootfs does not have
             # the needed structure to install grub.
             emit.progress(f"Cannot install GRUB on this rootfs: {err}", permanent=True)
+
+
+def _image_mounts(
+    loop_dev: str, structure: StructureList, filesystem_mount: FilesystemMount
+) -> list[Mount]:
+    """Generate a list of mounts for the structure, based on the given filesystem_mount.
+
+    :param loop_dev: loop device the disk is associated to
+    :param structure: StructureList describing the partition layout of the image
+    :param filesystem_mount: order in which partitions should be mounted
+    """
+    image_mounts: list[Mount] = []
+
+    for entry in filesystem_mount:
+        partition_name = _partition_name_from_device(entry.device)
+        partnum = _part_num(partition_name, structure)
+        if partnum is None:
+            raise errors.ImageError(
+                message=f"Cannot find a partition named {partition_name}"
+            )
+        image_mounts.append(
+            Mount(
+                fstype=None,
+                src=f"{loop_dev}p{partnum}",
+                relative_mountpoint=entry.mount,
+            )
+        )
+    return image_mounts
+
+
+def _part_num(name: str, structure: StructureList) -> int | None:
+    """Get the partition number for a given name based on its position."""
+    for i, structure_item in enumerate(structure):
+        if structure_item.name == name:
+            # Partition numbers start at 1, so offset the index
+            return i + 1
+    return None
+
+
+def _partition_name_from_device(device: str) -> str:
+    """Extract the partition name from the device name.
+
+    Works under the assumption that the full device name references
+    the correct volume and the device name follows the
+    (volume/<volume_name>/<structure_name>) syntax.
+
+    """
+    return device.strip("()").split("/")[-1]
