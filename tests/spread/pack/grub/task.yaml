@@ -13,7 +13,7 @@ execute: |
 
   GRUB_INSTALL_LOG="Setting up GRUB in the image"
 
-  imagecraft pack --verbose --destructive-mode 2>&1 >/dev/null | MATCH "$GRUB_INSTALL_LOG"
+  imagecraft pack --verbosity verbose --destructive-mode 2>&1 >/dev/null | MATCH "$GRUB_INSTALL_LOG"
 
   # Check that the message was actually written to the logfile.
   imagecraft_log_file=$(find /root/.local/state/imagecraft/log/ -name 'imagecraft*.log' | sort -n | tail -n1)

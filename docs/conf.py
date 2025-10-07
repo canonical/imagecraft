@@ -150,6 +150,7 @@ exclude_patterns = [
     "common/craft-parts/reference/plugins/nil_plugin.rst",
     "common/craft-parts/reference/plugins/npm_plugin.rst",
     "common/craft-parts/reference/plugins/python_plugin.rst",
+    "common/craft-parts/reference/plugins/python_v2_plugin.rst",
     "common/craft-parts/reference/plugins/poetry_plugin.rst",
     "common/craft-parts/reference/plugins/qmake_plugin.rst",
     "common/craft-parts/reference/plugins/rust_plugin.rst",
@@ -159,15 +160,19 @@ exclude_patterns = [
     "common/craft-parts/reference/plugins/jlink_plugin.rst",
 ]
 
+# We have many links on sites that frequently respond with 503s to GitHub runners.
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#confval-linkcheck_retries
+linkcheck_retries = 20
+linkcheck_anchors_ignore = ["#", ":"]
 linkcheck_ignore = [
-    "http://127.0.0.1:8000",
-    "https://apt-repo.com",
+    r"http://127.0.0.1:8000",
+    r"https://apt-repo.com",
     # Linkcheck is unable to properly handled matrix.to URLs containing # and :
     # See https://github.com/sphinx-doc/sphinx/issues/13620
-    "https://matrix.to",
-    # Ignore gnu.org URLs due to a mix of aggressive rate limiting and aggressive/buggy
-    # retry from linkcheck
-    "https://www.gnu.org"
+    r"https://matrix.to",
+    # Entire domains to ignore due to flakiness or issues
+    r"^https://www.gnu.org/",
+    r"^https://ubuntu.com",
 ]
 
 rst_epilog = """
