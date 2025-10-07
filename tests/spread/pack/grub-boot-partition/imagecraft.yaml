@@ -24,33 +24,15 @@ parts:
       mmdebstrap --arch amd64 --mode=sudo --format=dir --variant=minbase --include=apt noble $CRAFT_OVERLAY/ http://archive.ubuntu.com/ubuntu/
       mkdir $CRAFT_OVERLAY/boot/efi
 
-  # add packages using chroot and apt to have maintainer scripts run
+  # add packages
   packages:
     plugin: nil
-    after: [rootfs]
-    overlay-script: |
-      mkdir -p $CRAFT_OVERLAY/dev $CRAFT_OVERLAY/sys $CRAFT_OVERLAY/proc
-      mount -t devtmpfs devtmpfs-build $CRAFT_OVERLAY/dev
-      mount -t devpts devpts-build -o nodev,nosuid $CRAFT_OVERLAY/dev/pts
-      mount -t sysfs sysfs-build $CRAFT_OVERLAY/sys
-      mount -t proc proc-build $CRAFT_OVERLAY/proc
-      mount --bind /run $CRAFT_OVERLAY/run
-
-      DEBIAN_FRONTEND=noninteractive chroot $CRAFT_OVERLAY apt update
-      DEBIAN_FRONTEND=noninteractive chroot $CRAFT_OVERLAY apt install --assume-yes --quiet \
-        --option=Dpkg::options::=--force-unsafe-io --option=Dpkg::Options::=--force-confold \
-        ubuntu-server-minimal grub2-common grub-pc shim-signed linux-image-generic
-
-      mount --make-rprivate $CRAFT_OVERLAY/run
-      umount --recursive $CRAFT_OVERLAY/run
-      mount --make-rprivate $CRAFT_OVERLAY/sys
-      umount --recursive $CRAFT_OVERLAY/sys
-      mount --make-rprivate $CRAFT_OVERLAY/proc
-      umount --recursive $CRAFT_OVERLAY/proc
-      mount --make-rprivate $CRAFT_OVERLAY/dev/pts
-      umount --recursive $CRAFT_OVERLAY/dev/pts
-      mount --make-rprivate $CRAFT_OVERLAY/dev
-      umount --recursive $CRAFT_OVERLAY/dev
+    overlay-packages:
+      - ubuntu-server-minimal
+      - grub2-common
+      - grub-pc
+      - shim-signed
+      - linux-image-generic
 
   # Define a fstab
   fstab:
