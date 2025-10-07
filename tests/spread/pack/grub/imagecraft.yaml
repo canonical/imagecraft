@@ -18,9 +18,21 @@ parts:
   rootfs:
     plugin: nil
     build-packages: ["mmdebstrap"]
-    overlay-script: |
-      mmdebstrap --arch amd64 --mode=sudo --format=dir --variant=minbase --include=apt noble $CRAFT_OVERLAY/ http://archive.ubuntu.com/ubuntu/
-      mkdir $CRAFT_OVERLAY/boot/efi
+    override-build: |
+      mmdebstrap --arch $CRAFT_ARCH_BUILD_FOR \
+       --mode=sudo \
+       --format=dir \
+       --variant=minbase \
+       --include=apt \
+       noble \
+       $CRAFT_PART_INSTALL/ \
+       http://archive.ubuntu.com/ubuntu/
+      # mmdebstrap filed /dev with special files. Clean it.
+      rm -r $CRAFT_PART_INSTALL/dev/*
+      # Prepare needed directory for EFI
+      mkdir $CRAFT_PART_INSTALL/boot/efi
+    organize:
+      "*": (overlay)/
 
   # add packages
   packages:
