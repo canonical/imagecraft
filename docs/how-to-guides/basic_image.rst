@@ -95,14 +95,14 @@ The packing can be run in two different environments:
   .. code-block:: bash
 
       sudo snap set imagecraft provider=multipass
-      imagecraft --verbosity debug pack
+      imagecraft pack
 
 - On the local machine, with destructive mode. In this case the machine must be
   of the series of the ``build-base`` declared in the ``imagecraft.yaml`` file.
 
   .. code-block:: bash
 
-      sudo imagecraft --verbosity debug pack --destructive-mode
+      sudo imagecraft pack --destructive-mode
 
 The resulting image file, ``pc.img``, will be deposited in the current directory.
 
