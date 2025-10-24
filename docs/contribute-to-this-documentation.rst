@@ -66,4 +66,4 @@ portfolio, connect with likeminded people, and receive recognition for giving ba
 
 CODA coordinates work for open-source projects everywhere, including Imagecraft. The
 best way to get started is to read `Get started as a contributor
-<https://documentationacademy.org/docs/howto/get-started/>`_.
+<https://documentation.academy/docs/howto/get-started>`_.
