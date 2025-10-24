@@ -23,7 +23,8 @@ for a complete reference of this file's structure and contents.
 
 :ref:`reference-imagecraft-yaml`
 
-An image can be catered to each platform in its project file with *platform grammar*.
+An image can be catered to each platform in its project file with special platform
+grammar.
 
 :ref:`reference-platform-grammar`
 
