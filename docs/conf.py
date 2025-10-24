@@ -123,7 +123,6 @@ exclude_patterns = [
     "common/craft-parts/explanation/overlay_step.rst",
     "common/craft-parts/explanation/dump_plugin.rst",
     "common/craft-parts/explanation/gradle_plugin.rst",
-    "common/craft-parts/explanation/lifecycle.rst",
     "common/craft-parts/how-to/craftctl.rst",
     "common/craft-parts/how-to/customise-the-build-with-craftctl.rst",
     "common/craft-parts/how-to/include_files.rst",
