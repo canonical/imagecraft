@@ -652,7 +652,7 @@ wheels = [
 
 [[package]]
 name = "craft-parts"
-version = "2.25.0"
+version = "2.26.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "lxml" },
@@ -663,9 +663,9 @@ dependencies = [
     { name = "requests-unixsocket2" },
     { name = "semver" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/8d/50/3b20ba0454a379097b0c45ea0810151ebf93dabd58e0808d33bd072ffc67/craft_parts-2.25.0.tar.gz", hash = "sha256:7b49f8d2c291df6d8080d3350a5b087ad26a37f52eeef9b57da6a4c5aa749aed", size = 873535, upload-time = "2025-10-06T20:33:55.1Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ff/0e/32408579efd9061321c8df73754f47347e0eb26c04621b61bf173b9e2fc3/craft_parts-2.26.0.tar.gz", hash = "sha256:53d73015ec55ca5ad5dfc84113db26b06191928bc82ac1e18e8582381390b6d6", size = 873295, upload-time = "2025-10-22T15:54:26.444Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a2/5d/a7edcec3eaa4bdf9c4da0c625c47b76ce598fe1b684582d4d8d4930bebde/craft_parts-2.25.0-py3-none-any.whl", hash = "sha256:bd871342c6cf2b23d316b2859b4a6097e88b87cd43201038ba3d9c055ed96b2e", size = 521946, upload-time = "2025-10-06T20:33:52.962Z" },
+    { url = "https://files.pythonhosted.org/packages/6f/10/1f1fd5db0fbe0bf4056d72e97119417e67200f76b092955ec14d16f8cac7/craft_parts-2.26.0-py3-none-any.whl", hash = "sha256:5c701293c8ebc1cfb3ab22fc4a5c89be590ca6b6f6259e62e213abbd4b0a4aac", size = 521872, upload-time = "2025-10-22T15:54:24.832Z" },
 ]
 
 [[package]]
@@ -1019,7 +1019,7 @@ dependencies = [
 apt = [
     { name = "python-apt", version = "2.7.7+ubuntu3", source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }, marker = "(sys_platform == 'linux' and extra == 'group-10-imagecraft-dev-noble') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-questing')" },
     { name = "python-apt", version = "2.9.9", source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }, marker = "(sys_platform == 'linux' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-questing')" },
-    { name = "python-apt", version = "3.0.0", source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }, marker = "(sys_platform == 'linux' and extra != 'group-10-imagecraft-dev-noble' and extra != 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-questing')" },
+    { name = "python-apt", version = "3.0.0+ubuntu1", source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }, marker = "(sys_platform == 'linux' and extra != 'group-10-imagecraft-dev-noble' and extra != 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-questing')" },
 ]
 
 [package.dev-dependencies]
@@ -1043,7 +1043,7 @@ dev-plucky = [
     { name = "python-apt", version = "2.9.9", source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }, marker = "sys_platform == 'linux'" },
 ]
 dev-questing = [
-    { name = "python-apt", version = "3.0.0", source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }, marker = "sys_platform == 'linux'" },
+    { name = "python-apt", version = "3.0.0+ubuntu1", source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }, marker = "sys_platform == 'linux'" },
 ]
 docs = [
     { name = "canonical-sphinx", extra = ["full"] },
@@ -1073,7 +1073,7 @@ requires-dist = [
     { name = "craft-application", specifier = "~=5.9" },
     { name = "craft-cli", specifier = "~=3.0" },
     { name = "craft-grammar", specifier = "~=2.3.0" },
-    { name = "craft-parts", specifier = "~=2.25.0" },
+    { name = "craft-parts", specifier = "~=2.26.0" },
     { name = "craft-platforms", specifier = "~=0.6" },
     { name = "craft-providers", specifier = "~=3.0" },
     { name = "pydantic", specifier = "~=2.8" },
@@ -2314,7 +2314,7 @@ wheels = [
 
 [[package]]
 name = "python-apt"
-version = "3.0.0"
+version = "3.0.0+ubuntu1"
 source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }
 resolution-markers = [
     "python_full_version >= '3.13'",
@@ -2322,10 +2322,16 @@ resolution-markers = [
     "python_full_version < '3.12'",
 ]
 wheels = [
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-3.0.0-cp311-cp311-manylinux_2_41_x86_64.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-3.0.0-cp312-cp312-manylinux_2_41_x86_64.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-3.0.0-cp313-cp313-manylinux_2_41_x86_64.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-3.0.0-cp314-cp314-manylinux_2_41_x86_64.whl" },
+    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-3.0.0+ubuntu1-cp311-cp311-manylinux_2_42_aarch64.whl" },
+    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-3.0.0+ubuntu1-cp311-cp311-manylinux_2_42_x86_64.whl" },
+    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-3.0.0+ubuntu1-cp312-cp312-manylinux_2_42_aarch64.whl" },
+    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-3.0.0+ubuntu1-cp312-cp312-manylinux_2_42_x86_64.whl" },
+    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-3.0.0+ubuntu1-cp313-cp313-manylinux_2_42_aarch64.whl" },
+    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-3.0.0+ubuntu1-cp313-cp313-manylinux_2_42_x86_64.whl" },
+    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-3.0.0+ubuntu1-cp314-cp314-manylinux_2_42_aarch64.whl" },
+    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-3.0.0+ubuntu1-cp314-cp314-manylinux_2_42_x86_64.whl" },
+    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-3.0.0+ubuntu1-cp314-cp314t-manylinux_2_42_aarch64.whl" },
+    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-3.0.0+ubuntu1-cp314-cp314t-manylinux_2_42_x86_64.whl" },
 ]
 
 [[package]]
