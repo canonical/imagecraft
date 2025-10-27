@@ -1,10 +1,10 @@
-.. _overlays:
+.. _explanation-overlay-step:
 
 Overlay step
 ============
 
-Images are built in a sequence of :doc:`five separate steps
-</reference/part-lifecycle-details>` -- pull, overlay, build, stage, and prime.
+Images are built in a sequence of :ref:`five separate steps <lifecycle>` -- pull,
+overlay, build, stage, and prime.
 
 The overlay step in each part provides the means to refine the contents of the
 image. ``overlay-script`` will run the provided script in this step.
