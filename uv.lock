@@ -1103,7 +1103,7 @@ docs = [
     { name = "matplotlib" },
     { name = "pydantic-kitbash", specifier = "==0.0.8" },
     { name = "sphinx-autobuild", specifier = "~=2025.8" },
-    { name = "sphinx-lint", specifier = "==1.0.0" },
+    { name = "sphinx-lint", specifier = "==1.0.1" },
     { name = "sphinx-pydantic", specifier = "==0.1.1" },
     { name = "sphinx-sitemap", specifier = "~=2.6.0" },
     { name = "sphinx-toolbox", specifier = "~=4.0" },
@@ -2822,15 +2822,15 @@ sdist = { url = "https://files.pythonhosted.org/packages/9c/3f/559d054f977596c55
 
 [[package]]
 name = "sphinx-lint"
-version = "1.0.0"
+version = "1.0.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "polib" },
     { name = "regex" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/cf/46/f2dad36a4076e9ce88498b25b3f0de82eb7d341ea0ef715cd6c48005bcef/sphinx_lint-1.0.0.tar.gz", hash = "sha256:6eafdb44172ce526f405bf36c713eb246f1340ec2d667e7298e2487ed76decd2", size = 33574, upload-time = "2024-09-11T15:32:54.203Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/51/b9/8f9bba27fd9c957570c4d4cb15e1bb99c97b69ffda2e15da8281afdf2a14/sphinx_lint-1.0.1.tar.gz", hash = "sha256:2b054ff3270fce56a8a18737665dd8ab04f45d8bfdf3a57a2313970b527ad612", size = 210115, upload-time = "2025-10-28T17:59:52.388Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/31/d2/a130ffba531af7cbbb0e7ad24c7d577d3de0b797437f61d3a7234ed6d836/sphinx_lint-1.0.0-py3-none-any.whl", hash = "sha256:6117a0f340b2dc73eadfc57db7531d4477e0929f92a0c1a2f61e6edbc272f0bc", size = 20163, upload-time = "2024-09-11T15:32:53.201Z" },
+    { url = "https://files.pythonhosted.org/packages/76/57/3fd77fc7db35e5b0187c3ef7c1f94fe92c647338189f9e038f9a42236f14/sphinx_lint-1.0.1-py3-none-any.whl", hash = "sha256:914648e4cc6e677df3a09a8d72a33c8dfa0c2618c857e415ec3ebdc219ff0af1", size = 28287, upload-time = "2025-10-28T17:59:50.974Z" },
 ]
 
 [[package]]

@@ -54,7 +54,7 @@ docs = [
     # conflicts with our vendoring of craft-parts docs.
     "sphinx-sitemap~=2.6.0",
     "sphinx-toolbox~=4.0",
-    "sphinx-lint==1.0.0",
+    "sphinx-lint==1.0.1",
     "sphinxcontrib-details-directive",
     "sphinxext-rediraffe==0.3.0",
     "matplotlib",
