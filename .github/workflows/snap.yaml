@@ -39,7 +39,7 @@ jobs:
 
       - if: steps.decisions.outputs.PUBLISH == 'true'
         name: Upload imagecraft snap artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: snap
           path: ${{ steps.build-imagecraft.outputs.snap }}
