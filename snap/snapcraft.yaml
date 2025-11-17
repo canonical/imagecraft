@@ -125,7 +125,7 @@ parts:
       - enable-patchelf
     build-packages:
       - libffi-dev
-      - cargo
+      - cargo-1.85
       - pkg-config
       - git
     build-snaps:
@@ -135,6 +135,8 @@ parts:
       - UV_COMPILE_BYTECODE: "1"
       - UV_NO_BINARY: "1"
       - MAKEOPTS: -j$(nproc --all)
+      - CARGO: cargo-1.85
+      - RUSTC: rustc-1.85
     organize:
       bin/craftctl: libexec/imagecraft/craftctl
     override-build: |
