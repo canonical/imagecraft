@@ -45,21 +45,6 @@ build-packages:
   - python3.12-minimal
 
 parts:
-  libgit2:
-    source: https://github.com/libgit2/libgit2/archive/refs/tags/v1.7.2.tar.gz
-    source-checksum: sha256/de384e29d7efc9330c6cdb126ebf88342b5025d920dcb7c645defad85195ea7f
-    plugin: cmake
-    cmake-parameters:
-      - -DCMAKE_INSTALL_PREFIX=/usr
-      - -DCMAKE_BUILD_TYPE=RelWithDebInfo
-      - -DBUILD_TESTS=OFF
-    build-attributes:
-      - enable-patchelf
-    build-packages:
-      - libssl-dev
-    prime:
-      - -usr/include
-      - -usr/bin
   imagecraft-libs:
     plugin: nil
     build-attributes:
@@ -69,6 +54,7 @@ parts:
       - apt-transport-https
       - apt-utils
       - gpgv
+      - libgit2-1.7
       - libpython3-stdlib
       - libpython3.12-stdlib
       - libpython3.12-minimal
@@ -118,23 +104,26 @@ parts:
     organize:
       "usr/local/bin/fuse-overlayfs": "libexec/imagecraft/fuse-overlayfs"
   imagecraft:
-    after: [imagecraft-libs, libgit2]
+    after: [imagecraft-libs]
     source: .
     plugin: uv
     build-attributes:
       - enable-patchelf
     build-packages:
       - libffi-dev
-      - cargo
+      - libgit2-dev
+      - cargo-1.85
       - pkg-config
       - git
     build-snaps:
       - astral-uv
     build-environment:
-      - "CFLAGS": "$(pkg-config python-3.12 yaml-0.1 --cflags)"
+      - "CFLAGS": "$(pkg-config python-3.12 yaml-0.1 libgit2 --cflags)"
       - UV_COMPILE_BYTECODE: "1"
       - UV_NO_BINARY: "1"
       - MAKEOPTS: -j$(nproc --all)
+      - CARGO: cargo-1.85
+      - RUSTC: rustc-1.85
     organize:
       bin/craftctl: libexec/imagecraft/craftctl
     override-build: |
