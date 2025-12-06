@@ -24,20 +24,37 @@ def test_pack(
     pack_service: ImagecraftPackService,
     mocker,
 ):
+    from craft_parts import ProjectDirs, ProjectInfo
+
     prime_dir = tmp_path / "prime"
     dest_path = tmp_path / "dest"
+    work_dir = tmp_path / "work"
 
     mock_diskutil = mocker.patch("imagecraft.services.pack.diskutil", autospec=True)
     mock_gptutil = mocker.patch("imagecraft.services.pack.gptutil", autospec=True)
     mock_grubutil = mocker.patch("imagecraft.services.pack.grubutil", autospec=True)
     mock_image = mocker.patch("imagecraft.services.pack.Image", autospec=True)
     
-    # Mock the lifecycle service to avoid apt backend initialization
+    # Create a real ProjectInfo object to avoid apt backend initialization
+    partitions = ["volume/pc/rootfs", "volume/pc/efi"]
+    project_dirs = ProjectDirs(work_dir=work_dir, partitions=partitions)
+    project_info = ProjectInfo(
+        application_name="imagecraft",
+        cache_dir=tmp_path / "cache",
+        arch="amd64",
+        base="bare",
+        parallel_build_count=1,
+        project_dirs=project_dirs,
+        partitions=partitions,
+        filesystem_mounts={"default": []},
+    )
+    
+    # Mock the lifecycle service with real ProjectInfo
     mock_lifecycle = mocker.MagicMock()
-    mock_lifecycle.project_info.dirs.get_prime_dir.return_value = prime_dir
-    mock_lifecycle.project_info.dirs.work_dir = tmp_path / "work"
-    mock_lifecycle.project_info.default_filesystem_mount = {"default": []}
-    mock_lifecycle.project_info.target_arch = "amd64"
+    mock_lifecycle.project_info = project_info
+    
+    # Override get_prime_dir to return our test directory
+    mocker.patch.object(project_dirs, "get_prime_dir", return_value=prime_dir)
     
     # Patch the factory to return mock_lifecycle for "lifecycle" calls
     original_get = default_factory.get
