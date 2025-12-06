@@ -28,10 +28,6 @@ APP_METADATA = AppMetadata(
     summary="A tool to create Ubuntu bootable images",
     ProjectClass=project.Project,
     enable_for_grammar=True,
-    # Override craft-application v6 defaults which include "summary" and "description".
-    # Imagecraft only requires "version" as a mandatory field.
-    project_variables=["version"],
-    mandatory_adoptable_fields=["version"],
 )
 
 
