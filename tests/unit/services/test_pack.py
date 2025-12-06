@@ -39,13 +39,13 @@ def test_pack(
     mock_lifecycle.project_info.default_filesystem_mount = {"default": []}
     mock_lifecycle.project_info.target_arch = "amd64"
     
-    # Patch the services.get method to return mock_lifecycle for "lifecycle" calls
-    original_get = pack_service._services.get
+    # Patch the factory to return mock_lifecycle for "lifecycle" calls
+    original_get = default_factory.get
     def mock_get(service_name):
         if service_name == "lifecycle":
             return mock_lifecycle
         return original_get(service_name)
-    mocker.patch.object(pack_service._services, "get", side_effect=mock_get)
+    mocker.patch.object(default_factory, "get", side_effect=mock_get)
 
     assert pack_service.pack(prime_dir=prime_dir, dest=dest_path) == [
         dest_path / "pc.img"
