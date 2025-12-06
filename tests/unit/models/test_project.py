@@ -284,7 +284,7 @@ def test_project_all_platforms_invalid(yaml_loaded_data, error_value, platforms)
     ("error_value", "yaml_data"),
     [
         (
-            "Bad myproject.yaml content:\n- input should be 'bare' (in field 'base')",
+            "Bad myproject.yaml content:\n- input should be 'bare' (in field 'base', input: 'ubuntu@24.04')",
             IMAGECRAFT_YAML_INVALID_BASE,
         ),
         (
@@ -371,11 +371,11 @@ volumes:
     ("error_value", "yaml_data"),
     [
         (
-            "Bad myproject.yaml content:\n- dictionary should have at most 1 item after validation, not 2 (in field 'volumes')",
+            "Bad myproject.yaml content:\n- dictionary should have at most 1 item after validation, not 2 (in field 'volumes', input: {'pc': {'schema': 'gpt', 'structure': [{'name': 'efi', 'role': 'system-boot', 'type': 'C12A7328-F81F-11D2-BA4B-00A0C93EC93B', 'filesystem': 'vfat', 'size': '500M'}]}, 'pc2': {'schema': 'gpt', 'structure': [{'name': 'efi', 'role': 'system-boot', 'type': 'C12A7328-F81F-11D2-BA4B-00A0C93EC93B', 'filesystem': 'vfat', 'size': '500M'}]}})",
             IMAGECRAFT_YAML_MULTIPLE_VOLUMES,
         ),
         (
-            "Bad myproject.yaml content:\n- volume names must only contain lowercase letters, numbers, and hyphens, and may not begin or end with a hyphen. (in field 'volumes.invalid_test-.[key]')",
+            "Bad myproject.yaml content:\n- volume names must only contain lowercase letters, numbers, and hyphens, and may not begin or end with a hyphen. (in field 'volumes.invalid_test-.[key]', input: 'invalid_test-')",
             IMAGECRAFT_YAML_INVALID_VOLUME_NAME,
         ),
     ],
@@ -393,16 +393,16 @@ def test_project_invalid_volumes(error_value, yaml_data):
     ("error_lines", "filesystems_val"),
     [
         (
-            ["- input should be a valid dictionary (in field 'filesystems')"],
+            ["- input should be a valid dictionary (in field 'filesystems', input: [])"],
             [],
         ),
         (
-            ["- input should be a valid list (in field 'filesystems.test')"],
+            ["- input should be a valid list (in field 'filesystems.test', input: {})"],
             {"test": {}},
         ),
         (
             [
-                "- the first entry in a filesystem must map the '/' mount. (in field 'filesystems.test')"
+                "- the first entry in a filesystem must map the '/' mount. (in field 'filesystems.test', input: [FilesystemMountItem(mount='/test', device='default')])"
             ],
             {
                 "test": [
@@ -417,7 +417,7 @@ def test_project_invalid_volumes(error_value, yaml_data):
             [
                 "- field 'mount' required in 'filesystems.test' configuration",
                 "- field 'device' required in 'filesystems.test' configuration",
-                "- extra inputs are not permitted (in field 'filesystems.test.test')",
+                "- extra inputs are not permitted (in field 'filesystems.test.test', input: 'foo')",
             ],
             {
                 "test": [
@@ -429,13 +429,13 @@ def test_project_invalid_volumes(error_value, yaml_data):
         ),
         (
             [
-                "- list should have at least 1 item after validation, not 0 (in field 'filesystems.test')",
+                "- list should have at least 1 item after validation, not 0 (in field 'filesystems.test', input: [])",
             ],
             {"test": []},
         ),
         (
             [
-                "- dictionary should have at most 1 item after validation, not 2 (in field 'filesystems')",
+                "- dictionary should have at most 1 item after validation, not 2 (in field 'filesystems', input: {'default': [{'mount': '/', 'device': '(default)'}], 'foo': [{'mount': '/', 'device': '(default)'}]})",
             ],
             {
                 "default": [
