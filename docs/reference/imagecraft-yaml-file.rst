@@ -139,7 +139,7 @@ and detail how they're built.
     .. code-block:: yaml
 
         organize:
-          "*": (overlay)/
+          vmlinuz-6.2.0-39-generic: (boot)/vmlinuz
 
 
 .. kitbash-field:: PartSpec override_build
