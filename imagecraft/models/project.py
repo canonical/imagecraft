@@ -123,8 +123,8 @@ class Project(BaseProject):
 
     build_base: BuildBaseT  # type: ignore[reportIncompatibleVariableOverride]
     """The build base determines the image's build environment. This system and version
-    will be used when assembling the image's contents, but will not be included in the
-    final image.
+    are used when assembling the image's contents, but are not included in the final
+    image.
 
     **Values**
 
@@ -154,14 +154,14 @@ class Project(BaseProject):
     """
 
     filesystems: FilesystemsDictT = Field(
-        description="A mapping of where partitions are mounted in the filesystem.",
+        description="The mapping of the image's partitions to their mount points.",
         examples=[
             "{default: [{mount: /, device: (volume/pc/rootfs)}, {mount: /boot/efi, device: (volume/pc/efi)}]}",
         ],
     )
-    """The mapping of the image's partitions to mount points.
+    """The mapping of the image's partitions to their mount points.
 
-    This mapping can only contain a single filesystem, named ``default``. The first
+    This key can only contain a single filesystem, named ``default``. The first
     entry of ``default`` must map a partition to the ``/`` mount point.
     """
 

@@ -123,10 +123,24 @@ and detail how they're built.
 
 .. kitbash-field:: PartSpec organize_files
     :prepend-name: parts.<part-name>
+    :skip-examples:
 
     Files from the build environment can be organized into specific partitions by
     prepending the destination path with the partition name, enclosed in parentheses.
     Source paths always reference the default partition.
+
+    **Examples**
+
+    .. code-block:: yaml
+
+        organize:
+          hello.py: bin/hello
+
+    .. code-block:: yaml
+
+        organize:
+          "*": (overlay)/
+
 
 .. kitbash-field:: PartSpec override_build
     :prepend-name: parts.<part-name>
@@ -230,8 +244,6 @@ The following keys can be declared for each filesystem mount listed.
     :override-description:
     :skip-examples:
 
-    **Description**
-
     The device's mount point.
 
     **Examples**
@@ -248,8 +260,6 @@ The following keys can be declared for each filesystem mount listed.
     :prepend-name: filesystems.<filesystem-name>.<mount>
     :override-description:
     :skip-examples:
-
-    **Description**
 
     The device to be mounted. This must reference one of the partitions defined
     in ``volumes.<volume-name>.structure``.

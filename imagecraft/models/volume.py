@@ -284,7 +284,7 @@ class Volume(CraftBaseModel):
     )
     """The partitions that comprise the image.
 
-    Each entry in the ``structures`` list represents a disk partition in the final
+    Each entry in the ``structure`` list represents a disk partition in the final
     image.
     """
 
