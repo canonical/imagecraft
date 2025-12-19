@@ -16,48 +16,63 @@ essential details of how it builds.
 Top-level descriptors include the image's name, version, description, and license,
 alongside operational values such as its supported architectures and build environment.
 
-.. py:currentmodule:: craft_application.models.project
+.. py:currentmodule:: imagecraft.models
 
 .. kitbash-field:: Project name
 
 .. kitbash-field:: Project title
 
-.. kitbash-field:: Project version
-
-.. kitbash-field:: Project license
-
 .. kitbash-field:: Project summary
 
 .. kitbash-field:: Project description
 
-.. py:currentmodule:: imagecraft.models.project
+.. kitbash-field:: Project version
 
 .. kitbash-field:: Project base
 
 .. kitbash-field:: Project build_base
     :override-type: Literal['ubuntu@20.04', 'ubuntu@22.04', 'ubuntu@24.04']
 
-.. py:currentmodule:: craft_application.models.project
+.. kitbash-field:: Project source_code
+    :override-type: str
+
+.. kitbash-field:: Project license
+
+.. kitbash-field:: Project contact
+    :override-type: str | list[str]
+
+.. kitbash-field:: Project issues
+    :override-type: str | list[str]
+
+.. kitbash-field:: Project adopt_info
+
+.. kitbash-field:: Project package_repositories
+    :override-type: list[dict[str, Any]]
+
+
+Platform keys
+-------------
 
 .. kitbash-field:: Project platforms
     :override-type: dict[str, Platform]
 
-.. kitbash-field:: Project parts
-    :override-type: dict[str, Part]
+.. kitbash-field:: Platform build_on
+    :prepend-name: platforms.<platform-name>
+    :override-type: str | list[str]
 
-.. py:currentmodule:: imagecraft.models.project
+.. kitbash-field:: Platform build_for
+    :prepend-name: platforms.<platform-name>
+    :override-type: str | list[str]
 
-.. kitbash-field:: Project volumes
-    :override-type: dict[str, Volume]
-
-.. kitbash-field:: Project filesystems
-    :override-type: dict[str, FilesystemMount]
 
 Part keys
 ---------
 
 The ``parts`` key and its values declare the image's :ref:`parts <explanation-parts>`
 and detail how they're built.
+
+.. kitbash-field:: Project parts
+    :override-type: dict[str, Part]
 
 .. py:currentmodule:: craft_parts.parts
 
@@ -130,21 +145,22 @@ and detail how they're built.
     :prepend-name: parts.<part-name>
     :skip-examples:
 
-Files from the build environment can be organized into specific partitions
-by prepending the destination path with the partition name, enclosed in parentheses.
-Source paths always reference the default partition.
+    Files from the build environment can be organized into specific partitions by
+    prepending the destination path with the partition name, enclosed in parentheses.
+    Source paths always reference the default partition.
 
-**Examples**
+    **Examples**
 
-.. code-block:: yaml
+    .. code-block:: yaml
 
-    organize:
-      hello.py: bin/hello
+        organize:
+          hello.py: bin/hello
 
-.. code-block:: yaml
+    .. code-block:: yaml
 
-    organize:
-      vmlinuz-6.2.0-39-generic: (boot)/vmlinuz
+        organize:
+          vmlinuz-6.2.0-39-generic: (boot)/vmlinuz
+
 
 .. kitbash-field:: PartSpec override_build
     :prepend-name: parts.<part-name>
@@ -199,6 +215,11 @@ Volume keys
 The ``volumes`` key and its values declare the schema and layout of the image's
 partitions.
 
+.. py:currentmodule:: imagecraft.models
+
+.. kitbash-field:: Project volumes
+    :override-type: dict[str, Volume]
+
 .. py:currentmodule:: imagecraft.models.volume
 
 .. kitbash-field:: Volume volume_schema
@@ -241,39 +262,44 @@ Filesystem keys
 
 The following keys can be declared for each filesystem mount listed.
 
+.. py:currentmodule:: imagecraft.models
+
+.. kitbash-field:: Project filesystems
+    :override-type: dict[str, FilesystemMount]
+
 .. py:currentmodule:: craft_parts.filesystem_mounts
 
 .. kitbash-field:: FilesystemMountItem mount
     :prepend-name: filesystems.<filesystem-name>.<mount>
+    :override-description:
+    :skip-examples:
 
-**Description**
+    The device's mount point.
 
-The device's mount point.
+    **Examples**
 
-**Examples**
+    .. code-block:: yaml
 
-.. code-block:: yaml
+        mount: "/"
 
-    mount: "/"
+    .. code-block:: yaml
 
-.. code-block:: yaml
-
-    mount: "/boot/efi"
+        mount: "/boot/efi"
 
 .. kitbash-field:: FilesystemMountItem device
     :prepend-name: filesystems.<filesystem-name>.<mount>
+    :override-description:
+    :skip-examples:
 
-**Description**
+    The device to be mounted. This must reference one of the partitions defined
+    in ``volumes.<volume-name>.structure``.
 
-The device to be mounted. This must reference one of the partitions defined
-in ``volumes.<volume-name>.structure``.
+    **Examples**
 
-**Examples**
+    .. code-block:: yaml
 
-.. code-block:: yaml
+        device: "(default)"
 
-    device: "(default)"
+    .. code-block:: yaml
 
-.. code-block:: yaml
-
-    device: "(volume/pc/rootfs)"
+        device: "(volume/pc/rootfs)"
