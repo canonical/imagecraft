@@ -44,10 +44,10 @@ alongside operational values such as its supported architectures and build envir
 .. kitbash-field:: Project issues
     :override-type: str | list[str]
 
+.. kitbash-field:: Project adopt_info
+
 .. kitbash-field:: Project package_repositories
     :override-type: list[dict[str, Any]]
-
-.. kitbash-field:: Project adopt_info
 
 
 Platform keys
