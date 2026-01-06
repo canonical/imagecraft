@@ -25,6 +25,8 @@ from imagecraft.models import Project
 IMAGECRAFT_YAML = """
 name: ubuntu-server-amd64
 version: "1"
+summary: Test image
+description: Test image description
 base: bare
 build-base: ubuntu@22.04
 platforms:
@@ -80,6 +82,8 @@ def test_application(
 GRAMMAR_IMAGECRAFT_YAML = """
 name: ubuntu-server-amd64
 version: "1"
+summary: Test image
+description: Test image description
 base: bare
 build-base: ubuntu@22.04
 platforms:
