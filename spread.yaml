@@ -39,6 +39,56 @@ backends:
           username: ubuntu
           password: ubuntu
 
+  multipass:
+    type: adhoc
+    allocate: |
+      sleep 0.$RANDOM  # Minimize chances of a race condition
+      mkdir -p $HOME/.spread
+      export counter_file="$HOME/.spread/multipass-count"
+      instance_num=$(flock -x $counter_file bash -c '
+        [ -s $counter_file ] || echo 0 > $counter_file
+        num=$(< $counter_file)
+        echo $num
+        echo $(( $num + 1 )) > $counter_file')
+
+      multipass_image=$(echo ${SPREAD_SYSTEM} | sed -e s/ubuntu-// -e s/-64//)
+
+      system=$(echo "${SPREAD_SYSTEM}" | tr . -)
+      instance_name="spread-${SPREAD_BACKEND}-${instance_num}-${system}"
+
+      multipass launch --cpus 4 --disk 40G --memory 8G --name "${instance_name}" "${multipass_image}"
+
+      # Enable PasswordAuthentication for root over SSH.
+      multipass exec "$instance_name" -- \
+        sudo sh -c "echo root:${SPREAD_PASSWORD} | sudo chpasswd"
+      multipass exec "$instance_name" -- \
+        sudo sh -c \
+        "if [ -d /etc/ssh/sshd_config.d/ ]
+        then
+          echo 'PasswordAuthentication yes' > /etc/ssh/sshd_config.d/10-spread.conf
+          echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config.d/10-spread.conf
+        else
+          sed -i /etc/ssh/sshd_config -E -e 's/^#?PasswordAuthentication.*/PasswordAuthentication yes/' -e 's/^#?PermitRootLogin.*/PermitRootLogin yes/'
+        fi"
+      multipass exec "$instance_name" -- \
+        sudo systemctl restart ssh
+
+      # Get the IP from the instance
+      ip=$(multipass info --format csv "$instance_name" | tail -1 | cut -d\, -f3)
+      ADDRESS "$ip"
+    discard: |
+      instance_name=$(multipass list --format csv | grep $SPREAD_SYSTEM_ADDRESS | cut -f1 -d\,)
+      multipass delete --purge "${instance_name}"
+    systems:
+      - ubuntu-22.04-64:
+          workers: 2
+      - ubuntu-24.04-64:
+          workers: 2
+      - ubuntu-25.10-64:
+          workers: 2
+      - ubuntu-26.04-64:
+          workers: 2
+
 prepare: |
   # if the 'tools' directory inside the submodule does not exist, then assume the submodule is empty
   if [[ ! -d "$SNAPD_TESTING_TOOLS" ]]; then
