@@ -1,0 +1,35 @@
+name: simple-project
+version: "0.1"
+base: bare
+build-base: ubuntu@24.04
+
+platforms:
+  amd64:
+
+filesystems:
+  default:
+    - mount: /
+      device: (volume/disk/rootfs)
+
+parts:
+  my-part:
+    plugin: nil
+
+volumes:
+  disk:
+    schema: gpt
+    structure:
+      - name: rootfs
+        role: system-data
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        filesystem: ext4
+        filesystem-label: writable
+        size: 200 M
+        partition-number: 128
+      - name: efi
+        type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
+        filesystem: vfat
+        role: system-boot
+        filesystem-label: EFI System
+        size: 256M
+        partition-number: 13

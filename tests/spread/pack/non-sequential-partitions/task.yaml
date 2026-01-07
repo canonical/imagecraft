@@ -1,0 +1,13 @@
+summary: Pack an image with non-sequential partition numbers.
+execute: |
+  imagecraft pack --verbose
+
+  test -f disk.img
+  test ! -d parts -a ! -d stage -a ! -d prime
+
+  expected_partitions=$(yq -P .volumes.disk.structure[].partition-number imagecraft.yaml | sed 's/^/disk.img/' | sort)
+  actual_partitions=$(sfdisk --json disk.img | jq -r .partitiontable.partitions[].node | sort)
+
+  if [[ "${expected_partitions}" != "${actual_partitions}" ]] ; then
+    ERROR "Expected and actual partitions don't match.\n Expected:\n${expected_partitions}\n Actual:\n${actual_partitions}"
+  fi
