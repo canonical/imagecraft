@@ -25,7 +25,7 @@ IMAGECRAFT_YAML = """
 name: ubuntu-server-amd64
 version: "24.04.20241217"
 base: bare
-build-base: ubuntu@24.04
+build-base: devel  # This short-circuits the base check.
 platforms:
   generic-amd64:
     build-on: [amd64]

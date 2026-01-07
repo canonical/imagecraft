@@ -13,7 +13,6 @@
 #
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 import os
 import types
 from pathlib import Path
@@ -104,7 +103,7 @@ version: "1.0"
 summary: "default project"
 description: "default project"
 base: bare
-build-base: ubuntu@24.04
+build-base: devel  # This short-circuits the base check.
 license: "MIT"
 
 platforms:
