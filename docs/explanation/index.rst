@@ -20,7 +20,7 @@ processed in a series of ordered, reproducible steps.
 Files travel as bundles through the parts lifecycle. These bundles are called
 *filesets*.
 
-:ref:`filesets_explanation`
+- :ref:`filesets_explanation`
 
 Cryptography
 ------------
