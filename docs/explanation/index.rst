@@ -22,6 +22,13 @@ Files travel as bundles through the parts lifecycle. These bundles are called
 
 :ref:`filesets_explanation`
 
+Cryptography
+------------
+
+Imagecraft and its external libraries use cryptographic tools for fetching files,
+communicating with local processes, and storing user credentials.
+
+- :ref:`Cryptographic technology <explanation-cryptographic-technology>`
 
 .. toctree::
     :hidden:
@@ -31,3 +38,4 @@ Files travel as bundles through the parts lifecycle. These bundles are called
     overlay-step
     /common/craft-parts/explanation/filesets
     security-overview
+    cryptography
