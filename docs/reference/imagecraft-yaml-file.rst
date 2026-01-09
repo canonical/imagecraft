@@ -256,6 +256,9 @@ The following keys can be declared for each partition listed in the ``structure`
 .. kitbash-field:: StructureItem filesystem_label
     :prepend-name: volumes.<volume-name>.structure.<partition>
 
+.. kitbash-field:: StructureItem partition_number
+    :prepend-name: volumes.<volume-name>.structure.<partition>
+
 
 Filesystem keys
 ---------------
