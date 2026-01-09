@@ -1,7 +1,7 @@
 name: simple-project
 version: "0.1"
 base: bare
-build-base: ubuntu@24.04
+build-base: devel # Runs on the current machine in destructive mode
 
 platforms:
   amd64:
