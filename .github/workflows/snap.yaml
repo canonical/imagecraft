@@ -28,7 +28,7 @@ jobs:
           fi
       - if: steps.decisions.outputs.PUBLISH == 'true'
         name: Checkout imagecraft
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -39,7 +39,7 @@ jobs:
 
       - if: steps.decisions.outputs.PUBLISH == 'true'
         name: Upload imagecraft snap artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: snap
           path: ${{ steps.build-imagecraft.outputs.snap }}
