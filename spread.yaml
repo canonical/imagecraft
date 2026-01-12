@@ -149,7 +149,7 @@ prepare: |
   # The /snap directory does not exist in some environments
   [ ! -d /snap ] && ln -s /var/lib/snapd/snap /snap
 
-  snap install yq
+  snap install yq --devmode  # Disable confinement so we can read files from anywhere
 
   # Setup lxd
   # older linux releases have separate packages for lxd and lxc (lxd-client)
