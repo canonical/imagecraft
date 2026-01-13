@@ -58,7 +58,7 @@ def volume():
 @pytest.mark.parametrize(
     ("header", "partitions", "expected"),
     [
-        (
+        pytest.param(
             {
                 "label": "gpt",
                 "unit": "sectors",
@@ -86,6 +86,39 @@ def volume():
                 "name=rootfs, size=2097152, type=0FC63DAF-8483-4772-8E79-3D69D8477DE4, uuid=6fa819a0-a35a-487a-82d4-a86d1a46b2bb",
                 "write",
             ],
+            id="simple",
+        ),
+        pytest.param(
+            {
+                "label": "gpt",
+                "unit": "sectors",
+                "sector-size": "512",
+            },
+            [
+                {
+                    "name": "efi",
+                    "size": 524288,
+                    "type": "C12A7328-F81F-11D2-BA4B-00A0C93EC93B",
+                    "bootable": None,
+                    "partition-number": 13,
+                },
+                {
+                    "name": "rootfs",
+                    "size": 2097152,
+                    "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+                    "uuid": "6fa819a0-a35a-487a-82d4-a86d1a46b2bb",
+                    "partition-number": 3,
+                },
+            ],
+            [
+                "label: gpt",
+                "unit: sectors",
+                "sector-size: 512",
+                "13 : name=efi, size=524288, type=C12A7328-F81F-11D2-BA4B-00A0C93EC93B, bootable",
+                "3 : name=rootfs, size=2097152, type=0FC63DAF-8483-4772-8E79-3D69D8477DE4, uuid=6fa819a0-a35a-487a-82d4-a86d1a46b2bb",
+                "write",
+            ],
+            id="non-sequential-partitions",
         ),
     ],
 )

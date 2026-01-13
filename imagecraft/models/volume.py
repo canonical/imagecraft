@@ -1,6 +1,6 @@
 # This file is part of imagecraft.
 #
-# Copyright 2025 Canonical Ltd.
+# Copyright 2025-2026 Canonical Ltd.
 #
 # This program is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 3, as published
@@ -21,17 +21,19 @@ import enum
 import re
 import typing
 import uuid
-from typing import Literal, Self, cast
+from collections.abc import Collection
+from typing import Annotated, Literal, Self, cast
 
 from craft_application.models import (
     CraftBaseModel,
 )
 from craft_application.models.constraints import (
-    UniqueList,
     get_validator_by_regex,
 )
+from craft_application.util import humanize_list
 from craft_parts.utils.partition_utils import VALID_PARTITION_REGEX
 from pydantic import (
+    AfterValidator,
     BeforeValidator,
     ByteSize,
     Field,
@@ -236,6 +238,18 @@ class StructureItem(CraftBaseModel):
     Labels must be unique to their volume.
     """
 
+    partition_number: int | None = Field(
+        default=None,
+        description="(Optional) The partition number for this partition.",
+        ge=1,  # GPT partitions are numbered 1-128
+        le=128,
+    )
+    """The partition number for this partition.
+
+    If unset, partitions will start at 1 and be read in list order. If set, all
+    other partitions must also explicitly set their partition number as unique integers.
+    """
+
     def __hash__(self) -> int:
         return hash(self.name)
 
@@ -259,7 +273,55 @@ class PartitionSchema(str, enum.Enum):
     """The GUID partition table (GPT) schema."""
 
 
-StructureList = UniqueList[StructureItem]
+def _validate_structure_items_partition_numbers(
+    structures: Collection[StructureItem],
+) -> Collection[StructureItem]:
+    partition_numbers = {structure.partition_number for structure in structures}
+
+    # This could be loosened, but it would require us to generate these partition
+    # numbers ourselves in a deterministic manner. This is complex since it would mean
+    # that adding a numbered partition could change the partition numbers of other
+    # partitions.
+    if None in partition_numbers:
+        # After deduplication, this means we at least have one implicit partition number (None)
+        # and one explicit (anything else)
+        if len(partition_numbers) > 1:
+            unnumbered_partitions = humanize_list(
+                [
+                    structure.name
+                    for structure in structures
+                    if structure.partition_number is None
+                ],
+                conjunction="and",
+            )
+            raise ValueError(
+                "all partition numbers must be explicitly declared to use non-sequential "
+                f"partition numbers in a volume. (Not numbered: {unnumbered_partitions})"
+            )
+        return structures
+
+    if len(partition_numbers) < len(structures):
+        number_map: dict[int | None, list[str]] = {}
+        for structure in structures:
+            number_map.setdefault(structure.partition_number, []).append(structure.name)
+        duplicate_partition_numbers = {
+            number: names for number, names in number_map.items() if len(names) > 1
+        }
+        duplicate_messages = [
+            f"partition-number {number} shared by {humanize_list(names, 'and', sort=False)}"
+            for number, names in duplicate_partition_numbers.items()
+        ]
+        raise ValueError(
+            f"duplicate partition numbers ({', '.join(duplicate_messages)})"
+        )
+
+    return structures
+
+
+StructureList = Annotated[
+    list[StructureItem],
+    AfterValidator(_validate_structure_items_partition_numbers),
+]
 
 
 class Volume(CraftBaseModel):

@@ -50,13 +50,15 @@ def _create_sfdisk_lines(
         stdin_lines.append(f"{key}: {value}")
 
     for entry in partitions:
+        partition_number = entry.pop("partition-number", None)
+        prefix = f"{partition_number} : " if partition_number is not None else ""
         fields: list[str] = []
         for key, value in entry.items():
             if value is None:
                 fields.append(key)
             else:
                 fields.append(f"{key}={value}")
-        stdin_lines.append(", ".join(fields))
+        stdin_lines.append(prefix + ", ".join(fields))
 
     stdin_lines.append("write")
 
@@ -102,6 +104,8 @@ def _create_gpt_layout(
             partition["bootable"] = None
         if structure_item.id:
             partition["uuid"] = str(structure_item.id)
+        if structure_item.partition_number is not None:
+            partition["partition-number"] = str(structure_item.partition_number)
         partitions.append(partition)
         start += sectors
     stdin_lines: str = "\n".join(_create_sfdisk_lines(header, partitions))
