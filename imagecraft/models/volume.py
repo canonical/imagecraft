@@ -242,7 +242,7 @@ class StructureItem(CraftBaseModel):
         default=None,
         description="(Optional) The partition number for this partition.",
         ge=1,  # GPT partitions are numbered 1-128
-        le=129,
+        le=128,
     )
     """The partition number for this partition.
 
@@ -283,6 +283,8 @@ def _validate_structure_items_partition_numbers(
     # that adding a numbered partition could change the partition numbers of other
     # partitions.
     if None in partition_numbers:
+        # After deduplication, this means we at least have one implicit partition number (None)
+        # and one explicit (anything else)
         if len(partition_numbers) > 1:
             unnumbered_partitions = humanize_list(
                 [
