@@ -50,11 +50,8 @@ def _create_sfdisk_lines(
         stdin_lines.append(f"{key}: {value}")
 
     for entry in partitions:
-        if "partition-number" in entry:
-            prefix = f"{entry['partition-number']} : "
-            del entry["partition-number"]
-        else:
-            prefix = ""
+        partition_number = entry.pop("partition-number", None)
+        prefix = f"{partition_number} : " if partition_number is not None else ""
         fields: list[str] = []
         for key, value in entry.items():
             if value is None:
