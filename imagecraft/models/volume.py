@@ -127,9 +127,15 @@ class GptType(str, enum.Enum):
     BIOS_BOOT = "21686148-6449-6E6F-744E-656564454649"
     """BIOS boot partition in a GPT schema."""
 
+    NONE = "B3652CC6-0B39-4B22-9496-9AF8C018D12A"
+    """No specific GPT partition type (used when no type should be assigned)."""
+
 
 class FileSystem(enum.Enum):
     """Supported filesystem types."""
+
+    NONE = "none"
+    """No filesystem (raw partition)."""
 
     EXT4 = "ext4"
     """The ext4 filesystem."""
@@ -143,9 +149,18 @@ class FileSystem(enum.Enum):
     VFAT = "vfat"
     """The VFAT filesystem."""
 
+    ANDROID_SPARSE = "android-sparse"
+    """Android sparse export format. """
+
 
 class Role(str, enum.Enum):
     """Role describes the purpose of a given partition."""
+
+    SYSTEM_SEED = "system-seed"
+    """The partition stores the image's initial seed data used during first boot."""
+
+    SYSTEM_SAVE = "system-save"
+    """The partition stores persistent system state preserved across updates."""
 
     SYSTEM_DATA = "system-data"
     """The partition stores the image's primary operating system data."""
@@ -189,7 +204,7 @@ class StructureItem(CraftBaseModel):
 
     role: Role = Field(
         description="The partition's purpose in the image.",
-        examples=["system-data", "system-boot"],
+        examples=["system-data", "system-boot", "system-seed", "system-save"],
     )
 
     structure_type: GptType = Field(
@@ -221,7 +236,7 @@ class StructureItem(CraftBaseModel):
 
     filesystem: FileSystem = Field(
         description="The filesystem of the partition.",
-        examples=["ext4", "fat16"],
+        examples=["ext4", "fat16", "android-sparse"],
     )
     """The filesystem of the partition."""
 

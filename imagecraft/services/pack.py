@@ -15,25 +15,63 @@
 """Imagecraft Package service."""
 
 import os
+import shutil
+import subprocess
 import tempfile
 from pathlib import Path
 from typing import cast
 
 from craft_application import PackageService, models
-from craft_cli import emit
+from craft_cli import CraftError, emit
 from overrides import override  # type: ignore[reportUnknownVariableType]
 
 from imagecraft.models import Project, get_partition_name
+from imagecraft.models.volume import FileSystem
 from imagecraft.pack import Image, diskutil, gptutil, grubutil
 
 SECTOR_SIZE = 512
+
+
+def _require_img2simg() -> str:
+    """Return path to img2simg, or raise a clear error."""
+    p = shutil.which("img2simg")
+    if not p:
+        raise CraftError(
+            "filesystem: android-sparse was requested, but img2simg was not found in PATH. "
+            "Install the Android sparse tools (e.g. android-sdk-libsparse-utils) or ensure "
+            "img2simg is available under sudo PATH."
+        )
+    return p
+
+
+def _export_android_sparse(*, raw_img: Path, out_img: Path) -> None:
+    """Convert raw ext4 image to Android sparse."""
+    img2simg = _require_img2simg()
+    tmp = out_img.parent / (".tmp-" + out_img.name)
+    tmp.unlink(missing_ok=True)
+
+    emit.progress(f"Creating Android sparse image: {out_img.name}")
+
+    cmd = [img2simg, str(raw_img), str(tmp)]
+    try:
+        subprocess.run(cmd, check=True, capture_output=True, text=True)
+    except subprocess.CalledProcessError as exc:
+        stderr = (exc.stderr or "").strip()
+        stdout = (exc.stdout or "").strip()
+        details = "\n".join(x for x in [stdout, stderr] if x)
+        msg = f"img2simg failed (exit code {exc.returncode})."
+        if details:
+            msg = f"{msg}\n{details}"
+        raise CraftError(msg) from exc
+
+    tmp.replace(out_img)
 
 
 class ImagecraftPackService(PackageService):
     """Package service subclass for Imagecraft."""
 
     @override
-    def pack(self, prime_dir: Path, dest: Path) -> list[Path]:  # noqa: ARG002
+    def pack(self, prime_dir: Path, dest: Path) -> list[Path]:
         """Pack the image.
 
         :param prime_dir: Directory path to the prime directory.
@@ -73,13 +111,25 @@ class ImagecraftPackService(PackageService):
                     sector_size=SECTOR_SIZE,
                 )
 
-                diskutil.format_populate_partition(
-                    fstype=structure_item.filesystem,
-                    content_dir=partition_prime_dir,
-                    partitionpath=partition_img,
-                    disk_size=partition_size,
-                    label=structure_item.filesystem_label,
-                )
+                if structure_item.filesystem == FileSystem.NONE:
+                    diskutil.create_zero_image(
+                        imagepath=partition_img,
+                        disk_size=partition_size,
+                    )
+                else:
+                    diskutil.format_populate_partition(
+                        fstype=structure_item.filesystem,
+                        content_dir=partition_prime_dir,
+                        partitionpath=partition_img,
+                        disk_size=partition_size,
+                        label=structure_item.filesystem_label,
+                    )
+
+                # Export standalone partition image if requested by YAML
+                if structure_item.filesystem == FileSystem.ANDROID_SPARSE:
+                    out_img = dest / f"{structure_item.name}{os.extsep}img"
+                    _export_android_sparse(raw_img=partition_img, out_img=out_img)
+
                 emit.verbose(f"Adding partition {partition_name} to the image")
                 diskutil.inject_partition_into_image(
                     partition=partition_img,
@@ -103,6 +153,19 @@ class ImagecraftPackService(PackageService):
             arch=arch,
             filesystem_mount=filesystem_mount,
         )
+
+        # Export imx-boot.bin if staged by plugin/parts (common locations).
+        candidates = [
+            prime_dir / "_gadget" / "blobs" / "imx-boot.bin",
+            prime_dir / "blobs" / "imx-boot.bin",
+            prime_dir / "_gadget_unpacked" / "blobs" / "imx-boot.bin",
+            prime_dir / "gadget" / "blobs" / "imx-boot.bin",
+        ]
+        for c in candidates:
+            if c.is_file():
+                out = dest / "imx-boot.bin"
+                shutil.copyfile(c, out)
+                break
 
         return [disk_image_file]
 

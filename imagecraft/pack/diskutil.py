@@ -196,6 +196,17 @@ def format_populate_partition(
     :param label: Filesystem label, empty if not supplied.
     :param uuid: Filesystem UUID, generated if not supplied.
     """
+    if fstype == FileSystem.NONE:
+        return
+    if fstype == FileSystem.ANDROID_SPARSE:
+        _format_populate_ext_partition(
+            fstype="ext4",
+            content_dir=content_dir,
+            partitionpath=partitionpath,
+            disk_size=disk_size,
+            label=label,
+        )
+        return
     if fstype.value.startswith("ext"):
         _format_populate_ext_partition(
             fstype=cast(ExtT, fstype.value),
