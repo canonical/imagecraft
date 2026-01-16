@@ -17,13 +17,15 @@
 from craft_parts.plugins import register
 from craft_parts.plugins.plugins import PluginType
 
+from .uc_preseed_plugin import UcPreseedPlugin
+
 
 def get_app_plugins() -> dict[str, PluginType]:
     """Get Imagecraft-specific craft-parts plugins.
 
     :returns: A dict mapping plugin names to plugins
     """
-    return {}
+    return {"uc-preseed": UcPreseedPlugin}
 
 
 def setup_plugins() -> None:
