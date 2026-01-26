@@ -1,5 +1,7 @@
 name: simple-project
 version: "0.1"
+summary: A test image
+description: This image exists purely for testing purposes, yo!
 base: bare
 build-base: ubuntu@24.04
 
