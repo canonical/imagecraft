@@ -28,7 +28,6 @@ APP_METADATA = AppMetadata(
     summary="A tool to create Ubuntu bootable images",
     ProjectClass=project.Project,
     enable_for_grammar=True,
-    mandatory_adoptable_fields=["version"],  # Summary and description are optional.
 )
 
 
