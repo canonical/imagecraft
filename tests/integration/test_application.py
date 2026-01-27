@@ -84,6 +84,7 @@ def custom_project_file(default_project_file: Path):
     return default_project_file
 
 
+@pytest.mark.slow
 def test_imagecraft_build(
     project_path: Path,
     custom_project_file: Path,
@@ -118,6 +119,7 @@ def test_imagecraft_build(
     check.is_true((project_path / "stage/etc/b").exists())
 
 
+@pytest.mark.slow
 def test_imagecraft_pack(
     project_path: Path,
     imagecraft_app: application.Imagecraft,
