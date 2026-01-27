@@ -3,7 +3,7 @@ version: "0.1"
 summary: A test image
 description: This image exists purely for testing purposes, yo!
 base: bare
-build-base: ubuntu@24.04
+build-base: __BUILD_BASE__
 
 platforms:
   amd64:
