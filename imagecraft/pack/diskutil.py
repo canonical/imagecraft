@@ -119,7 +119,6 @@ def _format_populate_ext_partition(  # pylint: disable=too-many-arguments
 
     # Create and copy
     mke2fs_args = [
-        "-q",
         "-t",
         fstype,
         "-d",
@@ -131,7 +130,8 @@ def _format_populate_ext_partition(  # pylint: disable=too-many-arguments
 
     mke2fs_args.append(partitionpath)
 
-    run("mke2fs", *mke2fs_args)
+    with emit.open_stream(f"Creating {fstype} partition (label: {label!r})") as stream:
+        run("mke2fs", *mke2fs_args, stdout=stream, stderr=stream)
 
 
 def _format_populate_fat_partition(  # pylint: disable=too-many-arguments
@@ -167,7 +167,8 @@ def _format_populate_fat_partition(  # pylint: disable=too-many-arguments
 
     mkdosfs_args.append(partitionpath)
 
-    run("mkfs." + fattype, *mkdosfs_args)
+    with emit.open_stream(f"Creating {fattype} partition (label: {label!r})") as stream:
+        run("mkfs." + fattype, *mkdosfs_args, stdout=stream, stderr=stream)
 
     if any(content_dir.iterdir()):
         # If we invoke mcopy directly, the sh wrapper will quote the

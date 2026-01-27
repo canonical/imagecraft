@@ -20,7 +20,6 @@ from pathlib import Path
 from typing import cast
 
 from craft_application import PackageService, models
-from craft_application.util import is_managed_mode
 from craft_cli import emit
 from overrides import override  # type: ignore[reportUnknownVariableType]
 
@@ -60,19 +59,13 @@ class ImagecraftPackService(PackageService):
         # https://github.com/canonical/craft-parts/issues/665
         project_dirs = self._services.get("lifecycle").project_info.dirs
 
-        # If we're in managed mode, we use /root/tmp in order to ensure that we
-        # don't try to write too much data to /tmp (which multipass gives 512M to).
-        # Otherwise, we use the default temporary directory detected by Python.
-        # When running in destructive mode, it is the user's responsibility to ensure
-        # that their temporary directory contains sufficient space, for example by
-        # setting the TMPDIR environment variable.
-        temp_root = Path("/root/tmp" if is_managed_mode() else tempfile.gettempdir())
+        temp_root = Path("imagecraft_volumes").resolve()
         temp_root.mkdir(parents=True, exist_ok=True)
 
         with tempfile.TemporaryDirectory(dir=temp_root) as tmp_dir:
             for structure_item in volume.structure:
                 partition_name = get_partition_name(volume_name, structure_item)
-                emit.verbose(f"Preparing partition {partition_name}")
+                emit.progress(f"Preparing partition {partition_name}")
                 partition_prime_dir = project_dirs.get_prime_dir(
                     partition=partition_name
                 )
@@ -91,14 +84,15 @@ class ImagecraftPackService(PackageService):
                     disk_size=partition_size,
                     label=structure_item.filesystem_label,
                 )
-                emit.verbose(f"Adding partition {partition_name} to the image")
+                offset = gptutil.get_partition_sector_offset(
+                    disk_image_file,
+                    structure_item.name,
+                )
+                emit.progress(f"Adding partition {partition_name} to the image")
                 diskutil.inject_partition_into_image(
                     partition=partition_img,
                     imagepath=disk_image_file,
-                    sector_offset=gptutil.get_partition_sector_offset(
-                        disk_image_file,
-                        structure_item.name,
-                    ),
+                    sector_offset=offset,
                     disk_size=partition_size,
                 )
         gptutil.verify_partition_tables(disk_image_file)
