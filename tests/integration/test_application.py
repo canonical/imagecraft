@@ -24,6 +24,8 @@ from imagecraft import application
 IMAGECRAFT_YAML = """
 name: ubuntu-server-amd64
 version: "24.04.20241217"
+summary: A test image
+description: This image exists purely for testing purposes, yo!
 base: bare
 build-base: devel  # This short-circuits the base check.
 platforms:
