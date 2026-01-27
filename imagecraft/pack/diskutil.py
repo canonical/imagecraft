@@ -92,7 +92,9 @@ def create_zero_image(*, imagepath: Path, disk_size: DiskSize) -> None:
     """
     # Remove possibly pre-existing image
     imagepath.unlink(missing_ok=True)
-    run("truncate", f"-s {disk_size.bytesize}", str(imagepath))
+    emit.debug(f"Creating file {imagepath} with size {disk_size.bytesize}")
+    with imagepath.open("w+") as image_file:
+        image_file.truncate(disk_size.bytesize)
 
 
 def _format_populate_ext_partition(  # pylint: disable=too-many-arguments

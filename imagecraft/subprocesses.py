@@ -18,6 +18,8 @@ import subprocess
 from subprocess import PIPE, CompletedProcess
 from typing import Any, cast
 
+from craft_cli import emit
+
 
 def run(cmd: str, *args: Any, **kwargs: Any) -> CompletedProcess[str]:
     """Thin wrapper around subprocess.run.
@@ -36,7 +38,10 @@ def run(cmd: str, *args: Any, **kwargs: Any) -> CompletedProcess[str]:
         if key not in kwargs:
             kwargs[key] = value
 
+    full_command = [cmd, *(str(a) for a in args)]
+    emit.debug(f"Running command: {full_command}")
+
     return cast(
         CompletedProcess[str],
-        subprocess.run([cmd, *(str(a) for a in args)], **kwargs),  # noqa: PLW1510
+        subprocess.run(full_command, **kwargs),  # noqa: PLW1510
     )
