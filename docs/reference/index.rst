@@ -41,7 +41,7 @@ configured for the software's language and build systems.
 .. toctree::
     :hidden:
 
-    imagecraft-yaml-file
+    imagecraft-yaml
     commands
     platform-grammar
     parts-and-steps

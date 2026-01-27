@@ -49,7 +49,17 @@ def test_lifecycle_args(
         work_dir=Path("work"),
         ignore_local_sources=[".craft"],
         parallel_build_count=ANY,  # Value will vary when tests run locally or in CI
-        project_vars=ProjectVarInfo.unmarshal({"version": ProjectVar(value="1.0")}),
+        project_vars=ProjectVarInfo.unmarshal(
+            {
+                "version": ProjectVar(value="1.0"),
+                "summary": ProjectVar(
+                    value="default project", updated=False, part_name=None
+                ),
+                "description": ProjectVar(
+                    value="default project", updated=False, part_name=None
+                ),
+            }
+        ),
         track_stage_packages=True,
         partitions=["volume/pc/rootfs", "volume/pc/efi"],
         build_for="amd64",

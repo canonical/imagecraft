@@ -1,6 +1,6 @@
 # This file is part of imagecraft.
 #
-# Copyright 2025 Canonical Ltd.
+# Copyright 2025-2026 Canonical Ltd.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 3 as
@@ -14,39 +14,44 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import re
+
 import pytest
 from imagecraft.models import Role, Volume
-from pydantic import ValidationError
+from imagecraft.models.volume import StructureList
+from pydantic import TypeAdapter, ValidationError
 
 
 def test_volume_valid():
-    volume = Volume(
-        schema="gpt",  # pyright: ignore[reportArgumentType]
-        structure=[  # pyright: ignore[reportArgumentType]
-            {
-                "name": "efi",
-                "role": "system-boot",
-                "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
-                "filesystem": "vfat",
-                "size": "3G",
-                "filesystem-label": "",
-            },
-            {
-                "name": "boot",
-                "role": "system-boot",
-                "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
-                "filesystem": "fat16",
-                "size": "6G",
-            },
-            {
-                "name": "rootfs",
-                "role": "system-data",
-                "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
-                "filesystem": "ext4",
-                "size": "0",
-                "filesystem-label": "writable",
-            },
-        ],
+    volume = Volume.model_validate(
+        {
+            "schema": "gpt",
+            "structure": [
+                {
+                    "name": "efi",
+                    "role": "system-boot",
+                    "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+                    "filesystem": "vfat",
+                    "size": "3G",
+                    "filesystem-label": "",
+                },
+                {
+                    "name": "boot",
+                    "role": "system-boot",
+                    "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+                    "filesystem": "fat16",
+                    "size": "6G",
+                },
+                {
+                    "name": "rootfs",
+                    "role": "system-data",
+                    "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+                    "filesystem": "ext4",
+                    "size": "0",
+                    "filesystem-label": "writable",
+                },
+            ],
+        }
     )
     assert volume.volume_schema == "gpt"
     assert len(volume.structure) == 3
@@ -150,8 +155,8 @@ def test_volume_valid():
                 ],
             },
         ),
-        (
-            "1 validation error for Volume\nstructure\n  Value error, duplicate values in list",
+        pytest.param(
+            "1 validation error for Volume\nstructure\n  Value error, Duplicate filesystem labels: ['test']",
             ValidationError,
             {
                 "schema": "gpt",
@@ -172,6 +177,7 @@ def test_volume_valid():
                     },
                 ],
             },
+            id="duplicate-values",
         ),
         (
             "1 validation error for Volume\nstructure.0.type",
@@ -348,3 +354,109 @@ def test_volume_invalid(
         return str(err.value)
 
     assert error_value in load_volume(volume, error_class)
+
+
+@pytest.mark.parametrize(
+    "structures",
+    [
+        pytest.param(
+            [
+                {
+                    "name": "one",
+                    "role": "system-data",
+                    "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+                    "filesystem": "ext4",
+                    "size": "0",
+                },
+                {
+                    "name": "two",
+                    "role": "system-data",
+                    "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+                    "filesystem": "ext4",
+                    "size": "0",
+                },
+            ],
+            id="no-partition-numbers",
+        ),
+        pytest.param(
+            [
+                {
+                    "name": "one",
+                    "role": "system-data",
+                    "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+                    "filesystem": "ext4",
+                    "size": "0",
+                    "partition-number": 1,
+                },
+                {
+                    "name": "two",
+                    "role": "system-data",
+                    "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+                    "filesystem": "ext4",
+                    "size": "0",
+                    "partition-number": 2,
+                },
+            ],
+            id="all-partition-numbers",
+        ),
+    ],
+)
+def test_structure_list_success(structures: list[dict]):
+    TypeAdapter(StructureList).validate_python(structures)
+
+
+@pytest.mark.parametrize(
+    ("structures", "error_message"),
+    [
+        pytest.param(
+            [
+                {
+                    "name": "mary-kate",
+                    "role": "system-data",
+                    "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+                    "filesystem": "ext4",
+                    "size": "0",
+                    "partition-number": 64,
+                },
+                {
+                    "name": "ashley",
+                    "role": "system-data",
+                    "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+                    "filesystem": "ext4",
+                    "size": "0",
+                    "partition-number": 64,
+                },
+            ],
+            re.escape(
+                "Value error, duplicate partition numbers (partition-number 64 shared by 'mary-kate' and 'ashley')"
+            ),
+            id="duplicate-partition-numbers",
+        ),
+        pytest.param(
+            [
+                {
+                    "name": "william",
+                    "role": "system-data",
+                    "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+                    "filesystem": "ext4",
+                    "size": "0",
+                    "partition-number": 1,
+                },
+                {
+                    "name": "thomas",
+                    "role": "system-data",
+                    "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+                    "filesystem": "ext4",
+                    "size": "0",
+                },
+            ],
+            re.escape(
+                "Value error, all partition numbers must be explicitly declared to use non-sequential partition numbers in a volume. (Not numbered: 'thomas')"
+            ),
+            id="partially-declared-partition-numbers",
+        ),
+    ],
+)
+def test_structure_list_errors(structures: list[dict], error_message):
+    with pytest.raises(ValidationError, match=error_message):
+        TypeAdapter(StructureList).validate_python(structures)

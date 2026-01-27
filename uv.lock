@@ -578,7 +578,7 @@ toml = [
 
 [[package]]
 name = "craft-application"
-version = "5.11.0"
+version = "6.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "annotated-types" },
@@ -599,9 +599,9 @@ dependencies = [
     { name = "snap-helpers" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/36/6b/ad381b017a0715432791ddea24245cc6b3a5eba0c472890a794ac7918321/craft_application-5.11.0.tar.gz", hash = "sha256:4435f5db3e4313acd3c0d03f029f13ce73f4ae2eff0e2f94e0d4301742372479", size = 534825, upload-time = "2025-10-01T20:38:22.278Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/8a/d7/11fb39172bb1381084aa284fcfd2ccc8372c78fdb4782e86c23acf0508b8/craft_application-6.1.0.tar.gz", hash = "sha256:a12c302e3b2ac6d2b1958cf9ad1596ab9d634a91d94fee662ec46bd62604ac0e", size = 585353, upload-time = "2026-01-20T20:45:23.209Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/fc/7f/024752ae33b6140f5229c0a7129d1e0dc1dea63fe0b6fd34664bfdb4165b/craft_application-5.11.0-py3-none-any.whl", hash = "sha256:7af835f106db5e20be8d533204f837b3d69457cc6192d2b89838cb26959a0309", size = 193166, upload-time = "2025-10-01T20:38:19.194Z" },
+    { url = "https://files.pythonhosted.org/packages/bc/53/87630797853e23ceeefa212ddf929fdebd98ca06c0d1149d89eaa4527a26/craft_application-6.1.0-py3-none-any.whl", hash = "sha256:827b970907de7129d88463f40904df3810296a8f8855e85b149fd738e32755ec", size = 195058, upload-time = "2026-01-20T20:45:21.746Z" },
 ]
 
 [[package]]
@@ -653,7 +653,7 @@ wheels = [
 
 [[package]]
 name = "craft-parts"
-version = "2.27.0"
+version = "2.28.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "lxml" },
@@ -664,9 +664,9 @@ dependencies = [
     { name = "requests-unixsocket2" },
     { name = "semver" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f5/18/5ff89127861f2a3ab832b0bd7707bb5b3840a2234c415ef4756c1ba0c905/craft_parts-2.27.0.tar.gz", hash = "sha256:d4f52527b066093be6662ccf4279df2de0b5e620df38d66f607e5af5af9d3220", size = 877107, upload-time = "2025-12-01T11:50:57.46Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ca/80/5d2ab6748840460d0d96ae95cf56be6d6c15c57266e4f2ced34ac0f8c44a/craft_parts-2.28.0.tar.gz", hash = "sha256:8de965c14272776c23e1a8836178448bf3dc9baa713a4bd2d68fe686885b093a", size = 887516, upload-time = "2026-01-09T15:03:42.634Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f2/19/ad70c4db44b58045925bbac5f59164ced415517c437e885d8c8415b20197/craft_parts-2.27.0-py3-none-any.whl", hash = "sha256:63c8b5ea6c47d0b4cc0aa9ea24e588310b9a001b9f24e4b92742802a79ebdca3", size = 523491, upload-time = "2025-12-01T11:50:55.781Z" },
+    { url = "https://files.pythonhosted.org/packages/cb/94/a0d43886e362cde5e19c87d60742d766feab0e41e980baa6e31be179b89b/craft_parts-2.28.0-py3-none-any.whl", hash = "sha256:92c839430986afbfb841cd1d58d705ca67a5ee8fee8daa750bef1819ff610a53", size = 529746, upload-time = "2026-01-09T15:03:41.025Z" },
 ]
 
 [[package]]
@@ -685,7 +685,7 @@ wheels = [
 
 [[package]]
 name = "craft-providers"
-version = "3.1.0"
+version = "3.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "packaging" },
@@ -695,9 +695,9 @@ dependencies = [
     { name = "requests" },
     { name = "requests-unixsocket2" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/22/85/e5939f44987d0a9ae7f87edce35d6c792e2924aebd6cdcc5caa5895524ee/craft_providers-3.1.0.tar.gz", hash = "sha256:5ec6ef0715497fbf9d7f477088b12d0cca5356965486d40fb80b629824d4391b", size = 307175, upload-time = "2025-09-08T18:52:36.533Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/7f/c5/2249f683065b65c272e727f239cfb0f884e8fdc5bbfa06b0b2a463a57c83/craft_providers-3.2.0.tar.gz", hash = "sha256:5637ae2865b813e3580d660eb4e36bf404a7b6fba28a42afdb94731d8a9305ec", size = 309608, upload-time = "2025-11-13T13:34:51.152Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/14/d2/d60fdfb0666c3837b95331db0c82acb0606b85260784bc612664700d9096/craft_providers-3.1.0-py3-none-any.whl", hash = "sha256:7e95eba732fa573a2f230afbfe9179b144bc6374e976c965a4ea25862af0aee1", size = 113283, upload-time = "2025-09-08T18:52:34.49Z" },
+    { url = "https://files.pythonhosted.org/packages/9a/d5/d8033ce66fd04e6c8581b27ca147559e9ec6d31a77389d0a14ed5dc0a701/craft_providers-3.2.0-py3-none-any.whl", hash = "sha256:630403361bb3b6d2bf0a80c5290e81ab79dc7af4261bdf496d853325f6c1daf7", size = 116007, upload-time = "2025-11-13T13:34:48.852Z" },
 ]
 
 [[package]]
@@ -816,14 +816,14 @@ wheels = [
 
 [[package]]
 name = "distro-support"
-version = "2025.8.13"
+version = "2025.12.16"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/90/c8/40cf2bdb5647c0ccad40a02edde6966d03a3258c550d92a2030427867029/distro_support-2025.8.13.tar.gz", hash = "sha256:12a73039db0a04e4b987789598f05c554adb3b2ec8e97bc28f40a125dc82d982", size = 36195, upload-time = "2025-08-13T03:15:53.792Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/91/9f/530d03c3d7172f787949af55768d088a341e52974c03ce26142693375de1/distro_support-2025.12.16.tar.gz", hash = "sha256:95d93375983a68cd749e7ae9d434a22ab7d5b6f515fbed52541ecc9457296946", size = 37088, upload-time = "2025-12-16T15:54:34.721Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/36/74/32abc08f3b003920ca57aadffe339339a4dab20dabdda78190fd819d3838/distro_support-2025.8.13-py3-none-any.whl", hash = "sha256:639672b5d51c587d9f18d515ef09733d322dba1cdfd0f9563def784556b25a48", size = 6590, upload-time = "2025-08-13T03:15:53.011Z" },
+    { url = "https://files.pythonhosted.org/packages/88/02/6cec6f872455e935f933d9eae08e581650b55eb96b096d2f4aa7a0d70c60/distro_support-2025.12.16-py3-none-any.whl", hash = "sha256:1e883f0b967a799a26f1329f7c527ba262d53385ad377bc1f7bee06671645684", size = 6634, upload-time = "2025-12-16T15:54:36.686Z" },
 ]
 
 [[package]]
@@ -850,11 +850,11 @@ wheels = [
 
 [[package]]
 name = "filelock"
-version = "3.20.2"
+version = "3.20.3"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/c1/e0/a75dbe4bca1e7d41307323dad5ea2efdd95408f74ab2de8bd7dba9b51a1a/filelock-3.20.2.tar.gz", hash = "sha256:a2241ff4ddde2a7cebddf78e39832509cb045d18ec1a09d7248d6bfc6bfbbe64", size = 19510, upload-time = "2026-01-02T15:33:32.582Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/1d/65/ce7f1b70157833bf3cb851b556a37d4547ceafc158aa9b34b36782f23696/filelock-3.20.3.tar.gz", hash = "sha256:18c57ee915c7ec61cff0ecf7f0f869936c7c30191bb0cf406f1341778d0834e1", size = 19485, upload-time = "2026-01-09T17:55:05.421Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9a/30/ab407e2ec752aa541704ed8f93c11e2a5d92c168b8a755d818b74a3c5c2d/filelock-3.20.2-py3-none-any.whl", hash = "sha256:fbba7237d6ea277175a32c54bb71ef814a8546d8601269e1bfc388de333974e8", size = 16697, upload-time = "2026-01-02T15:33:31.133Z" },
+    { url = "https://files.pythonhosted.org/packages/b5/36/7fb70f04bf00bc646cd5bb45aa9eddb15e19437a28b8fb2b4a5249fac770/filelock-3.20.3-py3-none-any.whl", hash = "sha256:4b0dda527ee31078689fc205ec4f1c1bf7d56cf88b6dc9426c4f230e46c2dce1", size = 16701, upload-time = "2026-01-09T17:55:04.334Z" },
 ]
 
 [[package]]
@@ -1073,10 +1073,10 @@ types = [
 
 [package.metadata]
 requires-dist = [
-    { name = "craft-application", specifier = "~=5.9" },
+    { name = "craft-application", specifier = "~=6.1" },
     { name = "craft-cli", specifier = "~=3.0" },
     { name = "craft-grammar", specifier = "~=2.3.0" },
-    { name = "craft-parts", specifier = "~=2.27.0" },
+    { name = "craft-parts", specifier = "~=2.27" },
     { name = "craft-platforms", specifier = "~=0.6" },
     { name = "craft-providers", specifier = "~=3.0" },
     { name = "pydantic", specifier = "~=2.8" },
@@ -1104,7 +1104,7 @@ dev-resolute = [{ name = "python-apt", marker = "sys_platform == 'linux'", speci
 docs = [
     { name = "canonical-sphinx", extras = ["full"], specifier = "~=0.5.1" },
     { name = "matplotlib" },
-    { name = "pydantic-kitbash", specifier = "~=0.1" },
+    { name = "pydantic-kitbash", specifier = "~=1.0" },
     { name = "sphinx-autobuild", specifier = "~=2025.8" },
     { name = "sphinx-lint", specifier = "==1.0.2" },
     { name = "sphinx-pydantic", specifier = "==0.1.1" },
@@ -2138,7 +2138,7 @@ wheels = [
 
 [[package]]
 name = "pydantic-kitbash"
-version = "0.1.1"
+version = "1.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "docutils" },
@@ -2146,9 +2146,9 @@ dependencies = [
     { name = "pyyaml" },
     { name = "sphinx" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/cd/e1/5caae54ee150f118c883a7a2b14a3dcb836daae177914491f7f71faa1d2f/pydantic_kitbash-0.1.1.tar.gz", hash = "sha256:3f1382ee2381a7e29c62ef9662845c6af7c64e99a345fc78c00a4ff8f33599e7", size = 155732, upload-time = "2025-12-12T18:47:33.308Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b7/f7/67623d601fc5bdf11e7d812399ab80883d1b971ceef3eb95fc0ac009dc00/pydantic_kitbash-1.0.0.tar.gz", hash = "sha256:5b83aec025c856a2cd4cf74a761056b8adc4988419c3e5f2e8b442b7449d627d", size = 116712, upload-time = "2026-01-21T18:15:53.59Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/49/0e/199fc675c068067846c47886395894ef4a61b0366d5d1078e50db4b1330c/pydantic_kitbash-0.1.1-py3-none-any.whl", hash = "sha256:9cd4a47a6646a358f84b186ab6d70bd20f2ec9bece039210ade1206594633e3a", size = 14400, upload-time = "2025-12-12T18:47:31.3Z" },
+    { url = "https://files.pythonhosted.org/packages/ca/8e/979b47ae4853025a51bf741ad7405472dfc9209765cc275f2dec204745b2/pydantic_kitbash-1.0.0-py3-none-any.whl", hash = "sha256:d745655e52b1f3cb70c9145084015e66d6061441f1a262c2a1e0cf9d4051513f", size = 14417, upload-time = "2026-01-21T18:15:52.209Z" },
 ]
 
 [[package]]
@@ -3247,11 +3247,11 @@ wheels = [
 
 [[package]]
 name = "urllib3"
-version = "2.6.2"
+version = "2.6.3"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/1e/24/a2a2ed9addd907787d7aa0355ba36a6cadf1768b934c652ea78acbd59dcd/urllib3-2.6.2.tar.gz", hash = "sha256:016f9c98bb7e98085cb2b4b17b87d2c702975664e4f060c6532e64d1c1a5e797", size = 432930, upload-time = "2025-12-11T15:56:40.252Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c7/24/5f1b3bdffd70275f6661c76461e25f024d5a38a46f04aaca912426a2b1d3/urllib3-2.6.3.tar.gz", hash = "sha256:1b62b6884944a57dbe321509ab94fd4d3b307075e0c2eae991ac71ee15ad38ed", size = 435556, upload-time = "2026-01-07T16:24:43.925Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6d/b9/4095b668ea3678bf6a0af005527f39de12fb026516fb3df17495a733b7f8/urllib3-2.6.2-py3-none-any.whl", hash = "sha256:ec21cddfe7724fc7cb4ba4bea7aa8e2ef36f607a4bab81aa6ce42a13dc3f03dd", size = 131182, upload-time = "2025-12-11T15:56:38.584Z" },
+    { url = "https://files.pythonhosted.org/packages/39/08/aaaad47bc4e9dc8c725e68f9d04865dbcb2052843ff09c97b08904852d84/urllib3-2.6.3-py3-none-any.whl", hash = "sha256:bf272323e553dfb2e87d9bfd225ca7b0f467b919d7bbd355436d3fd37cb0acd4", size = 131584, upload-time = "2026-01-07T16:24:42.685Z" },
 ]
 
 [[package]]

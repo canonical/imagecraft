@@ -37,7 +37,10 @@ endif
 	snapcraft pack
 
 # Find dependencies that need installing
-APT_PACKAGES := mtools
+APT_PACKAGES :=
+ifeq ($(shell which mtools),)
+APT_PACKAGES += mtools
+endif
 ifeq ($(wildcard /usr/include/libxml2/libxml/xpath.h),)
 APT_PACKAGES += libxml2-dev
 endif

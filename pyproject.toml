@@ -6,11 +6,11 @@ authors = [{ name = "Canonical Ltd.", email = "snapcraft@lists.snapcraft.io" }]
 dependencies = [
     # To use a dev version of a craft library:
     # craft-lib @ git+https://github.com/canonical/craft-lib@ref
-    "craft-parts~=2.27.0",
+    "craft-parts~=2.27",
     "craft-cli~=3.0",
     "craft-platforms~=0.6",
-    "craft-application~=5.9",
-    "craft-grammar~=2.3.0",
+    "craft-application~=6.1",
+    "craft-grammar~=2.3",
     "craft-providers~=3.0",
     "pydantic~=2.8",
 ]
@@ -47,7 +47,7 @@ types = [
 ]
 docs = [
     "canonical-sphinx[full]~=0.5.1",
-    "pydantic-kitbash~=0.1",
+    "pydantic-kitbash~=1.0",
     "sphinx-autobuild~=2025.8",
     "sphinx-pydantic==0.1.1",
     # sphinx-sitemap is pinned to 2.6 because https://github.com/jdillard/sphinx-sitemap/pull/95
