@@ -1,4 +1,9 @@
 summary: Pack a simple image
+
+prepare: |
+  . /etc/os-release
+  sed "s/__BUILD_BASE__/${ID}@${VERSION_ID}/" imagecraft-template.yaml > imagecraft.yaml
+
 execute: |
   imagecraft pack --verbose
   test -f disk.img
