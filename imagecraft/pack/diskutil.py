@@ -92,7 +92,7 @@ def create_zero_image(*, imagepath: Path, disk_size: DiskSize) -> None:
     """
     # Remove possibly pre-existing image
     imagepath.unlink(missing_ok=True)
-    emit.debug(f"Creating file {imagepath} with size {disk_size.bytesize}")
+    emit.debug(f"Creating file {imagepath} with size {disk_size.bytesize} bytes")
     with imagepath.open("w+") as image_file:
         image_file.truncate(disk_size.bytesize)
 

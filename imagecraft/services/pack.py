@@ -59,6 +59,8 @@ class ImagecraftPackService(PackageService):
         # https://github.com/canonical/craft-parts/issues/665
         project_dirs = self._services.get("lifecycle").project_info.dirs
 
+        # We place this under the working directory rather
+        # than in /tmp to avoid filesystem size limitations.
         temp_root = Path("imagecraft_volumes").resolve()
         temp_root.mkdir(parents=True, exist_ok=True)
 
