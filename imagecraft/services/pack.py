@@ -58,10 +58,16 @@ class ImagecraftPackService(PackageService):
         # may want to revisit that once this is solved:
         # https://github.com/canonical/craft-parts/issues/665
         project_dirs = self._services.get("lifecycle").project_info.dirs
-        with tempfile.TemporaryDirectory() as tmp_dir:
+
+        # We place this under the working directory rather
+        # than in /tmp to avoid filesystem size limitations.
+        temp_root = Path("imagecraft_volumes").resolve()
+        temp_root.mkdir(parents=True, exist_ok=True)
+
+        with tempfile.TemporaryDirectory(dir=temp_root) as tmp_dir:
             for structure_item in volume.structure:
                 partition_name = get_partition_name(volume_name, structure_item)
-                emit.verbose(f"Preparing partition {partition_name}")
+                emit.progress(f"Preparing partition {partition_name}")
                 partition_prime_dir = project_dirs.get_prime_dir(
                     partition=partition_name
                 )
@@ -80,14 +86,15 @@ class ImagecraftPackService(PackageService):
                     disk_size=partition_size,
                     label=structure_item.filesystem_label,
                 )
-                emit.verbose(f"Adding partition {partition_name} to the image")
+                offset = gptutil.get_partition_sector_offset(
+                    disk_image_file,
+                    structure_item.name,
+                )
+                emit.progress(f"Adding partition {partition_name} to the image")
                 diskutil.inject_partition_into_image(
                     partition=partition_img,
                     imagepath=disk_image_file,
-                    sector_offset=gptutil.get_partition_sector_offset(
-                        disk_image_file,
-                        structure_item.name,
-                    ),
+                    sector_offset=offset,
                     disk_size=partition_size,
                 )
         gptutil.verify_partition_tables(disk_image_file)

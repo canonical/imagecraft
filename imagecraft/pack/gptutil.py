@@ -189,7 +189,9 @@ def _get_partition_table(imagepath: Path) -> dict[str, Any]:
 
     :raises CalledProcessError: If sfdisk fails.
     """
-    return json.loads(run("sfdisk", "--json", imagepath).stdout)["partitiontable"]  # type: ignore[no-any-return]
+    with emit.open_stream("Getting partition table") as stream:
+        sfdisk_result = run("sfdisk", "--json", imagepath, stderr=stream)
+    return json.loads(sfdisk_result.stdout)["partitiontable"]  # type: ignore[no-any-return]
 
 
 def _get_partition_info(imagepath: Path, partname: str) -> dict[str, Any]:

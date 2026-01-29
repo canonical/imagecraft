@@ -92,7 +92,9 @@ def create_zero_image(*, imagepath: Path, disk_size: DiskSize) -> None:
     """
     # Remove possibly pre-existing image
     imagepath.unlink(missing_ok=True)
-    run("truncate", f"-s {disk_size.bytesize}", str(imagepath))
+    emit.debug(f"Creating file {imagepath} with size {disk_size.bytesize} bytes")
+    with imagepath.open("w+") as image_file:
+        image_file.truncate(disk_size.bytesize)
 
 
 def _format_populate_ext_partition(  # pylint: disable=too-many-arguments
@@ -117,7 +119,6 @@ def _format_populate_ext_partition(  # pylint: disable=too-many-arguments
 
     # Create and copy
     mke2fs_args = [
-        "-q",
         "-t",
         fstype,
         "-d",
@@ -129,7 +130,8 @@ def _format_populate_ext_partition(  # pylint: disable=too-many-arguments
 
     mke2fs_args.append(partitionpath)
 
-    run("mke2fs", *mke2fs_args)
+    with emit.open_stream(f"Creating {fstype} partition (label: {label!r})") as stream:
+        run("mke2fs", *mke2fs_args, stdout=stream, stderr=stream)
 
 
 def _format_populate_fat_partition(  # pylint: disable=too-many-arguments
@@ -165,7 +167,8 @@ def _format_populate_fat_partition(  # pylint: disable=too-many-arguments
 
     mkdosfs_args.append(partitionpath)
 
-    run("mkfs." + fattype, *mkdosfs_args)
+    with emit.open_stream(f"Creating {fattype} partition (label: {label!r})") as stream:
+        run("mkfs." + fattype, *mkdosfs_args, stdout=stream, stderr=stream)
 
     if any(content_dir.iterdir()):
         # If we invoke mcopy directly, the sh wrapper will quote the
@@ -176,7 +179,8 @@ def _format_populate_fat_partition(  # pylint: disable=too-many-arguments
         # Note that the documentation for mcopy's -i flag can be hard to find - some is here:
         # https://www.gnu.org/software/mtools/manual/mtools.html#drive-letters
         mcopy_cmd = f"mcopy -n -o -s -i{str(partitionpath)} {content_dir}/* ::"
-        run("bash", "-c", mcopy_cmd)
+        with emit.open_stream("Copying files to partition") as stream:
+            run("bash", "-c", mcopy_cmd, stdout=stream, stderr=stream)
 
 
 def format_populate_partition(
