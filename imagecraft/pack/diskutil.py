@@ -179,7 +179,8 @@ def _format_populate_fat_partition(  # pylint: disable=too-many-arguments
         # Note that the documentation for mcopy's -i flag can be hard to find - some is here:
         # https://www.gnu.org/software/mtools/manual/mtools.html#drive-letters
         mcopy_cmd = f"mcopy -n -o -s -i{str(partitionpath)} {content_dir}/* ::"
-        run("bash", "-c", mcopy_cmd)
+        with emit.open_stream("Copying files to partition") as stream:
+            run("bash", "-c", mcopy_cmd, stdout=stream, stderr=stream)
 
 
 def format_populate_partition(

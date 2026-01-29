@@ -12,7 +12,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from unittest.mock import call
+from unittest.mock import ANY, call
 
 import pytest
 from imagecraft.models import FileSystem
@@ -111,5 +111,7 @@ def test_format_populate_partition(
         disk_size=diskutil.DiskSize(bytesize=disk_size, sector_size=sector_size),
     )
 
-    calls = [call(e, text=True, check=True, stdout=-1) for e in expected_values]
+    calls = [
+        call(e, stdout=ANY, stderr=ANY, text=True, check=True) for e in expected_values
+    ]
     mocked_run.assert_has_calls(calls)
