@@ -39,7 +39,6 @@ def imagepath(tmp_path):
 def mke2fs(request, content, imagepath):
     return [
         "mke2fs",
-        "-q",
         "-t",
         "ext3",
         "-d",
