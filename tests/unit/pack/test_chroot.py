@@ -61,11 +61,11 @@ class TestChroot:
             )
         ]
         assert mock_mount.mock_calls == [
-            call("proc-build", f"{new_root}/proc", "-tproc"),
-            call(f"{new_root}/proc", "--make-rprivate"),
+            call(Path("proc-build"), f"{new_root}/proc", "-tproc"),
+            call(new_root / "proc", "--make-rprivate"),
         ]
         assert mock_umount.mock_calls == [
-            call(f"{new_root}/proc", "--recursive"),
+            call(new_root / "proc", "--recursive"),
         ]
 
     def test_chroot_missing_mountpoint(self, mocker, new_dir, mock_chroot):
@@ -104,11 +104,11 @@ class TestChroot:
         mock_process.start.assert_not_called()
 
         assert mock_mount.mock_calls == [
-            call("sys-build", f"{new_root}/existent", "-tsys"),
-            call(f"{new_root}/existent", "--make-rprivate"),
+            call(Path("sys-build"), f"{new_root}/existent", "-tsys"),
+            call(new_root / "existent", "--make-rprivate"),
         ]
         assert mock_umount.mock_calls == [
-            call(f"{new_root}/existent", "--recursive"),
+            call(new_root / "existent", "--recursive"),
         ]
 
     def test_chroot_cleanup_exception(self, mocker, new_dir, mock_chroot):
@@ -157,14 +157,14 @@ Command '['some', 'command']' returned non-zero exit status 42. (unable to umoun
         mock_process.start.assert_not_called()
 
         assert mock_mount.mock_calls == [
-            call("sys-build", f"{new_root}/existent", "-tsys"),
-            call("test-build", f"{new_root}/existent2", "-tsys"),
-            call(f"{new_root}/existent2", "--make-rprivate"),
-            call(f"{new_root}/existent", "--make-rprivate"),
+            call(Path("sys-build"), f"{new_root}/existent", "-tsys"),
+            call(Path("test-build"), f"{new_root}/existent2", "-tsys"),
+            call(new_root / "existent2", "--make-rprivate"),
+            call(new_root / "existent", "--make-rprivate"),
         ]
         assert mock_umount.mock_calls == [
-            call(f"{new_root}/existent2", "--recursive"),
-            call(f"{new_root}/existent", "--recursive"),
+            call(new_root / "existent2", "--recursive"),
+            call(new_root / "existent", "--recursive"),
         ]
 
 
@@ -182,7 +182,7 @@ def mount_call_test1(request, new_dir, relative_path):
             relative_mountpoint=request.getfixturevalue("relative_path"),
         ),
         call(
-            "/test",
+            Path("/test"),
             f"{request.getfixturevalue('new_dir')}{request.getfixturevalue('relative_path')}",
         ),
     )
@@ -197,7 +197,7 @@ def mount_call_test2(request, new_dir, relative_path):
             relative_mountpoint=request.getfixturevalue("relative_path"),
         ),
         call(
-            "/test",
+            Path("/test"),
             f"{request.getfixturevalue('new_dir')}{request.getfixturevalue('relative_path')}",
             "-tproc",
         ),
@@ -214,7 +214,7 @@ def mount_call_test3(request, new_dir, relative_path):
             options=["-o", "nodev,nosuid"],
         ),
         call(
-            "devpts-build",
+            Path("devpts-build"),
             f"{request.getfixturevalue('new_dir')}{request.getfixturevalue('relative_path')}",
             "-o",
             "nodev,nosuid",
