@@ -14,7 +14,7 @@ jobs:
     if: ${{ github.event_name == 'pull_request' }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -23,7 +23,7 @@ jobs:
         id: build-imagecraft
 
       - name: Uploading imagecraft snap artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: snap
           path: "*.snap"
@@ -44,7 +44,7 @@ jobs:
           rm -rf "${{ github.workspace }}"
           mkdir "${{ github.workspace }}"
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 2
           submodules: true
@@ -56,13 +56,13 @@ jobs:
         shell: bash
 
       - name: Get previous cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: "${{ github.workspace }}/.test-results"
           key: "${{ github.job }}-results-${{ github.run_id }}-${{ matrix.group }}-${{ steps.get-previous-attempt.outputs.previous_attempt }}"
 
       - name: Download previsouly build artifact
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: snap
 
@@ -164,7 +164,7 @@ jobs:
 
       - name: save spread test results to cache
         if: always()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: "${{ github.workspace }}/.test-results"
           key: "${{ github.job }}-results-${{ github.run_id }}-${{ matrix.group }}-${{ github.run_attempt }}"
