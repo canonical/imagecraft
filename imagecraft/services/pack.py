@@ -21,7 +21,9 @@ from typing import cast
 
 from craft_application import PackageService, models
 from craft_cli import emit
-from overrides import override  # type: ignore[reportUnknownVariableType]
+
+# type: ignore[reportUnknownVariableType]
+from typing_extensions import override
 
 from imagecraft.models import Project, get_partition_name
 from imagecraft.pack import Image, diskutil, gptutil, grubutil
@@ -33,7 +35,7 @@ class ImagecraftPackService(PackageService):
     """Package service subclass for Imagecraft."""
 
     @override
-    def pack(self, prime_dir: Path, dest: Path) -> list[Path]:  # noqa: ARG002
+    def pack(self, prime_dir: Path, dest: Path) -> list[Path]:
         """Pack the image.
 
         :param prime_dir: Directory path to the prime directory.
@@ -66,7 +68,8 @@ class ImagecraftPackService(PackageService):
 
         with tempfile.TemporaryDirectory(dir=temp_root) as tmp_dir:
             for structure_item in volume.structure:
-                partition_name = get_partition_name(volume_name, structure_item)
+                partition_name = get_partition_name(
+                    volume_name, structure_item)
                 emit.progress(f"Preparing partition {partition_name}")
                 partition_prime_dir = project_dirs.get_prime_dir(
                     partition=partition_name
@@ -90,7 +93,8 @@ class ImagecraftPackService(PackageService):
                     disk_image_file,
                     structure_item.name,
                 )
-                emit.progress(f"Adding partition {partition_name} to the image")
+                emit.progress(
+                    f"Adding partition {partition_name} to the image")
                 diskutil.inject_partition_into_image(
                     partition=partition_img,
                     imagepath=disk_image_file,

@@ -19,7 +19,9 @@ from typing import Any, cast
 import craft_cli
 import craft_platforms
 from craft_application import ProjectService
-from overrides import override  # type: ignore[reportUnknownVariableType]
+
+# type: ignore[reportUnknownVariableType]
+from typing_extensions import override
 
 from imagecraft import grammar
 from imagecraft.models import VolumeFilesystemsModel
