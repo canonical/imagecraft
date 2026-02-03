@@ -83,7 +83,7 @@ class Mount:
             )
 
         logger.debug("[pid=%d] mount %r on chroot", pid, str(self._mountpoint))
-        os_utils.mount(self._src, str(self._mountpoint), *args)
+        os_utils.mount(Path(self._src), str(self._mountpoint), *args)
 
     def umount(self, *, lazy: bool = False) -> None:
         """Umount the mountpoint."""
@@ -92,7 +92,7 @@ class Mount:
         if self._mountpoint and self._mountpoint.exists():
             logger.debug("[pid=%d] umount: %r", pid, str(self._mountpoint))
 
-            os_utils.mount(str(self._mountpoint), "--make-rprivate")
+            os_utils.mount(self._mountpoint, "--make-rprivate")
             args: list[str] = ["--recursive"]
 
             # Mount points under /dev may be in use and make the bind mount
@@ -100,7 +100,7 @@ class Mount:
             # the host environment, so use MNT_DETACH to defer unmounting.
             if lazy:
                 args.append("--lazy")
-            os_utils.umount(str(self._mountpoint), *args)
+            os_utils.umount(self._mountpoint, *args)
 
 
 def _runner(
