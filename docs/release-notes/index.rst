@@ -12,7 +12,7 @@ Current releases
 ----------------
 
 
-<latest release>
+<Latest release>
 ~~~~~~~~~~~~~~~~
 
 - <link to latest release, update, such as 8.2.0>
@@ -20,7 +20,7 @@ Current releases
 - <link to latest release, initial, such as 8.0.0>
 
 
-<parallel release>
+<Parallel release>
 ~~~~~~~~~~~~~~~~~~
 
 <If necessary, add guidance and caveats about these older releases, such as
@@ -36,7 +36,7 @@ Past releases
 -------------
 
 
-<past release>
+<Past release>
 ~~~~~~~~~~~~~~
 
 - <link to past release, update, such as 6.2.0>

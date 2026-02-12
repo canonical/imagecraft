@@ -111,6 +111,7 @@ exclude_patterns = [
     # errors).
     # Disable sections and pages that are currently empty
     "tutorials/index.rst",
+    "release-notes/index.rst",
     "reference/plugins.rst",
     # We do not use the overlay command, yet...
     "reference/commands/overlay.rst",
