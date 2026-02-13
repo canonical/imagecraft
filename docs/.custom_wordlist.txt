@@ -1,5 +1,6 @@
 # Leave a blank line at the end of this file to support concatenation
 aem
+aex
 Autoconf
 Autogen
 Automake
@@ -14,6 +15,7 @@ Charmcraft
 cjk
 classpath
 CMake
+colcon
 Craftctl
 crafters?
 cryptographically
@@ -34,6 +36,7 @@ gyre
 gzip(ped)?
 html
 https
+ing
 Intersphinx
 io
 ip
@@ -93,6 +96,7 @@ TOC
 toctree
 toolchain
 txt
+unbuilt
 uncomment(ing)?
 URIs?
 URL
