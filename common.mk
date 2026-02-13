@@ -257,7 +257,7 @@ docs: docs-install  ## Render the documentation to disk
 # Alias for `html` target in docs project
 .PHONY: docs-auto
 docs-auto: docs-install  ##- Render the documentation in a live session
-	$(MAKE) -C docs serve --no-print-directory
+	$(MAKE) -C docs run --no-print-directory
 
 # Override for `install` target in docs project. We still need the Vale setup, so we
 # run that after the parent docs setup.
