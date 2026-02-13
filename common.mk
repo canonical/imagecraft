@@ -254,7 +254,7 @@ test-find-slow:  ##- Identify slow tests. Set cutoff time in seconds with SLOW_C
 docs: docs-install  ## Render the documentation to disk
 	$(MAKE) -C docs html --no-print-directory
 
-# Alias for `html` target in docs project
+# Alias for `serve` target in docs project
 .PHONY: docs-auto
 docs-auto: docs-install  ##- Render the documentation in a live session
 	$(MAKE) -C docs run --no-print-directory
@@ -304,7 +304,12 @@ docs-lint: docs  ##- Lint the documentation
 ifneq ($(CI),)
 	@echo ::group::$@
 endif
-	uv run $(UV_DOCS_GROUPS) sphinx-lint --ignore docs/reference/commands --ignore docs/_build --ignore docs/.sphinx --enable all docs -d line-too-long,missing-underscore-after-hyperlink,missing-space-in-hyperlink
+	uv run $(UV_DOCS_GROUPS) sphinx-lint docs \
+	--ignore docs/.sphinx \
+	--ignore docs/_build \
+	--ignore docs/reference/commands \
+	--enable all \
+	-d line-too-long,missing-underscore-after-hyperlink,missing-space-in-hyperlink
 	$(MAKE) -C docs spelling --no-print-directory
 	$(MAKE) -C docs woke --no-print-directory
 	$(MAKE) -C docs linkcheck --no-print-directory

@@ -56,6 +56,8 @@ docs = [
     "sphinxcontrib-details-directive",
     {include-group = "docs-starter-pack"},
 ]
+# We disable the unused but default SP dependencies slated for removal
+# https://warthogs.atlassian.net/browse/DOCPR-2387
 docs-starter-pack = [
     "canonical-sphinx>=0.5.1",
     "myst-parser~=4.0",
