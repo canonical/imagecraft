@@ -87,7 +87,7 @@ html_theme_options = {
 sitemap_url_scheme = '{link}'
 
 # Include `lastmod` dates in the sitemap:
-# sitemap_show_lastmod = True
+sitemap_show_lastmod = False
 
 # Exclude generated pages from the sitemap:
 sitemap_excludes = [
@@ -112,7 +112,7 @@ templates_path = ["_templates"]
 rediraffe_redirects = "redirects.txt"
 
 
-###########################
+###########################g
 # Link checker exceptions #
 ###########################
 
