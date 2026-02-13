@@ -179,6 +179,7 @@ extensions = [
     "sphinxext.rediraffe",
     "sphinx.ext.autodoc",
     "sphinx.ext.doctest",
+    "sphinx.ext.ifconfig",
     "sphinx.ext.viewcode",
 ]
 
