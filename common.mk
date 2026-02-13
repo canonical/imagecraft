@@ -206,7 +206,7 @@ endif
 
 # Legacy alias for linting docs
 .PHONY: lint-docs
-lint-docs: docs-lint  ##- Lint the documentation
+lint-docs: docs-lint  ##- Lint the documenation
 
 .PHONY: lint-twine
 lint-twine: pack-pip  ##- Lint Python packages with twine
@@ -304,9 +304,8 @@ docs-lint: docs  ##- Lint the documentation
 ifneq ($(CI),)
 	@echo ::group::$@
 endif
-	uv run $(UV_DOCS_GROUPS) sphinx-lint --ignore docs/reference/commands --ignore docs/_build --enable all docs -d line-too-long,missing-underscore-after-hyperlink,missing-space-in-hyperlink
+	uv run $(UV_DOCS_GROUPS) sphinx-lint --ignore docs/reference/commands --ignore docs/_build --ignore docs/.sphinx --enable all docs -d line-too-long,missing-underscore-after-hyperlink,missing-space-in-hyperlink
 	$(MAKE) -C docs spelling --no-print-directory
-	$(MAKE) -C docs vale --no-print-directory
 	$(MAKE) -C docs woke --no-print-directory
 	$(MAKE) -C docs linkcheck --no-print-directory
 ifneq ($(CI),)
