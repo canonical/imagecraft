@@ -53,7 +53,7 @@ Project file
 The name of the project file, ``imagecraft.yaml``, is **important** because Imagecraft
 uses it automatically. Save the following content as ``imagecraft.yaml``:
 
-.. collapse:: imagecraft.yaml
+.. dropdown:: imagecraft.yaml
 
     .. literalinclude:: code/basic_imagecraft.yaml
         :caption: imagecraft.yaml
