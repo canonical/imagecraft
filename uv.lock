@@ -756,10 +756,23 @@ dev-resolute = [
     { name = "python-apt", version = "3.0.0+ubuntu1", source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }, marker = "sys_platform == 'linux'" },
 ]
 docs = [
+    { name = "canonical-sphinx" },
+    { name = "myst-parser" },
+    { name = "packaging" },
     { name = "pydantic-kitbash" },
+    { name = "rst2html" },
+    { name = "sphinx-autobuild" },
+    { name = "sphinx-design" },
     { name = "sphinx-lint" },
+    { name = "sphinx-notfound-page" },
     { name = "sphinx-pydantic" },
+    { name = "sphinx-roles" },
+    { name = "sphinx-sitemap" },
+    { name = "sphinx-terminal" },
+    { name = "sphinxcontrib-details-directive" },
+    { name = "sphinxext-opengraph" },
     { name = "sphinxext-rediraffe" },
+    { name = "vale" },
 ]
 docs-starter-pack = [
     { name = "canonical-sphinx" },
@@ -771,6 +784,7 @@ docs-starter-pack = [
     { name = "sphinx-notfound-page" },
     { name = "sphinx-roles" },
     { name = "sphinx-sitemap" },
+    { name = "sphinx-terminal" },
     { name = "sphinxext-opengraph" },
     { name = "vale" },
 ]
@@ -816,10 +830,23 @@ dev-plucky = [{ name = "python-apt", marker = "sys_platform == 'linux'", specifi
 dev-questing = [{ name = "python-apt", marker = "sys_platform == 'linux'", specifier = "~=3.0.0", index = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }]
 dev-resolute = [{ name = "python-apt", marker = "sys_platform == 'linux'", specifier = "~=3.0.0", index = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }]
 docs = [
+    { name = "canonical-sphinx", specifier = ">=0.5.1" },
+    { name = "myst-parser", specifier = "~=4.0" },
+    { name = "packaging", specifier = ">=25.0" },
     { name = "pydantic-kitbash", specifier = "~=1.0" },
+    { name = "rst2html", specifier = ">=2020.7.4" },
+    { name = "sphinx-autobuild", specifier = ">=2025.8.25" },
+    { name = "sphinx-design", specifier = ">=0.6.1" },
     { name = "sphinx-lint", specifier = "==1.0.2" },
+    { name = "sphinx-notfound-page", specifier = ">=1.1.0" },
     { name = "sphinx-pydantic", specifier = "==0.1.1" },
+    { name = "sphinx-roles", specifier = ">=0.1.0" },
+    { name = "sphinx-sitemap", specifier = ">=2.6.0" },
+    { name = "sphinx-terminal", specifier = ">=1.0.2" },
+    { name = "sphinxcontrib-details-directive" },
+    { name = "sphinxext-opengraph", specifier = ">=0.13.0" },
     { name = "sphinxext-rediraffe", specifier = "==0.3.0" },
+    { name = "vale", specifier = ">=3.13.0.0" },
 ]
 docs-starter-pack = [
     { name = "canonical-sphinx", specifier = ">=0.5.1" },
@@ -831,6 +858,7 @@ docs-starter-pack = [
     { name = "sphinx-notfound-page", specifier = ">=1.1.0" },
     { name = "sphinx-roles", specifier = ">=0.1.0" },
     { name = "sphinx-sitemap", specifier = ">=2.6.0" },
+    { name = "sphinx-terminal", specifier = ">=1.0.2" },
     { name = "sphinxext-opengraph", specifier = ">=0.13.0" },
     { name = "vale", specifier = ">=3.13.0.0" },
 ]
@@ -2184,6 +2212,18 @@ wheels = [
 ]
 
 [[package]]
+name = "sphinx-copybutton"
+version = "0.5.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "sphinx" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/fc/2b/a964715e7f5295f77509e59309959f4125122d648f86b4fe7d70ca1d882c/sphinx-copybutton-0.5.2.tar.gz", hash = "sha256:4cf17c82fb9646d1bc9ca92ac280813a3b605d8c421225fd9913154103ee1fbd", size = 23039, upload-time = "2023-04-14T08:10:22.998Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9e/48/1ea60e74949eecb12cdd6ac43987f9fd331156388dcc2319b45e2ebb81bf/sphinx_copybutton-0.5.2-py3-none-any.whl", hash = "sha256:fb543fd386d917746c9a2c50360c7905b605726b9355cd26e9974857afeae06e", size = 13343, upload-time = "2023-04-14T08:10:20.844Z" },
+]
+
+[[package]]
 name = "sphinx-design"
 version = "0.7.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2283,12 +2323,38 @@ wheels = [
 ]
 
 [[package]]
+name = "sphinx-terminal"
+version = "1.0.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "docutils" },
+    { name = "sphinx" },
+    { name = "sphinx-copybutton" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e6/f7/c48cfa302ba9e82687972334b1995e687cab79999a1805cb3d96d67b80dd/sphinx_terminal-1.0.3.tar.gz", hash = "sha256:7a5ae9d20f5e9fd96d7df753e62b5415e33816a4833b73fcd8d60afee4695cbb", size = 95465, upload-time = "2025-12-02T01:10:18.08Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/4b/09/6afb984b5b58f6d522dea00f59b19ffa2405fb72b298803f51ac3df0f31d/sphinx_terminal-1.0.3-py3-none-any.whl", hash = "sha256:127ca5f21d4a4880bb5f8d18e7114f89d66f96df425478fb376376697e8315ac", size = 20096, upload-time = "2025-12-02T01:10:16.851Z" },
+]
+
+[[package]]
 name = "sphinxcontrib-applehelp"
 version = "2.0.0"
 source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/ba/6e/b837e84a1a704953c62ef8776d45c3e8d759876b4a84fe14eba2859106fe/sphinxcontrib_applehelp-2.0.0.tar.gz", hash = "sha256:2f29ef331735ce958efa4734873f084941970894c6090408b079c61b2e1c06d1", size = 20053, upload-time = "2024-07-29T01:09:00.465Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/5d/85/9ebeae2f76e9e77b952f4b274c27238156eae7979c5421fba91a28f4970d/sphinxcontrib_applehelp-2.0.0-py3-none-any.whl", hash = "sha256:4cd3f0ec4ac5dd9c17ec65e9ab272c9b867ea77425228e68ecf08d6b28ddbdb5", size = 119300, upload-time = "2024-07-29T01:08:58.99Z" },
+]
+
+[[package]]
+name = "sphinxcontrib-details-directive"
+version = "0.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "sphinx" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/62/0a/2de87a4f6e0e33415692ed4b03e0b7dfde7d91a691d1486c1577191f875c/sphinxcontrib-details-directive-0.1.0.tar.gz", hash = "sha256:78bd6a67f786a21868abf0e6a5973340d7e7a6fd71b1890de9c856f92877b38b", size = 7969, upload-time = "2019-09-22T13:24:27.707Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/10/9e/9cb96fbdca829ba3eb094d966d0f48bb018215e73f96c8750088e73f2f19/sphinxcontrib_details_directive-0.1.0-py2.py3-none-any.whl", hash = "sha256:ed4d4f47b36e3e905601d425945cbe9d50d4cbcf9964bbf9c863d5a983fb7bf6", size = 10724, upload-time = "2019-09-22T13:24:25.279Z" },
 ]
 
 [[package]]
