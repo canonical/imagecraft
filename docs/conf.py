@@ -87,7 +87,7 @@ html_theme_options = {
 sitemap_url_scheme = '{link}'
 
 # Include `lastmod` dates in the sitemap:
-sitemap_show_lastmod = True
+# sitemap_show_lastmod = True
 
 # Exclude generated pages from the sitemap:
 sitemap_excludes = [
