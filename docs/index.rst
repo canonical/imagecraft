@@ -1,19 +1,5 @@
-.. imagecraft documentation root file
-
 Imagecraft
 ==========
-
-.. toctree::
-   :maxdepth: 1
-   :hidden:
-
-   how-to-guides/index
-   reference/index
-   explanation/index
-   contribute-to-this-documentation
-   release-notes/index
-
-..   tutorials/index
 
 .. list-table::
 
@@ -39,3 +25,13 @@ and constructive feedback.
 * `Ubuntu Code of Conduct <https://ubuntu.com/community/ethos/code-of-conduct>`_
 * `Canonical Contributor License Agreement
   <https://ubuntu.com/legal/contributors>`_
+
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   how-to-guides/index
+   reference/index
+   explanation/index
+   contribute-to-this-documentation
