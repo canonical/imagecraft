@@ -145,9 +145,12 @@ and detail how they're built.
     :prepend-name: parts.<part-name>
     :skip-examples:
 
-    Files from the build environment can be organized into specific partitions by
+    Files from the build environment can be copied into specific partitions by
     prepending the destination path with the partition name, enclosed in parentheses.
     Source paths always reference the default partition.
+
+    Prefixing a destination path with ``(overlay)/`` will copy the files to the
+    project's overlay filesystem.
 
     **Examples**
 
@@ -160,6 +163,11 @@ and detail how they're built.
 
         organize:
           vmlinuz-6.2.0-39-generic: (boot)/vmlinuz
+
+    .. code-block:: yaml
+
+        organize:
+          *: (overlay)/
 
 
 .. kitbash-field:: PartSpec override_build
