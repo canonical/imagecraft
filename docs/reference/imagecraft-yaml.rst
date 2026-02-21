@@ -149,7 +149,7 @@ and detail how they're built.
     prepending the destination path with the partition name, enclosed in parentheses.
     Source paths always reference the default partition.
 
-    Prefixing a destination path with ``(overlay)/`` will copy the files to the
+    Prefixing a destination path with ``(overlay)/`` copies the files to the
     project's overlay filesystem.
 
     **Examples**
