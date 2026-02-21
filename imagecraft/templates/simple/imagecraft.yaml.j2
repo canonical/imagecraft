@@ -1,33 +1,33 @@
 name: {{name}}
-# only "bare" is supported
-base: bare # the base environment for this image
+base: bare # The base environment for the image. Only 'bare' is supported.
 build-base: ubuntu@24.04
-version: '0.1' # just for humans. Semantic versioning is recommended
-summary: Single-line elevator pitch for your amazing image # 79 char long summary
+version: '0.1' # Just for humans. Semantic versioning is recommended.
+summary: Single-line elevator pitch for your amazing image # 79-character summary
 description: |
     This is {{name}}'s description. You have a paragraph or two to tell the
     most important story about it. Keep it under 100 words though,
     we live in tweetspace and your description wants to look good in the
     container registries out there.
-platforms: # the platforms this image should be built on and run on
-    amd64:
 
-parts:
-    my-part:
-        plugin: nil
+platforms: # The platforms this image builds on and runs on.
+  amd64:
+
+volumes:
+  disk:
+    schema: gpt
+    structure:
+      - name: rootfs
+        role: system-data
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        filesystem: ext4
+        filesystem-label: writable
+        size: 3 G
 
 filesystems:
     default:
-    - mount: /
-      device: (volume/disk/rootfs)
+      - mount: /
+        device: (volume/disk/rootfs)
 
-volumes:
-    disk:
-        schema: gpt
-        structure:
-            - name: rootfs
-              role: system-data
-              type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
-              filesystem: ext4
-              filesystem-label: writable
-              size: 3 G
+parts:
+  my-part:
+    plugin: nil
