@@ -19,8 +19,6 @@ from typing import Any, cast
 import craft_cli
 import craft_platforms
 from craft_application import ProjectService
-
-# type: ignore[reportUnknownVariableType]
 from typing_extensions import override
 
 from imagecraft import grammar

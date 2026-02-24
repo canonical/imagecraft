@@ -24,8 +24,6 @@ from craft_application import LifecycleService
 from craft_cli import CraftError
 from craft_parts import Action
 from craft_parts.executor.errors import EnvironmentChangedError
-
-# type: ignore[reportUnknownVariableType]
 from typing_extensions import override
 
 from imagecraft import models

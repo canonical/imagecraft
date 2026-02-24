@@ -18,8 +18,6 @@
 
 from craft_application import Application, AppMetadata
 from craft_parts.plugins.plugins import PluginType
-
-# type: ignore[reportUnknownVariableType]
 from typing_extensions import override
 
 from imagecraft import plugins
