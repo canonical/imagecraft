@@ -68,11 +68,11 @@ html_context = {
     'github_issues': 'https://github.com/canonical/imagecraft/issues',
 }
 
-# html_extra_path = []
+#html_extra_path = []
 
 # Enable the edit button on pages
 html_theme_options = {
-    'source_edit_link': "https://github.com/canonical/imagecraft",
+  'source_edit_link': "https://github.com/canonical/imagecraft",
 }
 
 # Project slug; see https://meta.discourse.org/t/what-is-category-slug/87897
@@ -112,7 +112,7 @@ templates_path = ["_templates"]
 rediraffe_redirects = "redirects.txt"
 
 
-# g
+###########################g
 # Link checker exceptions #
 ###########################
 
@@ -296,20 +296,16 @@ intersphinx_mapping = {
 project_dir = pathlib.Path(__file__).parents[1].resolve()
 sys.path.insert(0, str(project_dir.absolute()))
 
-
 def generate_cli_docs(nil):
     gen_cli_docs_path = (project_dir / "tools/docs/gen_cli_docs.py").resolve()
     os.system("%s %s" % (gen_cli_docs_path, project_dir / "docs"))
 
-
 def setup(app):
     app.connect("builder-inited", generate_cli_docs)
 
-
 # Setup libraries documentation snippets for use in imagecraft docs.
 common_docs_path = pathlib.Path(__file__).parent / "common"
-craft_parts_docs_path = pathlib.Path(
-    craft_parts_docs.__file__).parent / "craft-parts"
+craft_parts_docs_path = pathlib.Path(craft_parts_docs.__file__).parent / "craft-parts"
 (common_docs_path / "craft-parts").unlink(missing_ok=True)
 (common_docs_path / "craft-parts").symlink_to(
     craft_parts_docs_path, target_is_directory=True
