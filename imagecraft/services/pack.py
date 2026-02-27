@@ -21,8 +21,6 @@ from typing import cast
 
 from craft_application import PackageService, models
 from craft_cli import emit
-
-# type: ignore[reportUnknownVariableType]
 from typing_extensions import override
 
 from imagecraft.models import Project, get_partition_name
