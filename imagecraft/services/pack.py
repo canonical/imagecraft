@@ -21,7 +21,7 @@ from typing import cast
 
 from craft_application import PackageService, models
 from craft_cli import emit
-from overrides import override  # type: ignore[reportUnknownVariableType]
+from typing_extensions import override
 
 from imagecraft.models import Project, get_partition_name
 from imagecraft.pack import Image, diskutil, gptutil, grubutil
@@ -33,7 +33,7 @@ class ImagecraftPackService(PackageService):
     """Package service subclass for Imagecraft."""
 
     @override
-    def pack(self, prime_dir: Path, dest: Path) -> list[Path]:  # noqa: ARG002
+    def pack(self, prime_dir: Path, dest: Path) -> list[Path]:
         """Pack the image.
 
         :param prime_dir: Directory path to the prime directory.
