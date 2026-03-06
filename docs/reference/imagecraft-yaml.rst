@@ -150,11 +150,11 @@ and detail how they're built.
     Source paths always reference the default partition.
 
     Prefixing a destination path with ``(overlay)/`` copies the files to the project's
-    overlay file system. This feature is incompatible with the ``overlay``,
+    overlay file system. Parts using this feature are incompatible with the ``overlay``,
     ``overlay-packages``, and ``overlay-script`` keys.
 
-    Parts copying to the overlay are processed first unless otherwise specified with the
-    ``after`` key.
+    Parts organizing to the overlay and their dependencies are processed before other
+    parts.
 
     **Examples**
 
