@@ -556,7 +556,6 @@ packages. To show that the non-essential packages are in place, let's run the ``
 command in the QEMU shell.
 
 
-
 Review the project file
 -----------------------
 
