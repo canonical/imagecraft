@@ -1,0 +1,86 @@
+name: ubuntu-minimal
+base: bare
+build-base: ubuntu@24.04
+version: '0.1'
+summary: A lightweight, pre-installed Ubuntu image for AMD64 machines.
+description: |
+  The ubuntu-minimal image is a lightweight, pre-installed Ubuntu
+  image for AMD64 machines. Its root file system is based off of
+  Ubuntu 24.04 LTS, and it's booted with GRUB.
+
+platforms:
+  amd64:
+
+volumes:
+  disk:
+    schema: gpt
+    structure:
+      - name: rootfs
+        role: system-data
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        filesystem: ext4
+        filesystem-label: writable
+        size: 3G
+      - name: efi
+        type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
+        filesystem: vfat
+        role: system-boot
+        filesystem-label: UEFI
+        size: 256M
+
+filesystems:
+  default:
+    - device: (volume/disk/rootfs)
+      mount: /
+    - device: (volume/disk/efi)
+      mount: /boot/efi
+
+parts:
+  rootfs:
+    plugin: nil
+    build-packages: ["mmdebstrap"]
+    override-build: |
+      mmdebstrap --arch $CRAFT_ARCH_BUILD_FOR \
+        --mode=sudo \
+        --format=dir \
+        --variant=minbase \
+        --include=apt \
+        noble \
+        $CRAFT_PART_INSTALL/ \
+        http://archive.ubuntu.com/ubuntu/
+      rm -r $CRAFT_PART_INSTALL/dev/*
+      mkdir $CRAFT_PART_INSTALL/boot/efi
+
+      rm $CRAFT_PART_INSTALL/etc/apt/sources.list
+
+      cat << EOF > $CRAFT_PART_INSTALL/etc/apt/sources.list.d/ubuntu.sources
+      Types: deb deb-src
+      URIs: http://archive.ubuntu.com/ubuntu
+      Suites: noble noble-updates noble-backports noble-security
+      Components: main restricted universe multiverse
+      Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+      EOF
+    organize:
+      '*': (overlay)/
+
+  packages:
+    plugin: nil
+    overlay-packages:
+      - ubuntu-server-minimal
+      - grub2-common
+      - grub-pc
+      - shim-signed
+      - sl
+
+  fstab:
+    plugin: nil
+    overlay-script: |
+      cat << EOF > $CRAFT_OVERLAY/etc/fstab
+      LABEL=writable    /            ext4    discard,errors=remount-ro    0    1
+      LABEL=UEFI        /boot/efi    vfat    umask=0077                   0    1
+      EOF
+
+  login:
+    plugin: nil
+    overlay-script:
+      echo "root:password" | chpasswd --root "${CRAFT_OVERLAY}"

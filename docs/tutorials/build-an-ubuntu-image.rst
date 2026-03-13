@@ -52,16 +52,20 @@ Install prerequisites
 
 To begin, we'll need to install the Imagecraft snap. Open a terminal and run:
 
-.. code-block:: bash
-
-    snap install imagecraft --channel=beta --classic
+.. literalinclude:: code/build-an-ubuntu-image/task.yaml
+    :language: bash
+    :dedent: 2
+    :start-at: snap install imagecraft --channel=beta --classic
+    :end-at: snap install imagecraft --channel=beta --classic
 
 Let's also install Multipass, which will create the build environment when it comes
 time to package our image.
 
-.. code-block:: bash
-
-    snap install multipass
+.. literalinclude:: code/build-an-ubuntu-image/task.yaml
+    :language: bash
+    :dedent: 2
+    :start-at: snap install multipass
+    :end-at: snap install multipass
 
 
 Set up the project
@@ -70,17 +74,21 @@ Set up the project
 We'll need a directory to hold our image project. Navigate to where you like to keep
 software projects and create the new directory with:
 
-.. code-block:: bash
+.. literalinclude:: code/build-an-ubuntu-image/task.yaml
+    :language: bash
+    :dedent: 2
+    :start-at: mkdir ubuntu-minimal
+    :end-at: cd ubuntu-minimal
 
-    mkdir ubuntu-minimal
-    cd ubuntu-minimal
 
 Images are built and configured through an ``imagecraft.yaml`` file, called the *project
 file*. Let's create one in the new project directory with the ``init`` command.
 
-.. code-block:: bash
-
-    imagecraft init
+.. literalinclude:: code/build-an-ubuntu-image/task.yaml
+    :language: bash
+    :dedent: 2
+    :start-at: imagecraft init
+    :end-at: imagecraft init
 
 The generated project file will be our focus for most of this tutorial. Open it in your
 preferred text editor.
@@ -236,7 +244,6 @@ system into our image.
 In the ``parts`` key, replace the template part with the following ``rootfs`` part:
 
 .. code-block:: yaml
-    :caption: imagecraft.yaml
 
     parts:
       rootfs:
@@ -475,10 +482,11 @@ To isolate the image build from your machine, we'll pack the image in a Multipas
 Once you're ready, open a new terminal in the ``ubuntu-minimal/`` project directory and
 run:
 
-.. code-block:: bash
-
-    snap set imagecraft provider=multipass
-    imagecraft pack
+.. literalinclude:: code/build-an-ubuntu-image/task.yaml
+    :language: bash
+    :dedent: 2
+    :start-at: snap set imagecraft provider=multipass
+    :end-at: imagecraft pack
 
 The packing process takes around ten minutes. When your terminal shows the following
 line, the build is complete:
@@ -498,43 +506,45 @@ Run and test the image
 We'll run our image with QEMU, a common choice for full-system emulation. In your
 terminal, install it by running:
 
-.. code-block:: bash
-
-    apt install qemu-system-x86
+.. literalinclude:: code/build-an-ubuntu-image/task.yaml
+    :language: bash
+    :dedent: 2
+    :start-at: apt install qemu-system-x86
+    :end-at: apt install qemu-system-x86
 
 We'll also need UEFI firmware. One of the most popular choices for QEMU is OVMF. Install
 it with:
 
-.. code-block:: bash
-
-    apt install ovmf
+.. literalinclude:: code/build-an-ubuntu-image/task.yaml
+    :language: bash
+    :dedent: 2
+    :start-at: apt install ovmf
+    :end-at: apt install ovmf
 
 Before we run our image, let's copy the UEFI variables into a temporary directory so we
 don't compromise the originals:
 
-.. code-block:: bash
-
-    cp /usr/share/OVMF/OVMF_VARS_4M.fd /tmp/OVMF_VARS_4M.fd
+.. literalinclude:: code/build-an-ubuntu-image/task.yaml
+    :language: bash
+    :dedent: 2
+    :start-at: cp /usr/share/OVMF/OVMF_VARS_4M.fd /tmp/OVMF_VARS_4M.fd
+    :end-at: cp /usr/share/OVMF/OVMF_VARS_4M.fd /tmp/OVMF_VARS_4M.fd
 
 You'll need to repeat this step if you reboot your machine between runs.
 
 With no further ado, let's run the image with QEMU:
 
-.. code-block:: bash
-
-    qemu-system-x86_64 \
-    -accel kvm \
-    -m 4G \
-    -cpu host \
-    -smp 8 \
-    -drive if=pflash,format=raw,readonly=on,file=/usr/share/OVMF/OVMF_CODE_4M.fd \
-    -drive if=pflash,format=raw,file=/tmp/OVMF_VARS_4M.fd \
-    -drive file=disk.img,format=raw,index=0,media=disk
+.. literalinclude:: code/build-an-ubuntu-image/task.yaml
+    :language: bash
+    :dedent: 2
+    :start-at: qemu-system-x86_64 \
+    :end-at: -drive file=disk.img,format=raw,index=0,media=disk
 
 This will open QEMU in a separate window. After about a minute, it'll display the
 following login prompt:
 
 .. code-block:: bash
+    :class: no-copybutton
 
     imagecraft-ubuntu-minimal-amd64-49807517 login:
 
@@ -546,6 +556,7 @@ packages. To show that the non-essential packages are in place, let's run the ``
 command in the QEMU shell.
 
 
+
 Review the project file
 -----------------------
 
@@ -554,94 +565,8 @@ to it.
 
 .. dropdown:: imagecraft.yaml for ubuntu-minimal
 
-    .. code-block:: yaml
-
-        name: ubuntu-minimal
-        base: bare
-        build-base: ubuntu@24.04
-        version: '0.1'
-        summary: A lightweight, pre-installed Ubuntu image for AMD64 machines.
-        description: |
-          The ubuntu-minimal image is a lightweight, pre-installed Ubuntu
-          image for AMD64 machines. Its root file system is based off of
-          Ubuntu 24.04 LTS, and it's booted with GRUB.
-
-        platforms:
-          amd64:
-
-        volumes:
-          disk:
-            schema: gpt
-            structure:
-              - name: rootfs
-                role: system-data
-                type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
-                filesystem: ext4
-                filesystem-label: writable
-                size: 3G
-              - name: efi
-                type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
-                filesystem: vfat
-                role: system-boot
-                filesystem-label: UEFI
-                size: 256M
-
-        filesystems:
-          default:
-            - device: (volume/disk/rootfs)
-              mount: /
-            - device: (volume/disk/efi)
-              mount: /boot/efi
-
-        parts:
-          rootfs:
-            plugin: nil
-            build-packages: ["mmdebstrap"]
-            override-build: |
-              mmdebstrap --arch $CRAFT_ARCH_BUILD_FOR \
-                --mode=sudo \
-                --format=dir \
-                --variant=minbase \
-                --include=apt \
-                noble \
-                $CRAFT_PART_INSTALL/ \
-                http://archive.ubuntu.com/ubuntu/
-              rm -r $CRAFT_PART_INSTALL/dev/*
-              mkdir $CRAFT_PART_INSTALL/boot/efi
-
-              rm $CRAFT_PART_INSTALL/etc/apt/sources.list
-
-              cat << EOF > $CRAFT_PART_INSTALL/etc/apt/sources.list.d/ubuntu.sources
-              Types: deb deb-src
-              URIs: http://archive.ubuntu.com/ubuntu
-              Suites: noble noble-updates noble-backports noble-security
-              Components: main restricted universe multiverse
-              Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
-              EOF
-            organize:
-              '*': (overlay)/
-
-          packages:
-            plugin: nil
-            overlay-packages:
-              - ubuntu-server-minimal
-              - grub2-common
-              - grub-pc
-              - shim-signed
-              - sl
-
-          fstab:
-            plugin: nil
-            overlay-script: |
-              cat << EOF > $CRAFT_OVERLAY/etc/fstab
-              LABEL=writable    /            ext4    discard,errors=remount-ro    0    1
-              LABEL=UEFI        /boot/efi    vfat    umask=0077                   0    1
-              EOF
-
-          login:
-            plugin: nil
-            overlay-script:
-              echo "root:password" | chpasswd --root "${CRAFT_OVERLAY}"
+    .. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
+        :language: yaml
 
 
 Conclusion
