@@ -10,4 +10,6 @@ best way to start.
 
 
 .. toctree::
-   :maxdepth: 1
+    :maxdepth: 1
+
+    build-an-ubuntu-image

@@ -1,0 +1,660 @@
+.. _tutorial-build-an-ubuntu-image:
+
+Build an Ubuntu image
+=====================
+
+In this tutorial, we'll build a basic Ubuntu image. We'll set up the project, define the
+image's partitions and content, and run the image with QEMU.
+
+You won't need to come prepared with an intimate understanding of software packaging or
+disk images, but familiarity with Linux paradigms and terminal operations is required.
+
+By the end of this tutorial, you'll have crafted an image that can serve as the basis
+for future projects.
+
+
+Lesson plan
+-----------
+
+This tutorial takes about 25 minutes to complete and works through the process of
+building an image. You'll be shown how to:
+
+* Set up an image project from scratch
+* State the project's essential information
+* Set up the image's partitions and root file system
+* Add packages to the image
+* Set a default user and password
+* Package the image
+
+
+What we'll work with
+--------------------
+
+The object of this tutorial is to build a minimal, pre-installed Ubuntu image for AMD64
+machines.
+
+The final image will be named ``disk.img``, and we'll end the tutorial by running and
+testing it with QEMU.
+
+
+What you'll need
+----------------
+
+For this tutorial, you'll need:
+
+* An AMD64 machine running Ubuntu 24.04 LTS
+* Super user privileges on your machine
+* 10GiB of available storage
+
+
+Install prerequisites
+---------------------
+
+To begin, we'll need to install the Imagecraft snap. Open a terminal and run:
+
+.. code-block:: bash
+
+    snap install imagecraft --channel=beta --classic
+
+Let's also install Multipass, which will create the build environment when it comes
+time to package our image.
+
+.. code-block:: bash
+
+    snap install multipass
+
+
+Set up the project
+------------------
+
+We'll need a directory to hold our image project. Navigate to where you like to keep
+software projects and create the new directory with:
+
+.. code-block:: bash
+
+    mkdir ubuntu-minimal
+    cd ubuntu-minimal
+
+Images are built and configured through an ``imagecraft.yaml`` file, called the *project
+file*. Let's create one in the new project directory with the ``init`` command.
+
+.. code-block:: bash
+
+    imagecraft init
+
+The generated project file will be our focus for most of this tutorial. Open it in your
+preferred text editor.
+
+
+Describe the image
+------------------
+
+An image's project file starts with its most essential descriptors, such as its name,
+version, and build environment. The comments in the template describe each of the keys.
+
+The ``init`` command filled out these top-level keys but left out some project-specific
+details. Let's update the ``summary`` and ``description`` keys to better reflect our new
+project. Replace the first six keys with:
+
+.. code-block:: yaml
+
+    name: ubuntu-minimal
+    base: bare
+    build-base: ubuntu@24.04
+    version: '0.1'
+    summary: A minimal, pre-installed Ubuntu image.
+    description: |
+      The ubuntu-minimal image is a lightweight, pre-installed Ubuntu
+      image for AMD64 machines. It's based off of Ubuntu 24.04 LTS and
+      booted with GRUB.
+
+The ``base`` key defines the foundation for the image's contents. In Imagecraft, this is
+always an empty directory, known as the *bare* base.
+
+The ``build-base`` key defines the system that's used to assemble the image. It does
+*not* have any influence on the image's contents. It's best to build with the latest
+Ubuntu LTS release in most cases, so we left this unchanged.
+
+The ``summary``, and ``description`` keys tell consumers of our image a little more
+about it. The summary is a one-line description, limited at 79 characters, while the
+description is more open-ended and can span multiple lines. These were both placeholders
+in the template project file, so we made them more meaningful for our project.
+
+
+.. Define the target platform
+.. --------------------------
+
+.. We need to tell Imagecraft what CPU architecture our image builds and runs on. This is
+.. done with the ``platforms`` key.
+
+.. An image's target architecture influences its structure and contents, so its project
+.. file must be customized to each platform. Since we'll be building our image for AMD64
+.. machines, and our project file already targets the AMD64 architecture, we'll leave the
+.. ``platforms`` key as is.
+
+
+Define the partitions
+---------------------
+
+Now that we've described our image and declared its essential build details, we need to
+define its disk partitions. To do so, we'll customize the ``volumes`` key.
+
+Our project file contains a single volume, named ``disk``. The ``schema`` key tells us
+that the volume is partitioned with GPT, the only schema currently supported by
+Imagecraft. We'll define individual partitions in the volume's ``structure`` key.
+
+Our image will have two partitions: a root file system and an EFI system partition. The
+first was created for us automatically. Before we go over its contents, let's also
+define an EFI system partition for our image to boot from. Add the following highlighted
+lines after the ``rootfs`` partition:
+
+.. code-block:: yaml
+    :class: no-copybutton
+    :emphasize-lines: 11-16
+
+    volumes:
+      disk:
+        schema: gpt
+        structure:
+          - name: rootfs
+            role: system-data
+            type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+            filesystem: ext4
+            filesystem-label: writable
+            size: 3G
+          - name: efi
+            role: system-boot
+            type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
+            filesystem: vfat
+            filesystem-label: UEFI
+            size: 256M
+
+There's a lot to unpack here. Let's take a moment to go over each of the ``efi``
+partition's keys and compare them to the ``rootfs`` partition.
+
+We declared that this is the boot partition by setting the ``role`` key to
+``system-boot``. The ``rootfs`` partition's ``role`` key was set to ``system-data``,
+which tells Imagecraft that it contains the operating system.
+
+We set the ``type`` key to the identifier for EFI system partitions in a GUID partition
+table. The ``rootfs`` partition was generated with the identifier for Linux file
+systems. The identifiers themselves come from the UEFI specification—don't worry about
+memorizing them.
+
+We set the ``filesystem`` key to ``vfat``, the most common file system for EFI system
+partitions. Since the ``rootfs`` partition will be for general usage, it's using the
+ext4 filesystem instead.
+
+In both partitions, the ``filesystem-label`` key is set to a unique, human-readable
+name. We'll use these labels when we set up the file system table later on.
+
+
+Mount the partitions
+--------------------
+
+Our image's partitions are ready, but we haven't told Imagecraft where to mount them in
+the image's file system. Let's shift our focus to the ``filesystems`` key.
+
+The ``filesystems`` key maps the image's partitions to their mount points. It expects a
+single file system, named ``default``, that mounts a partition to the root of the image.
+The ``filesystems`` key in our project file already mounts the ``rootfs`` partition to the
+image's root, but we'll still need to mount the EFI system partition.
+
+Add the following highlighted lines to the end of the ``filesystems`` key:
+
+.. code-block:: yaml
+    :class: no-copybutton
+    :emphasize-lines: 5, 6
+
+    filesystems:
+      default:
+        - device: (volume/disk/rootfs)
+          mount: /
+        - device: (volume/disk/efi)
+          mount: /boot/efi/
+
+With this entry, we mounted the EFI system partition to the /boot/efi/ directory in the
+final image. Keep in mind that we'll need to create this directory ourselves when we set
+up the image's root file system.
+
+
+Set up the root file system
+---------------------------
+
+Because we're building our image on the bare base, its file system is currently an empty
+directory. Let's start building our Ubuntu file system with the ``parts`` key.
+
+*Parts* are the means by which we source packages for and manipulate the files in our
+image. Most importantly, they give us access to the *overlay file system*, which is
+where we'll manipulate our image's contents.
+
+We'll create our file system with ``mmdebstrap``, a command-line tool for setting up
+Debian root file systems. The part we create for it will need to source the
+``mmdebstrap`` package itself, run its primary command, and copy the resulting file
+system into our image.
+
+In the ``parts`` key, replace the template part with the following ``rootfs`` part:
+
+.. code-block:: yaml
+    :caption: imagecraft.yaml
+
+    parts:
+      rootfs:
+        plugin: nil
+        build-packages: ["mmdebstrap"]
+        override-build: |
+          mmdebstrap --arch $CRAFT_ARCH_BUILD_FOR \
+          --mode=sudo \
+          --format=dir \
+          --variant=minbase \
+          --include=apt \
+          noble \
+          $CRAFT_PART_INSTALL/ \
+          http://archive.ubuntu.com/ubuntu/
+
+In most parts, the ``plugin`` key specifies the build system needed to prepare the part.
+In this case, we don't need a build system, so we set the ``plugin`` key to ``nil``.
+
+We install the ``mmdebstrap`` package into the part's build environment with the
+``build-packages`` key. This allows us to then run the ``mmdebstrap`` command with the
+``override-build`` key.
+
+You don't need to worry about all of the ``mmdebstrap`` command's options for now. Put
+briefly, this command prepares a minimal file system in our part, using the ``noble``
+(Ubuntu 24.04) package suite. Before we copy the output to the overlay file system,
+let's tidy things up.
+
+By default, the ``/dev/`` directory is cluttered and will stall the final build. We also
+still need to create the ``/boot/efi/`` directory that we mounted the ``efi`` partition
+to. We can tackle both of these items by adding the following highlighted lines to the
+end of the ``override-build`` script:
+
+.. code-block:: yaml
+    :class: no-copybutton
+    :emphasize-lines: 14, 15
+
+    rootfs:
+      plugin: nil
+      build-packages: ["mmdebstrap"]
+      override-build: |
+        mmdebstrap --arch $CRAFT_ARCH_BUILD_FOR \
+        --mode=sudo \
+        --format=dir \
+        --variant=minbase \
+        --include=apt \
+        noble \
+        $CRAFT_PART_INSTALL/ \
+        http://archive.ubuntu.com/ubuntu/
+
+        rm -r $CRAFT_PART_INSTALL/dev/*
+        mkdir $CRAFT_PART_INSTALL/boot/efi
+
+The ``sources.list`` file that ``mmdebstrap`` creates will only allow us to install
+system packages from the ``noble`` suite's ``main`` component. This is fine for
+essential system packages, but we'll need to replace this file to install a wider array
+of packages.
+
+Copy the following highlighted lines to the end of the ``override-build`` script:
+
+.. code-block:: yaml
+    :class: no-copybutton
+    :emphasize-lines: 18-26
+
+    parts:
+      rootfs:
+        plugin: nil
+        build-packages: ["mmdebstrap"]
+        override-build: |
+          mmdebstrap --arch $CRAFT_ARCH_BUILD_FOR \
+            --mode=sudo \
+            --format=dir \
+            --variant=minbase \
+            --include=apt \
+            noble \
+            $CRAFT_PART_INSTALL/ \
+            http://archive.ubuntu.com/ubuntu/
+
+          rm -r $CRAFT_PART_INSTALL/dev/*
+          mkdir $CRAFT_PART_INSTALL/boot/efi
+
+          rm $CRAFT_PART_INSTALL/etc/apt/sources.list
+
+          cat << EOF > $CRAFT_PART_INSTALL/etc/apt/sources.list.d/ubuntu.sources
+          Types: deb deb-src
+          URIs: http://archive.ubuntu.com/ubuntu
+          Suites: noble noble-updates noble-backports noble-security
+          Components: main restricted universe multiverse
+          Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+          EOF
+
+Now, when we install packages into our image, we'll be able to access the other
+components in the ``noble`` suite.
+
+At this point, the file system only exists in the ``rootfs`` part. To get it into the
+final image, we'll need to copy it into the overlay file system. We can do so with the
+``organize`` key and the ``(overlay)/`` prefix. Add the following highlighted lines to
+the ``rootfs`` key:
+
+.. code-block:: yaml
+    :class: no-copybutton
+    :emphasize-lines: 27, 28
+
+    parts:
+      rootfs:
+        plugin: nil
+        build-packages: ["mmdebstrap"]
+        override-build: |
+          mmdebstrap --arch $CRAFT_ARCH_BUILD_FOR \
+            --mode=sudo \
+            --format=dir \
+            --variant=minbase \
+            --include=apt \
+            noble \
+            $CRAFT_PART_INSTALL/ \
+            http://archive.ubuntu.com/ubuntu/
+
+          rm -r $CRAFT_PART_INSTALL/dev/*
+          mkdir $CRAFT_PART_INSTALL/boot/efi
+
+          rm $CRAFT_PART_INSTALL/etc/apt/sources.list
+
+          cat << EOF > $CRAFT_PART_INSTALL/etc/apt/sources.list.d/ubuntu.sources
+          Types: deb deb-src
+          URIs: http://archive.ubuntu.com/ubuntu
+          Suites: noble noble-updates noble-backports noble-security
+          Components: main restricted universe multiverse
+          Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+          EOF
+        organize:
+          '*': (overlay)/
+
+This copies the result of the part's build step, where we ran the ``mmdebstrap``
+command, to the root of the overlay file system, thereby securing its place in the final
+image.
+
+
+Add essential packages
+----------------------
+
+We'll need some additional software packages for our image to be bootable. Let's define
+a new part to source them. Add the following ``packages`` part:
+
+.. code-block:: yaml
+
+    packages:
+      plugin: nil
+      overlay-packages:
+        - ubuntu-server-minimal
+        - linux-image-generic
+        - grub2-common
+        - grub-pc
+        - shim-signed
+        - sl
+
+With the exception of ``sl``, these packages add the system's essential components, such
+as the kernel, core utilities, and boot loader.
+
+We added the ``sl`` package to ensure that we can source packages from the extra
+components of the ``noble`` suite we added in the ``rootfs`` part. This isn't essential,
+but it's a fun way to test our image later.
+
+
+Create the file system table
+----------------------------
+
+If we tried to boot our image, its partitions wouldn't be mounted. This is because
+Imagecraft requires that we create our file system table manually. The content of this
+table is similar to what we declared in the ``filesystems`` key, with some additional
+configuration.
+
+With how we set up our partitions and mount points, the table should read:
+
+.. code-block:: text
+    :class: no-copybutton
+
+    LABEL=writable    /            ext4    discard,errors=remount-ro    0    1
+    LABEL=UEFI        /boot/efi    vfat    umask=0077                   0    1
+
+The first three columns should look familiar—these are the labels, mount points, and
+file system types we declared for our partitions. The last three columns declare each
+partition's active mount options, whether we want to dump the partition's utility
+backup, and the file system check order.
+
+Let's create a part that writes this to the ``/etc/fstab/`` directory in the overlay
+file system. Add the following ``fstab`` part:
+
+.. code-block:: yaml
+
+    fstab:
+      plugin: nil
+      overlay-script: |
+        cat << EOF > $CRAFT_OVERLAY/etc/fstab
+        LABEL=writable    /            ext4    discard,errors=remount-ro    0    1
+        LABEL=UEFI        /boot/efi    vfat    umask=0077                   0    1
+        EOF
+
+Here, we used the ``overlay-script`` key to write the table to the overlay file system,
+which is referenced through the ``$CRAFT_OVERLAY`` environment variable. Keep in mind
+that this environment variable is only available in parts that include, or depend on
+another part that includes, overlay keys.
+
+The partitions will now be mounted automatically every time the system boots.
+
+
+Set the default user
+--------------------
+
+To interact with the system after we boot the image, we'll need to set the default user
+and password.
+
+For the purposes of this tutorial, we'll set up a ``login`` part that runs the
+``chpasswd`` command in the overlay file system. This should *not* be done in images
+built for production environments. In such cases, you should use a secure method that
+fits your image's application.
+
+Add the following ``login`` part:
+
+.. code-block:: yaml
+
+    login:
+      plugin: nil
+      overlay-script:
+        echo "root:password" | chpasswd --root "${CRAFT_OVERLAY}"
+
+When we run our image later, this will allow us to log in with the username ``root`` and
+the password ``password``.
+
+Our project file now contains everything we need to pack a complete, bootable image.
+Save and close the ``imagecraft.yaml`` file.
+
+
+Pack the image
+--------------
+
+To isolate the image build from your machine, we'll pack the image in a Multipass VM.
+Once you're ready, open a new terminal in the ``ubuntu-minimal/`` project directory and
+run:
+
+.. code-block:: bash
+
+    snap set imagecraft provider=multipass
+    imagecraft pack
+
+The packing process takes around ten minutes. When your terminal shows the following
+line, the build is complete:
+
+.. code-block:: bash
+    :class: no-copybutton
+
+    Packed disk.img
+
+Congratulations on building your first image! Before you start celebrating, let's run
+the image to make sure everything is working as expected.
+
+
+Run and test the image
+----------------------
+
+We'll run our image with QEMU, a common choice for full-system emulation. In your
+terminal, install it by running:
+
+.. code-block:: bash
+
+    apt install qemu-system-x86
+
+We'll also need UEFI firmware. One of the most popular choices for QEMU is OVMF. Install
+it with:
+
+.. code-block:: bash
+
+    apt install ovmf
+
+Before we run our image, let's copy the UEFI variables into a temporary directory so we
+don't compromise the originals:
+
+.. code-block:: bash
+
+    cp /usr/share/OVMF/OVMF_VARS_4M.fd /tmp/OVMF_VARS_4M.fd
+
+You'll need to repeat this step if you reboot your machine between runs.
+
+With no further ado, let's run the image with QEMU:
+
+.. code-block:: bash
+
+    qemu-system-x86_64 \
+    -accel kvm \
+    -m 4G \
+    -cpu host \
+    -smp 8 \
+    -drive if=pflash,format=raw,readonly=on,file=/usr/share/OVMF/OVMF_CODE_4M.fd \
+    -drive if=pflash,format=raw,file=/tmp/OVMF_VARS_4M.fd \
+    -drive file=disk.img,format=raw,index=0,media=disk
+
+This will open QEMU in a separate window. After about a minute, it'll display the
+following login prompt:
+
+.. code-block:: bash
+
+    imagecraft-ubuntu-minimal-amd64-49807517 login:
+
+As you may recall from the ``login`` part, the default username is ``root`` and the password
+is ``password``. Enter these into the QEMU shell now.
+
+By booting and logging in to the image, we've verified the presence of its essential
+packages. To show that the non-essential packages are in place, let's run the ``sl``
+command in the QEMU shell.
+
+
+Review the project file
+-----------------------
+
+Here's the complete project file for the ubuntu-minimal image. Yours should look similar
+to it.
+
+.. dropdown:: imagecraft.yaml for ubuntu-minimal
+
+    .. code-block:: yaml
+
+        name: ubuntu-minimal
+        base: bare
+        build-base: ubuntu@24.04
+        version: '0.1'
+        summary: A lightweight, pre-installed Ubuntu image for AMD64 machines.
+        description: |
+          The ubuntu-minimal image is a lightweight, pre-installed Ubuntu
+          image for AMD64 machines. Its root file system is based off of
+          Ubuntu 24.04 LTS, and it's booted with GRUB.
+
+        platforms:
+          amd64:
+
+        volumes:
+          disk:
+            schema: gpt
+            structure:
+              - name: rootfs
+                role: system-data
+                type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+                filesystem: ext4
+                filesystem-label: writable
+                size: 3G
+              - name: efi
+                type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
+                filesystem: vfat
+                role: system-boot
+                filesystem-label: UEFI
+                size: 256M
+
+        filesystems:
+          default:
+            - device: (volume/disk/rootfs)
+              mount: /
+            - device: (volume/disk/efi)
+              mount: /boot/efi
+
+        parts:
+          rootfs:
+            plugin: nil
+            build-packages: ["mmdebstrap"]
+            override-build: |
+              mmdebstrap --arch $CRAFT_ARCH_BUILD_FOR \
+                --mode=sudo \
+                --format=dir \
+                --variant=minbase \
+                --include=apt \
+                noble \
+                $CRAFT_PART_INSTALL/ \
+                http://archive.ubuntu.com/ubuntu/
+              rm -r $CRAFT_PART_INSTALL/dev/*
+              mkdir $CRAFT_PART_INSTALL/boot/efi
+
+              rm $CRAFT_PART_INSTALL/etc/apt/sources.list
+
+              cat << EOF > $CRAFT_PART_INSTALL/etc/apt/sources.list.d/ubuntu.sources
+              Types: deb deb-src
+              URIs: http://archive.ubuntu.com/ubuntu
+              Suites: noble noble-updates noble-backports noble-security
+              Components: main restricted universe multiverse
+              Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+              EOF
+            organize:
+              '*': (overlay)/
+
+          packages:
+            plugin: nil
+            overlay-packages:
+              - ubuntu-server-minimal
+              - grub2-common
+              - grub-pc
+              - shim-signed
+              - sl
+
+          fstab:
+            plugin: nil
+            overlay-script: |
+              cat << EOF > $CRAFT_OVERLAY/etc/fstab
+              LABEL=writable    /            ext4    discard,errors=remount-ro    0    1
+              LABEL=UEFI        /boot/efi    vfat    umask=0077                   0    1
+              EOF
+
+          login:
+            plugin: nil
+            overlay-script:
+              echo "root:password" | chpasswd --root "${CRAFT_OVERLAY}"
+
+
+Conclusion
+----------
+
+This marks the end of this image's journey. If you'd like to develop your crafting
+skills further, you can customize the ubuntu-minimal image or even build a new one
+from scratch.
+
+If you create an image for a new system or architecture, we encourage you to share it
+with us on `Matrix <https://matrix.to/#/#starcraft-development:ubuntu.com>`__. We'd love
+to see what you come up with.
+
+If you'd like to share any feedback on Imagecraft or this tutorial, please `open an
+issue <https://github.com/canonical/imagecraft/issues/new/choose>`__. We appreciate your
+input.
