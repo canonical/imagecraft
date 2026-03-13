@@ -28,7 +28,6 @@ and constructive feedback.
     :hidden:
 
     tutorials/index
-    how-to-guides/index
     reference/index
     explanation/index
     contribute-to-this-documentation
