@@ -52,7 +52,7 @@ docs = [
     "sphinxext-rediraffe==0.3.0",
     # Missing from sphinxcontrib-details-directive, see
     # https://github.com/sphinx-contrib/sphinxcontrib-details-directive/issues/5
-    "setuptools<82.0",
+    "setuptools<82.1",
     "sphinxcontrib-details-directive",
     {include-group = "docs-starter-pack"},
 ]
