@@ -8,8 +8,10 @@ is self-contained and delivers a working result that marks a learning milestone 
 an opportunity for further exploration. If you're a newcomer to Imagecraft, this is the
 best way to start.
 
+* :ref:`tutorial-build-an-ubuntu-image`
 
 .. toctree::
     :maxdepth: 1
+    :hidden:
 
     build-an-ubuntu-image

@@ -1,3 +1,6 @@
+.. meta::
+    :description: Learn how to build a basic Ubuntu image with Imagecraft.
+
 .. _tutorial-build-an-ubuntu-image:
 
 Build an Ubuntu image
@@ -104,17 +107,10 @@ The ``init`` command filled out these top-level keys but left out some project-s
 details. Let's update the ``summary`` and ``description`` keys to better reflect our new
 project. Replace the first six keys with:
 
-.. code-block:: yaml
-
-    name: ubuntu-minimal
-    base: bare
-    build-base: ubuntu@24.04
-    version: '0.1'
-    summary: A minimal, pre-installed Ubuntu image.
-    description: |
-      The ubuntu-minimal image is a lightweight, pre-installed Ubuntu
-      image for AMD64 machines. It's based off of Ubuntu 24.04 LTS and
-      booted with GRUB.
+.. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
+    :language: yaml
+    :start-at: name: ubuntu-minimal
+    :end-at:   booted with GRUB
 
 The ``base`` key defines the foundation for the image's contents. In Imagecraft, this is
 always an empty directory, known as the *bare* base.
@@ -491,8 +487,8 @@ run:
 The packing process takes around ten minutes. When your terminal shows the following
 line, the build is complete:
 
-.. code-block:: bash
-    :class: no-copybutton
+.. terminal::
+    :output-only:
 
     Packed disk.img
 
@@ -543,8 +539,8 @@ With no further ado, let's run the image with QEMU:
 This will open QEMU in a separate window. After about a minute, it'll display the
 following login prompt:
 
-.. code-block:: bash
-    :class: no-copybutton
+.. terminal::
+    :output-only:
 
     imagecraft-ubuntu-minimal-amd64-49807517 login:
 
@@ -555,8 +551,8 @@ By booting and logging in to the image, we've verified the presence of its essen
 packages. To show that the non-essential packages are in place, let's run the ``sl``
 command in the QEMU shell.
 
-.. code-block:: bash
-    :class: no-copybutton
+.. terminal::
+    :output-only:
 
           ====        ________                ___________
       _D _|  |_______/        \__I_I_____===__|_________|
