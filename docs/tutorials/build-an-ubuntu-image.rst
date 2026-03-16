@@ -291,7 +291,7 @@ part to source them. Add the following ``packages`` part:
 
 .. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
     :language: yaml
-    :lines: 66-73
+    :lines: 66-74
 
 With the exception of ``sl``, these packages add the system's essential components, such
 as the kernel, core utilities, and boot loader.

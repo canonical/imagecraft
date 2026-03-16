@@ -70,6 +70,7 @@ parts:
       - grub2-common
       - grub-pc
       - shim-signed
+      - linux-image-generic
       - sl
 
   fstab:
