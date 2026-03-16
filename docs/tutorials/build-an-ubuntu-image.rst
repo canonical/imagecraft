@@ -119,10 +119,10 @@ The ``build-base`` key defines the system that's used to assemble the image. It 
 *not* have any influence on the image's contents. It's best to build with the latest
 Ubuntu LTS release in most cases, so we left this unchanged.
 
-The ``summary``, and ``description`` keys tell consumers of our image a little more
+The ``summary`` and ``description`` keys tell consumers of our image a little more
 about it. The summary is a one-line description, limited at 79 characters, while the
 description is more open-ended and can span multiple lines. These were both placeholders
-in the template project file, so we made them more meaningful for our project.
+in the template project file, so we made them meaningful for our project.
 
 
 .. Define the target platform
@@ -286,8 +286,8 @@ image.
 Add essential packages
 ----------------------
 
-We'll need some additional software packages for our image to be bootable. Let's define
-a new part to source them. Add the following ``packages`` part:
+We'll need some additional packages for our image to be bootable. Let's define a new
+part to source them. Add the following ``packages`` part:
 
 .. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
     :language: yaml
