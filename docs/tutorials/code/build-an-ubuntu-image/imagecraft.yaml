@@ -67,10 +67,10 @@ parts:
     plugin: nil
     overlay-packages:
       - ubuntu-server-minimal
+      - linux-image-generic
       - grub2-common
       - grub-pc
       - shim-signed
-      - linux-image-generic
       - sl
 
   fstab:
