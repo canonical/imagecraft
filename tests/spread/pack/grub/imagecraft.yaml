@@ -16,23 +16,11 @@ filesystems:
       device: (volume/pc/efi)
 
 parts:
-  # build a simple rootfs
+  # build a simple rootfs with mmdebstrap plugin
   rootfs:
-    plugin: nil
-    build-packages: ["mmdebstrap"]
-    override-build: |
-      mmdebstrap --arch $CRAFT_ARCH_BUILD_FOR \
-       --mode=sudo \
-       --format=dir \
-       --variant=minbase \
-       --include=apt \
-       noble \
-       $CRAFT_PART_INSTALL/ \
-       http://archive.ubuntu.com/ubuntu/
-      # mmdebstrap filed /dev with special files. Clean it.
-      rm -r $CRAFT_PART_INSTALL/dev/*
-      # Prepare needed directory for EFI
-      mkdir $CRAFT_PART_INSTALL/boot/efi
+    plugin: mmdebstrap
+    mmdebstrap-suite: noble
+    mmdebstrap-include: ["apt"]
     organize:
       "*": (overlay)/
 
@@ -51,6 +39,7 @@ parts:
     plugin: nil
     after: [packages]
     overlay-script: |
+      mkdir -p $CRAFT_OVERLAY/boot/efi
       cat << EOF > $CRAFT_OVERLAY/etc/fstab
       LABEL=writable	/	ext4	discard,errors=remount-ro	0	1
       LABEL=UEFI	/boot/efi	vfat	umask=0077	0 1
