@@ -17,7 +17,7 @@
 import pytest
 from craft_parts import PartInfo, ProjectInfo
 from craft_parts.parts import Part
-
+from pydantic import ValidationError
 from imagecraft.plugins.mmdebstrap_plugin import (
     MmdebstrapPlugin,
     MmdebstrapPluginProperties,
@@ -73,3 +73,7 @@ def test_get_build_commands_include(part_info):
     cmd = plugin.get_build_commands()
 
     assert "--include=apt" in cmd[0]
+
+def test_mmdebstrap_suite_required():
+    with pytest.raises(ValidationError, match="mmdebstrap-suite"):
+        MmdebstrapPluginProperties.unmarshal({})
