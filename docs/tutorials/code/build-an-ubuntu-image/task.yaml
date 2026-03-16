@@ -1,0 +1,22 @@
+summary: Test the "Build an Ubuntu image" tutorial
+
+execute: |
+  snap install imagecraft --channel=beta --classic
+  snap install multipass
+  mkdir ubuntu-minimal
+  cd ubuntu-minimal
+  imagecraft init
+  cp ../imagecraft.yaml imagecraft.yaml
+  snap set imagecraft provider=multipass
+  imagecraft pack
+  apt install qemu-system-x86
+  apt install ovmf
+  cp /usr/share/OVMF/OVMF_VARS_4M.fd /tmp/OVMF_VARS_4M.fd
+  qemu-system-x86_64 \
+    -accel kvm \
+    -m 4G \
+    -cpu host \
+    -smp 8 \
+    -drive if=pflash,format=raw,readonly=on,file=/usr/share/OVMF/OVMF_CODE_4M.fd \
+    -drive if=pflash,format=raw,file=/tmp/OVMF_VARS_4M.fd \
+    -drive file=disk.img,format=raw,index=0,media=disk
