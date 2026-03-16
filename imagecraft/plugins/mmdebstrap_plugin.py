@@ -14,13 +14,16 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+"""The mmdebstrap plugin."""
+
 from typing import Literal, cast, override
+
 from craft_parts.plugins import Plugin
 from craft_parts.plugins.properties import PluginProperties
 
 
 class MmdebstrapPluginProperties(PluginProperties, frozen=True):
-    """Properties for the mmdebstrap plugin"""
+    """Properties for the mmdebstrap plugin."""
 
     plugin: Literal["mmdebstrap"] = "mmdebstrap"
 
@@ -48,6 +51,36 @@ class MmdebstrapPluginProperties(PluginProperties, frozen=True):
 
 
 class MmdebstrapPlugin(Plugin):
+    """A plugin to create a root filesystem using mmdebstrap.
+
+    This plugin uses the following plugin-specific keywords:
+
+    - mmdebstrap-suite
+     (string, required)
+     The suite to bootstrap (e.g. 'noble', 'jammy').
+
+    - mmdebstrap-mode
+      (string)
+      The bootstrap variant. Default is 'minbase'.
+
+    - mmdebstrap-mode
+      (string)
+      The execution mode. Default is 'auto'.
+
+    - mmdebstrap-format
+      (string)
+      The output format. Default is 'dir'.
+
+    - mmdebstrap-include
+      (list of strings)
+      Additional packages to include in the bootstrap.
+
+    - mmdebstrap-mirror
+      (string)
+      The mirror URL. Defaults to "http://archive.ubuntu.com/ubuntu" or
+      "http://ports.ubuntu.com/ubuntu-ports".
+    """
+
     properties_class = MmdebstrapPluginProperties
 
     @override
@@ -67,6 +100,7 @@ class MmdebstrapPlugin(Plugin):
 
     @override
     def get_build_commands(self) -> list[str]:
+        """Return a list of commands to run during the build step."""
         options = cast(MmdebstrapPluginProperties, self._options)
 
         mirror = options.mmdebstrap_mirror or self._get_default_mirror()

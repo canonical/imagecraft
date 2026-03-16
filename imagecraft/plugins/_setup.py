@@ -16,6 +16,7 @@
 
 from craft_parts.plugins import register
 from craft_parts.plugins.plugins import PluginType
+
 from .mmdebstrap_plugin import MmdebstrapPlugin
 
 
