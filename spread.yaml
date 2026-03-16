@@ -172,8 +172,6 @@ prepare: |
   lxd waitready --timeout=30
   lxd init --auto
 
-  snap install --classic --dangerous imagecraft_*.snap
-
 debug-each: |
   # output latest imagecraft log file on test failure
   imagecraft_log_file=$(find /root/.local/state/imagecraft/log/ -name 'imagecraft*.log' | sort -n | tail -n1)
