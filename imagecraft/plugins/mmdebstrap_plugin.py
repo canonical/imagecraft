@@ -78,7 +78,7 @@ class MmdebstrapPlugin(Plugin):
     - mmdebstrap-mirror
       (string)
       The mirror URL. Defaults to "http://archive.ubuntu.com/ubuntu" or
-      "http://ports.ubuntu.com/ubuntu-ports".
+      "http://ports.ubuntu.com/ubuntu-ports" based on target architecture.
     """
 
     properties_class = MmdebstrapPluginProperties
