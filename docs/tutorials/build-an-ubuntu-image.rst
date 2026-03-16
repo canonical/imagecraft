@@ -110,7 +110,7 @@ project. Replace the first six keys with:
 .. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
     :language: yaml
     :start-at: name: ubuntu-minimal
-    :end-at:   booted with GRUB
+    :end-at: Ubuntu 24.04 LTS, and it's booted with GRUB
 
 The ``base`` key defines the foundation for the image's contents. In Imagecraft, this is
 always an empty directory, known as the *bare* base.
@@ -152,26 +152,12 @@ first was created for us automatically. Before we go over its contents, let's al
 define an EFI system partition for our image to boot from. Add the following highlighted
 lines after the ``rootfs`` partition:
 
-.. code-block:: yaml
+.. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
+    :language: yaml
     :class: no-copybutton
+    :start-at: volumes:
+    :end-at: size: 256M
     :emphasize-lines: 11-16
-
-    volumes:
-      disk:
-        schema: gpt
-        structure:
-          - name: rootfs
-            role: system-data
-            type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
-            filesystem: ext4
-            filesystem-label: writable
-            size: 3G
-          - name: efi
-            role: system-boot
-            type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
-            filesystem: vfat
-            filesystem-label: UEFI
-            size: 256M
 
 There's a lot to unpack here. Let's take a moment to go over each of the ``efi``
 partition's keys and compare them to the ``rootfs`` partition.
@@ -206,16 +192,12 @@ image's root, but we'll still need to mount the EFI system partition.
 
 Add the following highlighted lines to the end of the ``filesystems`` key:
 
-.. code-block:: yaml
+.. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
+    :language: yaml
     :class: no-copybutton
+    :start-at: filesystems:
+    :end-at: mount: /boot/efi
     :emphasize-lines: 5, 6
-
-    filesystems:
-      default:
-        - device: (volume/disk/rootfs)
-          mount: /
-        - device: (volume/disk/efi)
-          mount: /boot/efi/
 
 With this entry, we mounted the EFI system partition to the /boot/efi/ directory in the
 final image. Keep in mind that we'll need to create this directory ourselves when we set
@@ -239,21 +221,10 @@ system into our image.
 
 In the ``parts`` key, replace the template part with the following ``rootfs`` part:
 
-.. code-block:: yaml
-
-    parts:
-      rootfs:
-        plugin: nil
-        build-packages: ["mmdebstrap"]
-        override-build: |
-          mmdebstrap --arch $CRAFT_ARCH_BUILD_FOR \
-          --mode=sudo \
-          --format=dir \
-          --variant=minbase \
-          --include=apt \
-          noble \
-          $CRAFT_PART_INSTALL/ \
-          http://archive.ubuntu.com/ubuntu/
+.. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
+    :language: yaml
+    :start-at: parts:
+    :end-at: http://archive.ubuntu.com/ubuntu/
 
 In most parts, the ``plugin`` key specifies the build system needed to prepare the part.
 In this case, we don't need a build system, so we set the ``plugin`` key to ``nil``.
@@ -272,25 +243,12 @@ still need to create the ``/boot/efi/`` directory that we mounted the ``efi`` pa
 to. We can tackle both of these items by adding the following highlighted lines to the
 end of the ``override-build`` script:
 
-.. code-block:: yaml
+.. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
+    :language: yaml
     :class: no-copybutton
-    :emphasize-lines: 14, 15
-
-    rootfs:
-      plugin: nil
-      build-packages: ["mmdebstrap"]
-      override-build: |
-        mmdebstrap --arch $CRAFT_ARCH_BUILD_FOR \
-        --mode=sudo \
-        --format=dir \
-        --variant=minbase \
-        --include=apt \
-        noble \
-        $CRAFT_PART_INSTALL/ \
-        http://archive.ubuntu.com/ubuntu/
-
-        rm -r $CRAFT_PART_INSTALL/dev/*
-        mkdir $CRAFT_PART_INSTALL/boot/efi
+    :start-at: rootfs:
+    :end-at: mkdir $CRAFT_PART_INSTALL/boot/efi
+    :emphasize-lines: 13, 14
 
 The ``sources.list`` file that ``mmdebstrap`` creates will only allow us to install
 system packages from the ``noble`` suite's ``main`` component. This is fine for
@@ -299,36 +257,11 @@ of packages.
 
 Copy the following highlighted lines to the end of the ``override-build`` script:
 
-.. code-block:: yaml
+.. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
+    :language: yaml
     :class: no-copybutton
-    :emphasize-lines: 18-26
-
-    parts:
-      rootfs:
-        plugin: nil
-        build-packages: ["mmdebstrap"]
-        override-build: |
-          mmdebstrap --arch $CRAFT_ARCH_BUILD_FOR \
-            --mode=sudo \
-            --format=dir \
-            --variant=minbase \
-            --include=apt \
-            noble \
-            $CRAFT_PART_INSTALL/ \
-            http://archive.ubuntu.com/ubuntu/
-
-          rm -r $CRAFT_PART_INSTALL/dev/*
-          mkdir $CRAFT_PART_INSTALL/boot/efi
-
-          rm $CRAFT_PART_INSTALL/etc/apt/sources.list
-
-          cat << EOF > $CRAFT_PART_INSTALL/etc/apt/sources.list.d/ubuntu.sources
-          Types: deb deb-src
-          URIs: http://archive.ubuntu.com/ubuntu
-          Suites: noble noble-updates noble-backports noble-security
-          Components: main restricted universe multiverse
-          Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
-          EOF
+    :lines: 39-62
+    :emphasize-lines: 16-24
 
 Now, when we install packages into our image, we'll be able to access the other
 components in the ``noble`` suite.
@@ -338,38 +271,12 @@ final image, we'll need to copy it into the overlay file system. We can do so wi
 ``organize`` key and the ``(overlay)/`` prefix. Add the following highlighted lines to
 the ``rootfs`` key:
 
-.. code-block:: yaml
+.. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
+    :language: yaml
     :class: no-copybutton
-    :emphasize-lines: 27, 28
-
-    parts:
-      rootfs:
-        plugin: nil
-        build-packages: ["mmdebstrap"]
-        override-build: |
-          mmdebstrap --arch $CRAFT_ARCH_BUILD_FOR \
-            --mode=sudo \
-            --format=dir \
-            --variant=minbase \
-            --include=apt \
-            noble \
-            $CRAFT_PART_INSTALL/ \
-            http://archive.ubuntu.com/ubuntu/
-
-          rm -r $CRAFT_PART_INSTALL/dev/*
-          mkdir $CRAFT_PART_INSTALL/boot/efi
-
-          rm $CRAFT_PART_INSTALL/etc/apt/sources.list
-
-          cat << EOF > $CRAFT_PART_INSTALL/etc/apt/sources.list.d/ubuntu.sources
-          Types: deb deb-src
-          URIs: http://archive.ubuntu.com/ubuntu
-          Suites: noble noble-updates noble-backports noble-security
-          Components: main restricted universe multiverse
-          Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
-          EOF
-        organize:
-          '*': (overlay)/
+    :start-at: rootfs:
+    :end-at: '*': (overlay)/
+    :emphasize-lines: 25, 26
 
 This copies the result of the part's build step, where we ran the ``mmdebstrap``
 command, to the root of the overlay file system, thereby securing its place in the final
@@ -382,17 +289,9 @@ Add essential packages
 We'll need some additional software packages for our image to be bootable. Let's define
 a new part to source them. Add the following ``packages`` part:
 
-.. code-block:: yaml
-
-    packages:
-      plugin: nil
-      overlay-packages:
-        - ubuntu-server-minimal
-        - linux-image-generic
-        - grub2-common
-        - grub-pc
-        - shim-signed
-        - sl
+.. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
+    :language: yaml
+    :lines: 66-73
 
 With the exception of ``sl``, these packages add the system's essential components, such
 as the kernel, core utilities, and boot loader.
@@ -426,15 +325,10 @@ backup, and the file system check order.
 Let's create a part that writes this to the ``/etc/fstab/`` directory in the overlay
 file system. Add the following ``fstab`` part:
 
-.. code-block:: yaml
-
-    fstab:
-      plugin: nil
-      overlay-script: |
-        cat << EOF > $CRAFT_OVERLAY/etc/fstab
-        LABEL=writable    /            ext4    discard,errors=remount-ro    0    1
-        LABEL=UEFI        /boot/efi    vfat    umask=0077                   0    1
-        EOF
+.. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
+    :language: yaml
+    :start-at: fstab:
+    :end-at: EOF
 
 Here, we used the ``overlay-script`` key to write the table to the overlay file system,
 which is referenced through the ``$CRAFT_OVERLAY`` environment variable. Keep in mind
@@ -457,12 +351,10 @@ fits your image's application.
 
 Add the following ``login`` part:
 
-.. code-block:: yaml
-
-    login:
-      plugin: nil
-      overlay-script:
-        echo "root:password" | chpasswd --root "${CRAFT_OVERLAY}"
+.. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
+    :language: yaml
+    :start-at: login:
+    :end-at: echo "root:password" | chpasswd --root "${CRAFT_OVERLAY}"
 
 When we run our image later, this will allow us to log in with the username ``root`` and
 the password ``password``.
