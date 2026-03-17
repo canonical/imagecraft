@@ -57,7 +57,7 @@ class MmdebstrapPlugin(Plugin):
 
     - mmdebstrap-suite
      (string, required)
-     The suite to bootstrap (e.g. 'noble', 'jammy').
+     The suite to bootstrap (e.g. 'noble').
 
     - mmdebstrap-variant
       (string)
