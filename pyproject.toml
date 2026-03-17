@@ -96,6 +96,7 @@ dev = [
     "types-setuptools",
 ]
 tics = ["flake8", "pylint"]
+dev-jammy = ["python-apt~=2.4.0;sys_platform=='linux'"]
 dev-noble = ["python-apt~=2.7.0;sys_platform=='linux'"]
 dev-plucky = ["python-apt~=2.9.0;sys_platform=='linux'"]
 dev-questing = ["python-apt~=3.0.0;sys_platform=='linux'"]
@@ -137,6 +138,7 @@ constraint-dependencies = [
 ]
 conflicts = [
     [
+        { group = "dev-jammy" },
         { group = "dev-noble" },
         { group = "dev-plucky" },
         { group = "dev-questing" },
