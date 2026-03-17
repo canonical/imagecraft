@@ -48,6 +48,7 @@ def test_lifecycle_args(
         cache_dir=Path("cache"),
         work_dir=Path("work"),
         ignore_local_sources=[".craft"],
+        ignore_outdated=[".craft"],
         parallel_build_count=ANY,  # Value will vary when tests run locally or in CI
         project_vars=ProjectVarInfo.unmarshal(
             {
