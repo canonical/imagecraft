@@ -327,8 +327,7 @@ file system. Add the following ``fstab`` part:
 
 .. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
     :language: yaml
-    :start-at: fstab:
-    :end-at: EOF
+    :lines: 76-82
 
 Here, we used the ``overlay-script`` key to write the table to the overlay file system,
 which is referenced through the ``$CRAFT_OVERLAY`` environment variable. Keep in mind
