@@ -112,7 +112,7 @@ parts:
     build-packages:
       - libffi-dev
       - libgit2-dev
-      - cargo-1.85
+      - cargo-1.89
       - pkg-config
       - git
     build-snaps:
@@ -122,8 +122,8 @@ parts:
       - UV_COMPILE_BYTECODE: "1"
       - UV_NO_BINARY: "1"
       - MAKEOPTS: -j$(nproc --all)
-      - CARGO: cargo-1.85
-      - RUSTC: rustc-1.85
+      - CARGO: cargo-1.89
+      - RUSTC: rustc-1.89
     organize:
       bin/craftctl: libexec/imagecraft/craftctl
     override-build: |
