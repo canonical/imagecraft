@@ -1,0 +1,35 @@
+name: classic-preseed-test
+version: "0.1"
+summary: Test classic-preseed plugin
+description: Test classic-preseed plugin
+base: bare
+build-base: ubuntu@24.04
+
+platforms:
+  amd64:
+
+volumes:
+  disk:
+    schema: gpt
+    structure:
+      - name: rootfs
+        role: system-data
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        filesystem: ext4
+        filesystem-label: writable
+        size: 2G
+
+filesystems:
+  default:
+    - mount: /
+      device: (volume/disk/rootfs)
+
+parts:
+  snaps:
+    plugin: classic-preseed
+    classic-preseed-snaps:
+      - yq/latest/stable
+      - core24
+      - hello-world=edge
+    organize:
+      "*": (overlay)/
