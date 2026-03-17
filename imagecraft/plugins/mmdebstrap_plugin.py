@@ -59,7 +59,7 @@ class MmdebstrapPlugin(Plugin):
      (string, required)
      The suite to bootstrap (e.g. 'noble', 'jammy').
 
-    - mmdebstrap-mode
+    - mmdebstrap-variant
       (string)
       The bootstrap variant. Default is 'minbase'.
 
