@@ -1,0 +1,34 @@
+name: mmdebstrap-plugin
+version: "0.1"
+summary: Test mmdebstrap plugin
+description: Test for mmdestrap rootfs creation
+base: bare
+build-base: ubuntu@24.04
+
+platforms:
+  amd64:
+
+filesystems:
+  default:
+    - mount: /
+      device: (volume/pc/rootfs)
+
+parts:
+  # build a simple rootfs
+  rootfs:
+    plugin: mmdebstrap
+    mmdebstrap-suite: noble
+    mmdebstrap-include: ["curl"]
+    organize:
+      "*": (overlay)/
+
+volumes:
+  pc:
+    schema: gpt
+    structure:
+      - name: rootfs
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        filesystem: ext4
+        filesystem-label: writable
+        role: system-data
+        size: 1G

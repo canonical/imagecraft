@@ -39,7 +39,9 @@ def plugin(part_info):
     return MmdebstrapPlugin(properties=properties, part_info=part_info)
 
 
-MMDEBSTRAP_CMD = 'mmdebstrap --arch=$CRAFT_ARCH_BUILD_FOR --mode=auto --variant=minbase --format=dir noble "$CRAFT_PART_INSTALL"'
+MMDEBSTRAP_CMD = 'mmdebstrap --arch="$CRAFT_ARCH_BUILD_FOR" --mode=auto --variant=minbase --format=dir'
+UBUNTU_ARCHIVE_URL = "http://archive.ubuntu.com/ubuntu"
+UBUNTU_PORTS_URL = "http://ports.ubuntu.com/ubuntu-ports"
 
 
 def test_get_build_packages(plugin):
@@ -53,7 +55,9 @@ def test_get_build_snaps(plugin):
 def test_get_build_commands(plugin):
     cmd = plugin.get_build_commands()
 
-    assert cmd[0] == f"{MMDEBSTRAP_CMD} http://archive.ubuntu.com/ubuntu"
+    assert (
+        cmd[0] == f'{MMDEBSTRAP_CMD} noble "$CRAFT_PART_INSTALL" {UBUNTU_ARCHIVE_URL}'
+    )
     assert cmd[1] == 'rm -r "$CRAFT_PART_INSTALL"/dev/*'
 
 
@@ -61,7 +65,7 @@ def test_get_build_commands(plugin):
 def test_get_build_commands_arm64(plugin):
     cmd = plugin.get_build_commands()
 
-    assert cmd[0] == f"{MMDEBSTRAP_CMD} http://ports.ubuntu.com/ubuntu-ports"
+    assert cmd[0] == f'{MMDEBSTRAP_CMD} noble "$CRAFT_PART_INSTALL" {UBUNTU_PORTS_URL}'
     assert cmd[1] == 'rm -r "$CRAFT_PART_INSTALL"/dev/*'
 
 
@@ -72,7 +76,10 @@ def test_get_build_commands_include(part_info):
     plugin = MmdebstrapPlugin(properties=properties, part_info=part_info)
     cmd = plugin.get_build_commands()
 
-    assert "--include=apt" in cmd[0]
+    assert (
+        cmd[0]
+        == f'{MMDEBSTRAP_CMD} --include=apt noble "$CRAFT_PART_INSTALL" {UBUNTU_ARCHIVE_URL}'
+    )
 
 
 def test_mmdebstrap_suite_required():

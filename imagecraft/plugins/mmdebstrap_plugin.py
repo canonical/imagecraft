@@ -106,18 +106,22 @@ class MmdebstrapPlugin(Plugin):
         mirror = options.mmdebstrap_mirror or self._get_default_mirror()
         cmd: list[str] = [
             "mmdebstrap",
-            "--arch=$CRAFT_ARCH_BUILD_FOR",
+            '--arch="$CRAFT_ARCH_BUILD_FOR"',
             f"--mode={options.mmdebstrap_mode}",
             f"--variant={options.mmdebstrap_variant}",
             f"--format={options.mmdebstrap_format}",
-            options.mmdebstrap_suite,
-            '"$CRAFT_PART_INSTALL"',
-            mirror,
         ]
 
         if options.mmdebstrap_include:
             cmd.append(f"--include={','.join(options.mmdebstrap_include)}")
 
+        cmd.extend(
+            [
+                options.mmdebstrap_suite,
+                '"$CRAFT_PART_INSTALL"',
+                mirror,
+            ]
+        )
         return [" ".join(cmd), 'rm -r "$CRAFT_PART_INSTALL"/dev/*']
 
     def _get_default_mirror(self) -> str:
