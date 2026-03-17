@@ -49,6 +49,7 @@ LaTeX
 latexmk
 lcm
 Makefiles?
+mkdir
 MSBuild
 Multipass
 mvn
@@ -60,6 +61,7 @@ Numpy
 Open Graph
 openapi
 otf
+ovmf
 PDF
 plantuml
 PNG
