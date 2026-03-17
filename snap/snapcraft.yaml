@@ -121,6 +121,7 @@ parts:
       - "CFLAGS": "$(pkg-config python-3.12 yaml-0.1 libgit2 --cflags)"
       - UV_COMPILE_BYTECODE: "1"
       - UV_NO_BINARY: "1"
+      - UV_ONLY_BINARY: "pygit2"
       - MAKEOPTS: -j$(nproc --all)
       - CARGO: cargo-1.85
       - RUSTC: rustc-1.85
