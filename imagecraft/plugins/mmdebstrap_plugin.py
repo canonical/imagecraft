@@ -103,7 +103,6 @@ class MmdebstrapPlugin(Plugin):
         """Return a list of commands to run during the build step."""
         options = cast(MmdebstrapPluginProperties, self._options)
 
-        mirror = options.mmdebstrap_mirror or self._get_default_mirror()
         cmd: list[str] = [
             "mmdebstrap",
             '--arch="$CRAFT_ARCH_BUILD_FOR"',
@@ -115,13 +114,8 @@ class MmdebstrapPlugin(Plugin):
         if options.mmdebstrap_include:
             cmd.append(f"--include={','.join(options.mmdebstrap_include)}")
 
-        cmd.extend(
-            [
-                options.mmdebstrap_suite,
-                '"$CRAFT_PART_INSTALL"',
-                mirror,
-            ]
-        )
+        mirror = options.mmdebstrap_mirror or self._get_default_mirror()
+        cmd.append(f'{options.mmdebstrap_suite} "$CRAFT_PART_INSTALL" {mirror}')
         return [" ".join(cmd), 'rm -r "$CRAFT_PART_INSTALL"/dev/*']
 
     def _get_default_mirror(self) -> str:
