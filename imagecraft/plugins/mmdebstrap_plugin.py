@@ -87,7 +87,7 @@ class MmdebstrapPlugin(Plugin):
         cmd: list[str] = [
             "mmdebstrap",
             f"--arch={self._part_info.target_arch}",
-            "--mode=sudo",
+            "--mode=root",
             f"--variant={options.mmdebstrap_variant}",
             "--format=dir",
         ]
@@ -110,7 +110,9 @@ class MmdebstrapPlugin(Plugin):
             else "http://ports.ubuntu.com/ubuntu-ports"
         )
 
-    def _get_build_base_suite(self, os_release_file: Path = Path("/etc/os-release")) -> str:
+    def _get_build_base_suite(
+        self, os_release_file: Path = Path("/etc/os-release")
+    ) -> str:
         with os_release_file.open() as f:
             for line in f:
                 if line.startswith("VERSION_CODENAME="):
