@@ -18,7 +18,7 @@ parts:
   rootfs:
     plugin: mmdebstrap
     mmdebstrap-suite: noble
-    mmdebstrap-include: ["curl"]
+    mmdebstrap-packages: ["curl"]
     organize:
       "*": (overlay)/
 

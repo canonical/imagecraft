@@ -14,6 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from pathlib import Path
+
 import pytest
 from craft_parts import PartInfo, ProjectInfo
 from craft_parts.parts import Part
@@ -21,7 +23,6 @@ from imagecraft.plugins.mmdebstrap_plugin import (
     MmdebstrapPlugin,
     MmdebstrapPluginProperties,
 )
-from pydantic import ValidationError
 
 
 @pytest.fixture
@@ -39,11 +40,6 @@ def plugin(part_info):
     return MmdebstrapPlugin(properties=properties, part_info=part_info)
 
 
-MMDEBSTRAP_CMD = 'mmdebstrap --arch="$CRAFT_ARCH_BUILD_FOR" --mode=auto --variant=minbase --format=dir'
-UBUNTU_ARCHIVE_URL = "http://archive.ubuntu.com/ubuntu"
-UBUNTU_PORTS_URL = "http://ports.ubuntu.com/ubuntu-ports"
-
-
 def test_get_build_packages(plugin):
     assert plugin.get_build_packages() == {"mmdebstrap"}
 
@@ -52,36 +48,34 @@ def test_get_build_snaps(plugin):
     assert plugin.get_build_snaps() == set()
 
 
-def test_get_build_commands(plugin):
-    cmd = plugin.get_build_commands()
+@pytest.mark.parametrize(
+    ("part_info", "arch", "mirror"),
+    [
+        ("amd64", "amd64", "http://archive.ubuntu.com/ubuntu"),
+        ("arm64", "arm64", "http://ports.ubuntu.com/ubuntu-ports"),
+    ],
+    indirect=["part_info"],
+)
+def test_get_build_commands(plugin, arch, mirror):
+    assert plugin.get_build_commands() == [
+        f'mmdebstrap --arch={arch} --mode=sudo --variant=apt --format=dir noble "$CRAFT_PART_INSTALL" {mirror}',
+        'rm -r "$CRAFT_PART_INSTALL"/dev/*',
+        'rm "$CRAFT_PART_INSTALL"/etc/apt/sources.list',
+    ]
 
-    assert (
-        cmd[0] == f'{MMDEBSTRAP_CMD} noble "$CRAFT_PART_INSTALL" {UBUNTU_ARCHIVE_URL}'
-    )
-    assert cmd[1] == 'rm -r "$CRAFT_PART_INSTALL"/dev/*'
 
-
-@pytest.mark.parametrize("part_info", ["arm64"], indirect=True)
-def test_get_build_commands_arm64(plugin):
-    cmd = plugin.get_build_commands()
-
-    assert cmd[0] == f'{MMDEBSTRAP_CMD} noble "$CRAFT_PART_INSTALL" {UBUNTU_PORTS_URL}'
-    assert cmd[1] == 'rm -r "$CRAFT_PART_INSTALL"/dev/*'
-
-
-def test_get_build_commands_include(part_info):
+def test_get_build_commands_packages(part_info):
     properties = MmdebstrapPluginProperties.unmarshal(
-        {"mmdebstrap-suite": "noble", "mmdebstrap-include": ["apt"]}
+        {"mmdebstrap-suite": "noble", "mmdebstrap-packages": ["curl"]}
     )
     plugin = MmdebstrapPlugin(properties=properties, part_info=part_info)
-    cmd = plugin.get_build_commands()
-
-    assert (
-        cmd[0]
-        == f'{MMDEBSTRAP_CMD} --include=apt noble "$CRAFT_PART_INSTALL" {UBUNTU_ARCHIVE_URL}'
-    )
+    assert "--include=curl" in plugin.get_build_commands()[0]
 
 
-def test_mmdebstrap_suite_required():
-    with pytest.raises(ValidationError, match="mmdebstrap-suite"):
-        MmdebstrapPluginProperties.unmarshal({})
+def test_get_suite(new_dir, part_info):
+    os_release = Path(new_dir / "os-release")
+    os_release.write_text("VERSION_CODENAME=noble")
+    properties = MmdebstrapPluginProperties.unmarshal({})
+    plugin = MmdebstrapPlugin(properties=properties, part_info=part_info)
+
+    assert plugin._get_build_base_suite(os_release) == "noble"

@@ -16,6 +16,7 @@
 
 """The mmdebstrap plugin."""
 
+from pathlib import Path
 from typing import Literal, cast, override
 
 from craft_parts.plugins import Plugin
@@ -27,7 +28,7 @@ class MmdebstrapPluginProperties(PluginProperties, frozen=True):
 
     plugin: Literal["mmdebstrap"] = "mmdebstrap"
 
-    mmdebstrap_suite: str
+    mmdebstrap_suite: str | None = None
     mmdebstrap_variant: Literal[
         "extract",
         "custom",
@@ -39,15 +40,8 @@ class MmdebstrapPluginProperties(PluginProperties, frozen=True):
         "important",
         "debootstrap",
         "standard",
-    ] = "minbase"
-    mmdebstrap_mode: Literal[
-        "auto", "sudo", "root", "unshare", "fakeroot", "fakechroot", "chrootless"
-    ] = "auto"
-    mmdebstrap_format: Literal[
-        "auto", "directory", "dir", "tar", "squashfs", "sqfs", "ext2", "null"
-    ] = "dir"
-    mmdebstrap_include: list[str] = []
-    mmdebstrap_mirror: str | None = None
+    ] = "apt"
+    mmdebstrap_packages: list[str] = []
 
 
 class MmdebstrapPlugin(Plugin):
@@ -56,29 +50,16 @@ class MmdebstrapPlugin(Plugin):
     This plugin uses the following plugin-specific keywords:
 
     - mmdebstrap-suite
-     (string, required)
+     (string)
      The suite to bootstrap (e.g. 'noble').
 
     - mmdebstrap-variant
       (string)
       The bootstrap variant. Default is 'minbase'.
 
-    - mmdebstrap-mode
-      (string)
-      The execution mode. Default is 'auto'.
-
-    - mmdebstrap-format
-      (string)
-      The output format. Default is 'dir'.
-
-    - mmdebstrap-include
+    - mmdebstrap-packages
       (list of strings)
       Additional packages to include in the bootstrap.
-
-    - mmdebstrap-mirror
-      (string)
-      The mirror URL. Defaults to "http://archive.ubuntu.com/ubuntu" or
-      "http://ports.ubuntu.com/ubuntu-ports" based on target architecture.
     """
 
     properties_class = MmdebstrapPluginProperties
@@ -105,22 +86,36 @@ class MmdebstrapPlugin(Plugin):
 
         cmd: list[str] = [
             "mmdebstrap",
-            '--arch="$CRAFT_ARCH_BUILD_FOR"',
-            f"--mode={options.mmdebstrap_mode}",
+            f"--arch={self._part_info.target_arch}",
+            "--mode=sudo",
             f"--variant={options.mmdebstrap_variant}",
-            f"--format={options.mmdebstrap_format}",
+            "--format=dir",
         ]
 
-        if options.mmdebstrap_include:
-            cmd.append(f"--include={','.join(options.mmdebstrap_include)}")
+        if options.mmdebstrap_packages:
+            cmd.append(f"--include={','.join(options.mmdebstrap_packages)}")
 
-        mirror = options.mmdebstrap_mirror or self._get_default_mirror()
-        cmd.append(f'{options.mmdebstrap_suite} "$CRAFT_PART_INSTALL" {mirror}')
-        return [" ".join(cmd), 'rm -r "$CRAFT_PART_INSTALL"/dev/*']
+        suite = options.mmdebstrap_suite or self._get_build_base_suite()
+        cmd.append(f'{suite} "$CRAFT_PART_INSTALL" {self._get_default_mirror()}')
+        return [
+            " ".join(cmd),
+            'rm -r "$CRAFT_PART_INSTALL"/dev/*',
+            'rm "$CRAFT_PART_INSTALL"/etc/apt/sources.list',
+        ]
 
     def _get_default_mirror(self) -> str:
         return (
             "http://archive.ubuntu.com/ubuntu"
-            if self._part_info.project_info.target_arch in {"amd64", "i386"}
+            if self._part_info.target_arch in {"amd64", "i386"}
             else "http://ports.ubuntu.com/ubuntu-ports"
+        )
+
+    def _get_build_base_suite(self, os_release_file: Path = Path("/etc/os-release")) -> str:
+        with os_release_file.open() as f:
+            for line in f:
+                if line.startswith("VERSION_CODENAME="):
+                    _, suite = line.strip().split("=", 1)
+                    return suite.strip('"')
+        raise ValueError(
+            "Suite could not determined from /etc/os-release. Set 'mmdebstrap-suite' key."
         )
