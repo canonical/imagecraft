@@ -65,11 +65,107 @@ Platform keys
     :override-type: str | list[str]
 
 
+Volume keys
+-----------
+
+The ``volumes`` key and its values declare the schema and layout of the image's
+partitions.
+
+.. kitbash-field:: Project volumes
+    :override-type: dict[str, Volume]
+
+.. kitbash-field:: Volume volume_schema
+    :prepend-name: volumes.<volume-name>
+
+.. kitbash-field:: Volume structure
+    :prepend-name: volumes.<volume-name>
+    :override-type: list[Partition]
+
+
+Partition keys
+--------------
+
+The following keys can be declared for each partition listed in the volume's
+``structure`` key.
+
+.. kitbash-field:: StructureItem name
+    :prepend-name: volumes.<volume-name>.structure.<partition>
+
+.. kitbash-field:: StructureItem id
+    :prepend-name: volumes.<volume-name>.structure.<partition>
+
+.. kitbash-field:: StructureItem role
+    :prepend-name: volumes.<volume-name>.structure.<partition>
+
+.. kitbash-field:: StructureItem structure_type
+    :prepend-name: volumes.<volume-name>.structure.<partition>
+
+.. kitbash-field:: StructureItem size
+    :prepend-name: volumes.<volume-name>.structure.<partition>
+
+.. kitbash-field:: StructureItem filesystem
+    :prepend-name: volumes.<volume-name>.structure.<partition>
+
+.. kitbash-field:: StructureItem filesystem_label
+    :prepend-name: volumes.<volume-name>.structure.<partition>
+
+.. kitbash-field:: StructureItem partition_number
+    :prepend-name: volumes.<volume-name>.structure.<partition>
+
+
+Filesystem keys
+---------------
+
+The following keys can be declared for each filesystem mount listed.
+
+.. kitbash-field:: Project filesystems
+    :override-type: dict[str, FilesystemMount]
+
+.. py:currentmodule:: craft_parts.filesystem_mounts
+
+.. kitbash-field:: FilesystemMountItem device
+    :prepend-name: filesystems.<filesystem-name>.<mount>
+    :override-description:
+    :skip-examples:
+
+    The device to be mounted. This must reference one of the partitions defined
+    in ``volumes.<volume-name>.structure``.
+
+    **Examples**
+
+    .. code-block:: yaml
+
+        device: "(default)"
+
+    .. code-block:: yaml
+
+        device: "(volume/pc/rootfs)"
+
+.. kitbash-field:: FilesystemMountItem mount
+    :prepend-name: filesystems.<filesystem-name>.<mount>
+    :override-description:
+    :skip-examples:
+
+    The device's mount point.
+
+    **Examples**
+
+    .. code-block:: yaml
+
+        mount: "/"
+
+    .. code-block:: yaml
+
+        mount: "/boot/efi"
+
+
 Part keys
 ---------
 
 The ``parts`` key and its values declare the image's :ref:`parts <explanation-parts>`
 and detail how they're built.
+
+.. py:currentmodule:: imagecraft.models
 
 .. kitbash-field:: Project parts
     :override-type: dict[str, Part]
@@ -219,102 +315,3 @@ and detail how they're built.
 
 .. kitbash-field:: Permissions mode
     :prepend-name: parts.<part-name>.permissions.<permission>
-
-
-Volume keys
------------
-
-The ``volumes`` key and its values declare the schema and layout of the image's
-partitions.
-
-.. py:currentmodule:: imagecraft.models
-
-.. kitbash-field:: Project volumes
-    :override-type: dict[str, Volume]
-
-.. py:currentmodule:: imagecraft.models.volume
-
-.. kitbash-field:: Volume volume_schema
-    :prepend-name: volumes.<volume-name>
-
-.. kitbash-field:: Volume structure
-    :prepend-name: volumes.<volume-name>
-    :override-type: list[Partition]
-
-
-Partition keys
---------------
-
-The following keys can be declared for each partition listed in the ``structure`` key.
-
-.. kitbash-field:: StructureItem name
-    :prepend-name: volumes.<volume-name>.structure.<partition>
-
-.. kitbash-field:: StructureItem id
-    :prepend-name: volumes.<volume-name>.structure.<partition>
-
-.. kitbash-field:: StructureItem role
-    :prepend-name: volumes.<volume-name>.structure.<partition>
-
-.. kitbash-field:: StructureItem structure_type
-    :prepend-name: volumes.<volume-name>.structure.<partition>
-
-.. kitbash-field:: StructureItem size
-    :prepend-name: volumes.<volume-name>.structure.<partition>
-
-.. kitbash-field:: StructureItem filesystem
-    :prepend-name: volumes.<volume-name>.structure.<partition>
-
-.. kitbash-field:: StructureItem filesystem_label
-    :prepend-name: volumes.<volume-name>.structure.<partition>
-
-.. kitbash-field:: StructureItem partition_number
-    :prepend-name: volumes.<volume-name>.structure.<partition>
-
-
-Filesystem keys
----------------
-
-The following keys can be declared for each filesystem mount listed.
-
-.. py:currentmodule:: imagecraft.models
-
-.. kitbash-field:: Project filesystems
-    :override-type: dict[str, FilesystemMount]
-
-.. py:currentmodule:: craft_parts.filesystem_mounts
-
-.. kitbash-field:: FilesystemMountItem mount
-    :prepend-name: filesystems.<filesystem-name>.<mount>
-    :override-description:
-    :skip-examples:
-
-    The device's mount point.
-
-    **Examples**
-
-    .. code-block:: yaml
-
-        mount: "/"
-
-    .. code-block:: yaml
-
-        mount: "/boot/efi"
-
-.. kitbash-field:: FilesystemMountItem device
-    :prepend-name: filesystems.<filesystem-name>.<mount>
-    :override-description:
-    :skip-examples:
-
-    The device to be mounted. This must reference one of the partitions defined
-    in ``volumes.<volume-name>.structure``.
-
-    **Examples**
-
-    .. code-block:: yaml
-
-        device: "(default)"
-
-    .. code-block:: yaml
-
-        device: "(volume/pc/rootfs)"
