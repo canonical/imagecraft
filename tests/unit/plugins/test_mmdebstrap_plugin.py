@@ -59,8 +59,9 @@ def test_get_build_snaps(plugin):
 def test_get_build_commands(plugin, arch, mirror):
     assert plugin.get_build_commands() == [
         f'mmdebstrap --arch={arch} --mode=root --variant=apt --format=dir noble "$CRAFT_PART_INSTALL" {mirror}',
-        'rm -r "$CRAFT_PART_INSTALL"/dev/*',
-        'rm "$CRAFT_PART_INSTALL"/etc/apt/sources.list',
+        'rm -rf "$CRAFT_PART_INSTALL"/dev/*',
+        'rm -rf "$CRAFT_PART_INSTALL"/etc/apt/sources.list.d/*',
+        'rm -f "$CRAFT_PART_INSTALL"/etc/apt/sources.list',
     ]
 
 
@@ -78,4 +79,14 @@ def test_get_suite(new_dir, part_info):
     properties = MmdebstrapPluginProperties.unmarshal({})
     plugin = MmdebstrapPlugin(properties=properties, part_info=part_info)
 
-    assert plugin._get_build_base_suite(os_release) == "noble"
+    assert plugin._get_build_base_suite(str(os_release)) == "noble"
+
+
+def test_get_suite_missing(new_dir, part_info):
+    os_release = Path(new_dir / "os-release")
+    os_release.write_text("NAME=Ubuntu")
+    properties = MmdebstrapPluginProperties.unmarshal({})
+    plugin = MmdebstrapPlugin(properties=properties, part_info=part_info)
+
+    with pytest.raises(ValueError, match="Suite could not be determined"):
+        plugin._get_build_base_suite(str(os_release))

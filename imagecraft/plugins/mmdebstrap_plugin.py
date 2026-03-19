@@ -16,11 +16,11 @@
 
 """The mmdebstrap plugin."""
 
-from pathlib import Path
 from typing import Literal, cast, override
 
 from craft_parts.plugins import Plugin
 from craft_parts.plugins.properties import PluginProperties
+from craft_parts.utils.os_utils import OsRelease
 
 
 class MmdebstrapPluginProperties(PluginProperties, frozen=True):
@@ -55,7 +55,7 @@ class MmdebstrapPlugin(Plugin):
 
     - mmdebstrap-variant
       (string)
-      The bootstrap variant. Default is 'minbase'.
+      The bootstrap variant. Default is 'apt'.
 
     - mmdebstrap-packages
       (list of strings)
@@ -99,8 +99,9 @@ class MmdebstrapPlugin(Plugin):
         cmd.append(f'{suite} "$CRAFT_PART_INSTALL" {self._get_default_mirror()}')
         return [
             " ".join(cmd),
-            'rm -r "$CRAFT_PART_INSTALL"/dev/*',
-            'rm "$CRAFT_PART_INSTALL"/etc/apt/sources.list',
+            'rm -rf "$CRAFT_PART_INSTALL"/dev/*',
+            'rm -rf "$CRAFT_PART_INSTALL"/etc/apt/sources.list.d/*',
+            'rm -f "$CRAFT_PART_INSTALL"/etc/apt/sources.list',
         ]
 
     def _get_default_mirror(self) -> str:
@@ -110,14 +111,13 @@ class MmdebstrapPlugin(Plugin):
             else "http://ports.ubuntu.com/ubuntu-ports"
         )
 
-    def _get_build_base_suite(
-        self, os_release_file: Path = Path("/etc/os-release")
-    ) -> str:
-        with os_release_file.open() as f:
-            for line in f:
-                if line.startswith("VERSION_CODENAME="):
-                    _, suite = line.strip().split("=", 1)
-                    return suite.strip('"')
+    def _get_build_base_suite(self, os_release_file: str = "/etc/os-release") -> str:
+        release = OsRelease(os_release_file=os_release_file)
+        # craft-parts#1504: use private attr until VERSION_CODENAME exposed
+        if suite := release._os_release.get(  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
+            "VERSION_CODENAME"
+        ):
+            return suite
         raise ValueError(
-            "Suite could not determined from /etc/os-release. Set 'mmdebstrap-suite' key."
+            "Suite could not be determined from /etc/os-release. Set 'mmdebstrap-suite' key."
         )
