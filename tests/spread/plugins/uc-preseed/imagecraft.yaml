@@ -1,0 +1,48 @@
+name: uc-full-test
+version: "1.0"
+summary: Test uc-preseed plugin
+description: Test uc-preseed plugin
+base: bare
+build-base: ubuntu@24.04
+
+platforms:
+  amd64:
+
+filesystems:
+  default:
+    - mount: /
+      device: (volume/disk/ubuntu-data)
+
+parts:
+  uc-seed:
+    plugin: uc-preseed
+    source: .
+    uc-preseed-model-assert: model.assert
+    uc-preseed-preseed: true
+    organize:
+      "system-seed/*": (volume/disk/ubuntu-seed)/
+
+volumes:
+  disk:
+    schema: gpt
+    structure:
+      - name: ubuntu-seed
+        role: system-seed
+        type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
+        filesystem: vfat
+        size: 1500M
+      - name: ubuntu-boot
+        role: system-boot
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        filesystem: ext4
+        size: 750M
+      - name: ubuntu-save
+        role: system-save
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        filesystem: ext4
+        size: 32M
+      - name: ubuntu-data
+        role: system-data
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        filesystem: ext4
+        size: 1G

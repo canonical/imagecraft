@@ -17,6 +17,7 @@
 from craft_parts.plugins import register
 from craft_parts.plugins.plugins import PluginType
 
+from .uc_preseed_plugin import UcPreseedPlugin
 from .classic_preseed_plugin import ClassicPreseedPlugin
 
 
@@ -25,7 +26,7 @@ def get_app_plugins() -> dict[str, PluginType]:
 
     :returns: A dict mapping plugin names to plugins
     """
-    return {"classic-preseed": ClassicPreseedPlugin}
+    return {"uc-preseed": UcPreseedPlugin, "classic-preseed": ClassicPreseedPlugin}
 
 
 def setup_plugins() -> None:
