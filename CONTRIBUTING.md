@@ -126,9 +126,6 @@ documentation. If the feature warrants a new page in the documentation, propose 
 [Diátaxis](https://diataxis.fr) category for the page. An Imagecraft maintainer will
 review your proposal and, if everything looks complete, assign the issue to you.
 
-Certain high-value issues are allocated monetary bounties. If you're interested in
-taking one on, we welcome you to apply.
-
 ### Create a development branch
 
 Once you've settled on a topic to work on, it's time to set up a local branch.
