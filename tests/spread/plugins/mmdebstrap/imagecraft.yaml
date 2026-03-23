@@ -17,7 +17,6 @@ parts:
   # build a simple rootfs
   rootfs:
     plugin: mmdebstrap
-    mmdebstrap-suite: noble
     mmdebstrap-packages: ["curl"]
     organize:
       "*": (overlay)/
