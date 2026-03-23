@@ -14,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from pathlib import Path
 
 import pytest
 from craft_parts import PartInfo, ProjectInfo
@@ -73,20 +72,22 @@ def test_get_build_commands_packages(part_info):
     assert "--include=curl" in plugin.get_build_commands()[0]
 
 
-def test_get_suite(new_dir, part_info):
-    os_release = Path(new_dir / "os-release")
-    os_release.write_text("VERSION_CODENAME=noble")
+def test_get_suite(part_info, mocker):
+    mocker.patch(
+        "imagecraft.plugins.mmdebstrap_plugin.distro.codename", return_value="noble"
+    )
     properties = MmdebstrapPluginProperties.unmarshal({})
     plugin = MmdebstrapPlugin(properties=properties, part_info=part_info)
 
-    assert plugin._get_build_base_suite(str(os_release)) == "noble"
+    assert plugin._get_build_base_suite() == "noble"
 
 
-def test_get_suite_missing(new_dir, part_info):
-    os_release = Path(new_dir / "os-release")
-    os_release.write_text("NAME=Ubuntu")
+def test_get_suite_missing(part_info, mocker):
+    mocker.patch(
+        "imagecraft.plugins.mmdebstrap_plugin.distro.codename", return_value=""
+    )
     properties = MmdebstrapPluginProperties.unmarshal({})
     plugin = MmdebstrapPlugin(properties=properties, part_info=part_info)
 
     with pytest.raises(ValueError, match="Suite could not be determined"):
-        plugin._get_build_base_suite(str(os_release))
+        plugin._get_build_base_suite()

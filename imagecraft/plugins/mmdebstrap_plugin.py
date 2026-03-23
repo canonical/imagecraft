@@ -18,9 +18,9 @@
 
 from typing import Literal, cast, override
 
+import distro
 from craft_parts.plugins import Plugin
 from craft_parts.plugins.properties import PluginProperties
-from craft_parts.utils.os_utils import OsRelease
 
 
 class MmdebstrapPluginProperties(PluginProperties, frozen=True):
@@ -111,12 +111,8 @@ class MmdebstrapPlugin(Plugin):
             else "http://ports.ubuntu.com/ubuntu-ports"
         )
 
-    def _get_build_base_suite(self, os_release_file: str = "/etc/os-release") -> str:
-        release = OsRelease(os_release_file=os_release_file)
-        # craft-parts#1504: use private attr until VERSION_CODENAME exposed
-        if suite := release._os_release.get(  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
-            "VERSION_CODENAME"
-        ):
+    def _get_build_base_suite(self) -> str:
+        if suite := distro.codename():
             return suite
         raise ValueError(
             "Suite could not be determined from /etc/os-release. Set 'mmdebstrap-suite' key."
