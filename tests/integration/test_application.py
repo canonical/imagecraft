@@ -41,15 +41,15 @@ platforms:
 parts:
   rootfs:
     plugin: nil
-    overlay-script: |
-      mkdir $CRAFT_OVERLAY/{etc,bin,boot}
-      echo "test" > $CRAFT_OVERLAY/bin/a
-      echo "test" > $CRAFT_OVERLAY/etc/b
+    override-overlay: |
+      mkdir /{etc,bin,boot}
+      echo "test" > /bin/a
+      echo "test" > /etc/b
   bootloader:
     plugin: nil
     after: [rootfs]
-    overlay-script: |
-      echo "boot files" > $CRAFT_OVERLAY/boot/c
+    override-overlay: |
+      echo "boot files" > /boot/c
 
 filesystems:
   default:
