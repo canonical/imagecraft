@@ -127,6 +127,10 @@ parts:
     organize:
       bin/craftctl: libexec/imagecraft/craftctl
     override-build: |
+      # create symlinks for cargo/rustc so maturin can find them
+      ln -s $(which cargo-1.89) /usr/local/bin/cargo
+      ln -s $(which rustc-1.89) /usr/local/bin/rustc
+
       ${SNAP}/libexec/snapcraft/craftctl default
       sed -i -e '1 s|^#!/.*|#!/snap/imagecraft/current/bin/python -E|' $CRAFT_PART_INSTALL/bin/craftctl
       version="$(PYTHONPATH=$CRAFT_PART_INSTALL/lib/python3.12/site-packages "${CRAFT_STAGE}/usr/bin/python3" -c "import imagecraft;print(imagecraft.__version__)")"
