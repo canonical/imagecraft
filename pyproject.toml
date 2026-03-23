@@ -13,6 +13,7 @@ dependencies = [
     "craft-grammar~=2.3",
     "craft-providers~=3.0",
     "pydantic~=2.8",
+    "pygit2>=1.13.0,<1.15.0", # pin pygit2 to versions compatible with libgit2-1.7
 ]
 classifiers = [
     "Development Status :: 1 - Planning",

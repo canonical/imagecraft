@@ -12,6 +12,7 @@ bootable
 Bundler
 Canonical('s)?
 Charmcraft
+chpasswd
 cjk
 classpath
 CMake
@@ -27,6 +28,7 @@ filesets?
 filetree
 fonts
 freefont
+fstab
 Furo
 github
 GitHub
@@ -49,6 +51,7 @@ LaTeX
 latexmk
 lcm
 Makefiles?
+mkdir
 MSBuild
 Multipass
 mvn
@@ -60,6 +63,7 @@ Numpy
 Open Graph
 openapi
 otf
+ovmf
 PDF
 plantuml
 PNG
@@ -74,6 +78,7 @@ readthedocs
 reStructuredText
 retrigger(ing)?
 Rockcraft
+rootfs
 rst
 SCons
 scriptlets?

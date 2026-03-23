@@ -193,7 +193,7 @@ exclude_patterns = [
     "env",
     "sphinx-starter-pack",
     # Disable sections and pages that are currently empty
-    "tutorials/index.rst",
+    "how-to/index.rst",
     "release-notes/index.rst",
     "reference/plugins.rst",
     # We do not use the overlay command, yet...

@@ -190,5 +190,9 @@ suites:
     summary: Common integration tests for imagecraft
   tests/spread/pack/:
     summary: Test imagecraft packing
+  docs/tutorials/code/:
+    summary: Tests the Imagecraft tutorials
+    systems:
+      - ubuntu-24.04-64
 
 kill-timeout: 30m
