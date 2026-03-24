@@ -154,6 +154,7 @@ def default_factory(default_project_file, app_metadata):
     )
 
     factory.update_kwargs("project", project_dir=default_project_file.parent)
+    factory.update_kwargs("image", project_dir=default_project_file.parent)
     factory.update_kwargs("lifecycle", work_dir=Path("work/"), cache_dir=Path("cache/"))
 
     project: ProjectService = factory.get("project")
