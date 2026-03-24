@@ -190,6 +190,8 @@ suites:
     summary: Common integration tests for imagecraft
   tests/spread/pack/:
     summary: Test imagecraft packing
+  tests/spread/plugins/:
+    summary: Test imagecraft plugins
   docs/tutorials/code/:
     summary: Tests the Imagecraft tutorials
     systems:
