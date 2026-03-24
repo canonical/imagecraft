@@ -67,8 +67,8 @@ parts:
   fstab:
     plugin: nil
     after: [packages]
-    override-overlay: |
-      cat << EOF > /etc/fstab
+    overlay-script: |
+      cat << EOF > $CRAFT_OVERLAY/etc/fstab
       LABEL=writable	/	ext4	discard,errors=remount-ro	0	1
       LABEL=UEFI	/boot/efi	vfat	umask=0077	0 1
       EOF

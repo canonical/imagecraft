@@ -18,16 +18,16 @@ filesystems:
 parts:
   rootfs:
     plugin: nil
-    override-overlay: |
-      mkdir /{etc,bin,boot}
-      echo "bina" > /bin/a
-      echo "confb" > /etc/b
+    overlay-script: |
+      mkdir $CRAFT_OVERLAY/{etc,bin,boot}
+      echo "bina" > $CRAFT_OVERLAY/bin/a
+      echo "confb" > $CRAFT_OVERLAY/etc/b
 
   bootloader:
     plugin: nil
     after: [rootfs]
-    override-overlay: |
-      echo "boot files" > /boot/test
+    overlay-script: |
+      echo "boot files" > $CRAFT_OVERLAY/boot/test
 
 volumes:
   pc:
