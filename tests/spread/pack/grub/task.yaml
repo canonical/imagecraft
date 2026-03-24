@@ -40,7 +40,7 @@ execute: |
   done
 
   # Check that override-overlay ran successfully
-  grep "testuser" ${TMP_MOUNT}/p2/etc/passwd
+  grep -q "^testuser:" ${TMP_MOUNT}/p2/etc/passwd
 
 restore: |
   if [ -f loop.txt -a -f tmpmount.txt ]; then
