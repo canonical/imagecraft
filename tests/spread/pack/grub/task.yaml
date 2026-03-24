@@ -39,6 +39,9 @@ execute: |
       mount $l ${TMP_MOUNT}/$p || true
   done
 
+  # Check that override-overlay ran successfully
+  grep "testuser" ${TMP_MOUNT}/p2/etc/passwd
+
 restore: |
   if [ -f loop.txt -a -f tmpmount.txt ]; then
       LOOP="$(cat loop.txt)"
