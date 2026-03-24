@@ -97,33 +97,25 @@ def create_zero_image(*, imagepath: Path, disk_size: DiskSize) -> None:
         image_file.truncate(disk_size.bytesize)
 
 
-def _format_populate_ext_partition(  # pylint: disable=too-many-arguments
+def _format_populate_ext_partition(
     *,
     fstype: ExtT,
-    content_dir: Path,
+    content_dir: Path | None,
     partitionpath: Path,
-    disk_size: DiskSize,
     label: str | None = None,
 ) -> None:
-    """Format partition EXT3/4 and copy files.
+    """Format a partition/device as EXT3/4 and embed content.
 
     :param fstype: Type of Ext filesystem (ext3/4).
-    :param content_dir: Directory containing contents for partition.
-    :param partitionpath: Path to partition file.
-    :param disk_size: Disk size attributes.
+    :param content_dir: Directory containing contents for partition, or None.
+    :param partitionpath: Path to partition file or block device.
     :param label: Ext Filesystem label, empty if not supplied.
-    :raises CalledProcessError: If dd or mke2fs fails.
+    :raises CalledProcessError: If mke2fs fails.
     """
-    # Create the partition file
-    create_zero_image(imagepath=partitionpath, disk_size=disk_size)
+    mke2fs_args: list[str | Path] = ["-t", fstype]
 
-    # Create and copy
-    mke2fs_args = [
-        "-t",
-        fstype,
-        "-d",
-        content_dir,
-    ]
+    if content_dir is not None:
+        mke2fs_args.extend(["-d", content_dir])
 
     if label is not None:
         mke2fs_args.extend(["-L", label])
@@ -138,25 +130,19 @@ def _format_populate_fat_partition(  # pylint: disable=too-many-arguments
     *,
     fattype: FatT,
     fatsize: int | None,
-    content_dir: Path,
+    content_dir: Path | None,
     partitionpath: Path,
-    disk_size: DiskSize,
     label: str | None = None,
 ) -> None:
-    """Format partition FAT and copy files.
+    """Format a partition/device as FAT and copy content.
 
     :param fattype: One of fat, vfat.
     :param fatsize: 12, 16, 32, or None to let the driver decide.
-    :param content_dir: Directory containing contents for partition.
-    :param partitionpath: Path to partition file.
-    :param disk_size: Disk size attributes.
+    :param content_dir: Directory containing contents for partition, or None.
+    :param partitionpath: Path to partition file or block device.
     :param label: Fat Filesystem label, empty if not supplied.
-    :raises CalledProcessError: If dd, mkfs.xxx, or mcopy fails.
+    :raises CalledProcessError: If mkfs.xxx or mcopy fails.
     """
-    # Create the partition file
-    create_zero_image(imagepath=partitionpath, disk_size=disk_size)
-
-    # Create and copy
     mkdosfs_args: list[str | Path] = []
 
     if fatsize is not None:
@@ -170,7 +156,7 @@ def _format_populate_fat_partition(  # pylint: disable=too-many-arguments
     with emit.open_stream(f"Creating {fattype} partition (label: {label!r})") as stream:
         run("mkfs." + fattype, *mkdosfs_args, stdout=stream, stderr=stream)
 
-    if any(content_dir.iterdir()):
+    if content_dir is not None and any(content_dir.iterdir()):
         # If we invoke mcopy directly, the sh wrapper will quote the
         # source path because it contains a wildcard. This will confuse
         # mcopy. Instead, we wrap the call in bash to get it to
@@ -183,6 +169,59 @@ def _format_populate_fat_partition(  # pylint: disable=too-many-arguments
             run("bash", "-c", mcopy_cmd, stdout=stream, stderr=stream)
 
 
+def format_device(
+    *,
+    device_path: Path,
+    fstype: FileSystem,
+    label: str | None = None,
+    content_dir: Path | None = None,
+) -> None:
+    """Format and populate an existing block device or image file.
+
+    Unlike :func:`format_populate_partition`, this function does not create the
+    target file — the device must already exist (e.g. a loop-device partition node).
+
+    :param device_path: Path to the block device or image file.
+    :param fstype: The filesystem type to create.
+    :param label: Optional filesystem label.
+    :param content_dir: Optional directory whose contents are copied into the
+        filesystem after formatting.
+    :raises CraftError: If the device does not exist or the filesystem is unsupported.
+    """
+    if not device_path.exists():
+        raise CraftError(f"Device {device_path} does not exist")
+
+    if fstype.value.startswith("ext"):
+        _format_populate_ext_partition(
+            fstype=cast(ExtT, fstype.value),
+            content_dir=content_dir,
+            partitionpath=device_path,
+            label=label,
+        )
+        return
+
+    if "fat" in fstype.value:
+        fattype: FatT
+        if fstype == FileSystem.VFAT:
+            fattype = "vfat"
+            fatsize = None
+        elif fstype == FileSystem.FAT16:
+            fattype = "fat"
+            fatsize = 16
+        else:
+            raise CraftError(f"Unsupported FAT: {fstype}")
+        _format_populate_fat_partition(
+            fattype=fattype,
+            fatsize=fatsize,
+            content_dir=content_dir,
+            partitionpath=device_path,
+            label=label,
+        )
+        return
+
+    raise CraftError(f"Unsupported filesystem: {fstype}")
+
+
 def format_populate_partition(
     *,
     fstype: FileSystem,
@@ -191,21 +230,21 @@ def format_populate_partition(
     disk_size: DiskSize,
     label: str | None = None,
 ) -> None:
-    """Format partition and copy files.
+    """Create an image file, format it, and copy files.
 
     :param fstype: Type of FS - one of (vfat, fat16, ext3, ext4).
     :param content_dir: Directory containing contents for partition.
     :param partitionpath: Path to partition file.
     :param disk_size: Disk size attributes.
     :param label: Filesystem label, empty if not supplied.
-    :param uuid: Filesystem UUID, generated if not supplied.
     """
+    create_zero_image(imagepath=partitionpath, disk_size=disk_size)
+
     if fstype.value.startswith("ext"):
         _format_populate_ext_partition(
             fstype=cast(ExtT, fstype.value),
             content_dir=content_dir,
             partitionpath=partitionpath,
-            disk_size=disk_size,
             label=label,
         )
         return
@@ -224,7 +263,6 @@ def format_populate_partition(
             fatsize=fatsize,
             content_dir=content_dir,
             partitionpath=partitionpath,
-            disk_size=disk_size,
             label=label,
         )
         return
