@@ -73,6 +73,7 @@ Pygments
 pymarkdown
 QEMU
 qmake
+rackup
 Read the Docs
 readthedocs
 reStructuredText
@@ -80,6 +81,7 @@ retrigger(ing)?
 Rockcraft
 rootfs
 rst
+rustc
 SCons
 scriptlets?
 SDKs?
@@ -100,6 +102,7 @@ texlive
 TOC
 toctree
 toolchain
+toolchains
 txt
 unbuilt
 uncomment(ing)?
