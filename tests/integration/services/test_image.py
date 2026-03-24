@@ -11,8 +11,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 import os
+import re
 
 import pytest
 from craft_application import ServiceFactory
@@ -22,10 +22,10 @@ requires_root = pytest.mark.skipif(os.getuid() != 0, reason="requires root privi
 
 
 @pytest.fixture
-def image_service(default_factory: ServiceFactory, enable_features) -> ImageService:
+def image_service(default_factory: ServiceFactory, enable_features):
     svc = default_factory.get("image")
     yield svc
-    svc._loop_devices.clear()
+    svc._loop_devices.clear()  # type: ignore[attribute]
 
 
 def test_create_images_produces_hidden_files(image_service: ImageService, new_dir):
@@ -79,6 +79,7 @@ def test_finalize_images_moves_files(image_service: ImageService, new_dir, tmp_p
     final_path = dest / "pc.img"
     assert final_path.exists()
     assert not hidden_path.exists()
+    assert image_service._images is not None
     assert image_service._images["pc"] == final_path
 
 
@@ -124,15 +125,17 @@ def test_attach_images_is_idempotent(image_service: ImageService, new_dir):
 
 @requires_root
 def test_get_partition_loop_paths(image_service: ImageService, new_dir):
-    """get_partition_loop_paths() returns correctly indexed partition paths."""
+    """get_loop_paths() returns volume and partition paths."""
     image_service.create_images()
     image_service.attach_images()
 
-    paths = image_service.get_partition_loop_paths()
+    paths = image_service.get_loop_paths()
+
+    # Volume-level device
+    assert "pc" in paths
+    assert re.match(r"^/dev/loop[0-9]+$", paths["pc"])
 
     # default_project_yaml has efi (p1) and rootfs (p2)
-    assert "pc/efi" in paths
-    assert "pc/rootfs" in paths
     assert paths["pc/efi"].endswith("p1")
     assert paths["pc/rootfs"].endswith("p2")
 

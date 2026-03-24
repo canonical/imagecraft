@@ -190,8 +190,13 @@ class ImageService(AppService):
                         f"Failed to detach loop device {device} after 10 seconds."
                     )
 
-    def get_partition_loop_paths(self) -> Mapping[str, str]:
-        """Return a mapping of 'volume/structure' to '/dev/loopNpM'."""
+    def get_loop_paths(self) -> Mapping[str, str]:
+        """Return a mapping of loop device paths for all volumes and their partitions.
+
+        Keys use the format 'volume_name' for volume devices and
+        'volume_name/structure_name' for partition devices.
+        Values are paths like '/dev/loop8' and '/dev/loop8p1'.
+        """
         if not self._loop_devices:
             return {}
 
@@ -199,10 +204,10 @@ class ImageService(AppService):
         mapping: dict[str, str] = {}
 
         for vol_name, loop_dev in self._loop_devices.items():
+            mapping[vol_name] = loop_dev
             volume = project.volumes[vol_name]
             for i, structure in enumerate(volume.structure, start=1):
                 part_num = structure.partition_number or i
-                # loopNpM pattern (e.g., /dev/loop8p1)
                 mapping[f"{vol_name}/{structure.name}"] = f"{loop_dev}p{part_num}"
 
         return mapping
@@ -224,6 +229,8 @@ class ImageService(AppService):
 
         :param dest: Directory to move the final images into.
         """
+        if self._images is None:
+            raise ValueError("Images must be created before they can be retrieved.")
         dest.mkdir(parents=True, exist_ok=True)
         for name, hidden_path in list(self._images.items()):
             final_path = dest / f"{name}.img"

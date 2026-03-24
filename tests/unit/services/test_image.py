@@ -199,16 +199,17 @@ def test_detach_images_retry(image_service, mocker):
     assert image_service._loop_devices == {}
 
 
-def test_get_partition_loop_paths(image_service, mock_services, mock_project):
+def test_get_loop_paths(image_service, mock_services, mock_project):
     image_service._loop_devices = {"pc": "/dev/loop8"}
 
     mock_project_service = MagicMock()
     mock_project_service.get.return_value = mock_project
     mock_services.get.return_value = mock_project_service
 
-    mapping = image_service.get_partition_loop_paths()
+    mapping = image_service.get_loop_paths()
 
     assert mapping == {
+        "pc": "/dev/loop8",
         "pc/efi": "/dev/loop8p1",
         "pc/rootfs": "/dev/loop8p2",
     }
