@@ -19,7 +19,7 @@ jobs:
           fetch-depth: 0
 
       - name: Build imagecraft snap
-        uses: canonical/action-build@v1
+        uses: canonical/craft-actions/snapcraft/pack@main
         id: build-imagecraft
 
       - name: Uploading imagecraft snap artifact
