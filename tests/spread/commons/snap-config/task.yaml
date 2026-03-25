@@ -1,6 +1,10 @@
 summary: Verify snap configuration and configure hook functionality
 
-prepare: imagecraft init --name=check-hook
+environment:
+  CRAFT_BUILD_ENVIRONMENT:
+
+prepare: |
+  imagecraft init --name=check-hook
 
 execute: |
   # configure default provider
@@ -13,7 +17,9 @@ execute: |
   fi
 
   # verify imagecraft executes
-  imagecraft pull
+  # Until we can actually use the lxd provider (https://github.com/canonical/imagecraft/issues/253)
+  # we match the correct error.
+  imagecraft pull --verbosity=debug 2>&1 | MATCH 'Failed to attach loop device for /root/project/.disk.img.tmp.'
 
   # unset the value
   snap unset imagecraft provider
@@ -27,7 +33,9 @@ execute: |
   fi
 
   # again, verify imagecraft executes
-  imagecraft pull
+  # Until we can actually use the lxd provider (https://github.com/canonical/imagecraft/issues/253)
+  # we match the correct error.
+  imagecraft pull --verbosity=debug 2>&1 | MATCH 'Failed to attach loop device for /root/project/.disk.img.tmp.'
 
   # finally, set an invalid value and verify the configure hook exits with an error
   output="$(sudo snap set imagecraft provider=invalid-value 2>&1 || true)"
@@ -37,4 +45,5 @@ execute: |
       exit 1
   fi
 
-restore: rm imagecraft.yaml
+restore: |
+  rm imagecraft.yaml

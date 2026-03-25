@@ -7,4 +7,7 @@ prepare: |
 execute: |
   imagecraft pack --verbose
   test -f disk.img
-  test ! -d parts -a ! -d stage -a ! -d prime
+
+  # Running in destructive mode until we can fix https://github.com/canonical/imagecraft/issues/253
+  # test ! -d parts -a ! -d stage -a ! -d prime
+  test -d parts -a -d stage -a -d prime

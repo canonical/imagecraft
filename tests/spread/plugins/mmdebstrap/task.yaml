@@ -3,7 +3,7 @@ summary: Test mmdebstrap plugin
 systems: [ubuntu-24.04-64]
 
 execute: |
-  imagecraft pack --verbose --destructive-mode
+  imagecraft pack --verbose
 
   test -f pc.img
 
