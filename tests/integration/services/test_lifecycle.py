@@ -13,7 +13,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-import os
 import pathlib
 import re
 from typing import cast
@@ -28,10 +27,8 @@ from craft_parts.executor.part_handler import (
 from imagecraft.services.image import ImageService
 from imagecraft.services.lifecycle import ImagecraftLifecycleService
 
-requires_root = pytest.mark.skipif(os.getuid() != 0, reason="requires root privileges")
 
-
-@requires_root
+@pytest.mark.requires_root
 def test_lifecycle_args(
     lifecycle_service: ImagecraftLifecycleService,
     mocker,
@@ -44,7 +41,7 @@ def test_lifecycle_args(
         lifecycle_service.run("pull")
 
 
-@requires_root
+@pytest.mark.requires_root
 def test_lifecycle_prologue_hook(
     lifecycle_service: ImagecraftLifecycleService, default_factory: ServiceFactory
 ):

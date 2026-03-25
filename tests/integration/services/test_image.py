@@ -11,14 +11,11 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-import os
 import re
 
 import pytest
 from craft_application import ServiceFactory
 from imagecraft.services.image import ImageService
-
-requires_root = pytest.mark.skipif(os.getuid() != 0, reason="requires root privileges")
 
 
 @pytest.fixture
@@ -96,7 +93,7 @@ def test_finalize_images_creates_dest_dir(
     assert (dest / "pc.img").exists()
 
 
-@requires_root
+@pytest.mark.requires_root
 def test_attach_and_detach_images(image_service: ImageService, new_dir):
     """attach_images() attaches loop devices; detach_images() removes them."""
     image_service.create_images()
@@ -110,7 +107,7 @@ def test_attach_and_detach_images(image_service: ImageService, new_dir):
     assert image_service._loop_devices == {}
 
 
-@requires_root
+@pytest.mark.requires_root
 def test_attach_images_is_idempotent(image_service: ImageService, new_dir):
     """Calling attach_images() twice reuses the existing loop device."""
     image_service.create_images()
@@ -123,7 +120,7 @@ def test_attach_images_is_idempotent(image_service: ImageService, new_dir):
     image_service.detach_images()
 
 
-@requires_root
+@pytest.mark.requires_root
 def test_get_partition_loop_paths(image_service: ImageService, new_dir):
     """get_loop_paths() returns volume and partition paths."""
     image_service.create_images()
