@@ -76,8 +76,6 @@ def test_finalize_images_moves_files(image_service: ImageService, new_dir, tmp_p
     final_path = dest / "pc.img"
     assert final_path.exists()
     assert not hidden_path.exists()
-    assert image_service._images is not None
-    assert image_service._images["pc"] == final_path
 
 
 def test_finalize_images_creates_dest_dir(

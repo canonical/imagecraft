@@ -71,22 +71,23 @@ class ImagecraftPackService(PackageService):
         finally:
             image_service.detach_images()
 
-        image_service.finalize_images(dest)
+        images = image_service.finalize_images(dest)
 
         filesystem_mount = self._services.get(
             "lifecycle"
         ).project_info.default_filesystem_mount
-        disk_image_file = dest / f"{volume_name}.img"
-        image = Image(volume=volume, disk_path=disk_image_file)
         arch = self._services.get("lifecycle").project_info.target_arch
-        grubutil.setup_grub(
-            image=image,
-            workdir=project_dirs.work_dir,
-            arch=arch,
-            filesystem_mount=filesystem_mount,
-        )
+        for volume_name, path in images.items():
+            volume = project.volumes[volume_name]
+            image = Image(volume=volume, disk_path=path)
+            grubutil.setup_grub(
+                image=image,
+                workdir=project_dirs.work_dir,
+                arch=arch,
+                filesystem_mount=filesystem_mount,
+            )
 
-        return list(image_service.get_images().values())
+        return list(images.values())
 
     @property
     def metadata(self) -> models.BaseMetadata:

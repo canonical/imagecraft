@@ -231,11 +231,11 @@ def test_finalize_images(image_service, project_dir, mocker):
     dest = project_dir / "dest"
     mock_move = mocker.patch("imagecraft.services.image.shutil.move")
 
-    image_service.finalize_images(dest)
+    result = image_service.finalize_images(dest)
 
     final_path = dest / "pc.img"
     mock_move.assert_called_once_with(str(hidden), final_path)
-    assert image_service._images["pc"] == final_path
+    assert result == {"pc": final_path}
     assert dest.exists()
 
 
@@ -249,13 +249,12 @@ def test_finalize_images_multiple_volumes(image_service, project_dir, mocker):
     dest = project_dir / "dest"
     mock_move = mocker.patch("imagecraft.services.image.shutil.move")
 
-    image_service.finalize_images(dest)
+    result = image_service.finalize_images(dest)
 
     mock_move.assert_any_call(str(hidden_pc), dest / "pc.img")
     mock_move.assert_any_call(str(hidden_rpi), dest / "rpi.img")
     assert mock_move.call_count == 2
-    assert image_service._images["pc"] == dest / "pc.img"
-    assert image_service._images["rpi"] == dest / "rpi.img"
+    assert result == {"pc": dest / "pc.img", "rpi": dest / "rpi.img"}
 
 
 def test_finalize_images_creates_dest(image_service, project_dir, mocker):

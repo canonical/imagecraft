@@ -220,20 +220,20 @@ class ImageService(AppService):
         for image_path in self._images.values():
             gptutil.verify_partition_tables(image_path)
 
-    def finalize_images(self, dest: pathlib.Path) -> None:
+    def finalize_images(self, dest: pathlib.Path) -> Mapping[str, pathlib.Path]:
         """Move hidden image files to their final destination.
 
-        Moves each .{name}.img.tmp to dest/{name}.img using shutil.move,
-        which handles cross-device moves. Updates the internal _images mapping
-        to reflect the final paths.
+        Moves each .{name}.img.tmp to dest/{name}.img.
 
         :param dest: Directory to move the final images into.
+        :returns: a Mapping of the image names to their paths.
         """
-        if self._images is None:
-            raise ValueError("Images must be created before they can be retrieved.")
+        images = dict(self.get_images())
         dest.mkdir(parents=True, exist_ok=True)
-        for name, hidden_path in list(self._images.items()):
+        for name, hidden_path in list(images.items()):
             final_path = dest / f"{name}.img"
             shutil.move(str(hidden_path), final_path)
-            self._images[name] = final_path
             emit.debug(f"Finalized image {name!r} -> {final_path}")
+            images[name] = final_path
+        self._images = None
+        return images

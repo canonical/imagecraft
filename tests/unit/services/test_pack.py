@@ -11,7 +11,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+from typing import cast
 
 import pytest
 from craft_application import ServiceFactory
@@ -22,7 +22,7 @@ from imagecraft.services.pack import ImagecraftPackService
 @pytest.fixture
 def mock_image_service(default_factory: ServiceFactory, tmp_path):
     """ImageService with losetup operations mocked out."""
-    svc = default_factory.get("image")
+    svc = cast(ImageService, default_factory.get("image"))
     # Pre-populate state so pack() doesn't need to call losetup
     svc._images = {"pc": tmp_path / ".pc.img.tmp"}
     svc._loop_devices = {"pc": "/dev/loop8"}
@@ -47,15 +47,14 @@ def test_pack(
     mocker.patch.object(mock_image_service, "attach_images")
     mock_verify = mocker.patch.object(mock_image_service, "verify_images")
     mock_detach = mocker.patch.object(mock_image_service, "detach_images")
-    mock_finalize = mocker.patch.object(mock_image_service, "finalize_images")
+    mock_finalize = mocker.patch.object(
+        mock_image_service,
+        "finalize_images",
+        return_value={"pc": tmp_path / "dest" / "pc.img"},
+    )
     mock_diskutil = mocker.patch("imagecraft.services.pack.diskutil", autospec=True)
     mock_grubutil = mocker.patch("imagecraft.services.pack.grubutil", autospec=True)
     mock_image_cls = mocker.patch("imagecraft.services.pack.Image", autospec=True)
-
-    # After finalize, get_images() should return dest paths
-    mock_finalize.side_effect = lambda dest: mock_image_service._images.update(
-        {"pc": dest / "pc.img"}
-    )
 
     result = pack_service.pack(prime_dir=prime_dir, dest=dest_path)
 
