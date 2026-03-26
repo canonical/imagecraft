@@ -230,7 +230,7 @@ def format_populate_partition(
     disk_size: DiskSize,
     label: str | None = None,
 ) -> None:
-    """Create an image file, format it, and copy files.
+    """Format a partition and copy files.
 
     :param fstype: Type of FS - one of (vfat, fat16, ext3, ext4).
     :param content_dir: Directory containing contents for partition.
@@ -238,8 +238,6 @@ def format_populate_partition(
     :param disk_size: Disk size attributes.
     :param label: Filesystem label, empty if not supplied.
     """
-    create_zero_image(imagepath=partitionpath, disk_size=disk_size)
-
     if fstype.value.startswith("ext"):
         _format_populate_ext_partition(
             fstype=cast(ExtT, fstype.value),
