@@ -19,7 +19,7 @@ execute: |
   # verify imagecraft executes
   # Until we can actually use the lxd provider (https://github.com/canonical/imagecraft/issues/253)
   # we match the correct error.
-  imagecraft pull --verbosity=debug 2>&1 | MATCH 'Failed to attach loop device for /root/project/.disk.img.tmp.'
+  imagecraft pull --verbosity=debug 2>&1 | MATCH 'lxc --project imagecraft'  # Match that we're running in lxd
 
   # unset the value
   snap unset imagecraft provider
@@ -35,7 +35,7 @@ execute: |
   # again, verify imagecraft executes
   # Until we can actually use the lxd provider (https://github.com/canonical/imagecraft/issues/253)
   # we match the correct error.
-  imagecraft pull --verbosity=debug 2>&1 | MATCH 'Failed to attach loop device for /root/project/.disk.img.tmp.'
+  imagecraft pull --verbosity=debug 2>&1 | MATCH 'lxc --project imagecraft'  # Match that we're running in lxd
 
   # finally, set an invalid value and verify the configure hook exits with an error
   output="$(sudo snap set imagecraft provider=invalid-value 2>&1 || true)"
