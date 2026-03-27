@@ -1,7 +1,7 @@
 summary: Pack an image with non-sequential partition numbers.
 
 execute: |
-  imagecraft pack --verbose --destructive-mode
+  imagecraft pack --verbose
 
   test -f disk.img
 
