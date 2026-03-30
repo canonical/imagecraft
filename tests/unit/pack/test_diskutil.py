@@ -150,10 +150,7 @@ def test_format_populate_partition(
         label=label,
     )
 
-    create_zero_image.assert_called_with(
-        imagepath=imagepath,
-        disk_size=diskutil.DiskSize(bytesize=disk_size, sector_size=sector_size),
-    )
+    create_zero_image.assert_not_called()
 
     calls = [call(e[0], *e[1:], stdout=ANY, stderr=ANY) for e in expected_values]
     mocked_run.assert_has_calls(calls)

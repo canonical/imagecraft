@@ -190,7 +190,7 @@ def test_detach_images_retry(image_service, mocker):
         MagicMock(),
     ]
 
-    mocker.patch("time.time", side_effect=[0, 1, 2, 3, 4])
+    mocker.patch("time.monotonic", side_effect=[0, 1, 2, 3, 4])
     mocker.patch("time.sleep")
 
     image_service.detach_images()
