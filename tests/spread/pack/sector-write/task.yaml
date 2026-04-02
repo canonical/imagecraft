@@ -1,0 +1,17 @@
+summary: Data written to sectors outside partitions via the loop device is preserved
+
+execute: |
+  imagecraft pack --verbose --destructive-mode
+  test -f disk.img
+
+  # Verify that sector 100 is actually in the gap between the GPT partition
+  # entries (end at sector 33) and the first partition (typically at 2048).
+  first_partition_start=$(sfdisk --json disk.img | jq '.partitiontable.partitions | map(.start) | min')
+  test 100 -lt "${first_partition_start}"
+
+  # Confirm the string our override-build wrote is present at sector 100.
+  dd if=disk.img bs=512 skip=100 count=1 status=none | MATCH 'IMAGECRAFT_SECTOR_WRITE_TEST'
+
+restore: |
+  imagecraft clean --destructive-mode
+  rm -f disk.img

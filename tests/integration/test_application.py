@@ -85,6 +85,7 @@ def custom_project_file(default_project_file: Path):
 
 
 @pytest.mark.slow
+@pytest.mark.requires_root
 def test_imagecraft_build(
     project_path: Path,
     custom_project_file: Path,
@@ -120,6 +121,7 @@ def test_imagecraft_build(
 
 
 @pytest.mark.slow
+@pytest.mark.requires_root
 def test_imagecraft_pack(
     project_path: Path,
     imagecraft_app: application.Imagecraft,

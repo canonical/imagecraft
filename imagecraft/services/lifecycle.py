@@ -22,11 +22,13 @@ from typing import cast
 
 from craft_application import LifecycleService
 from craft_cli import CraftError
-from craft_parts import Action
+from craft_parts import Action, callbacks
 from craft_parts.executor.errors import EnvironmentChangedError
+from craft_parts.infos import ProjectInfo
 from typing_extensions import override
 
 from imagecraft import models
+from imagecraft.services.image import ImageService
 
 
 class ImagecraftLifecycleService(LifecycleService):
@@ -53,6 +55,17 @@ class ImagecraftLifecycleService(LifecycleService):
         )
 
         super().setup()
+        callbacks.register_prologue(self._prologue_hook)
+
+    def _prologue_hook(self, project_info: ProjectInfo) -> None:
+        """Create images and export loop device paths as environment variables."""
+        image_service = cast(ImageService, self._services.get("image"))
+        image_service.create_images()
+        image_service.attach_images()
+
+        for key, path in image_service.get_loop_paths().items():
+            env_key = f"CRAFT_VOLUME_{key.upper().replace('/', '_').replace('-', '_')}"
+            project_info.global_environment[env_key] = path
 
     @override
     def _exec(self, actions: list[Action]) -> None:

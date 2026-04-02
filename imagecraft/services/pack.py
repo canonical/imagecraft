@@ -14,8 +14,6 @@
 
 """Imagecraft Package service."""
 
-import os
-import tempfile
 from pathlib import Path
 from typing import cast
 
@@ -24,9 +22,8 @@ from craft_cli import emit
 from typing_extensions import override
 
 from imagecraft.models import Project, get_partition_name
-from imagecraft.pack import Image, diskutil, gptutil, grubutil
-
-SECTOR_SIZE = 512
+from imagecraft.pack import Image, diskutil, grubutil
+from imagecraft.services.image import ImageService
 
 
 class ImagecraftPackService(PackageService):
@@ -40,78 +37,57 @@ class ImagecraftPackService(PackageService):
         :param dest: Directory into which to write the package(s).
         :returns: A list of paths to created packages.
         """
-        # Pydantic has already validated that there is only a single volume before now
         project = cast(Project, self._services.get("project").get())
         if len(project.volumes) != 1:
             raise AssertionError("This code can only handle one volume")
         volume_name, volume = next(iter(project.volumes.items()))
-        disk_image_file = dest / (volume_name + os.extsep + "img")
 
-        # Create empty image
-        gptutil.create_empty_gpt_image(
-            imagepath=disk_image_file,
-            sector_size=SECTOR_SIZE,
-            layout=volume,
-        )
+        image_service = cast(ImageService, self._services.get("image"))
+        # Both calls are idempotent — the prologue hook will have run them
+        # already during the lifecycle, but pack may be called standalone.
+        image_service.create_images()
+        image_service.attach_images()
 
-        # Create partition images with filesystems.  These are always recreated, but we
-        # may want to revisit that once this is solved:
-        # https://github.com/canonical/craft-parts/issues/665
         project_dirs = self._services.get("lifecycle").project_info.dirs
+        loop_paths = image_service.get_loop_paths()
 
-        # We place this under the working directory rather
-        # than in /tmp to avoid filesystem size limitations.
-        temp_root = Path("imagecraft_volumes").resolve()
-        temp_root.mkdir(parents=True, exist_ok=True)
-
-        with tempfile.TemporaryDirectory(dir=temp_root) as tmp_dir:
+        try:
             for structure_item in volume.structure:
                 partition_name = get_partition_name(volume_name, structure_item)
                 emit.progress(f"Preparing partition {partition_name}")
                 partition_prime_dir = project_dirs.get_prime_dir(
                     partition=partition_name
                 )
-                partition_img = (
-                    Path(tmp_dir) / f"{volume_name}.{structure_item.name}.img"
-                )
-                partition_size = diskutil.DiskSize(
-                    bytesize=structure_item.size,
-                    sector_size=SECTOR_SIZE,
+                loop_path = Path(loop_paths[f"{volume_name}/{structure_item.name}"])
+
+                diskutil.format_device(
+                    device_path=loop_path,
+                    fstype=structure_item.filesystem,
+                    label=structure_item.filesystem_label,
+                    content_dir=partition_prime_dir,
                 )
 
-                diskutil.format_populate_partition(
-                    fstype=structure_item.filesystem,
-                    content_dir=partition_prime_dir,
-                    partitionpath=partition_img,
-                    disk_size=partition_size,
-                    label=structure_item.filesystem_label,
-                )
-                offset = gptutil.get_partition_sector_offset(
-                    disk_image_file,
-                    structure_item.name,
-                )
-                emit.progress(f"Adding partition {partition_name} to the image")
-                diskutil.inject_partition_into_image(
-                    partition=partition_img,
-                    imagepath=disk_image_file,
-                    sector_offset=offset,
-                    disk_size=partition_size,
-                )
-        gptutil.verify_partition_tables(disk_image_file)
+            image_service.verify_images()
+        finally:
+            image_service.detach_images()
+
+        images = image_service.finalize_images(dest)
 
         filesystem_mount = self._services.get(
             "lifecycle"
         ).project_info.default_filesystem_mount
-        image = Image(volume=volume, disk_path=disk_image_file)
         arch = self._services.get("lifecycle").project_info.target_arch
-        grubutil.setup_grub(
-            image=image,
-            workdir=project_dirs.work_dir,
-            arch=arch,
-            filesystem_mount=filesystem_mount,
-        )
+        for volume_name, path in images.items():
+            volume = project.volumes[volume_name]
+            image = Image(volume=volume, disk_path=path)
+            grubutil.setup_grub(
+                image=image,
+                workdir=project_dirs.work_dir,
+                arch=arch,
+                filesystem_mount=filesystem_mount,
+            )
 
-        return [disk_image_file]
+        return list(images.values())
 
     @property
     def metadata(self) -> models.BaseMetadata:
