@@ -227,7 +227,6 @@ def format_populate_partition(
     fstype: FileSystem,
     content_dir: Path,
     partitionpath: Path,
-    disk_size: DiskSize,
     label: str | None = None,
 ) -> None:
     """Format a partition and copy files.

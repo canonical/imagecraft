@@ -140,13 +140,10 @@ def test_format_populate_partition(
         "imagecraft.pack.diskutil.run",
         autospec=True,
     )
-    sector_size = 512
-    disk_size = 512000000
     diskutil.format_populate_partition(
         fstype=fstype,
         content_dir=content,
         partitionpath=imagepath,
-        disk_size=diskutil.DiskSize(bytesize=disk_size, sector_size=sector_size),
         label=label,
     )
 
