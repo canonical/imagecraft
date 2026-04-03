@@ -233,11 +233,12 @@ for us.
 The ``mmdebstrap-suite`` key specifies the package suite to bootstrap, ``noble`` (Ubuntu
 24.04) in this case.
 
-By default, the plugin removes the default sources lists, which will only allow us to install
-system packages from the ``noble`` suite's ``main`` component. We still need to replace
-this configuration to be able to install a wider array of packages. We also need to create
-the ``/boot/efi/`` directory to mount the ``efi`` partition to. We can tackle both of these
-items by adding the following highlighted lines to the end of the ``override-build`` script:
+By default, the plugin removes the default sources configuration files, which will only allow us
+to install system packages from the ``noble`` suite's ``main`` component. We'll need to add
+a new sources configuration file to be able to install a wider array of packages. We also need
+to create the ``/boot/efi/`` directory to mount the ``efi`` partition to. We can tackle both
+of these items by adding the following highlighted lines to the end of the ``override-build``
+script:
 
 .. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
     :language: yaml
