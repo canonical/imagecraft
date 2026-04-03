@@ -235,11 +235,11 @@ The ``mmdebstrap-suite`` key specifies the package suite to bootstrap, ``noble``
 ``minbase``, providing a minimal system. We add ``apt`` to ``mmdebstrap-packages`` to
 ensure package management is available.
 
-By default, the plugin removes default source lists, which will only allow us to install
+By default, the plugin removes the default sources lists, which will only allow us to install
 system packages from the ``noble`` suite's ``main`` component. We still need to replace
-the source list to install a wider array of packages and to create the ``/boot/efi/``
-directory to mount the ``efi`` partition to. We can tackle both of these items by adding
-the following highlighted lines to the end of the ``override-build`` script:
+this configuration to be able to install a wider array of packages. We also need to create
+the ``/boot/efi/`` directory to mount the ``efi`` partition to. We can tackle both of these
+items by adding the following highlighted lines to the end of the ``override-build`` script:
 
 .. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
     :language: yaml
@@ -249,7 +249,8 @@ the following highlighted lines to the end of the ``override-build`` script:
 
 The ``craftctl default`` command runs the plugin's default build commands before our
 custom script. We then create the ``/boot/efi/`` directory and write a custom sources
-configuration that gives us access to the wider array of packages.
+configuration. Now, when we install packages into our image, we'll be able to access the
+other components in the ``noble`` suite.
 
 At this point, the file system only exists in the ``rootfs`` part. To get it into the
 final image, we'll need to copy it into the overlay file system. We can do so with the
