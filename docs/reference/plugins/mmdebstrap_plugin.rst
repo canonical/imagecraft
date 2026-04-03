@@ -1,6 +1,6 @@
 .. _mmdebstrap_plugin:
 
-Mmdebstrap Plugin
+mmdebstrap Plugin
 =================
 
 The mmdebstrap plugin sets up a Debian root file system using the
