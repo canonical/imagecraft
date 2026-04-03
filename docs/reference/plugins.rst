@@ -8,3 +8,5 @@ Imagecraft.
 
 .. toctree::
    :maxdepth: 1
+
+   plugins/mmdebstrap_plugin

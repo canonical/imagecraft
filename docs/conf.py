@@ -195,7 +195,6 @@ exclude_patterns = [
     # Disable sections and pages that are currently empty
     "how-to/index.rst",
     "release-notes/index.rst",
-    "reference/plugins.rst",
     # We do not use the overlay command, yet...
     "reference/commands/overlay.rst",
     # Disable unused pages from Craft Parts
