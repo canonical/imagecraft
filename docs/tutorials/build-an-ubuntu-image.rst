@@ -224,16 +224,14 @@ In the ``parts`` key, replace the template part with the following ``rootfs`` pa
 .. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
     :language: yaml
     :start-at: parts:
-    :end-at: - apt
+    :end-at: noble
 
 The ``plugin`` key specifies the build system needed to prepare the part. Here, we use
 the ``mmdebstrap`` plugin, which handles the complexity of creating a root file system
 for us.
 
 The ``mmdebstrap-suite`` key specifies the package suite to bootstrap, ``noble`` (Ubuntu
-24.04) in this case. The ``mmdebstrap-variant`` key sets the base package set to
-``minbase``, providing a minimal system. We add ``apt`` to ``mmdebstrap-packages`` to
-ensure package management is available.
+24.04) in this case.
 
 By default, the plugin removes the default sources lists, which will only allow us to install
 system packages from the ``noble`` suite's ``main`` component. We still need to replace
@@ -245,7 +243,7 @@ items by adding the following highlighted lines to the end of the ``override-bui
     :language: yaml
     :class: no-copybutton
     :lines: 39-55
-    :emphasize-lines: 7-17
+    :emphasize-lines: 4-14
 
 The ``craftctl default`` command runs the plugin's default build commands before our
 custom script. We then create the ``/boot/efi/`` directory and write a custom sources
@@ -262,7 +260,7 @@ the ``rootfs`` key:
     :class: no-copybutton
     :start-at: rootfs:
     :end-at: '*': (overlay)/
-    :emphasize-lines: 18, 19
+    :emphasize-lines: 15, 16
 
 This copies the result of the part's build step to the root of the overlay file system,
 thereby securing its place in the final image.
@@ -277,7 +275,7 @@ part to source them. In this case, we don't need a build system, so we set the
 
 .. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
     :language: yaml
-    :lines: 59-67
+    :lines: 56-64
 
 With the exception of ``sl``, these packages add the system's essential components, such
 as the kernel, core utilities, and boot loader.
@@ -313,7 +311,7 @@ file system. Add the following ``fstab`` part:
 
 .. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
     :language: yaml
-    :lines: 69-76
+    :lines: 66-73
 
 Here, we used the ``overlay-script`` key to write the table to the overlay file system,
 which is referenced through the ``$CRAFT_OVERLAY`` environment variable. Keep in mind
