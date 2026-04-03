@@ -52,6 +52,7 @@ latexmk
 lcm
 Makefiles?
 mkdir
+mmdebstrap
 MSBuild
 Multipass
 mvn

@@ -38,6 +38,13 @@ configured for the software's language and build systems.
 * :ref:`reference-parts-and-steps`
 
 
+Plugins
+-------
+
+Parts can use plugins to simplify common build patterns.
+
+* :ref:`plugins`
+
 .. toctree::
     :hidden:
 
@@ -45,3 +52,4 @@ configured for the software's language and build systems.
     commands
     platform-grammar
     parts-and-steps
+    plugins
