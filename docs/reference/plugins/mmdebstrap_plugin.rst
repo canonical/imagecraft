@@ -3,10 +3,10 @@
 _mmdebstrap_plugin
 ==================
 
-The mmdebstrap plugin creates a root filesystem using the
-`mmdebstrap <https://manpages.debian.org/mmdebstrap>`_ tool.
+The mmdebstrap plugin creates a Debian root file system using the
+`mmdebstrap <https://manpages.debian.org/mmdebstrap>`_ command-line tool.
 
-This plugin is useful for providing a minimal root filesystem
+This plugin is useful for providing a minimal root file system
 that can be customized with additional packages and configuration.
 
 Keys
@@ -63,7 +63,7 @@ Examples
 --------
 
 The following snippet declares a part that creates an Ubuntu Noble root
-filesystem with curl installed:
+file system with curl installed:
 
 .. code-block:: yaml
 
