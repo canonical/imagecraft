@@ -215,56 +215,41 @@ image. Most importantly, they give us access to the *overlay file system*, which
 where we'll manipulate our image's contents.
 
 We'll create our file system with ``mmdebstrap``, a command-line tool for setting up
-Debian root file systems. The part we create for it will need to source the
-``mmdebstrap`` package itself, run its primary command, and copy the resulting file
-system into our image.
+Debian root file systems. The part we create for it will use the ``mmdebstrap`` plugin,
+which calls its primary command under the hood, and copy the resulting file system
+into our image.
 
 In the ``parts`` key, replace the template part with the following ``rootfs`` part:
 
 .. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
     :language: yaml
     :start-at: parts:
-    :end-at: http://archive.ubuntu.com/ubuntu/
+    :end-at: - apt
 
-In most parts, the ``plugin`` key specifies the build system needed to prepare the part.
-In this case, we don't need a build system, so we set the ``plugin`` key to ``nil``.
+The ``plugin`` key specifies the build system needed to prepare the part. Here, we use
+the ``mmdebstrap`` plugin, which handles the complexity of creating a root file system
+for us.
 
-We install the ``mmdebstrap`` package into the part's build environment with the
-``build-packages`` key. This allows us to then run the ``mmdebstrap`` command with the
-``override-build`` key.
+The ``mmdebstrap-suite`` key specifies the package suite to bootstrap, ``noble`` (Ubuntu
+24.04) in this case. The ``mmdebstrap-variant`` key sets the base package set to
+``minbase``, providing a minimal system. We add ``apt`` to ``mmdebstrap-packages`` to
+ensure package management is available.
 
-You don't need to worry about all of the ``mmdebstrap`` command's options for now. Put
-briefly, this command prepares a minimal file system in our part, using the ``noble``
-(Ubuntu 24.04) package suite. Before we copy the output to the overlay file system,
-let's tidy things up.
-
-By default, the ``/dev/`` directory is cluttered and will stall the final build. We also
-still need to create the ``/boot/efi/`` directory that we mounted the ``efi`` partition
-to. We can tackle both of these items by adding the following highlighted lines to the
-end of the ``override-build`` script:
+By default, the plugin removes default source lists, which will only allow us to install
+system packages from the ``noble`` suite's ``main`` component. We still need to replace
+the source list to install a wider array of packages and to create the ``/boot/efi/``
+directory to mount the ``efi`` partition to. We can tackle both of these items by adding
+the following highlighted lines to the end of the ``override-build`` script:
 
 .. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
     :language: yaml
     :class: no-copybutton
-    :start-at: rootfs:
-    :end-at: mkdir $CRAFT_PART_INSTALL/boot/efi
-    :emphasize-lines: 13, 14
+    :lines: 39-55
+    :emphasize-lines: 7-17
 
-The ``sources.list`` file that ``mmdebstrap`` creates will only allow us to install
-system packages from the ``noble`` suite's ``main`` component. This is fine for
-essential system packages, but we'll need to replace this file to install a wider array
-of packages.
-
-Copy the following highlighted lines to the end of the ``override-build`` script:
-
-.. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
-    :language: yaml
-    :class: no-copybutton
-    :lines: 39-62
-    :emphasize-lines: 16-24
-
-Now, when we install packages into our image, we'll be able to access the other
-components in the ``noble`` suite.
+The ``craftctl default`` command runs the plugin's default build commands before our
+custom script. We then create the ``/boot/efi/`` directory and write a custom sources
+configuration that gives us access to the wider array of packages.
 
 At this point, the file system only exists in the ``rootfs`` part. To get it into the
 final image, we'll need to copy it into the overlay file system. We can do so with the
@@ -276,22 +261,22 @@ the ``rootfs`` key:
     :class: no-copybutton
     :start-at: rootfs:
     :end-at: '*': (overlay)/
-    :emphasize-lines: 25, 26
+    :emphasize-lines: 18, 19
 
-This copies the result of the part's build step, where we ran the ``mmdebstrap``
-command, to the root of the overlay file system, thereby securing its place in the final
-image.
+This copies the result of the part's build step to the root of the overlay file system,
+thereby securing its place in the final image.
 
 
 Add essential packages
 ----------------------
 
 We'll need some additional packages for our image to be bootable. Let's define a new
-part to source them. Add the following ``packages`` part:
+part to source them. In this case, we don't need a build system, so we set the
+``plugin`` key to ``nil``. Add the following ``packages`` part:
 
 .. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
     :language: yaml
-    :lines: 66-74
+    :lines: 59-67
 
 With the exception of ``sl``, these packages add the system's essential components, such
 as the kernel, core utilities, and boot loader.
@@ -327,7 +312,7 @@ file system. Add the following ``fstab`` part:
 
 .. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
     :language: yaml
-    :lines: 76-82
+    :lines: 69-76
 
 Here, we used the ``overlay-script`` key to write the table to the overlay file system,
 which is referenced through the ``$CRAFT_OVERLAY`` environment variable. Keep in mind
