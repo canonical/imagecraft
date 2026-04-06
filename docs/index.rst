@@ -4,13 +4,19 @@
 Imagecraft
 ==========
 
-**Imagecraft** is the command-line build tool for crafting images.
+**Imagecraft** is the command-line tool for building bootable, pre-installed disk
+images.
 
-lorem ipsum
+The tool builds images from a declarative project file written with the shared syntax of
+the craft apps. Builds take place in an isolated environment and follow a series of
+consistent, reproducible steps that can be catered to specific images.
 
-lorem ipsum
+Imagecraft simplifies image customization and maintenance by keeping the image's
+essential details in one place. What previously required disparate tools and manual
+intervention can now be done by editing the project file and rebuilding your image.
 
-lorem ipsum
+Imagecraft is for DevOps and platform engineers, systems administrators, and hobbyists
+who need to create and maintain images for embedded, IoT, and cloud systems.
 
 
 In this documentation
@@ -21,13 +27,13 @@ In this documentation
     :header-rows: 0
 
     * - **Tutorial**
-      - :ref:`Describe the image` • :ref:`Define the partitions` •
-        :ref:`Set up the root file system` • :ref:`Add essential packages` •
-        :ref:`Pack the image` • :ref:`Run and test the image`
+      - :ref:`tutorial-describe-the-image` • :ref:`tutorial-define-the-partitions` •
+        :ref:`tutorial-set-up-the-root-file-system` •
+        :ref:`tutorial-add-essential-packages` • :ref:`tutorial-pack-the-image` •
+        :ref:`tutorial-run-and-test-the-image`
     * - **Vocabulary and syntax**
-      - :ref:`commands` • :ref:`reference-imagecraft-yaml`
-    * - **Software integration**
-      - :ref:`` • :ref:``
+      - :ref:`commands` • :ref:`reference-imagecraft-yaml` •
+        :ref:`reference-platform-grammar`
 
 
 How this documentation is organized

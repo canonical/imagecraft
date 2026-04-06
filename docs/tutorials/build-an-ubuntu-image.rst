@@ -97,6 +97,8 @@ The generated project file will be our focus for most of this tutorial. Open it 
 preferred text editor.
 
 
+.. _tutorial-describe-the-image:
+
 Describe the image
 ------------------
 
@@ -136,6 +138,8 @@ in the template project file, so we made them meaningful for our project.
 .. machines, and our project file already targets the AMD64 architecture, we'll leave the
 .. ``platforms`` key as is.
 
+
+.. _tutorial-define-the-partitions:
 
 Define the partitions
 ---------------------
@@ -203,6 +207,8 @@ With this entry, we mounted the EFI system partition to the /boot/efi/ directory
 final image. Keep in mind that we'll need to create this directory ourselves when we set
 up the image's root file system.
 
+
+.. _tutorial-set-up-the-root-file-system:
 
 Set up the root file system
 ---------------------------
@@ -283,6 +289,8 @@ command, to the root of the overlay file system, thereby securing its place in t
 image.
 
 
+.. _tutorial-add-essential-packages:
+
 Add essential packages
 ----------------------
 
@@ -362,6 +370,8 @@ Our project file now contains everything we need to pack a complete, bootable im
 Save and close the ``imagecraft.yaml`` file.
 
 
+.. _tutorial-pack-the-image:
+
 Pack the image
 --------------
 
@@ -386,6 +396,8 @@ line, the build is complete:
 Congratulations on building your first image! Before you start celebrating, let's run
 the image to make sure everything is working as expected.
 
+
+.. _tutorial-run-and-test-the-image:
 
 Run and test the image
 ----------------------
