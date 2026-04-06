@@ -2,11 +2,26 @@
 
 """Hook to configure imagecraft snap."""
 
+import grp
+import os
 import sys
 
 import snaphelpers
 from craft_application.errors import CraftValidationError
 from craft_application.util import SnapConfig
+
+
+def setup_losetup_dir() -> None:
+    """Create $SNAP_DATA/losetup and set lxd group ownership if available."""
+    losetup_dir = os.path.join(os.environ["SNAP_DATA"], "losetup")
+    os.makedirs(losetup_dir, exist_ok=True)
+
+    try:
+        lxd_gid = grp.getgrnam("lxd").gr_gid
+    except KeyError:
+        return
+
+    os.chown(losetup_dir, -1, lxd_gid)
 
 
 def validate_snap_config() -> None:
@@ -23,4 +38,5 @@ def validate_snap_config() -> None:
 
 
 if __name__ == "__main__":
+    setup_losetup_dir()
     validate_snap_config()
