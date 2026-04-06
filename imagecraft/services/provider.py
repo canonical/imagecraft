@@ -14,13 +14,68 @@
 
 """Imagecraft provider service."""
 
+import contextlib
+import os
+import pathlib
+from collections.abc import Generator
+from typing import Any
+
+import craft_platforms
 import craft_providers
 from craft_application.services.provider import ProviderService
 from craft_cli import CraftError, emit
+from craft_providers.lxd import LXDInstance, LXDProvider
 
 
 class Provider(ProviderService):
     """Imagecraft-specific project service."""
+
+    @contextlib.contextmanager
+    def instance(
+        self,
+        build_info: craft_platforms.BuildInfo,
+        *,
+        work_dir: pathlib.Path,
+        **kwargs: Any,
+    ) -> Generator[craft_providers.Executor, None, None]:
+        """Context manager for a provider instance.
+
+        When using the LXD provider, also mounts $SNAP_DATA/losetup into
+        /dev/losetup inside the instance so the losetup server socket is
+        accessible.
+        """
+        with super().instance(build_info, work_dir=work_dir, **kwargs) as instance:
+            if isinstance(self.get_provider(), LXDProvider) and isinstance(
+                instance, LXDInstance
+            ):
+                snap_data = os.environ.get("SNAP_DATA", "")
+                if snap_data:
+                    losetup_host = pathlib.Path(snap_data) / "losetup"
+                    losetup_host.mkdir(parents=True, exist_ok=True)
+                    self._mount_with_shift(instance, losetup_host)
+                    emit.debug(f"Mounted {losetup_host} -> /dev/losetup in instance")
+                else:
+                    emit.debug("SNAP_DATA not set; skipping losetup mount")
+            yield instance
+
+    @staticmethod
+    def _mount_with_shift(instance: LXDInstance, host_source: pathlib.Path) -> None:
+        """Mount host_source into /dev/losetup in the instance with UID/GID shifting.
+
+        Uses pylxd directly to set shift=true, which remaps host UIDs/GIDs into
+        the container's namespace so the directory appears owned by root inside.
+        """
+        device_name = "disk-dev-losetup"
+        target = "/dev/losetup"
+        lxd_inst = instance._client.instances.get(instance.instance_name)
+        if device_name not in lxd_inst.devices:
+            lxd_inst.devices[device_name] = {
+                "type": "disk",
+                "source": str(host_source),
+                "path": target,
+                "shift": "true",
+            }
+            lxd_inst.save(wait=True)
 
     def get_provider(self, name: str | None = None) -> craft_providers.Provider:
         """Get the provider to use. This method is a workaround for #253.
