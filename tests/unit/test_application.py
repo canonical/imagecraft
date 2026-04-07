@@ -146,6 +146,7 @@ def default_factory(default_project_file, app_metadata, request):
     )
 
     factory.update_kwargs("project", project_dir=default_project_file.parent)
+    factory.update_kwargs("image", project_dir=default_project_file.parent)
     project = factory.get("project")
     project.configure(platform=platform, build_for=build_for)
 
@@ -173,3 +174,15 @@ def test_application_grammar(
     assert len(project.volumes["pc"].structure) == len(expected)
     for i, e in enumerate(expected):
         assert project.volumes["pc"].structure[i].name == e
+
+
+def test_application_image_service_wiring(
+    custom_project_file: Path,
+    default_application: Imagecraft,
+    enable_features,
+):
+    from imagecraft.services.image import ImageService  # noqa: PLC0415
+
+    image_service = cast(ImageService, default_application.services.get("image"))
+    assert isinstance(image_service, ImageService)
+    assert image_service._project_dir == custom_project_file.parent

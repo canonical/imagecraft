@@ -45,3 +45,8 @@ class Imagecraft(Application):
         from craft_parts.features import Features  # noqa: PLC0415
 
         Features(enable_partitions=True, enable_overlay=True)
+
+    @override
+    def _configure_services(self, provider_name: str | None) -> None:
+        super()._configure_services(provider_name)
+        self.services.update_kwargs("image", project_dir=self.project_dir)

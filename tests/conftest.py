@@ -24,6 +24,12 @@ from imagecraft import cli, plugins
 from imagecraft.application import APP_METADATA
 
 
+def pytest_runtest_setup(item: pytest.Item) -> None:
+    """Skip tests marked requires_root when not running as root."""
+    if item.get_closest_marker("requires_root") and os.geteuid() != 0:
+        pytest.skip("requires root permissions")
+
+
 @pytest.fixture
 def project_main_module() -> types.ModuleType:
     """Fixture that returns the project's principal package (imported).
@@ -110,6 +116,11 @@ platforms:
   amd64:
     build-for: [amd64]
     build-on: [amd64]
+  arm64:
+  armhf:
+  ppc64el:
+  riscv64:
+  s390x:
 
 filesystems:
   default:
@@ -154,6 +165,7 @@ def default_factory(default_project_file, app_metadata):
     )
 
     factory.update_kwargs("project", project_dir=default_project_file.parent)
+    factory.update_kwargs("image", project_dir=default_project_file.parent)
     factory.update_kwargs("lifecycle", work_dir=Path("work/"), cache_dir=Path("cache/"))
 
     project: ProjectService = factory.get("project")

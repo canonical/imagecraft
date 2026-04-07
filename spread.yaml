@@ -158,6 +158,7 @@ prepare: |
   else
     tests.pkgs remove lxd
   fi
+  snap install multipass --channel=latest/stable
   snap install lxd --channel=latest/stable
 
   # Hold snap refreshes for 24h.
