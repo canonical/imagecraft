@@ -32,17 +32,10 @@ grammar.
 Parts
 -----
 
-Software is brought into an image through the declaration of parts. Each part must be
-configured for the software's language and build systems.
+Files in an image are manipulated by declaring parts. Some common tools and tasks
+have plugins, which determine how parts are built.
 
 * :ref:`reference-parts-and-steps`
-
-
-Plugins
--------
-
-Parts can use plugins to simplify common build patterns.
-
 * :ref:`plugins`
 
 .. toctree::

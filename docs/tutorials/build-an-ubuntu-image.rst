@@ -214,10 +214,7 @@ directory. Let's start building our Ubuntu file system with the ``parts`` key.
 image. Most importantly, they give us access to the *overlay file system*, which is
 where we'll manipulate our image's contents.
 
-We'll create our file system with ``mmdebstrap``, a command-line tool for setting up
-Debian root file systems. The part we create for it will use the ``mmdebstrap`` plugin,
-which calls its primary command under the hood, and copy the resulting file system
-into our image.
+We'll create a Debian root file system with a part that uses the ``mmdebstrap`` plugin.
 
 In the ``parts`` key, replace the template part with the following ``rootfs`` part:
 
@@ -226,30 +223,30 @@ In the ``parts`` key, replace the template part with the following ``rootfs`` pa
     :start-at: parts:
     :end-at: noble
 
-The ``plugin`` key specifies the build system needed to prepare the part. Here, we use
-the ``mmdebstrap`` plugin, which handles the complexity of creating a root file system
-for us.
+The ``mmdebstrap-suite`` key is specific to the ``mmdebstrap`` plugin and specifies the
+package suite to bootstrap. To get the packages that are shipped with Ubuntu 24.04 LTS,
+we set the suite to ``noble``.
 
-The ``mmdebstrap-suite`` key specifies the package suite to bootstrap, ``noble`` (Ubuntu
-24.04) in this case.
+The plugin removes the default sources configuration files, which limit us to the system
+packages from the ``noble`` suite's ``main`` component. If we want to install anything
+more than essential system packages, we'll need to add a new sources configuration file.
+We also still need to create the ``/boot/efi`` directory where the ``efi`` partition
+will be mounted.
 
-By default, the plugin removes the default sources configuration files, which will only allow us
-to install system packages from the ``noble`` suite's ``main`` component. We'll need to add
-a new sources configuration file to be able to install a wider array of packages. We also need
-to create the ``/boot/efi/`` directory to mount the ``efi`` partition to. We can tackle both
-of these items by adding the following highlighted lines to the end of the ``override-build``
-script:
+Add the following ``override-build`` key to the part:
 
 .. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
     :language: yaml
     :class: no-copybutton
-    :lines: 39-55
+    :lines: 39-52
     :emphasize-lines: 4-14
 
-The ``craftctl default`` command runs the plugin's default build commands before our
-custom script. We then create the ``/boot/efi/`` directory and write a custom sources
-configuration. Now, when we install packages into our image, we'll be able to access the
-other components in the ``noble`` suite.
+The ``override-build`` key replaces the plugin's default behaviour. Since we want to
+extend the part's build instead of overriding it, we started the script with ``craftctl
+default``, which runs the plugin's default commands.
+
+Now, when we install packages into our image, we'll be able to access the other
+components in the ``noble`` suite.
 
 At this point, the file system only exists in the ``rootfs`` part. To get it into the
 final image, we'll need to copy it into the overlay file system. We can do so with the
@@ -271,8 +268,8 @@ Add essential packages
 ----------------------
 
 We'll need some additional packages for our image to be bootable. Let's define a new
-part to source them. In this case, we don't need a build system, so we set the
-``plugin`` key to ``nil``. Add the following ``packages`` part:
+part to source them. In this case, we don't need any special behaviour, so we'll set
+the ``plugin`` key to ``nil``. Add the following ``packages`` part:
 
 .. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
     :language: yaml
