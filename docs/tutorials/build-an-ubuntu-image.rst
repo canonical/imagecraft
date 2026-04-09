@@ -230,8 +230,7 @@ we set the suite to ``noble``.
 The plugin removes the default sources configuration files, which limit us to the system
 packages from the ``noble`` suite's ``main`` component. If we want to install anything
 more than essential system packages, we'll need to add a new sources configuration file.
-We also still need to create the ``/boot/efi`` directory where the ``efi`` partition
-will be mounted.
+We also still need to create the ``/boot/efi`` directory we mounted the ``efi`` partition to.
 
 Add the following ``override-build`` key to the part:
 

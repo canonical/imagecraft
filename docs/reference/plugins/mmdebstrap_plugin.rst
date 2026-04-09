@@ -4,7 +4,7 @@ mmdebstrap Plugin
 =================
 
 The mmdebstrap plugin sets up a Debian root file system using the
-`mmdebstrap <https://manpages.debian.org/mmdebstrap>`_ command-line tool.
+`mmdebstrap <https://manpages.ubuntu.com/manpages/resolute/en/man1/mmdebstrap.1.html>`_ command-line tool.
 
 The plugin creates a minimal root file system with a customizable set
 of additional packages.
@@ -33,8 +33,8 @@ The package set to install. Valid values are ``extract``, ``custom``, ``essentia
 ``apt``, ``required``, ``minbase``, ``buildd``, ``important``, ``debootstrap`` and
 ``standard``.
 
-The `VARIANTS section of the documentation
-<https://manpages.debian.org/mmdebstrap#VARIANTS>`_ contains more details.
+The variants section of the `mmdebstrap documentation
+<https://manpages.ubuntu.com/manpages/resolute/en/man1/mmdebstrap.1.html>`_ contains more details.
 
 mmdebstrap-packages
 ~~~~~~~~~~~~~~~~~~~
