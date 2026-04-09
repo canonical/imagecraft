@@ -13,7 +13,7 @@ the craft apps. Builds take place in an isolated environment and follow a series
 consistent, reproducible steps that can be adjusted for individual images.
 
 Imagecraft simplifies image customization and maintenance by keeping the image's
-essential details in one place. What previously required disparate tools and manual
+essential details in one place. Work that normally requires disparate tools and manual
 adjustments can be done by editing the project file and rebuilding your image.
 
 Imagecraft is for DevOps and platform engineers, systems administrators, and hobbyists
