@@ -10,14 +10,14 @@ images.
 
 The tool builds images from a declarative project file written with the shared syntax of
 the craft apps. Builds take place in an isolated environment and follow a series of
-consistent, reproducible steps that can be catered to specific images.
+consistent, reproducible steps that can be adjusted for individual images.
 
 Imagecraft simplifies image customization and maintenance by keeping the image's
 essential details in one place. What previously required disparate tools and manual
-intervention can now be done by editing the project file and rebuilding your image.
+adjustments can be done by editing the project file and rebuilding your image.
 
 Imagecraft is for DevOps and platform engineers, systems administrators, and hobbyists
-who need to create and maintain images for embedded, IoT, and cloud systems.
+who create and maintain images for embedded, IoT, and cloud systems.
 
 
 In this documentation
@@ -30,8 +30,7 @@ In this documentation
     * - **Tutorial**
       - :ref:`tutorial-describe-the-image` • :ref:`tutorial-define-the-partitions` •
         :ref:`tutorial-set-up-the-root-file-system` •
-        :ref:`tutorial-add-essential-packages` • :ref:`tutorial-pack-the-image` •
-        :ref:`tutorial-run-and-test-the-image`
+        :ref:`tutorial-add-essential-packages` • :ref:`tutorial-pack-the-image`
     * - **Vocabulary and syntax**
       - :ref:`commands` • :ref:`reference-imagecraft-yaml` •
         :ref:`reference-platform-grammar`
