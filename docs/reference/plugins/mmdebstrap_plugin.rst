@@ -1,4 +1,4 @@
-.. _mmdebstrap_plugin:
+.. _reference-mmdebstrap-plugin:
 
 mmdebstrap Plugin
 =================
