@@ -44,6 +44,7 @@ def register_services() -> None:
     ServiceFactory.register(
         "package", "ImagecraftPackService", module="imagecraft.services.pack"
     )
+    ServiceFactory.register("image", "ImageService", module="imagecraft.services.image")
     ServiceFactory.register(
         "project", "ImagecraftProjectService", module="imagecraft.services.project"
     )

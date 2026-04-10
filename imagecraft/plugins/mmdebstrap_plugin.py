@@ -16,11 +16,12 @@
 
 """The mmdebstrap plugin."""
 
-from typing import Literal, cast, override
+from typing import Literal, cast
 
 import distro
 from craft_parts.plugins import Plugin
 from craft_parts.plugins.properties import PluginProperties
+from typing_extensions import override
 
 
 class MmdebstrapPluginProperties(PluginProperties, frozen=True):

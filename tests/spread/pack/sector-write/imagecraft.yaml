@@ -1,0 +1,37 @@
+name: sector-write-test
+version: "0.1"
+summary: Test that data can be written to sectors outside partitions
+description: >
+  Verifies that a part can use CRAFT_VOLUME_* to write arbitrary data to sectors
+  that fall outside any partition (the gap between GPT entries and the first partition).
+base: bare
+build-base: devel
+
+platforms:
+  amd64:
+
+filesystems:
+  default:
+    - mount: /
+      device: (volume/disk/rootfs)
+
+parts:
+  sector-writer:
+    plugin: nil
+    override-build: |
+      # Write a known string to sector 100, which falls in the gap between the
+      # end of GPT partition entries (sector 33) and the first partition start
+      # (typically sector 2048). This simulates what a bootloader installer does.
+      printf 'IMAGECRAFT_SECTOR_WRITE_TEST' | \
+        dd of="${CRAFT_VOLUME_DISK}" bs=512 seek=100 conv=notrunc count=1 status=none
+
+volumes:
+  disk:
+    schema: gpt
+    structure:
+      - name: rootfs
+        role: system-data
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        filesystem: ext4
+        filesystem-label: writable
+        size: 200M

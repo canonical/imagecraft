@@ -20,3 +20,13 @@ jobs:
       fast-test-python-versions: '["3.12", "3.13"]'
       slow-test-platforms: '["ubuntu-24.04"]'
       slow-test-python-versions: '["3.12"]'
+  test-requires-root:
+    uses: canonical/starflow/.github/workflows/test-python.yaml@main
+    with:
+      fast-test-platforms: '["ubuntu-24.04", "ubuntu-24.04-arm"]'
+      fast-test-python-versions: '["3.12"]'
+      slow-test-platforms: '["ubuntu-24.04", "ubuntu-24.04-arm"]'
+      slow-test-python-versions: '["3.12"]'
+      lowest-python-version: ""
+      pytest-markers: requires_root
+      test-command-prefix: sudo env "PATH=$PATH"
