@@ -12,7 +12,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import subprocess
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -99,95 +98,53 @@ def test_create_images_idempotent(image_service, mock_services, mock_project):
 def test_attach_images_new(image_service, project_dir, mocker):
     image_service._images = {"pc": project_dir / ".pc.img.tmp"}
 
-    mock_run = mocker.patch("imagecraft.services.image.run")
-    # Mock _get_all_loop_devices returns empty
-    mocker.patch.object(image_service, "_get_all_loop_devices", return_value=[])
-
-    mock_run.return_value.stdout = "/dev/loop8\n"
+    mock_attach = mocker.patch(
+        "imagecraft.losetup.attach",
+        return_value=["/dev/loop8"],
+    )
 
     with patch("atexit.register") as mock_atexit:
         devices = image_service.attach_images()
 
         assert devices == {"pc": "/dev/loop8"}
-        mock_run.assert_called_with(
-            "losetup",
-            "--find",
-            "--show",
-            "--partscan",
-            str(project_dir / ".pc.img.tmp"),
-        )
+        mock_attach.assert_called_once_with(project_dir / ".pc.img.tmp")
         mock_atexit.assert_called_once_with(image_service.detach_images)
 
 
-def test_attach_images_reuse(image_service, project_dir, mocker):
-    image_path = project_dir / ".pc.img.tmp"
-    image_path.touch()
-    image_service._images = {"pc": image_path}
+def test_attach_images_idempotent(image_service, project_dir, mocker):
+    image_service._images = {"pc": project_dir / ".pc.img.tmp"}
 
-    # Mock existing loop device
-    mocker.patch.object(
-        image_service,
-        "_get_all_loop_devices",
-        return_value=[{"name": "/dev/loop9", "back-file": str(image_path)}],
+    mock_attach = mocker.patch(
+        "imagecraft.losetup.attach",
+        return_value=["/dev/loop8"],
     )
 
-    # Mock samefile to return True
-    mocker.patch("pathlib.Path.samefile", return_value=True)
-    mock_run = mocker.patch("imagecraft.services.image.run")
+    first = image_service.attach_images()
+    second = image_service.attach_images()
 
-    devices = image_service.attach_images()
-
-    assert devices == {"pc": "/dev/loop9"}
-    mock_run.assert_not_called()  # Should not call losetup attach
-
-
-def test_attach_images_stale_inode(image_service, project_dir, mocker):
-    image_path = project_dir / ".pc.img.tmp"
-    image_path.touch()
-    image_service._images = {"pc": image_path}
-
-    # Mock existing loop device
-    mocker.patch.object(
-        image_service,
-        "_get_all_loop_devices",
-        return_value=[{"name": "/dev/loop10", "back-file": str(image_path)}],
-    )
-
-    # Mock samefile to raise FileNotFoundError (stale inode)
-    mocker.patch("pathlib.Path.samefile", side_effect=FileNotFoundError)
-    mock_run = mocker.patch("imagecraft.services.image.run")
-    mock_run.return_value.stdout = "/dev/loop11\n"
-
-    devices = image_service.attach_images()
-
-    assert devices == {"pc": "/dev/loop11"}
-    # Should detach stale
-    mock_run.assert_any_call("losetup", "-d", "/dev/loop10")
-    # Should attach new
-    mock_run.assert_any_call(
-        "losetup", "--find", "--show", "--partscan", str(image_path)
-    )
+    assert first == second == {"pc": "/dev/loop8"}
+    mock_attach.assert_called_once()  # only called the first time
 
 
 def test_detach_images_success(image_service, mocker):
     image_service._loop_devices = {"pc": "/dev/loop8"}
-    mock_run = mocker.patch("imagecraft.services.image.run")
+    mock_detach = mocker.patch("imagecraft.losetup.detach")
 
     image_service.detach_images()
 
-    mock_run.assert_called_once_with("losetup", "-d", "/dev/loop8")
+    mock_detach.assert_called_once_with("/dev/loop8")
     assert image_service._loop_devices == {}
 
 
 def test_detach_images_retry(image_service, mocker):
     image_service._loop_devices = {"pc": "/dev/loop8"}
-    mock_run = mocker.patch("imagecraft.services.image.run")
+    mock_detach = mocker.patch("imagecraft.losetup.detach")
 
     # Fail twice, then succeed
-    mock_run.side_effect = [
-        subprocess.CalledProcessError(1, "losetup"),
-        subprocess.CalledProcessError(1, "losetup"),
-        MagicMock(),
+    mock_detach.side_effect = [
+        RuntimeError("device busy"),
+        RuntimeError("device busy"),
+        None,
     ]
 
     mocker.patch("time.monotonic", side_effect=[0, 1, 2, 3, 4])
@@ -195,7 +152,7 @@ def test_detach_images_retry(image_service, mocker):
 
     image_service.detach_images()
 
-    assert mock_run.call_count == 3
+    assert mock_detach.call_count == 3
     assert image_service._loop_devices == {}
 
 

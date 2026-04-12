@@ -48,6 +48,9 @@ def register_services() -> None:
     ServiceFactory.register(
         "project", "ImagecraftProjectService", module="imagecraft.services.project"
     )
+    ServiceFactory.register(
+        "provider", "Provider", module="imagecraft.services.provider"
+    )
 
 
 def _create_app() -> Imagecraft:

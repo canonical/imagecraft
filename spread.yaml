@@ -7,7 +7,7 @@ environment:
   LANGUAGE: "en"
   # build the snap with lxd
   PROJECT_PATH: /home/imagecraft
-  CRAFT_BUILD_ENVIRONMENT: host # Build in destructive mode until we can solve https://github.com/canonical/imagecraft/issues/253
+  #CRAFT_BUILD_ENVIRONMENT: host # Build in destructive mode until we can solve https://github.com/canonical/imagecraft/issues/253
   SNAPD_TESTING_TOOLS: $PROJECT_PATH/tools/external/tools
   PATH: /snap/bin:$PATH:$SNAPD_TESTING_TOOLS
 
