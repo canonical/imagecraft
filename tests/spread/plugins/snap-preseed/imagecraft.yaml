@@ -1,7 +1,7 @@
-name: classic-preseed-test
+name: snap-preseed-test
 version: "0.1"
-summary: Test classic-preseed plugin
-description: Test classic-preseed plugin
+summary: Test snap-preseed plugin
+description: Test snap-preseed plugin
 base: bare
 build-base: ubuntu@24.04
 
@@ -26,10 +26,8 @@ filesystems:
 
 parts:
   snaps:
-    plugin: classic-preseed
-    classic-preseed-snaps:
-      - yq/latest/stable
-      - core24
-      - hello-world=edge
+    plugin: snap-preseed
+    snap-preseed-snaps:
+      - hello-world/latest/stable
     organize:
-      "*": (overlay)/
+      "var/*": (overlay)/var/

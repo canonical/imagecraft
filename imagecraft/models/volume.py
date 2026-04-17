@@ -164,8 +164,6 @@ class Role(str, enum.Enum):
     SYSTEM_SEED = "system-seed"
     """The partition stores the image's initial seed data used during first boot."""
 
-    SYSTEM_SAVE = "system-save"
-    """The partition stores persistent system state."""
 
 class StructureItem(CraftBaseModel):
     """Structure item of the image."""

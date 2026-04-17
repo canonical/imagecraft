@@ -1,0 +1,32 @@
+name: uc-prepare-test
+version: "1.0"
+summary: Test uc-prepare plugin
+description: Test uc-prepare plugin
+base: bare
+build-base: ubuntu@24.04
+
+platforms:
+  amd64:
+
+filesystems:
+  default:
+    - mount: /
+      device: (volume/disk/ubuntu-seed)
+
+parts:
+  uc-seed:
+    plugin: uc-prepare
+    source: .
+    uc-prepare-model-assert: model.assert
+    organize:
+      "system-seed/*": (volume/disk/ubuntu-seed)/
+
+volumes:
+  disk:
+    schema: gpt
+    structure:
+      - name: ubuntu-seed
+        role: system-seed
+        type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
+        filesystem: vfat
+        size: 1500M

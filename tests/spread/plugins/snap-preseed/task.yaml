@@ -1,0 +1,16 @@
+summary: Test snap-preseed plugin
+
+systems: [ubuntu-24.04-64]
+
+execute: |
+  imagecraft pack --verbose --destructive-mode
+
+  test -f disk.img
+
+  test -d prime/var/lib/snapd/seed/
+  test -f prime/var/lib/snapd/seed/snaps/hello-world_*.snap
+
+restore: |
+  imagecraft clean --destructive-mode
+  rm -rf disk.img || true
+
