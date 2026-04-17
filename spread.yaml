@@ -7,7 +7,7 @@ environment:
   LANGUAGE: "en"
   # build the snap with lxd
   PROJECT_PATH: /home/imagecraft
-  SNAPCRAFT_BUILD_ENVIRONMENT: lxd
+  CRAFT_BUILD_ENVIRONMENT: host # Build in destructive mode until we can solve https://github.com/canonical/imagecraft/issues/253
   SNAPD_TESTING_TOOLS: $PROJECT_PATH/tools/external/tools
   PATH: /snap/bin:$PATH:$SNAPD_TESTING_TOOLS
 
@@ -158,6 +158,7 @@ prepare: |
   else
     tests.pkgs remove lxd
   fi
+  snap install multipass --channel=latest/stable
   snap install lxd --channel=latest/stable
 
   # Hold snap refreshes for 24h.
@@ -190,6 +191,8 @@ suites:
     summary: Common integration tests for imagecraft
   tests/spread/pack/:
     summary: Test imagecraft packing
+  tests/spread/plugins/:
+    summary: Test imagecraft plugins
   docs/tutorials/code/:
     summary: Tests the Imagecraft tutorials
     systems:

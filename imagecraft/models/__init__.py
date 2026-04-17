@@ -22,7 +22,7 @@ from imagecraft.models.project import (
     get_partition_name,
 )
 
-from imagecraft.models.volume import FileSystem, Volume, Role
+from imagecraft.models.volume import FileSystem, Volume, Role, StructureItem
 from imagecraft.models.grammar import get_grammar_aware_volume_keywords
 
 __all__ = [
@@ -32,6 +32,7 @@ __all__ = [
     "Volume",
     "VolumeFilesystemsModel",
     "Role",
+    "StructureItem",
     "get_partition_name",
     "get_grammar_aware_volume_keywords",
 ]

@@ -34,7 +34,9 @@ jobs:
 
       - if: steps.decisions.outputs.PUBLISH == 'true'
         name: Build imagecraft snap
-        uses: canonical/action-build@v1
+        uses: canonical/craft-actions/snapcraft/pack@main
+        with:
+          channel: latest/edge
         id: build-imagecraft
 
       - if: steps.decisions.outputs.PUBLISH == 'true'

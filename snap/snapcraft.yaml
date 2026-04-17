@@ -112,7 +112,7 @@ parts:
     build-packages:
       - libffi-dev
       - libgit2-dev
-      - cargo-1.85
+      - cargo-1.89
       - pkg-config
       - git
     build-snaps:
@@ -122,11 +122,15 @@ parts:
       - UV_COMPILE_BYTECODE: "1"
       - UV_NO_BINARY: "1"
       - MAKEOPTS: -j$(nproc --all)
-      - CARGO: cargo-1.85
-      - RUSTC: rustc-1.85
+      - CARGO: cargo-1.89
+      - RUSTC: rustc-1.89
     organize:
       bin/craftctl: libexec/imagecraft/craftctl
     override-build: |
+      # create symlinks for cargo/rustc so maturin can find them
+      ln -sf $(which cargo-1.89) /usr/local/bin/cargo
+      ln -sf $(which rustc-1.89) /usr/local/bin/rustc
+
       ${SNAP}/libexec/snapcraft/craftctl default
       sed -i -e '1 s|^#!/.*|#!/snap/imagecraft/current/bin/python -E|' $CRAFT_PART_INSTALL/bin/craftctl
       version="$(PYTHONPATH=$CRAFT_PART_INSTALL/lib/python3.12/site-packages "${CRAFT_STAGE}/usr/bin/python3" -c "import imagecraft;print(imagecraft.__version__)")"

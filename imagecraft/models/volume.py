@@ -129,6 +129,12 @@ class GptType(str, enum.Enum):
     BIOS_BOOT = "21686148-6449-6E6F-744E-656564454649"
     """BIOS boot partition in a GPT schema."""
 
+    XBOOTLDR = "BC13C2FF-59E6-4262-A352-B275FD6F7172"
+    """Extended Boot Loader partition"""
+
+    AMD64_ROOT = "4F68BCE3-E8CD-4DB1-96E7-FBCAF984B709"
+    """AMD64 root partition type"""
+
 
 class FileSystem(enum.Enum):
     """Supported filesystem types."""

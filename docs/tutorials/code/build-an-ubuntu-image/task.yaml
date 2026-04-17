@@ -9,9 +9,15 @@ execute: |
   cp ../imagecraft.yaml imagecraft.yaml
   snap set imagecraft provider=multipass
   imagecraft pack
+  # What we run in spread
+  apt install --yes qemu-system-x86 ovmf
+  # What the user sees:
   apt install qemu-system-x86
   apt install ovmf
   cp /usr/share/OVMF/OVMF_VARS_4M.fd /tmp/OVMF_VARS_4M.fd
+
+  # Note: This doesn't currently work in spread. We'll need to figure out the correct
+  # command to use at a later date.
   qemu-system-x86_64 \
     -accel kvm \
     -m 4G \

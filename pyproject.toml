@@ -6,13 +6,14 @@ authors = [{ name = "Canonical Ltd.", email = "snapcraft@lists.snapcraft.io" }]
 dependencies = [
     # To use a dev version of a craft library:
     # craft-lib @ git+https://github.com/canonical/craft-lib@ref
-    "craft-parts~=2.27",
+    "craft-parts~=2.30",
     "craft-cli~=3.0",
     "craft-platforms~=0.6",
     "craft-application~=6.1",
     "craft-grammar~=2.3",
     "craft-providers~=3.0",
     "pydantic~=2.8",
+    "pygit2>=1.13.0,<1.15.0", # pin pygit2 to versions compatible with libgit2-1.7
 ]
 classifiers = [
     "Development Status :: 1 - Planning",
@@ -109,6 +110,10 @@ explicit = true
 python-apt = { index = "python-apt-wheels" }
 
 [tool.uv]
+build-constraint-dependencies = [
+    # needed until we have rustc >= 1.78
+    "maturin<1.10.0 ; python_version < '3.14'",
+]
 constraint-dependencies = [
     # Basic constraints to allow --resolution=lowest
     "build>=0.7.0",
@@ -198,7 +203,10 @@ minversion = "7.0"
 testpaths = "tests"
 xfail_strict = true
 addopts = "--ignore=tests/spread"
-markers = ["slow: slow tests"]
+markers = [
+    "slow: slow tests",
+    "requires_root: tests that require root privileges"
+]
 
 [tool.coverage.run]
 branch = true

@@ -56,6 +56,13 @@ parts:
       LABEL=UEFI	/boot/efi	vfat	umask=0077	0 1
       EOF
 
+  # add user to test override-overlay
+  test-user:
+    plugin: nil
+    after: [packages]
+    override-overlay: |
+      useradd -M -U -r testuser
+
 volumes:
   pc:
     schema: gpt

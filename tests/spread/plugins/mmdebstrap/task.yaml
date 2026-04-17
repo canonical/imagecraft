@@ -1,0 +1,14 @@
+summary: Test mmdebstrap plugin
+
+systems: [ubuntu-24.04-64]
+
+execute: |
+  imagecraft pack --verbose
+
+  test -f pc.img
+
+  test -x prime/usr/bin/curl
+
+restore: |
+  imagecraft clean --destructive-mode
+  rm -rf pc.img || true
