@@ -61,7 +61,7 @@ docs = [
 # https://warthogs.atlassian.net/browse/DOCPR-2387
 docs-starter-pack = [
     "canonical-sphinx>=0.5.1",
-    "myst-parser~=4.0",
+    "myst-parser~=5.0",
     "packaging>=25.0",
     "rst2html>=2020.7.4",
     "sphinx-autobuild>=2025.8.25",
