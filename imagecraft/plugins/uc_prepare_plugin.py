@@ -71,6 +71,8 @@ class UcPreparePlugin(Plugin):
     @override
     def get_build_packages(self) -> set[str]:
         """Return a set of required packages to install in the build environment."""
+        if self._part_info.host_arch != self._part_info.target_arch:
+            return {"qemu-user-static"}
         return set()
 
     @override
