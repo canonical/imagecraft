@@ -13,4 +13,3 @@ execute: |
 restore: |
   imagecraft clean --destructive-mode
   rm -rf disk.img || true
-

@@ -71,11 +71,13 @@ class SnapPreseedPlugin(Plugin):
         if options.snap_preseed_revisions:
             cmd.append(f"--revisions={options.snap_preseed_revisions}")
 
-        for assertion in options.snap_preseed_assertions:
-            cmd.append(f"--assert={assertion}")
+        cmd.extend(
+            f"--assert={assertion}" for assertion in options.snap_preseed_assertions
+        )
 
-        for snap in options.snap_preseed_snaps:
-            cmd.append(f"--snap={self._resolve_snap(snap)}")
+        cmd.extend(
+            f"--snap={self._resolve_snap(snap)}" for snap in options.snap_preseed_snaps
+        )
 
         cmd.append(
             f'"{options.snap_preseed_model_assert}" {self._part_info.part_install_dir}'

@@ -87,11 +87,13 @@ class UcPreparePlugin(Plugin):
         if options.uc_prepare_revisions:
             cmd.append(f"--revisions={options.uc_prepare_revisions}")
 
-        for assertion in options.uc_prepare_assertions:
-            cmd.append(f"--assert={assertion}")
+        cmd.extend(
+            f"--assert={assertion}" for assertion in options.uc_prepare_assertions
+        )
 
-        for snap in options.uc_prepare_snaps:
-            cmd.append(f"--snap={self._resolve_snap(snap)}")
+        cmd.extend(
+            f"--snap={self._resolve_snap(snap)}" for snap in options.uc_prepare_snaps
+        )
 
         cmd.append(
             f"{options.uc_prepare_model_assert} {self._part_info.part_install_dir}"
