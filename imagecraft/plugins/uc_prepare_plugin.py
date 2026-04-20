@@ -19,6 +19,8 @@
 from typing import Literal, cast, override
 
 from craft_parts.plugins import Plugin, PluginProperties
+from pydantic import model_validator
+from typing_extensions import Self
 
 
 class UcPreparePluginProperties(PluginProperties, frozen=True):
@@ -36,6 +38,24 @@ class UcPreparePluginProperties(PluginProperties, frozen=True):
     uc_prepare_preseed_sign_key: str | None = None
     uc_prepare_apparmor_features_dir: str | None = None
     uc_prepare_sysfs_overlay: str | None = None
+
+    @model_validator(mode="after")
+    def sign_key_requires_preseed(self) -> Self:
+        """preseed-sign-key requires preseed to be enabled."""
+        if self.uc_prepare_preseed_sign_key and not self.uc_prepare_preseed:
+            raise ValueError(
+                "uc-prepare-preseed-sign-key cannot be used without uc-prepare-preseed"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def sysfs_overlay_requires_preseed(self) -> Self:
+        """sysfs-overlay requires preseed to be enabled."""
+        if self.uc_prepare_sysfs_overlay and not self.uc_prepare_preseed:
+            raise ValueError(
+                "uc-prepare-sysfs-overlay cannot be used without uc-prepare-preseed"
+            )
+        return self
 
 
 class UcPreparePlugin(Plugin):
