@@ -21,7 +21,9 @@ parts:
     organize:
       "system-seed/*": (volume/disk/ubuntu-seed)/
     prime:
-      - (volume/disk/ubuntu-seed)/*
+      - -kernel
+      - -gadget
+      - -resolved-content
 
 volumes:
   disk:
