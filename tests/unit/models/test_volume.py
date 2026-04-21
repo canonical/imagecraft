@@ -23,7 +23,9 @@ from pydantic import TypeAdapter, ValidationError
 
 
 def test_volume_valid():
-    volume = Volume.model_validate(
+    volume_adapter = TypeAdapter(Volume)
+
+    volume = volume_adapter.validate_python(
         {
             "schema": "gpt",
             "structure": [
@@ -69,7 +71,7 @@ def test_volume_valid():
     ("error_value", "error_class", "volume"),
     [
         (
-            "1 validation error for Volume\nschema",
+            "1 validation error for Volume\n  Unable to extract tag",
             ValidationError,
             {
                 "structure": [
@@ -83,8 +85,8 @@ def test_volume_valid():
                 ],
             },
         ),
-        (
-            "1 validation error for Volume\nschema",
+        pytest.param(
+            "1 validation error for Volume\n  Input tag",
             ValidationError,
             {
                 "schema": "",
@@ -98,9 +100,10 @@ def test_volume_valid():
                     }
                 ],
             },
+            id="missing-schema",
         ),
-        (
-            "1 validation error for Volume\nstructure.0.name\n  String should match pattern",
+        pytest.param(
+            "1 validation error for Volume\ngpt.structure.0.name\n  String should match pattern",
             ValidationError,
             {
                 "schema": "gpt",
@@ -114,9 +117,10 @@ def test_volume_valid():
                     }
                 ],
             },
+            id="empty-name",
         ),
         (
-            "1 validation error for Volume\nstructure.0.name\n  String should match pattern",
+            "1 validation error for Volume\ngpt.structure.0.name\n  String should match pattern",
             ValidationError,
             {
                 "schema": "gpt",
@@ -132,7 +136,7 @@ def test_volume_valid():
             },
         ),
         (
-            "1 validation error for Volume\nstructure\n  List should have at least 1 item after validation, not 0",
+            "1 validation error for Volume\ngpt.structure\n  List should have at least 1 item after validation, not 0",
             ValidationError,
             {
                 "schema": "gpt",
@@ -140,7 +144,7 @@ def test_volume_valid():
             },
         ),
         (
-            "1 validation error for Volume\nstructure.0.role\n  Input should be 'system-data' or 'system-boot'",
+            "1 validation error for Volume\ngpt.structure.0.role\n  Input should be '",
             ValidationError,
             {
                 "schema": "gpt",
@@ -156,7 +160,7 @@ def test_volume_valid():
             },
         ),
         pytest.param(
-            "1 validation error for Volume\nstructure\n  Value error, Duplicate filesystem labels: ['test']",
+            "1 validation error for Volume\ngpt.structure\n  Value error, Duplicate filesystem labels: ['test']",
             ValidationError,
             {
                 "schema": "gpt",
@@ -180,7 +184,7 @@ def test_volume_valid():
             id="duplicate-values",
         ),
         (
-            "1 validation error for Volume\nstructure.0.type",
+            "1 validation error for Volume\ngpt.structure.0.type",
             ValidationError,
             {
                 "schema": "gpt",
@@ -196,7 +200,7 @@ def test_volume_valid():
             },
         ),
         (
-            "1 validation error for Volume\nstructure.0.filesystem",
+            "1 validation error for Volume\ngpt.structure.0.filesystem",
             ValidationError,
             {
                 "schema": "gpt",
@@ -212,7 +216,7 @@ def test_volume_valid():
             },
         ),
         (
-            "1 validation error for Volume\nstructure.0.id\n  Input should be a valid UUID",
+            "1 validation error for Volume\ngpt.structure.0.id\n  Input should be a valid UUID",
             ValidationError,
             {
                 "schema": "gpt",
@@ -229,7 +233,7 @@ def test_volume_valid():
             },
         ),
         (
-            "1 validation error for Volume\nstructure.0.name\n  String should have at most 36 characters",
+            "1 validation error for Volume\ngpt.structure.0.name\n  String should have at most 36 characters",
             ValidationError,
             {
                 "schema": "gpt",
@@ -245,7 +249,7 @@ def test_volume_valid():
             },
         ),
         (
-            "1 validation error for Volume\nstructure.0.size\n  Field required",
+            "1 validation error for Volume\ngpt.structure.0.size\n  Field required",
             ValidationError,
             {
                 "schema": "gpt",
@@ -260,7 +264,7 @@ def test_volume_valid():
             },
         ),
         (
-            "1 validation error for Volume\nstructure.0.size\n  Value error, size must be expressed in bytes, optionally with M or G unit.",
+            "1 validation error for Volume\ngpt.structure.0.size\n  Value error, size must be expressed in bytes, optionally with M or G unit.",
             ValidationError,
             {
                 "schema": "gpt",
@@ -276,7 +280,7 @@ def test_volume_valid():
             },
         ),
         (
-            "1 validation error for Volume\nstructure.0.size\n  Value error, size must be expressed in bytes, optionally with M or G unit.",
+            "1 validation error for Volume\ngpt.structure.0.size\n  Value error, size must be expressed in bytes, optionally with M or G unit.",
             ValidationError,
             {
                 "schema": "gpt",
@@ -292,7 +296,7 @@ def test_volume_valid():
             },
         ),
         (
-            "1 validation error for Volume\nstructure\n  Value error, Duplicate filesystem labels: ['label1']",
+            "1 validation error for Volume\ngpt.structure\n  Value error, Duplicate filesystem labels: ['label1']",
             ValidationError,
             {
                 "schema": "gpt",
@@ -317,7 +321,7 @@ def test_volume_valid():
             },
         ),
         (
-            "1 validation error for Volume\nstructure\n  Value error, Duplicate filesystem labels: ['test2']",
+            "1 validation error for Volume\ngpt.structure\n  Value error, Duplicate filesystem labels: ['test2']",
             ValidationError,
             {
                 "schema": "gpt",
@@ -347,13 +351,11 @@ def test_volume_invalid(
     error_class,
     volume,
 ):
-    def load_volume(volume, raises):
-        with pytest.raises(raises) as err:
-            Volume(**volume)
+    volume_adapter = TypeAdapter(Volume, config={"title": "Volume"})
+    with pytest.raises(error_class) as exc_info:
+        volume_adapter.validate_python(volume)
 
-        return str(err.value)
-
-    assert error_value in load_volume(volume, error_class)
+    assert error_value in str(exc_info.value)
 
 
 @pytest.mark.parametrize(
