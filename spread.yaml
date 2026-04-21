@@ -29,6 +29,9 @@ backends:
       - ubuntu-24.04-64:
           storage: 45G
           workers: 1
+      - ubuntu-26.04-64:
+          storage: 45G
+          workers: 1
   qemu:
     memory: 4G
     systems:
