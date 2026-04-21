@@ -20,19 +20,29 @@ import hashlib
 from pathlib import Path
 from typing import cast
 
+import craft_platforms
 from craft_application import LifecycleService
 from craft_cli import CraftError
 from craft_parts import Action, callbacks
 from craft_parts.executor.errors import EnvironmentChangedError
 from craft_parts.infos import ProjectInfo
+from craft_parts.plugins import Plugin
+from craft_parts.plugins.plugins import PluginGroup
 from typing_extensions import override
 
-from imagecraft import models
+from imagecraft import models, plugins
 from imagecraft.services.image import ImageService
 
 
 class ImagecraftLifecycleService(LifecycleService):
     """Imagecraft-specific lifecycle service."""
+
+    @staticmethod
+    @override
+    def get_plugin_group(
+        build_info: craft_platforms.BuildInfo,
+    ) -> dict[str, type[Plugin]] | None:
+        return {**PluginGroup.MINIMAL.value, **plugins.get_app_plugins()}
 
     @override
     def setup(self) -> None:
