@@ -16,9 +16,10 @@
 
 """The snap-preseed plugin."""
 
-from typing import Literal, cast, override
+from typing import Literal, cast
 
 from craft_parts.plugins import Plugin, PluginProperties
+from typing_extensions import override
 
 
 class SnapPreseedPluginProperties(PluginProperties, frozen=True):

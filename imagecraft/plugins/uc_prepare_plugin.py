@@ -16,11 +16,11 @@
 
 """The uc-prepare plugin."""
 
-from typing import Literal, cast, override
+from typing import Literal, cast
 
 from craft_parts.plugins import Plugin, PluginProperties
 from pydantic import model_validator
-from typing_extensions import Self
+from typing_extensions import Self, override
 
 
 class UcPreparePluginProperties(PluginProperties, frozen=True):
