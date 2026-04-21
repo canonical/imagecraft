@@ -23,6 +23,12 @@ import yaml
 from craft_application import util
 from craft_application.errors import CraftValidationError
 from imagecraft.models import Platform, Project, VolumeFilesystemsModel
+from imagecraft.models.project import get_partition_name
+from imagecraft.models.volume import (
+    GPTStructureItem,
+    HybridStructureItem,
+    MBRStructureItem,
+)
 from pydantic import ValidationError
 
 IMAGECRAFT_YAML_GENERIC = """
@@ -596,3 +602,49 @@ def test_volumes_fs_partitions_error(yaml_data, error):
 
     with pytest.raises(ValueError, match=error):
         volume_filesystems.get_partitions()
+
+
+_GPT_STRUCTURE = GPTStructureItem.model_validate(
+    {
+        "name": "rootfs",
+        "role": "system-data",
+        "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+        "filesystem": "ext4",
+        "size": "6G",
+    }
+)
+
+_MBR_STRUCTURE = MBRStructureItem.model_validate(
+    {
+        "name": "ubuntu-seed",
+        "role": "system-seed",
+        "type": "0C",
+        "filesystem": "vfat",
+        "size": "1200M",
+    }
+)
+
+_HYBRID_STRUCTURE = HybridStructureItem.model_validate(
+    {
+        "name": "ubuntu-boot",
+        "role": "system-boot",
+        "type": "0C,C12A7328-F81F-11D2-BA4B-00A0C93EC93B",
+        "filesystem": "vfat",
+        "size": "750M",
+    }
+)
+
+
+@pytest.mark.parametrize(
+    ("volume_name", "structure", "expected"),
+    [
+        pytest.param("disk", _GPT_STRUCTURE, "volume/disk/rootfs", id="gpt"),
+        pytest.param("disk", _MBR_STRUCTURE, "volume/disk/ubuntu-seed", id="mbr"),
+        pytest.param("disk", _HYBRID_STRUCTURE, "volume/disk/ubuntu-boot", id="hybrid"),
+        pytest.param(
+            "my-vol", _GPT_STRUCTURE, "volume/my-vol/rootfs", id="volume-name"
+        ),
+    ],
+)
+def test_get_partition_name(volume_name, structure, expected):
+    assert get_partition_name(volume_name, structure) == expected
