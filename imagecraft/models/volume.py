@@ -56,6 +56,12 @@ VOLUME_NAME_COMPILED_REGEX = PARTITION_COMPILED_STRICT_REGEX
 STRUCTURE_NAME_COMPILED_REGEX = PARTITION_COMPILED_STRICT_REGEX
 STRUCTURE_SIZE_COMPILED_REGEX = re.compile(r"^(?P<size>\d+)\s*(?P<unit>[M,G]{0,1})$")
 
+_UUID_PATTERN = (
+    r"[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}"
+)
+_MBR_TYPE_PATTERN = r"(?:0[Cc]|83)"
+HYBRID_PARTITION_TYPE_REGEX = re.compile(rf"^{_MBR_TYPE_PATTERN},{_UUID_PATTERN}$")
+
 GPT_NAME_MAX_LENGTH = 36
 
 VOLUME_INVALID_MSG = (
@@ -345,6 +351,9 @@ class PartitionSchema(str, enum.Enum):
     MBR = "mbr"
     """The Master Boot Record (MBR) schema."""
 
+    HYBRID = "mbr,gpt"
+    """A hybrid MBR/GPT schema, providing both partition tables simultaneously."""
+
 
 def _validate_structure_items_partition_numbers(
     structures: Collection[GPTStructureItem],
@@ -398,6 +407,41 @@ StructureList = Annotated[
 
 
 MBRStructureList = Annotated[list[MBRStructureItem], Field(min_length=1)]
+
+
+HybridPartitionType = Annotated[
+    str, StringConstraints(pattern=HYBRID_PARTITION_TYPE_REGEX)
+]
+
+
+class HybridStructureItem(StructureItem):
+    """An item on a hybrid MBR/GPT-schema volume."""
+
+    id: uuid.UUID | None = Field(
+        default=None,
+        description="The partition's unique identifier.",
+        examples=[
+            "6F8C47A6-1C2D-4B35-8B1E-9DE3C4E9E3FF",
+        ],
+    )
+    """The partition's unique identifier in the GPT table.
+
+    The identifier must be a unique 32-digit hexadecimal number in the GPT UUID format.
+    """
+
+    structure_type: HybridPartitionType = Field(
+        alias="type",
+        description="The hybrid MBR/GPT type of the partition.",
+        examples=["0C,C12A7328-F81F-11D2-BA4B-00A0C93EC93B"],
+    )
+    """The hybrid partition type, expressed as '<mbr-type>,<gpt-type>'.
+
+    The MBR component must be a two-digit hex code and the GPT component must be a
+    standard GUID.
+    """
+
+
+HybridStructureList = Annotated[list[HybridStructureItem], Field(min_length=1)]
 
 
 class BaseVolume(CraftBaseModel):
@@ -470,4 +514,29 @@ class MBRVolume(BaseVolume):
     """
 
 
-Volume = Annotated[GPTVolume | MBRVolume, Field(discriminator="volume_schema")]
+class HybridVolume(BaseVolume):
+    """Volume with a hybrid MBR/GPT schema."""
+
+    volume_schema: Literal[PartitionSchema.HYBRID] = Field(
+        alias="schema",
+        description="The partitioning schema of the image.",
+        examples=["mbr,gpt"],
+    )
+    """The partitioning schema of the image."""
+
+    structure: HybridStructureList = Field(
+        description="The partitions that comprise the image.",
+        examples=[
+            "[{name: ubuntu-seed, type: 0C,C12A7328-F81F-11D2-BA4B-00A0C93EC93B, filesystem: vfat, role: system-seed, size: 1200M}]"
+        ],
+    )
+    """The partitions that comprise the image.
+
+    Each entry in the ``structure`` list represents a disk partition in the final
+    image.
+    """
+
+
+Volume = Annotated[
+    GPTVolume | MBRVolume | HybridVolume, Field(discriminator="volume_schema")
+]

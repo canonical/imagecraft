@@ -20,6 +20,7 @@ import pytest
 from imagecraft.models import Role, Volume
 from imagecraft.models.volume import (
     GPTVolume,
+    HybridVolume,
     MBRVolume,
     StructureList,
 )
@@ -646,4 +647,85 @@ def test_min_size_non_null_is_rejected(schema, base_structure):
     ):
         TypeAdapter(Volume).validate_python(
             {"schema": schema, "structure": [{**base_structure, "min-size": "16M"}]}
+        )
+
+
+# ---------------------------------------------------------------------------
+# HybridVolume
+# ---------------------------------------------------------------------------
+
+_HYBRID_SEED = {
+    "name": "ubuntu-seed",
+    "role": "system-seed",
+    "type": "0C,C12A7328-F81F-11D2-BA4B-00A0C93EC93B",
+    "filesystem": "vfat",
+    "size": "1200M",
+}
+_HYBRID_DATA = {
+    "name": "ubuntu-data",
+    "role": "system-data",
+    "type": "83,0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+    "filesystem": "ext4",
+    "size": "1500M",
+}
+
+
+@pytest.mark.parametrize(
+    ("structure_type", "structure"),
+    [
+        ("0C,C12A7328-F81F-11D2-BA4B-00A0C93EC93B", _HYBRID_SEED),
+        ("83,0FC63DAF-8483-4772-8E79-3D69D8477DE4", _HYBRID_DATA),
+    ],
+    ids=["fat32-efi", "linux-linux-data"],
+)
+def test_hybrid_volume_valid(structure_type, structure):
+    volume = TypeAdapter(Volume).validate_python(
+        {"schema": "mbr,gpt", "structure": [structure]}
+    )
+    assert isinstance(volume, HybridVolume)
+    assert volume.volume_schema == "mbr,gpt"
+    assert volume.structure[0].structure_type == structure_type
+
+
+def test_hybrid_volume_schema_produces_hybrid_volume():
+    volume = TypeAdapter(Volume).validate_python(
+        {"schema": "mbr,gpt", "structure": [_HYBRID_DATA]}
+    )
+    assert isinstance(volume, HybridVolume)
+
+
+@pytest.mark.parametrize(
+    "bad_type",
+    [
+        pytest.param("0C", id="mbr-only"),
+        pytest.param("0FC63DAF-8483-4772-8E79-3D69D8477DE4", id="gpt-only"),
+        pytest.param(
+            "FF,0FC63DAF-8483-4772-8E79-3D69D8477DE4", id="invalid-mbr-component"
+        ),
+        pytest.param("0C,NOTAGUUID", id="invalid-gpt-component"),
+    ],
+)
+def test_hybrid_volume_invalid_type(bad_type):
+    with pytest.raises(ValidationError, match="String should match pattern"):
+        TypeAdapter(Volume).validate_python(
+            {
+                "schema": "mbr,gpt",
+                "structure": [{**_HYBRID_DATA, "type": bad_type}],
+            }
+        )
+
+
+def test_hybrid_volume_duplicate_filesystem_labels():
+    with pytest.raises(
+        ValidationError,
+        match=re.escape("Value error, Duplicate filesystem labels: ['ubuntu-data']"),
+    ):
+        TypeAdapter(Volume).validate_python(
+            {
+                "schema": "mbr,gpt",
+                "structure": [
+                    {**_HYBRID_SEED, "filesystem-label": "ubuntu-data"},
+                    _HYBRID_DATA,
+                ],
+            }
         )
