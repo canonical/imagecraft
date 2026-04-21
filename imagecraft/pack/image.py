@@ -16,6 +16,7 @@
 
 import contextlib
 import json
+import subprocess
 import time
 from collections.abc import Generator, Iterator
 from pathlib import Path
@@ -46,6 +47,17 @@ def _detach_loop_device(
     run(_LOSETUP_BIN, "-d", loop_device)
 
 
+def _volume_partition_nums(volume: Volume) -> list[int]:
+    """Return the partition numbers for each structure item in a volume.
+
+    Partition numbers are either explicitly set via ``structure_item.partition_number``
+    or implicitly assigned as the 1-based index of the item in the structure list.
+    """
+    return [
+        (s.partition_number or i) for i, s in enumerate(volume.structure, start=1)
+    ]
+
+
 def _wait_for_loopdev_partitions(
     loop_device: str,
     partition_nums: list[int],
@@ -70,7 +82,7 @@ def _wait_for_loopdev_partitions(
     # Ask udev to settle so device nodes are created before we poll.
     try:
         run(_UDEVADM_BIN, "settle", "--timeout", str(int(timeout)))
-    except Exception:  # noqa: BLE001
+    except (subprocess.CalledProcessError, OSError):
         emit.debug("udevadm settle failed or unavailable; falling back to polling")
 
     # Poll until all partition nodes appear or the timeout is reached.
@@ -135,11 +147,9 @@ class Image:
             emit.debug(
                 f"Attached image {self.disk_path} as loop device {self.loop_device}"
             )
-            partition_nums = [
-                (s.partition_number or i)
-                for i, s in enumerate(self.volume.structure, start=1)
-            ]
-            _wait_for_loopdev_partitions(self.loop_device, partition_nums)
+            _wait_for_loopdev_partitions(
+                self.loop_device, _volume_partition_nums(self.volume)
+            )
         try:
             yield self.loop_device
         finally:
