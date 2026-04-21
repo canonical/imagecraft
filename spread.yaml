@@ -155,12 +155,7 @@ prepare: |
   snap install yq --devmode  # Disable confinement so we can read files from anywhere
 
   # Setup lxd
-  # older linux releases have separate packages for lxd and lxc (lxd-client)
-  if [ "$SPREAD_SYSTEM" = "ubuntu-20.04-64" ]; then
-    tests.pkgs remove lxd lxd-client
-  else
-    tests.pkgs remove lxd
-  fi
+  tests.pkgs remove lxd
   snap install multipass --channel=latest/stable
   snap install lxd --channel=latest/stable
 
