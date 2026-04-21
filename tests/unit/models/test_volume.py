@@ -18,7 +18,11 @@ import re
 
 import pytest
 from imagecraft.models import Role, Volume
-from imagecraft.models.volume import StructureList
+from imagecraft.models.volume import (
+    GPTVolume,
+    MBRVolume,
+    StructureList,
+)
 from pydantic import TypeAdapter, ValidationError
 
 
@@ -462,3 +466,184 @@ def test_structure_list_success(structures: list[dict]):
 def test_structure_list_errors(structures: list[dict], error_message):
     with pytest.raises(ValidationError, match=error_message):
         TypeAdapter(StructureList).validate_python(structures)
+
+
+# ---------------------------------------------------------------------------
+# MBRVolume
+# ---------------------------------------------------------------------------
+
+_MBR_SEED = {
+    "name": "ubuntu-seed",
+    "role": "system-seed",
+    "type": "0C",
+    "filesystem": "vfat",
+    "size": "1200M",
+}
+_MBR_DATA = {
+    "name": "ubuntu-data",
+    "role": "system-data",
+    "type": "83",
+    "filesystem": "ext4",
+    "size": "1500M",
+}
+
+
+@pytest.mark.parametrize(
+    ("structure_type", "structure"),
+    [
+        ("0C", _MBR_SEED),
+        ("83", _MBR_DATA),
+    ],
+    ids=["fat32", "linux"],
+)
+def test_mbr_volume_valid(structure_type, structure):
+    volume_adapter = TypeAdapter(Volume)
+    volume = volume_adapter.validate_python({"schema": "mbr", "structure": [structure]})
+    assert isinstance(volume, MBRVolume)
+    assert volume.volume_schema == "mbr"
+    assert volume.structure[0].structure_type == structure_type
+
+
+def test_mbr_volume_invalid_type():
+    volume_adapter = TypeAdapter(Volume)
+    with pytest.raises(ValidationError, match=r"mbr\.structure\.0\.type"):
+        volume_adapter.validate_python(
+            {
+                "schema": "mbr",
+                "structure": [
+                    {
+                        "name": "rootfs",
+                        "role": "system-data",
+                        "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+                        "filesystem": "ext4",
+                        "size": "6G",
+                    }
+                ],
+            }
+        )
+
+
+def test_mbr_volume_duplicate_filesystem_labels():
+    volume_adapter = TypeAdapter(Volume)
+    with pytest.raises(
+        ValidationError,
+        match=re.escape("Value error, Duplicate filesystem labels: ['ubuntu-data']"),
+    ):
+        volume_adapter.validate_python(
+            {
+                "schema": "mbr",
+                "structure": [
+                    {**_MBR_SEED, "filesystem-label": "ubuntu-data"},
+                    _MBR_DATA,
+                ],
+            }
+        )
+
+
+# ---------------------------------------------------------------------------
+# GPTVolume vs MBRVolume discriminated union
+# ---------------------------------------------------------------------------
+
+
+def test_volume_gpt_schema_produces_gpt_volume():
+    volume = TypeAdapter(Volume).validate_python(
+        {
+            "schema": "gpt",
+            "structure": [
+                {
+                    "name": "rootfs",
+                    "role": "system-data",
+                    "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+                    "filesystem": "ext4",
+                    "size": "6G",
+                }
+            ],
+        }
+    )
+    assert isinstance(volume, GPTVolume)
+
+
+def test_volume_mbr_schema_produces_mbr_volume():
+    volume = TypeAdapter(Volume).validate_python(
+        {"schema": "mbr", "structure": [_MBR_DATA]}
+    )
+    assert isinstance(volume, MBRVolume)
+
+
+# ---------------------------------------------------------------------------
+# content and min-size fields
+# ---------------------------------------------------------------------------
+
+_VALID_GPT_STRUCTURE = {
+    "name": "rootfs",
+    "role": "system-data",
+    "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+    "filesystem": "ext4",
+    "size": "6G",
+}
+_VALID_MBR_STRUCTURE = _MBR_DATA
+
+
+@pytest.mark.parametrize(
+    ("schema", "base_structure"),
+    [
+        ("gpt", _VALID_GPT_STRUCTURE),
+        ("mbr", _VALID_MBR_STRUCTURE),
+    ],
+)
+def test_content_null_is_accepted(schema, base_structure):
+    TypeAdapter(Volume).validate_python(
+        {"schema": schema, "structure": [{**base_structure, "content": None}]}
+    )
+
+
+@pytest.mark.parametrize(
+    ("schema", "base_structure"),
+    [
+        ("gpt", _VALID_GPT_STRUCTURE),
+        ("mbr", _VALID_MBR_STRUCTURE),
+    ],
+)
+def test_content_non_null_is_rejected(schema, base_structure):
+    with pytest.raises(
+        ValidationError,
+        match="Imagecraft does not support the 'content' key in volume structures.",
+    ):
+        TypeAdapter(Volume).validate_python(
+            {
+                "schema": schema,
+                "structure": [
+                    {**base_structure, "content": [{"source": "boot/", "target": "/"}]}
+                ],
+            }
+        )
+
+
+@pytest.mark.parametrize(
+    ("schema", "base_structure"),
+    [
+        ("gpt", _VALID_GPT_STRUCTURE),
+        ("mbr", _VALID_MBR_STRUCTURE),
+    ],
+)
+def test_min_size_null_is_accepted(schema, base_structure):
+    TypeAdapter(Volume).validate_python(
+        {"schema": schema, "structure": [{**base_structure, "min-size": None}]}
+    )
+
+
+@pytest.mark.parametrize(
+    ("schema", "base_structure"),
+    [
+        ("gpt", _VALID_GPT_STRUCTURE),
+        ("mbr", _VALID_MBR_STRUCTURE),
+    ],
+)
+def test_min_size_non_null_is_rejected(schema, base_structure):
+    with pytest.raises(
+        ValidationError,
+        match="Imagecraft does not support the 'min-size' key in volume structures.",
+    ):
+        TypeAdapter(Volume).validate_python(
+            {"schema": schema, "structure": [{**base_structure, "min-size": "16M"}]}
+        )
