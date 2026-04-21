@@ -16,6 +16,7 @@
 
 """The snap-preseed plugin."""
 
+import shlex
 from typing import Literal, cast
 
 from craft_parts.plugins import Plugin, PluginProperties
@@ -80,10 +81,9 @@ class SnapPreseedPlugin(Plugin):
             f"--snap={self._resolve_snap(snap)}" for snap in options.snap_preseed_snaps
         )
 
-        cmd.append(
-            f'"{options.snap_preseed_model_assert}" {self._part_info.part_install_dir}'
-        )
-        return [" ".join(cmd)]
+        cmd.append(options.snap_preseed_model_assert)
+        cmd.append(str(self._part_info.part_install_dir))
+        return [shlex.join(cmd)]
 
     def _resolve_snap(self, snap: str) -> str:
         snap = snap.strip()
