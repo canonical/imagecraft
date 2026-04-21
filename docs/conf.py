@@ -195,7 +195,6 @@ exclude_patterns = [
     # Disable sections and pages that are currently empty
     "how-to/index.rst",
     "release-notes/index.rst",
-    "reference/plugins.rst",
     # We do not use the overlay command, yet...
     "reference/commands/overlay.rst",
     # Disable unused pages from Craft Parts
@@ -224,14 +223,12 @@ exclude_patterns = [
     "common/craft-parts/reference/plugins/colcon_plugin.rst",
     "common/craft-parts/reference/plugins/dotnet_plugin.rst",
     "common/craft-parts/reference/plugins/dotnet_v2_plugin.rst",
-    "common/craft-parts/reference/plugins/dump_plugin.rst",
     "common/craft-parts/reference/plugins/go_plugin.rst",
     "common/craft-parts/reference/plugins/gradle_plugin.rst",
     "common/craft-parts/reference/plugins/make_plugin.rst",
     "common/craft-parts/reference/plugins/maven_plugin.rst",
     "common/craft-parts/reference/plugins/maven_use_plugin.rst",
     "common/craft-parts/reference/plugins/meson_plugin.rst",
-    "common/craft-parts/reference/plugins/nil_plugin.rst",
     "common/craft-parts/reference/plugins/npm_plugin.rst",
     "common/craft-parts/reference/plugins/npm_use_plugin.rst",
     "common/craft-parts/reference/plugins/python_plugin.rst",

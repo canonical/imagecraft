@@ -97,6 +97,8 @@ The generated project file will be our focus for most of this tutorial. Open it 
 preferred text editor.
 
 
+.. _tutorial-describe-the-image:
+
 Describe the image
 ------------------
 
@@ -136,6 +138,8 @@ in the template project file, so we made them meaningful for our project.
 .. machines, and our project file already targets the AMD64 architecture, we'll leave the
 .. ``platforms`` key as is.
 
+
+.. _tutorial-define-the-partitions:
 
 Define the partitions
 ---------------------
@@ -204,6 +208,8 @@ final image. Keep in mind that we'll need to create this directory ourselves whe
 up the image's root file system.
 
 
+.. _tutorial-set-up-the-root-file-system:
+
 Set up the root file system
 ---------------------------
 
@@ -214,54 +220,35 @@ directory. Let's start building our Ubuntu file system with the ``parts`` key.
 image. Most importantly, they give us access to the *overlay file system*, which is
 where we'll manipulate our image's contents.
 
-We'll create our file system with ``mmdebstrap``, a command-line tool for setting up
-Debian root file systems. The part we create for it will need to source the
-``mmdebstrap`` package itself, run its primary command, and copy the resulting file
-system into our image.
+We'll create a Debian root file system with a part that uses the ``mmdebstrap`` plugin.
 
 In the ``parts`` key, replace the template part with the following ``rootfs`` part:
 
 .. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
     :language: yaml
     :start-at: parts:
-    :end-at: http://archive.ubuntu.com/ubuntu/
+    :end-at: noble
 
-In most parts, the ``plugin`` key specifies the build system needed to prepare the part.
-In this case, we don't need a build system, so we set the ``plugin`` key to ``nil``.
+The ``mmdebstrap-suite`` key is specific to the ``mmdebstrap`` plugin and specifies the
+package suite to bootstrap. To get the packages that are shipped with Ubuntu 24.04 LTS,
+we set the suite to ``noble``.
 
-We install the ``mmdebstrap`` package into the part's build environment with the
-``build-packages`` key. This allows us to then run the ``mmdebstrap`` command with the
-``override-build`` key.
+The plugin removes the default sources configuration files, which limit us to the system
+packages from the ``noble`` suite's ``main`` component. If we want to install anything
+more than essential system packages, we'll need to add a new sources configuration file.
+We also still need to create the ``/boot/efi`` directory we mounted the ``efi`` partition to.
 
-You don't need to worry about all of the ``mmdebstrap`` command's options for now. Put
-briefly, this command prepares a minimal file system in our part, using the ``noble``
-(Ubuntu 24.04) package suite. Before we copy the output to the overlay file system,
-let's tidy things up.
-
-By default, the ``/dev/`` directory is cluttered and will stall the final build. We also
-still need to create the ``/boot/efi/`` directory that we mounted the ``efi`` partition
-to. We can tackle both of these items by adding the following highlighted lines to the
-end of the ``override-build`` script:
+Add the following ``override-build`` key to the part:
 
 .. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
     :language: yaml
     :class: no-copybutton
-    :start-at: rootfs:
-    :end-at: mkdir $CRAFT_PART_INSTALL/boot/efi
-    :emphasize-lines: 13, 14
+    :lines: 39-52
+    :emphasize-lines: 4-14
 
-The ``sources.list`` file that ``mmdebstrap`` creates will only allow us to install
-system packages from the ``noble`` suite's ``main`` component. This is fine for
-essential system packages, but we'll need to replace this file to install a wider array
-of packages.
-
-Copy the following highlighted lines to the end of the ``override-build`` script:
-
-.. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
-    :language: yaml
-    :class: no-copybutton
-    :lines: 39-62
-    :emphasize-lines: 16-24
+The ``override-build`` key replaces the plugin's default behaviour. Since we want to
+extend the part's build instead of overriding it, we started the script with ``craftctl
+default``, which runs the plugin's default commands.
 
 Now, when we install packages into our image, we'll be able to access the other
 components in the ``noble`` suite.
@@ -276,22 +263,24 @@ the ``rootfs`` key:
     :class: no-copybutton
     :start-at: rootfs:
     :end-at: '*': (overlay)/
-    :emphasize-lines: 25, 26
+    :emphasize-lines: 15, 16
 
-This copies the result of the part's build step, where we ran the ``mmdebstrap``
-command, to the root of the overlay file system, thereby securing its place in the final
-image.
+This copies the result of the part's build step to the root of the overlay file system,
+thereby securing its place in the final image.
 
+
+.. _tutorial-add-essential-packages:
 
 Add essential packages
 ----------------------
 
 We'll need some additional packages for our image to be bootable. Let's define a new
-part to source them. Add the following ``packages`` part:
+part to source them. In this case, we don't need any special behaviour, so we'll set
+the ``plugin`` key to ``nil``. Add the following ``packages`` part:
 
 .. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
     :language: yaml
-    :lines: 66-74
+    :lines: 56-64
 
 With the exception of ``sl``, these packages add the system's essential components, such
 as the kernel, core utilities, and boot loader.
@@ -327,7 +316,7 @@ file system. Add the following ``fstab`` part:
 
 .. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
     :language: yaml
-    :lines: 76-82
+    :lines: 66-73
 
 Here, we used the ``overlay-script`` key to write the table to the overlay file system,
 which is referenced through the ``$CRAFT_OVERLAY`` environment variable. Keep in mind
@@ -362,6 +351,8 @@ Our project file now contains everything we need to pack a complete, bootable im
 Save and close the ``imagecraft.yaml`` file.
 
 
+.. _tutorial-pack-the-image:
+
 Pack the image
 --------------
 
@@ -386,6 +377,8 @@ line, the build is complete:
 Congratulations on building your first image! Before you start celebrating, let's run
 the image to make sure everything is working as expected.
 
+
+.. _tutorial-run-and-test-the-image:
 
 Run and test the image
 ----------------------
