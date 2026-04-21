@@ -48,6 +48,7 @@ def run(cmd: str, *args: Any, **kwargs: Any) -> CompletedProcess[str]:
 class TestImage:
     def test_loopdev(self, mocker, new_dir: Path):
         mock_run = mocker.patch("imagecraft.pack.image.run", side_effect=run)
+        mock_wait = mocker.patch("imagecraft.pack.image._wait_for_loopdev_partitions")
 
         volume = Volume.unmarshal(
             {
@@ -78,6 +79,7 @@ class TestImage:
             call("losetup", "--json"),
             call("losetup", "-d", "/dev/loop99"),
         ]
+        mock_wait.assert_called_once_with("loop99", [1])
 
     @pytest.mark.parametrize(
         ("volume_data", "has_data_partition"),
@@ -248,3 +250,93 @@ class TestImage:
         )
 
         assert image.has_boot_partition == has_boot_partition
+
+
+class TestWaitForLoopdevPartitions:
+    """Tests for the _wait_for_loopdev_partitions helper."""
+
+    def test_empty_partition_list_returns_immediately(self, mocker):
+        """No waiting when there are no partitions to check."""
+        from imagecraft.pack.image import _wait_for_loopdev_partitions
+
+        mock_run = mocker.patch("imagecraft.pack.image.run")
+        mock_sleep = mocker.patch("time.sleep")
+
+        _wait_for_loopdev_partitions("/dev/loop0", [])
+
+        mock_run.assert_not_called()
+        mock_sleep.assert_not_called()
+
+    def test_waits_until_partitions_appear(self, mocker, tmp_path):
+        """Polls until partition device nodes exist."""
+        from imagecraft.pack.image import _wait_for_loopdev_partitions
+
+        mocker.patch("imagecraft.pack.image.run")
+
+        part1 = tmp_path / "loop0p1"
+        part2 = tmp_path / "loop0p2"
+
+        # Simulate partition nodes appearing after two poll cycles.
+        call_count = 0
+
+        def fake_exists(self: Path) -> bool:
+            nonlocal call_count
+            call_count += 1
+            # Make nodes appear on the third check (after first poll cycle)
+            return call_count > 4
+
+        mocker.patch.object(Path, "exists", fake_exists)
+        mocker.patch("time.sleep")
+
+        _wait_for_loopdev_partitions(
+            str(tmp_path / "loop0"), [1, 2], timeout=5.0
+        )
+
+    def test_raises_on_timeout(self, mocker):
+        """Raises ImageError when partition nodes don't appear in time."""
+        from imagecraft.errors import ImageError
+        from imagecraft.pack.image import _wait_for_loopdev_partitions
+
+        mocker.patch("imagecraft.pack.image.run")
+        mocker.patch.object(Path, "exists", return_value=False)
+        mocker.patch("time.sleep")
+        # Simulate timeout immediately
+        mocker.patch(
+            "time.monotonic",
+            side_effect=[0.0, 0.0, 100.0],
+        )
+
+        with pytest.raises(ImageError, match="partition nodes did not appear"):
+            _wait_for_loopdev_partitions("/dev/loop0", [1, 2], timeout=1.0)
+
+    def test_udevadm_failure_falls_back_to_polling(self, mocker, tmp_path):
+        """Falls back to polling when udevadm settle fails."""
+        import subprocess
+
+        from imagecraft.pack.image import _wait_for_loopdev_partitions
+
+        part = tmp_path / "loop0p1"
+        part.touch()
+
+        # udevadm settle raises CalledProcessError
+        mocker.patch(
+            "imagecraft.pack.image.run",
+            side_effect=subprocess.CalledProcessError(1, "udevadm"),
+        )
+        mocker.patch.object(Path, "exists", return_value=True)
+
+        # Should not raise even though udevadm failed
+        _wait_for_loopdev_partitions(str(tmp_path / "loop0"), [1], timeout=5.0)
+
+    def test_calls_udevadm_settle_with_timeout(self, mocker, tmp_path):
+        """Calls udevadm settle with the specified timeout."""
+        from unittest.mock import call as mcall
+
+        from imagecraft.pack.image import _wait_for_loopdev_partitions
+
+        mock_run = mocker.patch("imagecraft.pack.image.run")
+        mocker.patch.object(Path, "exists", return_value=True)
+
+        _wait_for_loopdev_partitions("/dev/loop5", [1, 2], timeout=7.0)
+
+        mock_run.assert_called_once_with("udevadm", "settle", "--timeout", "7")

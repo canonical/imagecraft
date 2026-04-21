@@ -16,6 +16,7 @@
 
 import contextlib
 import json
+import time
 from collections.abc import Generator, Iterator
 from pathlib import Path
 from typing import Any, cast
@@ -27,6 +28,8 @@ from imagecraft.models import Role, Volume
 from imagecraft.subprocesses import run
 
 _LOSETUP_BIN = "losetup"
+_UDEVADM_BIN = "udevadm"
+_PARTITION_WAIT_TIMEOUT = 10.0
 
 
 def _get_loop_devices() -> list[dict[str, Any]]:
@@ -41,6 +44,47 @@ def _detach_loop_device(
 ) -> None:
     emit.debug(f"Detaching loop device {loop_device} (from {file})")
     run(_LOSETUP_BIN, "-d", loop_device)
+
+
+def _wait_for_loopdev_partitions(
+    loop_device: str,
+    partition_nums: list[int],
+    timeout: float = _PARTITION_WAIT_TIMEOUT,
+) -> None:
+    """Wait for loop device partition nodes to appear in /dev.
+
+    After attaching a loop device with --partscan, the kernel may not
+    immediately create the partition device nodes. This function waits
+    until all expected partition nodes are available.
+
+    :param loop_device: Path to the loop device (e.g. '/dev/loop7')
+    :param partition_nums: List of partition numbers to wait for
+    :param timeout: Maximum time to wait in seconds
+    :raises errors.ImageError: If partition nodes do not appear within the timeout
+    """
+    if not partition_nums:
+        return
+
+    expected = [Path(f"{loop_device}p{n}") for n in partition_nums]
+
+    # Ask udev to settle so device nodes are created before we poll.
+    try:
+        run(_UDEVADM_BIN, "settle", "--timeout", str(int(timeout)))
+    except Exception:  # noqa: BLE001
+        emit.debug("udevadm settle failed or unavailable; falling back to polling")
+
+    # Poll until all partition nodes appear or the timeout is reached.
+    deadline = time.monotonic() + timeout
+    missing = [p for p in expected if not p.exists()]
+    while missing and time.monotonic() < deadline:
+        time.sleep(0.1)
+        missing = [p for p in expected if not p.exists()]
+
+    if missing:
+        raise errors.ImageError(
+            f"Loop device partition nodes did not appear within {timeout:.0f}s: "
+            + ", ".join(str(p) for p in missing)
+        )
 
 
 class Image:
@@ -91,6 +135,11 @@ class Image:
             emit.debug(
                 f"Attached image {self.disk_path} as loop device {self.loop_device}"
             )
+            partition_nums = [
+                (s.partition_number or i)
+                for i, s in enumerate(self.volume.structure, start=1)
+            ]
+            _wait_for_loopdev_partitions(self.loop_device, partition_nums)
         try:
             yield self.loop_device
         finally:

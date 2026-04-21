@@ -30,6 +30,7 @@ from craft_cli import CraftError, emit
 from imagecraft.models import Project
 from imagecraft.models.volume import PartitionSchema
 from imagecraft.pack import gptutil
+from imagecraft.pack.image import _wait_for_loopdev_partitions
 from imagecraft.subprocesses import run
 
 _LOSETUP_BIN = "losetup"
@@ -116,9 +117,11 @@ class ImageService(AppService):
             raise ValueError("Images must be created before attaching.")
 
         all_devices = self._get_all_loop_devices()
+        project = cast(Project, self._services.get("project").get())
 
         for name, image_path in self._images.items():
             attached_device: str | None = None
+            is_fresh_attach = False
 
             # 1. Check for existing devices pointing to this file.
             for dev in all_devices:
@@ -149,12 +152,22 @@ class ImageService(AppService):
                         str(image_path),
                     ).stdout.strip()
                     emit.debug(f"Attached {image_path} as {attached_device}")
+                    is_fresh_attach = True
                 except subprocess.CalledProcessError as err:
                     raise CraftError(
                         f"Failed to attach loop device for {image_path}.",
                         details=str(err),
                         resolution="Ensure loop devices are available and you have sufficient permissions (sudo).",
                     ) from err
+
+            # 3. Wait for partition nodes after a fresh attach to avoid race conditions.
+            if is_fresh_attach:
+                volume = project.volumes[name]
+                partition_nums = [
+                    (s.partition_number or i)
+                    for i, s in enumerate(volume.structure, start=1)
+                ]
+                _wait_for_loopdev_partitions(attached_device, partition_nums)
 
             self._loop_devices[name] = attached_device
 
