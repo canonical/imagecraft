@@ -100,3 +100,35 @@ def test_get_build_commands_with_revisions(part_info, cmd_prefix):
         plugin.get_build_commands()[0]
         == f'{cmd_prefix} --revisions=./revisions.txt --snap=core24 "" {part_info.part_install_dir}'
     )
+
+
+def test_get_build_commands_with_channel(part_info, cmd_prefix):
+    properties = SnapPreseedPluginProperties.unmarshal(
+        {
+            "snap-preseed-snaps": ["core24"],
+            "snap-preseed-channel": "latest/stable",
+        }
+    )
+
+    plugin = SnapPreseedPlugin(properties=properties, part_info=part_info)
+
+    assert (
+        plugin.get_build_commands()[0]
+        == f'{cmd_prefix} --channel=latest/stable --snap=core24 "" {part_info.part_install_dir}'
+    )
+
+
+def test_get_build_commands_with_validation_enforce(part_info):
+    properties = SnapPreseedPluginProperties.unmarshal(
+        {
+            "snap-preseed-snaps": ["core24"],
+            "snap-preseed-validation": "enforce",
+        }
+    )
+
+    plugin = SnapPreseedPlugin(properties=properties, part_info=part_info)
+
+    assert (
+        plugin.get_build_commands()[0]
+        == f'snap prepare-image --classic --arch={part_info.target_arch} --validation=enforce --snap=core24 "" {part_info.part_install_dir}'
+    )
