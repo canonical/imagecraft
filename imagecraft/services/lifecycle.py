@@ -42,7 +42,7 @@ class ImagecraftLifecycleService(LifecycleService):
     def get_plugin_group(
         build_info: craft_platforms.BuildInfo,
     ) -> dict[str, type[Plugin]] | None:
-        return {**PluginGroup.MINIMAL.value, **plugins.get_app_plugins()}
+        return {**PluginGroup.MINIMAL.value, **plugins.get_app_plugins()}  # pyright: ignore[reportUnknownMemberType]
 
     @override
     def setup(self) -> None:
