@@ -165,6 +165,38 @@ def test_get_build_commands_with_sysfs_overlay(part_info):
     )
 
 
+def test_get_build_commands_with_snaps(part_info):
+    properties = UcPreparePluginProperties.unmarshal(
+        {
+            "uc-prepare-model-assert": "model.assert",
+            "uc-prepare-snaps": ["core24", "hello-world/latest/stable"],
+        }
+    )
+
+    plugin = UcPreparePlugin(properties=properties, part_info=part_info)
+
+    assert (
+        plugin.get_build_commands()[0]
+        == f"snap prepare-image --validation=ignore --snap=core24 --snap=hello-world=latest/stable model.assert {part_info.part_install_dir}"
+    )
+
+
+def test_get_build_commands_with_assertions(part_info):
+    properties = UcPreparePluginProperties.unmarshal(
+        {
+            "uc-prepare-model-assert": "model.assert",
+            "uc-prepare-assertions": ["system-user.assert", "account.assert"],
+        }
+    )
+
+    plugin = UcPreparePlugin(properties=properties, part_info=part_info)
+
+    assert (
+        plugin.get_build_commands()[0]
+        == f"snap prepare-image --validation=ignore --assert=system-user.assert --assert=account.assert model.assert {part_info.part_install_dir}"
+    )
+
+
 def test_get_build_commands_with_channel(part_info):
     properties = UcPreparePluginProperties.unmarshal(
         {
