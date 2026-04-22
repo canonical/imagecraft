@@ -10,9 +10,9 @@ execute: |
   test -d prime/var/lib/snapd/seed/
   test -f prime/var/lib/snapd/seed/snaps/hello-world_*.snap
 
-  unsquashfs -d ./hello-snap prime/var/lib/snapd/seed/snaps/hello-world_*.snap
-  grep -q "armhf" ./hello-snap/meta/snap.yaml
+  unsquashfs -d core-snap prime/var/lib/snapd/seed/snaps/core_*.snap
+  grep -q "armhf" core-snap/meta/snap.yaml
 
 restore: |
-  rm -rf disk.img ./hello-snap
+  rm -rf disk.img core-snap
   imagecraft clean --destructive-mode
