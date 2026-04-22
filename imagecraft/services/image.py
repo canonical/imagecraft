@@ -30,7 +30,7 @@ from craft_cli import CraftError, emit
 from imagecraft.models import Project
 from imagecraft.models.volume import PartitionSchema
 from imagecraft.pack import gptutil
-from imagecraft.pack.image import _volume_partition_nums, _wait_for_loopdev_partitions
+from imagecraft.pack.image import volume_partition_nums, wait_for_loopdev_partitions
 from imagecraft.subprocesses import run
 
 _LOSETUP_BIN = "losetup"
@@ -162,8 +162,8 @@ class ImageService(AppService):
 
             # 3. Wait for partition nodes after a fresh attach to avoid race conditions.
             if is_fresh_attach:
-                _wait_for_loopdev_partitions(
-                    attached_device, _volume_partition_nums(project.volumes[name])
+                wait_for_loopdev_partitions(
+                    attached_device, volume_partition_nums(project.volumes[name])
                 )
 
             self._loop_devices[name] = attached_device

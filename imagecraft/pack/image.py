@@ -47,7 +47,7 @@ def _detach_loop_device(
     run(_LOSETUP_BIN, "-d", loop_device)
 
 
-def _volume_partition_nums(volume: Volume) -> list[int]:
+def volume_partition_nums(volume: Volume) -> list[int]:
     """Return the partition numbers for each structure item in a volume.
 
     Partition numbers are either explicitly set via ``structure_item.partition_number``
@@ -58,7 +58,7 @@ def _volume_partition_nums(volume: Volume) -> list[int]:
     ]
 
 
-def _wait_for_loopdev_partitions(
+def wait_for_loopdev_partitions(
     loop_device: str,
     partition_nums: list[int],
     timeout: float = _PARTITION_WAIT_TIMEOUT,
@@ -144,11 +144,11 @@ class Image:
                 "--partscan",
                 self.disk_path,
             ).stdout.strip()
+            wait_for_loopdev_partitions(
+                self.loop_device, volume_partition_nums(self.volume)
+            )
             emit.debug(
                 f"Attached image {self.disk_path} as loop device {self.loop_device}"
-            )
-            _wait_for_loopdev_partitions(
-                self.loop_device, _volume_partition_nums(self.volume)
             )
         try:
             yield self.loop_device

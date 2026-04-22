@@ -157,7 +157,7 @@ def test_attach_images_stale_inode(image_service, project_dir, mocker):
     mocker.patch("pathlib.Path.samefile", side_effect=FileNotFoundError)
     mock_run = mocker.patch("imagecraft.services.image.run")
     mock_run.return_value.stdout = "/dev/loop11\n"
-    mocker.patch("imagecraft.services.image._wait_for_loopdev_partitions")
+    mocker.patch("imagecraft.services.image.wait_for_loopdev_partitions")
 
     devices = image_service.attach_images()
 
@@ -182,7 +182,7 @@ def test_attach_images_waits_for_partitions(image_service, project_dir, mocker, 
     mock_project_service.get.return_value = mock_project
     mock_services.get.return_value = mock_project_service
 
-    mock_wait = mocker.patch("imagecraft.services.image._wait_for_loopdev_partitions")
+    mock_wait = mocker.patch("imagecraft.services.image.wait_for_loopdev_partitions")
 
     with patch("atexit.register"):
         image_service.attach_images()
@@ -204,7 +204,7 @@ def test_attach_images_no_wait_on_reuse(image_service, project_dir, mocker):
     )
     mocker.patch("pathlib.Path.samefile", return_value=True)
     mocker.patch("imagecraft.services.image.run")
-    mock_wait = mocker.patch("imagecraft.services.image._wait_for_loopdev_partitions")
+    mock_wait = mocker.patch("imagecraft.services.image.wait_for_loopdev_partitions")
 
     image_service.attach_images()
 

@@ -48,7 +48,7 @@ def run(cmd: str, *args: Any, **kwargs: Any) -> CompletedProcess[str]:
 class TestImage:
     def test_loopdev(self, mocker, new_dir: Path):
         mock_run = mocker.patch("imagecraft.pack.image.run", side_effect=run)
-        mock_wait = mocker.patch("imagecraft.pack.image._wait_for_loopdev_partitions")
+        mock_wait = mocker.patch("imagecraft.pack.image.wait_for_loopdev_partitions")
 
         volume = Volume.unmarshal(
             {
@@ -253,23 +253,23 @@ class TestImage:
 
 
 class TestWaitForLoopdevPartitions:
-    """Tests for the _wait_for_loopdev_partitions helper."""
+    """Tests for the wait_for_loopdev_partitions helper."""
 
     def test_empty_partition_list_returns_immediately(self, mocker):
         """No waiting when there are no partitions to check."""
-        from imagecraft.pack.image import _wait_for_loopdev_partitions
+        from imagecraft.pack.image import wait_for_loopdev_partitions
 
         mock_run = mocker.patch("imagecraft.pack.image.run")
         mock_sleep = mocker.patch("time.sleep")
 
-        _wait_for_loopdev_partitions("/dev/loop0", [])
+        wait_for_loopdev_partitions("/dev/loop0", [])
 
         mock_run.assert_not_called()
         mock_sleep.assert_not_called()
 
     def test_waits_until_partitions_appear(self, mocker, tmp_path):
         """Polls until partition device nodes exist."""
-        from imagecraft.pack.image import _wait_for_loopdev_partitions
+        from imagecraft.pack.image import wait_for_loopdev_partitions
 
         mocker.patch("imagecraft.pack.image.run")
 
@@ -288,14 +288,14 @@ class TestWaitForLoopdevPartitions:
         mocker.patch.object(Path, "exists", fake_exists)
         mocker.patch("time.sleep")
 
-        _wait_for_loopdev_partitions(
+        wait_for_loopdev_partitions(
             str(tmp_path / "loop0"), [1, 2], timeout=5.0
         )
 
     def test_raises_on_timeout(self, mocker):
         """Raises ImageError when partition nodes don't appear in time."""
         from imagecraft.errors import ImageError
-        from imagecraft.pack.image import _wait_for_loopdev_partitions
+        from imagecraft.pack.image import wait_for_loopdev_partitions
 
         mocker.patch("imagecraft.pack.image.run")
         mocker.patch.object(Path, "exists", return_value=False)
@@ -307,13 +307,13 @@ class TestWaitForLoopdevPartitions:
         )
 
         with pytest.raises(ImageError, match="partition nodes did not appear"):
-            _wait_for_loopdev_partitions("/dev/loop0", [1, 2], timeout=1.0)
+            wait_for_loopdev_partitions("/dev/loop0", [1, 2], timeout=1.0)
 
     def test_udevadm_failure_falls_back_to_polling(self, mocker, tmp_path):
         """Falls back to polling when udevadm settle fails."""
         import subprocess
 
-        from imagecraft.pack.image import _wait_for_loopdev_partitions
+        from imagecraft.pack.image import wait_for_loopdev_partitions
 
         part = tmp_path / "loop0p1"
         part.touch()
@@ -326,17 +326,17 @@ class TestWaitForLoopdevPartitions:
         mocker.patch.object(Path, "exists", return_value=True)
 
         # Should not raise even though udevadm failed
-        _wait_for_loopdev_partitions(str(tmp_path / "loop0"), [1], timeout=5.0)
+        wait_for_loopdev_partitions(str(tmp_path / "loop0"), [1], timeout=5.0)
 
     def test_calls_udevadm_settle_with_timeout(self, mocker, tmp_path):
         """Calls udevadm settle with the specified timeout."""
         from unittest.mock import call as mcall
 
-        from imagecraft.pack.image import _wait_for_loopdev_partitions
+        from imagecraft.pack.image import wait_for_loopdev_partitions
 
         mock_run = mocker.patch("imagecraft.pack.image.run")
         mocker.patch.object(Path, "exists", return_value=True)
 
-        _wait_for_loopdev_partitions("/dev/loop5", [1, 2], timeout=7.0)
+        wait_for_loopdev_partitions("/dev/loop5", [1, 2], timeout=7.0)
 
         mock_run.assert_called_once_with("udevadm", "settle", "--timeout", "7")
