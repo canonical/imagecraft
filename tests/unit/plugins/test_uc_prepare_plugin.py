@@ -163,3 +163,35 @@ def test_get_build_commands_with_sysfs_overlay(part_info):
         plugin.get_build_commands()[0]
         == f"snap prepare-image --preseed --sysfs-overlay={sysfs_overlay} --validation=ignore model.assert {part_info.part_install_dir}"
     )
+
+
+def test_get_build_commands_with_channel(part_info):
+    properties = UcPreparePluginProperties.unmarshal(
+        {
+            "uc-prepare-model-assert": "model.assert",
+            "uc-prepare-channel": "latest/stable",
+        }
+    )
+
+    plugin = UcPreparePlugin(properties=properties, part_info=part_info)
+
+    assert (
+        plugin.get_build_commands()[0]
+        == f"snap prepare-image --validation=ignore --channel=latest/stable model.assert {part_info.part_install_dir}"
+    )
+
+
+def test_get_build_commands_with_validation_enforce(part_info):
+    properties = UcPreparePluginProperties.unmarshal(
+        {
+            "uc-prepare-model-assert": "model.assert",
+            "uc-prepare-validation": "enforce",
+        }
+    )
+
+    plugin = UcPreparePlugin(properties=properties, part_info=part_info)
+
+    assert (
+        plugin.get_build_commands()[0]
+        == f"snap prepare-image --validation=enforce model.assert {part_info.part_install_dir}"
+    )
