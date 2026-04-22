@@ -104,6 +104,8 @@ def test_attach_images_new(image_service, project_dir, mocker):
     mocker.patch.object(image_service, "_get_all_loop_devices", return_value=[])
 
     mock_run.return_value.stdout = "/dev/loop8\n"
+    mock_flock = mocker.patch("fcntl.flock")
+    mocker.patch("builtins.open", return_value=mocker.MagicMock())
 
     with patch("atexit.register") as mock_atexit:
         devices = image_service.attach_images()
@@ -117,6 +119,9 @@ def test_attach_images_new(image_service, project_dir, mocker):
             str(project_dir / ".pc.img.tmp"),
         )
         mock_atexit.assert_called_once_with(image_service.detach_images)
+
+    import fcntl as fcntl_mod
+    mock_flock.assert_called_once_with(mocker.ANY, fcntl_mod.LOCK_SH)
 
 
 def test_attach_images_reuse(image_service, project_dir, mocker):
@@ -134,11 +139,16 @@ def test_attach_images_reuse(image_service, project_dir, mocker):
     # Mock samefile to return True
     mocker.patch("pathlib.Path.samefile", return_value=True)
     mock_run = mocker.patch("imagecraft.services.image.run")
+    mock_flock = mocker.patch("fcntl.flock")
+    mocker.patch("builtins.open", return_value=mocker.MagicMock())
 
     devices = image_service.attach_images()
 
     assert devices == {"pc": "/dev/loop9"}
     mock_run.assert_not_called()  # Should not call losetup attach
+
+    import fcntl as fcntl_mod
+    mock_flock.assert_called_once_with(mocker.ANY, fcntl_mod.LOCK_SH)
 
 
 def test_attach_images_stale_inode(image_service, project_dir, mocker):
@@ -157,7 +167,8 @@ def test_attach_images_stale_inode(image_service, project_dir, mocker):
     mocker.patch("pathlib.Path.samefile", side_effect=FileNotFoundError)
     mock_run = mocker.patch("imagecraft.services.image.run")
     mock_run.return_value.stdout = "/dev/loop11\n"
-    mocker.patch("imagecraft.services.image.wait_for_loopdev_partitions")
+    mocker.patch("fcntl.flock")
+    mocker.patch("builtins.open", return_value=mocker.MagicMock())
 
     devices = image_service.attach_images()
 
@@ -170,45 +181,28 @@ def test_attach_images_stale_inode(image_service, project_dir, mocker):
     )
 
 
-def test_attach_images_waits_for_partitions(image_service, project_dir, mocker, mock_project, mock_services):
-    """attach_images() waits for partition nodes after a fresh losetup attach."""
+def test_attach_images_flock_released_on_detach(image_service, project_dir, mocker):
+    """attach_images() holds a shared flock; detach_images() closes the fd to release it."""
     image_service._images = {"pc": project_dir / ".pc.img.tmp"}
 
     mocker.patch.object(image_service, "_get_all_loop_devices", return_value=[])
     mock_run = mocker.patch("imagecraft.services.image.run")
     mock_run.return_value.stdout = "/dev/loop8\n"
-
-    mock_project_service = MagicMock()
-    mock_project_service.get.return_value = mock_project
-    mock_services.get.return_value = mock_project_service
-
-    mock_wait = mocker.patch("imagecraft.services.image.wait_for_loopdev_partitions")
+    mocker.patch("fcntl.flock")
+    mock_fd = mocker.MagicMock()
+    mocker.patch("builtins.open", return_value=mock_fd)
 
     with patch("atexit.register"):
         image_service.attach_images()
 
-    # efi has no explicit partition_number -> 1; rootfs has partition_number=2 -> 2
-    mock_wait.assert_called_once_with("/dev/loop8", [1, 2])
+    assert len(image_service._loop_fds) == 1
 
+    # After detach the fd should be closed and the list cleared
+    mock_run.return_value = mocker.MagicMock()  # losetup -d
+    image_service.detach_images()
 
-def test_attach_images_no_wait_on_reuse(image_service, project_dir, mocker):
-    """attach_images() does NOT wait when reusing an existing loop device."""
-    image_path = project_dir / ".pc.img.tmp"
-    image_path.touch()
-    image_service._images = {"pc": image_path}
-
-    mocker.patch.object(
-        image_service,
-        "_get_all_loop_devices",
-        return_value=[{"name": "/dev/loop9", "back-file": str(image_path)}],
-    )
-    mocker.patch("pathlib.Path.samefile", return_value=True)
-    mocker.patch("imagecraft.services.image.run")
-    mock_wait = mocker.patch("imagecraft.services.image.wait_for_loopdev_partitions")
-
-    image_service.attach_images()
-
-    mock_wait.assert_not_called()
+    mock_fd.close.assert_called_once()
+    assert image_service._loop_fds == []
 
 
 def test_detach_images_success(image_service, mocker):

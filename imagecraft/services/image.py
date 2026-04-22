@@ -16,13 +16,14 @@
 
 import atexit
 import contextlib
+import fcntl
 import json
 import pathlib
 import shutil
 import subprocess
 import time
 from collections.abc import Mapping
-from typing import Any, cast
+from typing import IO, Any, cast
 
 from craft_application import AppMetadata, AppService, ServiceFactory
 from craft_cli import CraftError, emit
@@ -30,7 +31,6 @@ from craft_cli import CraftError, emit
 from imagecraft.models import Project
 from imagecraft.models.volume import PartitionSchema
 from imagecraft.pack import gptutil
-from imagecraft.pack.image import volume_partition_nums, wait_for_loopdev_partitions
 from imagecraft.subprocesses import run
 
 _LOSETUP_BIN = "losetup"
@@ -51,6 +51,7 @@ class ImageService(AppService):
         self._sector_size = gptutil.SECTOR_SIZE_512
         self._images: dict[str, pathlib.Path] | None = None
         self._loop_devices: dict[str, str] = {}
+        self._loop_fds: list[IO[bytes]] = []
         self._atexit_registered = False
 
     def get_images(self) -> Mapping[str, pathlib.Path]:
@@ -117,11 +118,9 @@ class ImageService(AppService):
             raise ValueError("Images must be created before attaching.")
 
         all_devices = self._get_all_loop_devices()
-        project = cast(Project, self._services.get("project").get())
 
         for name, image_path in self._images.items():
             attached_device: str | None = None
-            is_fresh_attach = False
 
             # 1. Check for existing devices pointing to this file.
             for dev in all_devices:
@@ -152,7 +151,6 @@ class ImageService(AppService):
                         str(image_path),
                     ).stdout.strip()
                     emit.debug(f"Attached {image_path} as {attached_device}")
-                    is_fresh_attach = True
                 except subprocess.CalledProcessError as err:
                     raise CraftError(
                         f"Failed to attach loop device for {image_path}.",
@@ -160,11 +158,13 @@ class ImageService(AppService):
                         resolution="Ensure loop devices are available and you have sufficient permissions (sudo).",
                     ) from err
 
-            # 3. Wait for partition nodes after a fresh attach to avoid race conditions.
-            if is_fresh_attach:
-                wait_for_loopdev_partitions(
-                    attached_device, volume_partition_nums(project.volumes[name])
-                )
+            # 3. Acquire a shared BSD lock on the loop device.  udev holds an
+            # exclusive lock while it processes the device; a shared lock here
+            # blocks until udev is done and then holds it while we use the
+            # device's partitions, preventing udev from interfering.
+            loop_fd = open(attached_device, "rb")  # noqa: SIM115 (held deliberately)
+            fcntl.flock(loop_fd, fcntl.LOCK_SH)
+            self._loop_fds.append(loop_fd)
 
             self._loop_devices[name] = attached_device
 
@@ -179,6 +179,12 @@ class ImageService(AppService):
 
         Includes a retry loop for busy devices. Safe to call as an atexit handler.
         """
+        # Release shared flocks so the devices are no longer considered in use.
+        for fd in self._loop_fds:
+            with contextlib.suppress(Exception):
+                fd.close()
+        self._loop_fds.clear()
+
         for name, device in list(self._loop_devices.items()):
             success = False
             start_time = time.monotonic()

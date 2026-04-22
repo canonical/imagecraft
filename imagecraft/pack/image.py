@@ -15,9 +15,8 @@
 """Image handling."""
 
 import contextlib
+import fcntl
 import json
-import subprocess
-import time
 from collections.abc import Generator, Iterator
 from pathlib import Path
 from typing import Any, cast
@@ -29,8 +28,6 @@ from imagecraft.models import Role, Volume
 from imagecraft.subprocesses import run
 
 _LOSETUP_BIN = "losetup"
-_UDEVADM_BIN = "udevadm"
-_PARTITION_WAIT_TIMEOUT = 10.0
 
 
 def _get_loop_devices() -> list[dict[str, Any]]:
@@ -45,58 +42,6 @@ def _detach_loop_device(
 ) -> None:
     emit.debug(f"Detaching loop device {loop_device} (from {file})")
     run(_LOSETUP_BIN, "-d", loop_device)
-
-
-def volume_partition_nums(volume: Volume) -> list[int]:
-    """Return the partition numbers for each structure item in a volume.
-
-    Partition numbers are either explicitly set via ``structure_item.partition_number``
-    or implicitly assigned as the 1-based index of the item in the structure list.
-    """
-    return [
-        (s.partition_number or i) for i, s in enumerate(volume.structure, start=1)
-    ]
-
-
-def wait_for_loopdev_partitions(
-    loop_device: str,
-    partition_nums: list[int],
-    timeout: float = _PARTITION_WAIT_TIMEOUT,
-) -> None:
-    """Wait for loop device partition nodes to appear in /dev.
-
-    After attaching a loop device with --partscan, the kernel may not
-    immediately create the partition device nodes. This function waits
-    until all expected partition nodes are available.
-
-    :param loop_device: Path to the loop device (e.g. '/dev/loop7')
-    :param partition_nums: List of partition numbers to wait for
-    :param timeout: Maximum time to wait in seconds
-    :raises errors.ImageError: If partition nodes do not appear within the timeout
-    """
-    if not partition_nums:
-        return
-
-    expected = [Path(f"{loop_device}p{n}") for n in partition_nums]
-
-    # Ask udev to settle so device nodes are created before we poll.
-    try:
-        run(_UDEVADM_BIN, "settle", "--timeout", str(int(timeout)))
-    except (subprocess.CalledProcessError, OSError):
-        emit.debug("udevadm settle failed or unavailable; falling back to polling")
-
-    # Poll until all partition nodes appear or the timeout is reached.
-    deadline = time.monotonic() + timeout
-    missing = [p for p in expected if not p.exists()]
-    while missing and time.monotonic() < deadline:
-        time.sleep(0.1)
-        missing = [p for p in expected if not p.exists()]
-
-    if missing:
-        raise errors.ImageError(
-            f"Loop device partition nodes did not appear within {timeout:.0f}s: "
-            + ", ".join(str(p) for p in missing)
-        )
 
 
 class Image:
@@ -144,14 +89,17 @@ class Image:
                 "--partscan",
                 self.disk_path,
             ).stdout.strip()
-            wait_for_loopdev_partitions(
-                self.loop_device, volume_partition_nums(self.volume)
-            )
-            emit.debug(
-                f"Attached image {self.disk_path} as loop device {self.loop_device}"
-            )
         try:
-            yield self.loop_device
+            # Acquire a shared BSD lock on the loop device.  udev holds an
+            # exclusive lock while it processes the new device; taking a shared
+            # lock here blocks until udev is done and then holds it for the
+            # duration of the context so udev does not interfere with our use.
+            with open(self.loop_device, "rb") as loop_fd:
+                fcntl.flock(loop_fd, fcntl.LOCK_SH)
+                emit.debug(
+                    f"Attached image {self.disk_path} as loop device {self.loop_device}"
+                )
+                yield self.loop_device
         finally:
             self._detach_loopdevs()
 
