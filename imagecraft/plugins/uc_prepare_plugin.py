@@ -19,10 +19,10 @@
 from typing import Literal, cast
 
 from craft_parts.plugins import Plugin, PluginProperties
-from pydantic import model_validator
+from pydantic import field_validator, model_validator
 from typing_extensions import Self, override
 
-from ._utils import resolve_snap
+from ._utils import resolve_snap, validate_snap_refs
 
 
 class UcPreparePluginProperties(PluginProperties, frozen=True):
@@ -58,6 +58,11 @@ class UcPreparePluginProperties(PluginProperties, frozen=True):
                 "uc-prepare-sysfs-overlay requires uc-prepare-preseed to be set"
             )
         return self
+
+    @field_validator("uc_prepare_snaps")
+    @classmethod
+    def _validate_snap_refs(cls, snaps: list[str]) -> list[str]:
+        return validate_snap_refs(snaps)
 
 
 class UcPreparePlugin(Plugin):

@@ -36,6 +36,15 @@ def test_missing_model_assertion():
         UcPreparePluginProperties.unmarshal({})
 
 
+def test_snap_preseed_snaps_validation():
+    with pytest.raises(ValidationError, match="Invalid snap reference"):
+        UcPreparePluginProperties.unmarshal(
+            {
+                "uc-prepare-snaps": ["invalid--snap"],
+            }
+        )
+
+
 def test_preseed_sign_key_without_preseed():
     with pytest.raises(ValueError, match="requires uc-prepare-preseed to be set"):
         UcPreparePluginProperties.unmarshal(

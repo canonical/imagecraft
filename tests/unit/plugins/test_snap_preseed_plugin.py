@@ -41,6 +41,15 @@ def cmd_prefix(part_info):
     return f"snap prepare-image --classic --arch={part_info.target_arch} --validation=ignore"
 
 
+def test_snap_preseed_snaps_validation():
+    with pytest.raises(ValidationError, match="Invalid snap reference"):
+        SnapPreseedPluginProperties.unmarshal(
+            {
+                "snap-preseed-snaps": ["invalid--snap"],
+            }
+        )
+
+
 def test_get_build_commands(part_info, cmd_prefix):
     properties = SnapPreseedPluginProperties.unmarshal(
         {"snap-preseed-snaps": ["core24", "hello-world/latest/stable"]}

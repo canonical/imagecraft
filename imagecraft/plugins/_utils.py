@@ -16,6 +16,29 @@
 
 """Shared plugin utilities."""
 
+from craft_application.models.constraints import PROJECT_NAME_COMPILED_REGEX
+
+VALID_RISKS = ["stable", "candidate", "beta", "edge"]
+
+
+def validate_snap_refs(snaps: list[str]) -> list[str]:
+    for snap in snaps:
+        if snap.endswith(".snap"):
+            continue
+
+        parts = snap.split("/")
+
+        name = parts[0]
+        if not PROJECT_NAME_COMPILED_REGEX.match(name):
+            raise ValueError(f"Invalid snap reference {snap}")
+
+        if (channel_parts := parts[1:]) and (
+            len(channel_parts) > 1 and not any(p in VALID_RISKS for p in channel_parts)
+        ):
+            raise ValueError(f"Invalid snap reference {snap}")
+
+    return snaps
+
 
 def resolve_snap(snap: str) -> str:
     """Resolve a snap reference to the format expected by snap prepare-image.

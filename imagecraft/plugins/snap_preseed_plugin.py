@@ -20,9 +20,10 @@ import shlex
 from typing import Literal, cast
 
 from craft_parts.plugins import Plugin, PluginProperties
+from pydantic import field_validator
 from typing_extensions import override
 
-from ._utils import resolve_snap
+from ._utils import resolve_snap, validate_snap_refs
 
 
 class SnapPreseedPluginProperties(PluginProperties, frozen=True):
@@ -36,6 +37,11 @@ class SnapPreseedPluginProperties(PluginProperties, frozen=True):
     snap_preseed_validation: Literal["ignore", "enforce"] = "ignore"
     snap_preseed_assertions: list[str] = []
     snap_preseed_write_revisions: str | None = None
+
+    @field_validator("snap_preseed_snaps")
+    @classmethod
+    def _validate_snap_refs(cls, snaps: list[str]) -> list[str]:
+        return validate_snap_refs(snaps)
 
 
 class SnapPreseedPlugin(Plugin):
