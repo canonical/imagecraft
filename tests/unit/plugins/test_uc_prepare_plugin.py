@@ -37,7 +37,7 @@ def test_missing_model_assertion():
 
 
 def test_preseed_sign_key_without_preseed():
-    with pytest.raises(ValueError, match="cannot be used without uc-prepare-preseed"):
+    with pytest.raises(ValueError, match="requires uc-prepare-preseed to be set"):
         UcPreparePluginProperties.unmarshal(
             {
                 "uc-prepare-model-assert": "model.assert",
@@ -47,7 +47,7 @@ def test_preseed_sign_key_without_preseed():
 
 
 def test_sysfs_overlay_without_preseed():
-    with pytest.raises(ValueError, match="cannot be used without uc-prepare-preseed"):
+    with pytest.raises(ValueError, match="requires uc-prepare-preseed to be set"):
         UcPreparePluginProperties.unmarshal(
             {
                 "uc-prepare-model-assert": "model.assert",
