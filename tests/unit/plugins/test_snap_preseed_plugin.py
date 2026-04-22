@@ -114,7 +114,7 @@ def test_get_build_commands_with_channel(part_info, cmd_prefix):
 
     assert (
         plugin.get_build_commands()[0]
-        == f'{cmd_prefix} --channel=latest/stable --snap=core24 "" {part_info.part_install_dir}'
+        == f"{cmd_prefix} --channel=latest/stable --snap=core24 '' {part_info.part_install_dir}"
     )
 
 
@@ -130,5 +130,5 @@ def test_get_build_commands_with_validation_enforce(part_info):
 
     assert (
         plugin.get_build_commands()[0]
-        == f'snap prepare-image --classic --arch={part_info.target_arch} --validation=enforce --snap=core24 "" {part_info.part_install_dir}'
+        == f"snap prepare-image --classic --arch={part_info.target_arch} --validation=enforce --snap=core24 '' {part_info.part_install_dir}"
     )
