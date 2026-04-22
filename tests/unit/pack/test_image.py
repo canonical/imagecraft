@@ -17,6 +17,7 @@ from subprocess import CompletedProcess
 from typing import Any
 from unittest.mock import call
 
+import fcntl
 import pytest
 from imagecraft.models import Volume
 from imagecraft.pack.image import Image
@@ -80,8 +81,7 @@ class TestImage:
             call("losetup", "--json"),
             call("losetup", "-d", "/dev/loop99"),
         ]
-        import fcntl as fcntl_mod
-        mock_flock.assert_called_once_with(mocker.ANY, fcntl_mod.LOCK_SH)
+        mock_flock.assert_called_once_with(mocker.ANY, fcntl.LOCK_SH)
 
     @pytest.mark.parametrize(
         ("volume_data", "has_data_partition"),

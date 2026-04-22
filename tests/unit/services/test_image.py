@@ -12,6 +12,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import fcntl
 import subprocess
 from unittest.mock import MagicMock, patch
 
@@ -120,8 +121,7 @@ def test_attach_images_new(image_service, project_dir, mocker):
         )
         mock_atexit.assert_called_once_with(image_service.detach_images)
 
-    import fcntl as fcntl_mod
-    mock_flock.assert_called_once_with(mocker.ANY, fcntl_mod.LOCK_SH)
+    mock_flock.assert_called_once_with(mocker.ANY, fcntl.LOCK_SH)
 
 
 def test_attach_images_reuse(image_service, project_dir, mocker):
@@ -147,8 +147,7 @@ def test_attach_images_reuse(image_service, project_dir, mocker):
     assert devices == {"pc": "/dev/loop9"}
     mock_run.assert_not_called()  # Should not call losetup attach
 
-    import fcntl as fcntl_mod
-    mock_flock.assert_called_once_with(mocker.ANY, fcntl_mod.LOCK_SH)
+    mock_flock.assert_called_once_with(mocker.ANY, fcntl.LOCK_SH)
 
 
 def test_attach_images_stale_inode(image_service, project_dir, mocker):

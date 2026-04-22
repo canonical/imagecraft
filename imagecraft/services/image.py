@@ -163,7 +163,11 @@ class ImageService(AppService):
             # blocks until udev is done and then holds it while we use the
             # device's partitions, preventing udev from interfering.
             loop_fd = open(attached_device, "rb")  # noqa: SIM115 (held deliberately)
-            fcntl.flock(loop_fd, fcntl.LOCK_SH)
+            try:
+                fcntl.flock(loop_fd, fcntl.LOCK_SH)
+            except Exception:
+                loop_fd.close()
+                raise
             self._loop_fds.append(loop_fd)
 
             self._loop_devices[name] = attached_device
