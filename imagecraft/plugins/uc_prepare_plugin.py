@@ -22,6 +22,8 @@ from craft_parts.plugins import Plugin, PluginProperties
 from pydantic import model_validator
 from typing_extensions import Self, override
 
+from ._utils import resolve_snap
+
 
 class UcPreparePluginProperties(PluginProperties, frozen=True):
     """Properties for the uc-prepare plugin."""
@@ -118,7 +120,7 @@ class UcPreparePlugin(Plugin):
         )
 
         cmd.extend(
-            f"--snap={self._resolve_snap(snap)}" for snap in options.uc_prepare_snaps
+            f"--snap={resolve_snap(snap)}" for snap in options.uc_prepare_snaps
         )
 
         cmd.append(
@@ -126,10 +128,3 @@ class UcPreparePlugin(Plugin):
         )
 
         return [" ".join(cmd)]
-
-    def _resolve_snap(self, snap: str) -> str:
-        snap = snap.strip()
-        if "/" in snap and not snap.endswith(".snap"):
-            name, channel = snap.split("/", 1)
-            snap = f"{name}={channel}"
-        return snap
