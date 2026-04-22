@@ -16,6 +16,7 @@
 
 """The snap-preseed plugin."""
 
+import shlex
 from typing import Literal, cast
 
 from craft_parts.plugins import Plugin, PluginProperties
@@ -34,7 +35,7 @@ class SnapPreseedPluginProperties(PluginProperties, frozen=True):
     snap_preseed_model_assert: str = ""
     snap_preseed_validation: Literal["ignore", "enforce"] = "ignore"
     snap_preseed_assertions: list[str] = []
-    snap_preseed_revisions: str | None = None
+    snap_preseed_write_revisions: str | None = None
 
 
 class SnapPreseedPlugin(Plugin):
@@ -71,8 +72,8 @@ class SnapPreseedPlugin(Plugin):
         if options.snap_preseed_channel:
             cmd.append(f"--channel={options.snap_preseed_channel}")
 
-        if options.snap_preseed_revisions:
-            cmd.append(f"--revisions={options.snap_preseed_revisions}")
+        if options.snap_preseed_write_revisions:
+            cmd.append(f"--revisions={options.snap_preseed_write_revisions}")
 
         cmd.extend(
             f"--assert={assertion}" for assertion in options.snap_preseed_assertions
@@ -82,7 +83,6 @@ class SnapPreseedPlugin(Plugin):
             f"--snap={resolve_snap(snap)}" for snap in options.snap_preseed_snaps
         )
 
-        cmd.append(
-            f'"{options.snap_preseed_model_assert}" {self._part_info.part_install_dir}'
-        )
-        return [" ".join(cmd)]
+        cmd.append(options.snap_preseed_model_assert)
+        cmd.append(str(self._part_info.part_install_dir))
+        return [shlex.join(cmd)]

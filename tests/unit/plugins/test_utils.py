@@ -21,16 +21,11 @@ from imagecraft.plugins._utils import resolve_snap
 @pytest.mark.parametrize(
     ("snap", "expected"),
     [
-        # Plain snap name – unchanged
         ("core24", "core24"),
-        # Leading/trailing whitespace is stripped
         ("  core24  ", "core24"),
-        # Local .snap file path with a slash – unchanged (not a channel)
         ("./my-snap_1.0_amd64.snap", "./my-snap_1.0_amd64.snap"),
-        # snap name with channel – converted to name=channel
         ("hello-world/latest/stable", "hello-world=latest/stable"),
         ("core24/stable", "core24=stable"),
-        # snap name with channel and leading whitespace
         ("  hello-world/latest/stable  ", "hello-world=latest/stable"),
     ],
 )

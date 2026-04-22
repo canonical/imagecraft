@@ -13,5 +13,5 @@ execute: |
   test -f prime/snaps/snapd_*.snap
 
 restore: |
+  rm -rf disk.img
   imagecraft clean --destructive-mode
-  rm -rf disk.img || true

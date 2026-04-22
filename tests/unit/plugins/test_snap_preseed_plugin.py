@@ -50,7 +50,7 @@ def test_get_build_commands(part_info, cmd_prefix):
 
     assert (
         plugin.get_build_commands()[0]
-        == f'{cmd_prefix} --snap=core24 --snap=hello-world=latest/stable "" {part_info.part_install_dir}'
+        == f"{cmd_prefix} --snap=core24 --snap=hello-world=latest/stable '' {part_info.part_install_dir}"
     )
 
 
@@ -66,7 +66,7 @@ def test_get_build_commands_with_model_assertion(part_info, cmd_prefix):
 
     assert (
         plugin.get_build_commands()[0]
-        == f'{cmd_prefix} --snap=core24 "model.assert" {part_info.part_install_dir}'
+        == f"{cmd_prefix} --snap=core24 model.assert {part_info.part_install_dir}"
     )
 
 
@@ -82,7 +82,7 @@ def test_get_build_commands_with_assertions(part_info, cmd_prefix):
 
     assert (
         plugin.get_build_commands()[0]
-        == f'{cmd_prefix} --assert=system-user.assert --assert=account.assert --snap=core24 "" {part_info.part_install_dir}'
+        == f"{cmd_prefix} --assert=system-user.assert --assert=account.assert --snap=core24 '' {part_info.part_install_dir}"
     )
 
 
@@ -90,7 +90,7 @@ def test_get_build_commands_with_revisions(part_info, cmd_prefix):
     properties = SnapPreseedPluginProperties.unmarshal(
         {
             "snap-preseed-snaps": ["core24"],
-            "snap-preseed-revisions": "./revisions.txt",
+            "snap-preseed-write-revisions": "./revisions.txt",
         }
     )
 
@@ -98,7 +98,7 @@ def test_get_build_commands_with_revisions(part_info, cmd_prefix):
 
     assert (
         plugin.get_build_commands()[0]
-        == f'{cmd_prefix} --revisions=./revisions.txt --snap=core24 "" {part_info.part_install_dir}'
+        == f"{cmd_prefix} --revisions=./revisions.txt --snap=core24 '' {part_info.part_install_dir}"
     )
 
 

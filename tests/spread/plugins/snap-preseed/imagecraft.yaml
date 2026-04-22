@@ -6,7 +6,7 @@ base: bare
 build-base: ubuntu@24.04
 
 platforms:
-  amd64:
+  armhf:
 
 volumes:
   disk:

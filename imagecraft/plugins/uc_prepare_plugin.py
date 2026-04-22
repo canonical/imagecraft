@@ -35,7 +35,7 @@ class UcPreparePluginProperties(PluginProperties, frozen=True):
     uc_prepare_channel: str | None = None
     uc_prepare_validation: Literal["ignore", "enforce"] = "ignore"
     uc_prepare_assertions: list[str] = []
-    uc_prepare_revisions: str | None = None
+    uc_prepare_write_revisions: str | None = None
     uc_prepare_preseed: bool = False
     uc_prepare_preseed_sign_key: str | None = None
     uc_prepare_apparmor_features_dir: str | None = None
@@ -46,7 +46,7 @@ class UcPreparePluginProperties(PluginProperties, frozen=True):
         """preseed-sign-key requires preseed to be enabled."""
         if self.uc_prepare_preseed_sign_key and not self.uc_prepare_preseed:
             raise ValueError(
-                "uc-prepare-preseed-sign-key cannot be used without uc-prepare-preseed"
+                "uc-prepare-preseed-sign-key requires uc-prepare-preseed to be set"
             )
         return self
 
@@ -55,7 +55,7 @@ class UcPreparePluginProperties(PluginProperties, frozen=True):
         """sysfs-overlay requires preseed to be enabled."""
         if self.uc_prepare_sysfs_overlay and not self.uc_prepare_preseed:
             raise ValueError(
-                "uc-prepare-sysfs-overlay cannot be used without uc-prepare-preseed"
+                "uc-prepare-sysfs-overlay requires uc-prepare-preseed to be set"
             )
         return self
 
@@ -112,16 +112,14 @@ class UcPreparePlugin(Plugin):
         if options.uc_prepare_channel:
             cmd.append(f"--channel={options.uc_prepare_channel}")
 
-        if options.uc_prepare_revisions:
-            cmd.append(f"--revisions={options.uc_prepare_revisions}")
+        if options.uc_prepare_write_revisions:
+            cmd.append(f"--revisions={options.uc_prepare_write_revisions}")
 
         cmd.extend(
             f"--assert={assertion}" for assertion in options.uc_prepare_assertions
         )
 
-        cmd.extend(
-            f"--snap={resolve_snap(snap)}" for snap in options.uc_prepare_snaps
-        )
+        cmd.extend(f"--snap={resolve_snap(snap)}" for snap in options.uc_prepare_snaps)
 
         cmd.append(
             f"{options.uc_prepare_model_assert} {self._part_info.part_install_dir}"
