@@ -54,6 +54,7 @@ def test_validate_snap_ref_valid():
         "has--double-dash",
         "hello-world/track/notarisk",
         "this-is-too-long-123456789234567891234567",
+        "hello-world/track/stable/branch/notallowed",
     ],
 )
 def test_validate_snap_ref_invalid(invalid_ref):
