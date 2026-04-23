@@ -24,6 +24,7 @@ from imagecraft.models.project import (
 
 from imagecraft.models.volume import (
     FileSystem,
+    BaseVolume,
     GPTVolume,
     Volume,
     Role,
