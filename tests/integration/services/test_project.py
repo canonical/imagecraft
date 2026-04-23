@@ -22,6 +22,8 @@ import pytest
 from imagecraft.application import APP_METADATA
 from imagecraft.services.project import ImagecraftProjectService
 
+pytestmark = [pytest.mark.usefixtures("enable_features")]
+
 
 @pytest.mark.parametrize(
     "project_dir",

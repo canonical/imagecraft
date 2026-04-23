@@ -58,11 +58,3 @@ def imagecraft_app(
     )
     register_services()
     return imagecraft.Imagecraft(app_metadata, service_factory)
-
-
-@pytest.fixture(autouse=True)
-def enable_features(reset_features):
-    """Enable both features."""
-    from craft_parts import Features  # noqa: PLC0415
-
-    Features(enable_overlay=True, enable_partitions=True)
