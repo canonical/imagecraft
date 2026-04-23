@@ -9,8 +9,9 @@ execute: |
 
   test -d prime/var/lib/snapd/seed/
   test -f prime/var/lib/snapd/seed/snaps/hello-world_*.snap
+  test -f prime/var/lib/snapd/seed/snaps/core_*.snap
 
-  unsquashfs -d core-snap prime/var/lib/snapd/seed/snaps/core_*.snap
+  unsquashfs -d core-snap prime/var/lib/snapd/seed/snaps/core_*.snap --extract-file meta/snap.yaml
   grep -q "armhf" core-snap/meta/snap.yaml
 
 restore: |
