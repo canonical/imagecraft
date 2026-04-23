@@ -22,7 +22,7 @@ import re
 import typing
 import uuid
 from collections.abc import Collection
-from typing import Annotated, Literal, Self, cast
+from typing import Annotated, Literal, Self
 
 from craft_application.models import (
     CraftBaseModel,
@@ -264,7 +264,7 @@ class StructureItem(CraftBaseModel):
 
     def __eq__(self, other: object) -> bool:
         if type(other) is type(self):
-            return self.name == cast(StructureItem, other).name
+            return self.name == other.name
 
         return False
 

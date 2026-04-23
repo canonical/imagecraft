@@ -21,8 +21,9 @@ from imagecraft.services.image import ImageService
 @pytest.fixture
 def image_service(default_factory: ServiceFactory, enable_features):
     svc = default_factory.get("image")
+    assert isinstance(svc, ImageService)
     yield svc
-    svc._loop_devices.clear()  # type: ignore[attribute]
+    svc._loop_devices.clear()
 
 
 def test_create_images_produces_hidden_files(image_service: ImageService, new_dir):
