@@ -102,9 +102,12 @@ def _create_gpt_layout(
         }
         if structure_item.role == Role.SYSTEM_BOOT.value:
             partition["bootable"] = None
-        if structure_item.id:
+        if hasattr(structure_item, "id") and structure_item.id is not None:
             partition["uuid"] = str(structure_item.id)
-        if structure_item.partition_number is not None:
+        if (
+            hasattr(structure_item, "partition_number")
+            and structure_item.partition_number is not None
+        ):
             partition["partition-number"] = str(structure_item.partition_number)
         partitions.append(partition)
         start += sectors

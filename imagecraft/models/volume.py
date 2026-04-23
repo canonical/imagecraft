@@ -480,7 +480,7 @@ class GPTVolume(BaseVolume):
     )
     """The partitioning schema of the image."""
 
-    structure: StructureList = Field(
+    structure: GPTStructureList = Field(
         min_length=1,
         description="The partitions that comprise the image.",
         examples=[

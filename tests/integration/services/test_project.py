@@ -42,7 +42,7 @@ def test_load_valid_project(
 
     project_service = ImagecraftProjectService(
         app=APP_METADATA,
-        services=None,
+        services=None,  # ty: ignore[invalid-argument-type]
         project_dir=in_project_path,
     )
     project_service.configure(platform=None, build_for=None)
@@ -72,7 +72,7 @@ def test_load_invalid_project(
 
     project_service = ImagecraftProjectService(
         app=APP_METADATA,
-        services=None,
+        services=None,  # ty: ignore[invalid-argument-type]
         project_dir=in_project_path,
     )
     project_service.configure(platform=None, build_for=None)
