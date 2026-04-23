@@ -19,6 +19,7 @@
 from craft_application.models.constraints import PROJECT_NAME_COMPILED_REGEX
 
 VALID_RISKS = ["stable", "candidate", "beta", "edge"]
+MAX_LEN = 40
 
 
 def validate_snap_refs(snaps: list[str]) -> list[str]:
@@ -29,7 +30,7 @@ def validate_snap_refs(snaps: list[str]) -> list[str]:
         parts = snap.split("/")
 
         name = parts[0]
-        if not PROJECT_NAME_COMPILED_REGEX.match(name):
+        if not (len(name) <= MAX_LEN and PROJECT_NAME_COMPILED_REGEX.match(name)):
             raise ValueError(f"Invalid snap reference {snap}")
 
         if (channel_parts := parts[1:]) and (

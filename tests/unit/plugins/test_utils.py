@@ -49,7 +49,12 @@ def test_validate_snap_ref_valid():
 
 @pytest.mark.parametrize(
     "invalid_ref",
-    ["123", "has--double-dash", "hello-world/track/notarisk"],
+    [
+        "123",
+        "has--double-dash",
+        "hello-world/track/notarisk",
+        "this-is-too-long-123456789234567891234567",
+    ],
 )
 def test_validate_snap_ref_invalid(invalid_ref):
     with pytest.raises(ValueError, match="Invalid snap reference"):
