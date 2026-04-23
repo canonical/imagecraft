@@ -13,5 +13,5 @@ execute: |
   test -d parts -a -d stage -a -d prime
 
 restore: |
+  rm -rf pc.img
   imagecraft clean --destructive-mode
-  rm -rf pc.img || true

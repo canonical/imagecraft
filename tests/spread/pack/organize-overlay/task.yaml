@@ -8,8 +8,8 @@ execute: |
   test -f pc.img
 
 restore: |
+  rm -rf pc.img
   imagecraft clean --destructive-mode
-  rm -rf pc.img || true
 
 debug: |
   df -h

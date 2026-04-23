@@ -10,5 +10,5 @@ execute: |
   test -x prime/usr/bin/curl
 
 restore: |
+  rm -rf pc.img
   imagecraft clean --destructive-mode
-  rm -rf pc.img || true

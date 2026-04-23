@@ -10,5 +10,5 @@ execute: |
   sfdisk --json pc.img | jq '.partitiontable.partitions[1].name' | MATCH "rootfs"
 
 restore: |
+  rm -rf pc.img
   imagecraft clean --destructive-mode
-  rm -rf pc.img || true

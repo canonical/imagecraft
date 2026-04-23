@@ -15,8 +15,8 @@ execute: |
   MATCH "Adding boot menu entry for UEFI Firmware Settings" "$imagecraft_log_file"
 
 restore: |
+  rm -rf pc.img
   imagecraft clean --destructive-mode
-  rm -rf pc.img || true
 
 debug: |
   df -h

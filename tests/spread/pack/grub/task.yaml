@@ -59,8 +59,8 @@ restore: |
       losetup -l | NOMATCH "$LOOP"
       rm loop.txt
   fi
+  rm -rf pc.img
   imagecraft clean --destructive-mode
-  rm -rf pc.img || true
 
 debug: |
   df -h
