@@ -286,13 +286,10 @@ class MBRStructureItem(StructureItem):
             "83",
         ],
     )
-    """The type of the partition.
+    """The MBR partition type code.
 
-    For GPT partitions, the value must be the standard 32-digit hexadecimal number
-    associated with the type.
-
-    This is distinct from the ``structure.<partition>.id`` key, which is unique among
-    all partitions, regardless of type.
+    For MBR partitions, the value is the partition type byte written as a
+    hexadecimal code, such as ``0C`` for FAT32 or ``83`` for Linux.
     """
 
 
