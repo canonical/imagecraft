@@ -23,14 +23,6 @@ from craft_application import ServiceFactory
 from imagecraft.cli import register_services
 
 
-@pytest.fixture(autouse=True)
-def enable_features(reset_features):
-    """Enable both features."""
-    from craft_parts import Features  # noqa: PLC0415
-
-    Features(enable_overlay=True, enable_partitions=True)
-
-
 @pytest.fixture
 def project_path(
     tmp_path: Path,

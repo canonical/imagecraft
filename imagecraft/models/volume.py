@@ -263,8 +263,8 @@ class StructureItem(CraftBaseModel):
         return hash(self.name)
 
     def __eq__(self, other: object) -> bool:
-        if type(other) is type(self):
-            return self.name == other.name
+        if type(other) is type(self) and hasattr(other, "name"):
+            return bool(self.name == other.name)
 
         return False
 
@@ -400,7 +400,7 @@ def _validate_structure_items_partition_numbers(
     return structures
 
 
-StructureList = Annotated[
+GPTStructureList = Annotated[
     list[GPTStructureItem],
     AfterValidator(_validate_structure_items_partition_numbers),
 ]
@@ -442,6 +442,9 @@ class HybridStructureItem(StructureItem):
 
 
 HybridStructureList = Annotated[list[HybridStructureItem], Field(min_length=1)]
+
+
+StructureList = GPTStructureList | MBRStructureList | HybridStructureList
 
 
 class BaseVolume(CraftBaseModel):
