@@ -36,7 +36,8 @@ class SnapPreseedPluginProperties(PluginProperties, frozen=True):
     snap_preseed_model_assert: str = ""
     snap_preseed_validation: Literal["ignore", "enforce"] = "ignore"
     snap_preseed_assertions: list[str] = []
-    snap_preseed_write_revisions: str | None = None
+    snap_preseed_revisions: str | None = None
+    snap_preseed_write_revisions: str | bool = False
 
     @field_validator("snap_preseed_snaps")
     @classmethod
@@ -78,8 +79,18 @@ class SnapPreseedPlugin(Plugin):
         if options.snap_preseed_channel:
             cmd.append(f"--channel={options.snap_preseed_channel}")
 
+        if options.snap_preseed_revisions:
+            cmd.append(f"--revisions={options.snap_preseed_revisions}")
+
         if options.snap_preseed_write_revisions:
-            cmd.append(f"--revisions={options.snap_preseed_write_revisions}")
+            revisions_path = self._part_info.part_install_dir / (
+                "seed.manifest"
+                if isinstance(options.snap_preseed_write_revisions, bool)
+                else options.snap_preseed_write_revisions.lstrip("/")
+            )
+
+            revisions_path.parent.mkdir(parents=True, exist_ok=True)
+            cmd.append(f"--write-revisions={revisions_path}")
 
         cmd.extend(
             f"--assert={assertion}" for assertion in options.snap_preseed_assertions

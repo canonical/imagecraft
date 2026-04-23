@@ -35,7 +35,8 @@ class UcPreparePluginProperties(PluginProperties, frozen=True):
     uc_prepare_channel: str | None = None
     uc_prepare_validation: Literal["ignore", "enforce"] = "ignore"
     uc_prepare_assertions: list[str] = []
-    uc_prepare_write_revisions: str | None = None
+    uc_prepare_revisions: str | None = None
+    uc_prepare_write_revisions: str | bool = False
     uc_prepare_preseed: bool = False
     uc_prepare_preseed_sign_key: str | None = None
     uc_prepare_apparmor_features_dir: str | None = None
@@ -117,8 +118,18 @@ class UcPreparePlugin(Plugin):
         if options.uc_prepare_channel:
             cmd.append(f"--channel={options.uc_prepare_channel}")
 
+        if options.uc_prepare_revisions:
+            cmd.append(f"--revisions={options.uc_prepare_revisions}")
+
         if options.uc_prepare_write_revisions:
-            cmd.append(f"--revisions={options.uc_prepare_write_revisions}")
+            revisions_path = self._part_info.part_install_dir / (
+                "seed.manifest"
+                if isinstance(options.uc_prepare_write_revisions, bool)
+                else options.uc_prepare_write_revisions.lstrip("/")
+            )
+
+            revisions_path.parent.mkdir(parents=True, exist_ok=True)
+            cmd.append(f"--write-revisions={revisions_path}")
 
         cmd.extend(
             f"--assert={assertion}" for assertion in options.uc_prepare_assertions

@@ -236,3 +236,51 @@ def test_get_build_commands_with_validation_enforce(part_info):
         plugin.get_build_commands()[0]
         == f"snap prepare-image --validation=enforce model.assert {part_info.part_install_dir}"
     )
+
+
+def test_get_build_commands_with_revisions(part_info):
+    properties = UcPreparePluginProperties.unmarshal(
+        {
+            "uc-prepare-model-assert": "model.assert",
+            "uc-prepare-revisions": "./revisions.txt",
+        }
+    )
+
+    plugin = UcPreparePlugin(properties=properties, part_info=part_info)
+
+    assert (
+        plugin.get_build_commands()[0]
+        == f"snap prepare-image --validation=ignore --revisions=./revisions.txt model.assert {part_info.part_install_dir}"
+    )
+
+
+def test_get_build_commands_with_write_revisions(part_info):
+    properties = UcPreparePluginProperties.unmarshal(
+        {
+            "uc-prepare-model-assert": "model.assert",
+            "uc-prepare-write-revisions": True,
+        }
+    )
+
+    plugin = UcPreparePlugin(properties=properties, part_info=part_info)
+
+    assert (
+        plugin.get_build_commands()[0]
+        == f"snap prepare-image --validation=ignore --write-revisions={part_info.part_install_dir}/seed.manifest model.assert {part_info.part_install_dir}"
+    )
+
+
+def test_get_build_commands_with_write_revisions_path(part_info):
+    properties = UcPreparePluginProperties.unmarshal(
+        {
+            "uc-prepare-model-assert": "model.assert",
+            "uc-prepare-write-revisions": "./revisions.txt",
+        }
+    )
+
+    plugin = UcPreparePlugin(properties=properties, part_info=part_info)
+
+    assert (
+        plugin.get_build_commands()[0]
+        == f"snap prepare-image --validation=ignore --write-revisions={part_info.part_install_dir}/revisions.txt model.assert {part_info.part_install_dir}"
+    )

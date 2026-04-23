@@ -24,6 +24,7 @@ parts:
       - -kernel
       - -gadget
       - -resolved-content
+      - -system-seed
 
 volumes:
   disk:

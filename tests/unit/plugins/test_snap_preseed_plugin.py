@@ -99,7 +99,7 @@ def test_get_build_commands_with_revisions(part_info, cmd_prefix):
     properties = SnapPreseedPluginProperties.unmarshal(
         {
             "snap-preseed-snaps": ["core24"],
-            "snap-preseed-write-revisions": "./revisions.txt",
+            "snap-preseed-revisions": "./revisions.txt",
         }
     )
 
@@ -108,6 +108,38 @@ def test_get_build_commands_with_revisions(part_info, cmd_prefix):
     assert (
         plugin.get_build_commands()[0]
         == f"{cmd_prefix} --revisions=./revisions.txt --snap=core24 '' {part_info.part_install_dir}"
+    )
+
+
+def test_get_build_commands_with_write_revisions(part_info, cmd_prefix):
+    properties = SnapPreseedPluginProperties.unmarshal(
+        {
+            "snap-preseed-snaps": ["core24"],
+            "snap-preseed-write-revisions": True,
+        }
+    )
+
+    plugin = SnapPreseedPlugin(properties=properties, part_info=part_info)
+
+    assert (
+        plugin.get_build_commands()[0]
+        == f"{cmd_prefix} --write-revisions={part_info.part_install_dir}/seed.manifest --snap=core24 '' {part_info.part_install_dir}"
+    )
+
+
+def test_get_build_commands_with_write_revisions_path(part_info, cmd_prefix):
+    properties = SnapPreseedPluginProperties.unmarshal(
+        {
+            "snap-preseed-snaps": ["core24"],
+            "snap-preseed-write-revisions": "./revisions.txt",
+        }
+    )
+
+    plugin = SnapPreseedPlugin(properties=properties, part_info=part_info)
+
+    assert (
+        plugin.get_build_commands()[0]
+        == f"{cmd_prefix} --write-revisions={part_info.part_install_dir}/revisions.txt --snap=core24 '' {part_info.part_install_dir}"
     )
 
 
