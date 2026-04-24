@@ -1,0 +1,17 @@
+summary: Test uc-prepare plugin
+
+systems: [ubuntu-24.04-64]
+
+execute: |
+  imagecraft pack --verbose --destructive-mode
+
+  test -f disk.img
+
+  test -f prime/snaps/pc_*.snap
+  test -f prime/snaps/pc-kernel_*.snap
+  test -f prime/snaps/core24_*.snap
+  test -f prime/snaps/snapd_*.snap
+
+restore: |
+  rm -rf disk.img
+  imagecraft clean --destructive-mode

@@ -140,7 +140,7 @@ def test_volume_valid():
             },
         ),
         (
-            "1 validation error for Volume\nstructure.0.role\n  Input should be 'system-data' or 'system-boot'",
+            "1 validation error for Volume\nstructure.0.role\n  Input should be 'system-data', 'system-boot' or 'system-seed'",
             ValidationError,
             {
                 "schema": "gpt",
