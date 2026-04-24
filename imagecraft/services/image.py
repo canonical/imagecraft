@@ -16,13 +16,14 @@
 
 import atexit
 import contextlib
+import fcntl
 import json
 import pathlib
 import shutil
 import subprocess
 import time
 from collections.abc import Mapping
-from typing import Any, cast
+from typing import IO, Any, cast
 
 from craft_application import AppMetadata, AppService, ServiceFactory
 from craft_cli import CraftError, emit
@@ -50,6 +51,7 @@ class ImageService(AppService):
         self._sector_size = gptutil.SECTOR_SIZE_512
         self._images: dict[str, pathlib.Path] | None = None
         self._loop_devices: dict[str, str] = {}
+        self._loop_fds: list[IO[bytes]] = []
         self._atexit_registered = False
 
     def get_images(self) -> Mapping[str, pathlib.Path]:
@@ -156,6 +158,18 @@ class ImageService(AppService):
                         resolution="Ensure loop devices are available and you have sufficient permissions (sudo).",
                     ) from err
 
+            # 3. Acquire a shared BSD lock on the loop device.  udev holds an
+            # exclusive lock while it processes the device; a shared lock here
+            # blocks until udev is done and then holds it while we use the
+            # device's partitions, preventing udev from interfering.
+            loop_fd = open(attached_device, "rb")  # noqa: SIM115 (held deliberately)
+            try:
+                fcntl.flock(loop_fd, fcntl.LOCK_SH)
+            except Exception:
+                loop_fd.close()
+                raise
+            self._loop_fds.append(loop_fd)
+
             self._loop_devices[name] = attached_device
 
         if not self._atexit_registered:
@@ -169,6 +183,12 @@ class ImageService(AppService):
 
         Includes a retry loop for busy devices. Safe to call as an atexit handler.
         """
+        # Release shared flocks so the devices are no longer considered in use.
+        for fd in self._loop_fds:
+            with contextlib.suppress(Exception):
+                fd.close()
+        self._loop_fds.clear()
+
         for name, device in list(self._loop_devices.items()):
             success = False
             start_time = time.monotonic()
