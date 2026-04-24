@@ -29,6 +29,9 @@ backends:
       - ubuntu-24.04-64:
           storage: 45G
           workers: 1
+      - ubuntu-26.04-64:
+          storage: 45G
+          workers: 1
   qemu:
     memory: 4G
     systems:
@@ -140,8 +143,12 @@ prepare: |
       exit 1
   fi
   tests.pkgs install snapd libc6-dev git make fdisk jq
+  QEMU_PKGS="binfmt-support qemu-user-static"
+  if [[ "$SPREAD_SYSTEM" == ubuntu-26.04* ]]; then
+    QEMU_PKGS="qemu-user-binfmt"
+  fi
   if [[ ! "$SPREAD_BACKEND" == *-arm ]]; then
-      tests.pkgs install gcc-multilib binfmt-support qemu-user-static
+      tests.pkgs install gcc-multilib $QEMU_PKGS
   fi
 
   snap wait system seed.loaded
@@ -152,12 +159,7 @@ prepare: |
   snap install yq --devmode  # Disable confinement so we can read files from anywhere
 
   # Setup lxd
-  # older linux releases have separate packages for lxd and lxc (lxd-client)
-  if [ "$SPREAD_SYSTEM" = "ubuntu-20.04-64" ]; then
-    tests.pkgs remove lxd lxd-client
-  else
-    tests.pkgs remove lxd
-  fi
+  tests.pkgs remove lxd
   snap install multipass --channel=latest/stable
   snap install lxd --channel=latest/stable
 

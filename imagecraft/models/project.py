@@ -67,7 +67,14 @@ class Platform(BasePlatform):
 
 BaseT = Literal["bare"]
 BuildBaseT = typing.Annotated[
-    Literal["ubuntu@20.04", "ubuntu@22.04", "ubuntu@24.04", "ubuntu@25.10", "devel"],
+    Literal[
+        "ubuntu@20.04",
+        "ubuntu@22.04",
+        "ubuntu@24.04",
+        "ubuntu@25.10",
+        "ubuntu@26.04",
+        "devel",
+    ],
     Field(
         validate_default=True,
         description="The build environment to use when building the image.",
@@ -138,6 +145,8 @@ class Project(BaseProject):
           - The Ubuntu 22.04 build environment.
         * - ``ubuntu@24.04``
           - The Ubuntu 24.04 build environment.
+        * - ``ubuntu@26.04``
+          - The Ubuntu 26.04 build environment.
 
     """
 
