@@ -36,7 +36,7 @@ jobs:
       matrix:
         include:
           - group: ubuntu
-            systems: "ubuntu-20.04-64 ubuntu-22.04-64 ubuntu-24.04-64"
+            systems: "ubuntu-22.04-64 ubuntu-24.04-64 ubuntu-26.04-64"
     steps:
       - name: Cleanup job workspace
         id: cleanup-job-workspace

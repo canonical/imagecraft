@@ -31,7 +31,7 @@ alongside operational values such as its supported architectures and build envir
 .. kitbash-field:: Project base
 
 .. kitbash-field:: Project build_base
-    :override-type: Literal['ubuntu@20.04', 'ubuntu@22.04', 'ubuntu@24.04']
+    :override-type: Literal['ubuntu@20.04', 'ubuntu@22.04', 'ubuntu@24.04', 'ubuntu@26.04']
 
 .. kitbash-field:: Project source_code
     :override-type: str
