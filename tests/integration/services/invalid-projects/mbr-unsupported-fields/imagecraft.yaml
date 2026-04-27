@@ -1,0 +1,41 @@
+name: simple-project
+version: "0.1"
+summary: An image that has a `content` key in a volume.
+description: |
+  The `content` key in the volume schema is not supported by Imagecraft. Because it is
+  supported by other tools like snapd, we explicitly error out when this field is
+  included in the file.
+base: bare
+build-base: devel
+
+platforms:
+  amd64:
+  arm64:
+  riscv64:
+
+filesystems:
+  default:
+    - mount: /
+      device: (volume/disk/rootfs)
+
+parts:
+  my-part:
+    plugin: nil
+
+volumes:
+  disk:
+    schema: mbr
+    structure:
+      - name: ubuntu-seed
+        role: system-seed
+        filesystem: vfat
+        type: 0C
+        min-size: 1M # Not supported!
+        size: 1200M
+        content: # This field is not supported!
+          # Copied from the pi gadget snap:
+          # https://github.com/canonical/pi-gadget/blob/24/gadget.yaml
+          - source: $kernel:dtbs/dtbs/overlays/
+            target: /overlays
+          - source: boot-assets/
+            target: /

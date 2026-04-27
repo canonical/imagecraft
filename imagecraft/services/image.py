@@ -28,7 +28,7 @@ from craft_application import AppMetadata, AppService, ServiceFactory
 from craft_cli import CraftError, emit
 
 from imagecraft.models import Project
-from imagecraft.models.volume import PartitionSchema
+from imagecraft.models.volume import GPTVolume, PartitionSchema
 from imagecraft.pack import gptutil
 from imagecraft.subprocesses import run
 
@@ -83,7 +83,7 @@ class ImageService(AppService):
                     gptutil.create_empty_gpt_image(
                         imagepath=image_path,
                         sector_size=self._sector_size,
-                        layout=volume,
+                        layout=cast(GPTVolume, volume),
                     )
                 case _:
                     # Reaching this case is a bug.

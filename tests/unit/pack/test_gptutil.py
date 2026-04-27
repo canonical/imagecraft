@@ -16,13 +16,13 @@ from subprocess import CompletedProcess
 
 import pytest
 from craft_cli.errors import CraftError
-from imagecraft.models import Volume
+from imagecraft.models import GPTVolume
 from imagecraft.pack import diskutil, gptutil
 
 
 @pytest.fixture
 def volume():
-    return Volume.unmarshal(
+    return GPTVolume.unmarshal(
         {
             "schema": "gpt",
             "structure": [

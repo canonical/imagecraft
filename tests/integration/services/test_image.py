@@ -17,6 +17,8 @@ import pytest
 from craft_application import ServiceFactory
 from imagecraft.services.image import ImageService
 
+pytestmark = [pytest.mark.usefixtures("enable_features")]
+
 
 @pytest.fixture
 def image_service(default_factory: ServiceFactory, enable_features):

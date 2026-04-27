@@ -74,10 +74,10 @@ partitions.
 .. kitbash-field:: Project volumes
     :override-type: dict[str, Volume]
 
-.. kitbash-field:: Volume volume_schema
+.. kitbash-field:: GPTVolume volume_schema
     :prepend-name: volumes.<volume-name>
 
-.. kitbash-field:: Volume structure
+.. kitbash-field:: GPTVolume structure
     :prepend-name: volumes.<volume-name>
     :override-type: list[Partition]
 
@@ -88,28 +88,28 @@ Partition keys
 The following keys can be declared for each partition listed in the volume's
 ``structure`` key.
 
-.. kitbash-field:: StructureItem name
+.. kitbash-field:: GPTStructureItem name
     :prepend-name: volumes.<volume-name>.structure.<partition>
 
-.. kitbash-field:: StructureItem id
+.. kitbash-field:: GPTStructureItem id
     :prepend-name: volumes.<volume-name>.structure.<partition>
 
-.. kitbash-field:: StructureItem role
+.. kitbash-field:: GPTStructureItem role
     :prepend-name: volumes.<volume-name>.structure.<partition>
 
-.. kitbash-field:: StructureItem structure_type
+.. kitbash-field:: GPTStructureItem structure_type
     :prepend-name: volumes.<volume-name>.structure.<partition>
 
-.. kitbash-field:: StructureItem size
+.. kitbash-field:: GPTStructureItem size
     :prepend-name: volumes.<volume-name>.structure.<partition>
 
-.. kitbash-field:: StructureItem filesystem
+.. kitbash-field:: GPTStructureItem filesystem
     :prepend-name: volumes.<volume-name>.structure.<partition>
 
-.. kitbash-field:: StructureItem filesystem_label
+.. kitbash-field:: GPTStructureItem filesystem_label
     :prepend-name: volumes.<volume-name>.structure.<partition>
 
-.. kitbash-field:: StructureItem partition_number
+.. kitbash-field:: GPTStructureItem partition_number
     :prepend-name: volumes.<volume-name>.structure.<partition>
 
 

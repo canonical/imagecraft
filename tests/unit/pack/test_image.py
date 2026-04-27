@@ -18,7 +18,7 @@ from typing import Any
 from unittest.mock import call
 
 import pytest
-from imagecraft.models import Volume
+from imagecraft.models import GPTVolume
 from imagecraft.pack.image import Image
 
 
@@ -49,7 +49,7 @@ class TestImage:
     def test_loopdev(self, mocker, new_dir: Path):
         mock_run = mocker.patch("imagecraft.pack.image.run", side_effect=run)
 
-        volume = Volume.unmarshal(
+        volume = GPTVolume.unmarshal(
             {
                 "schema": "gpt",
                 "structure": [
@@ -154,7 +154,7 @@ class TestImage:
         new_dir: Path,
         has_data_partition: bool,  # noqa: FBT001
     ):
-        volume = Volume.unmarshal(volume_data)
+        volume = GPTVolume.unmarshal(volume_data)
         disk_path = Path(new_dir, "pc.img")
         disk_path.touch(exist_ok=True)
         image = Image(
@@ -239,7 +239,7 @@ class TestImage:
         new_dir: Path,
         has_boot_partition: bool,  # noqa: FBT001
     ):
-        volume = Volume.unmarshal(volume_data)
+        volume = GPTVolume.unmarshal(volume_data)
         disk_path = Path(new_dir, "pc.img")
         disk_path.touch(exist_ok=True)
         image = Image(
