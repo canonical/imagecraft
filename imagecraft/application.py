@@ -17,10 +17,8 @@
 """Main Imagecraft Application."""
 
 from craft_application import Application, AppMetadata
-from craft_parts.plugins.plugins import PluginType
 from typing_extensions import override
 
-from imagecraft import plugins
 from imagecraft.models import project
 
 APP_METADATA = AppMetadata(
@@ -34,10 +32,6 @@ APP_METADATA = AppMetadata(
 
 class Imagecraft(Application):
     """Imagecraft application definition."""
-
-    @override
-    def _get_app_plugins(self) -> dict[str, PluginType]:
-        return plugins.get_app_plugins()
 
     @override
     def _enable_craft_parts_features(self) -> None:
