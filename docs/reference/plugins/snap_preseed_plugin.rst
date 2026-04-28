@@ -1,6 +1,6 @@
 .. _reference-snap-preseed-plugin:
 
-Snap-Preseed Plugin
+Snap Preseed Plugin
 ===================
 
 The snap-preseed plugin seeds snaps into a Classic Ubuntu image by running ``snap
@@ -24,16 +24,24 @@ The snaps to seed into the image. Each entry can be a snap name or a path to a l
 snap.
 
 
+snap-preseed-channel
+~~~~~~~~~~~~~~~~~~~~
+
+**Type** string
+
+The default channel to use when fetching snaps from the store.
+
+
 snap-preseed-model-assert
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 **Type** string
 
-The path to a model assertion file that defines the image.
+The path to a model assertion file that defines the Ubuntu Classic image.
 
 
-snap-preseed-channel
-~~~~~~~~~~~~~~~~~~~~
+snap-preseed-validation
+~~~~~~~~~~~~~~~~~~~~~~~
 
 **Type** string
 
@@ -64,22 +72,23 @@ snap-preseed-write-revisions
 
 **Type** string or boolean
 
-If ``true``, writes the resolved snap revisions to ``seed.manifest``. If a string, it
-is treated as the path to which the revisions will be written.
+If ``true``, the plugin writes a manifest file with the resolved snap revisions to
+``seed.manifest``. If a string, it is treated as the path to which the manifest will be
+written.
 
 
 Output
 ------
 
-The seeded snaps are placed in ``var/lib/snapd/seed``. Use ``organize`` to place them on
+The seeded snaps are placed in ``var/lib/snapd/seed``. Use ``organize`` to place them in
 the root filesystem.
 
 
 Example
 -------
 
-The following snippet prepares snaps for a Classic image with core24 and hello-world
-from the ``latest/stable`` channel.
+The following snippet seeds the ``core24`` snap and the ``hello-world`` snap from the
+``latest/stable`` channel into an Ubuntu Classic image.
 
 .. code-block:: yaml
 
@@ -91,4 +100,3 @@ from the ``latest/stable`` channel.
        - hello-world/latest/stable
      organize:
        "var/*": (overlay)/var/
-
