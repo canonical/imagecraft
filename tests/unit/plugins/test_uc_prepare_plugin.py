@@ -105,7 +105,7 @@ def test_get_build_commands(part_info):
 
     assert (
         plugin.get_build_commands()[0]
-        == f"snap prepare-image --validation=ignore model.assert {part_info.part_install_dir}"
+        == f"snap prepare-image model.assert {part_info.part_install_dir}"
     )
 
 
@@ -120,7 +120,7 @@ def test_get_build_commands_with_preseed(part_info):
 
     assert (
         plugin.get_build_commands()[0]
-        == f"snap prepare-image --preseed --validation=ignore model.assert {part_info.part_install_dir}"
+        == f"snap prepare-image --preseed model.assert {part_info.part_install_dir}"
     )
 
 
@@ -136,7 +136,7 @@ def test_get_build_commands_with_preseed_sign_key(part_info):
 
     assert (
         plugin.get_build_commands()[0]
-        == f"snap prepare-image --preseed --preseed-sign-key=sign-key --validation=ignore model.assert {part_info.part_install_dir}"
+        == f"snap prepare-image --preseed --preseed-sign-key=sign-key model.assert {part_info.part_install_dir}"
     )
 
 
@@ -153,7 +153,7 @@ def test_get_build_commands_with_apparmor_dir(part_info):
 
     assert (
         plugin.get_build_commands()[0]
-        == f"snap prepare-image --preseed --apparmor-features-dir={apparmor_features_dir} --validation=ignore model.assert {part_info.part_install_dir}"
+        == f"snap prepare-image --preseed --apparmor-features-dir={apparmor_features_dir} model.assert {part_info.part_install_dir}"
     )
 
 
@@ -170,7 +170,7 @@ def test_get_build_commands_with_sysfs_overlay(part_info):
 
     assert (
         plugin.get_build_commands()[0]
-        == f"snap prepare-image --preseed --sysfs-overlay={sysfs_overlay} --validation=ignore model.assert {part_info.part_install_dir}"
+        == f"snap prepare-image --preseed --sysfs-overlay={sysfs_overlay} model.assert {part_info.part_install_dir}"
     )
 
 
@@ -186,7 +186,7 @@ def test_get_build_commands_with_snaps(part_info):
 
     assert (
         plugin.get_build_commands()[0]
-        == f"snap prepare-image --validation=ignore --snap=core24 --snap=hello-world=latest/stable model.assert {part_info.part_install_dir}"
+        == f"snap prepare-image --snap=core24 --snap=hello-world=latest/stable model.assert {part_info.part_install_dir}"
     )
 
 
@@ -202,7 +202,7 @@ def test_get_build_commands_with_assertions(part_info):
 
     assert (
         plugin.get_build_commands()[0]
-        == f"snap prepare-image --validation=ignore --assert=system-user.assert --assert=account.assert model.assert {part_info.part_install_dir}"
+        == f"snap prepare-image --assert=system-user.assert --assert=account.assert model.assert {part_info.part_install_dir}"
     )
 
 
@@ -218,7 +218,7 @@ def test_get_build_commands_with_channel(part_info):
 
     assert (
         plugin.get_build_commands()[0]
-        == f"snap prepare-image --validation=ignore --channel=latest/stable model.assert {part_info.part_install_dir}"
+        == f"snap prepare-image --channel=latest/stable model.assert {part_info.part_install_dir}"
     )
 
 
@@ -250,7 +250,7 @@ def test_get_build_commands_with_revisions(part_info):
 
     assert (
         plugin.get_build_commands()[0]
-        == f"snap prepare-image --validation=ignore --revisions=./revisions.txt model.assert {part_info.part_install_dir}"
+        == f"snap prepare-image --revisions=./revisions.txt model.assert {part_info.part_install_dir}"
     )
 
 
@@ -266,7 +266,7 @@ def test_get_build_commands_with_write_revisions(part_info):
 
     assert (
         plugin.get_build_commands()[0]
-        == f"snap prepare-image --validation=ignore --write-revisions={part_info.part_install_dir}/seed.manifest model.assert {part_info.part_install_dir}"
+        == f"snap prepare-image --write-revisions={part_info.part_install_dir}/seed.manifest model.assert {part_info.part_install_dir}"
     )
 
 
@@ -282,5 +282,5 @@ def test_get_build_commands_with_write_revisions_path(part_info):
 
     assert (
         plugin.get_build_commands()[0]
-        == f"snap prepare-image --validation=ignore --write-revisions={part_info.part_install_dir}/revisions.txt model.assert {part_info.part_install_dir}"
+        == f"snap prepare-image --write-revisions={part_info.part_install_dir}/revisions.txt model.assert {part_info.part_install_dir}"
     )

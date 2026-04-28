@@ -40,7 +40,7 @@ def test_missing_snaps_or_model_assert_key():
 
 @pytest.fixture
 def cmd_prefix(part_info):
-    return f"snap prepare-image --classic --arch={part_info.target_arch} --validation=ignore"
+    return f"snap prepare-image --classic --arch={part_info.target_arch}"
 
 
 def test_snap_preseed_snaps_validation():
