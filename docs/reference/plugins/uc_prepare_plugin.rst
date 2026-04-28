@@ -1,0 +1,135 @@
+.. _reference-uc-prepare-plugin:
+
+UC Prepare Plugin
+=================
+
+The uc-prepare plugin prepares snaps for Ubuntu Core images using the ``snap
+prepare-image`` command, making them available on first boot.
+
+
+Keys
+----
+
+This plugin provides the following unique keys.
+
+
+uc-prepare-model-assert
+~~~~~~~~~~~~~~~~~~~~~~~
+
+**Type** string
+
+**Required**
+
+The path to the model assertion file that defines the Ubuntu core image.
+
+
+uc-prepare-snaps
+~~~~~~~~~~~~~~~~
+
+**Type** list of strings
+
+Additional snaps to seed into the image. Each entry can be a snap name or a path to a
+local snap.
+
+
+uc-prepare-channel
+~~~~~~~~~~~~~~~~~~
+
+**Type** string
+
+The default channel to use when fetching snaps from the store.
+
+
+uc-prepare-validation
+~~~~~~~~~~~~~~~~~~~~~
+
+**Type** string
+
+**Default** ``ignore``
+
+The validation mode for snap signatures. Valid values are ``ignore`` and ``enforce``.
+
+
+uc-prepare-assertions
+~~~~~~~~~~~~~~~~~~~~~
+
+**Type** list of strings
+
+Additional assertion files to include in the image.
+
+
+uc-prepare-revisions
+~~~~~~~~~~~~~~~~~~~~
+
+**Type** string
+
+Path to a manifest file specifying snap revisions to use.
+
+
+uc-prepare-write-revisions
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Type** string or boolean
+
+If ``true``, the plugin writes a manifest file with the resolved snap revisions to
+``seed.manifest``. If a string, it is treated as the path to which the manifest will be
+written.
+
+
+uc-prepare-preseed
+~~~~~~~~~~~~~~~~~~
+
+**Type** boolean
+
+**Default** ``false``
+
+If ``true``, the plugin runs the snap preseeding process to reduce first-time boot.
+
+
+uc-prepare-preseed-sign-key
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Type** string
+
+The key to use for signing the preseed assertion. Requires ``uc-prepare-preseed`` to be
+enabled.
+
+
+uc-prepare-apparmor-features-dir
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Type** string
+
+Path to the AppArmor features directory to use during preseeding.
+
+
+uc-prepare-sysfs-overlay
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Type** string
+
+Path to a sysfs overlay directory for preseeding. Requires ``uc-prepare-preseed`` to be
+enabled.
+
+
+Output
+------
+
+The seed content for the image is places under ``system-seed``. Use ``organize`` to
+place it in the appropriate partition.
+
+
+Example
+-------
+
+The following snippet prepares snaps for an Ubuntu Core image as defined by a model
+assertion file named ``model.assert``.
+
+.. code-block:: yaml
+
+   parts:
+     uc-seed:
+       plugin: uc-prepare
+       uc-prepare-model-assert: model.assert
+       organize:
+         "system-seed/*": (volume/disk/ubuntu-seed)/

@@ -12,3 +12,4 @@ Imagecraft.
    /common/craft-parts/reference/plugins/dump_plugin
    plugins/mmdebstrap_plugin
    /common/craft-parts/reference/plugins/nil_plugin
+   plugins/uc_prepare_plugin
