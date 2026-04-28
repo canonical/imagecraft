@@ -31,8 +31,10 @@ def part_info(new_dir):
     return PartInfo(project_info=project_info, part=Part("my-part", {}))
 
 
-def test_missing_snaps_key():
-    with pytest.raises(ValidationError, match="snap-preseed-snaps"):
+def test_missing_snaps_or_model_assert_key():
+    with pytest.raises(
+        ValidationError, match="One of snap-preseed-snaps or snap-preseed-model-assert"
+    ):
         SnapPreseedPluginProperties.unmarshal({})
 
 
@@ -66,7 +68,6 @@ def test_get_build_commands(part_info, cmd_prefix):
 def test_get_build_commands_with_model_assertion(part_info, cmd_prefix):
     properties = SnapPreseedPluginProperties.unmarshal(
         {
-            "snap-preseed-snaps": ["core24"],
             "snap-preseed-model-assert": "model.assert",
         }
     )
@@ -75,7 +76,7 @@ def test_get_build_commands_with_model_assertion(part_info, cmd_prefix):
 
     assert (
         plugin.get_build_commands()[0]
-        == f"{cmd_prefix} --snap=core24 model.assert {part_info.part_install_dir}"
+        == f"{cmd_prefix} model.assert {part_info.part_install_dir}"
     )
 
 

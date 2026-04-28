@@ -20,8 +20,8 @@ import shlex
 from typing import Literal, cast
 
 from craft_parts.plugins import Plugin, PluginProperties
-from pydantic import field_validator
-from typing_extensions import override
+from pydantic import field_validator, model_validator
+from typing_extensions import Self, override
 
 from ._utils import resolve_snap, validate_snap_refs
 
@@ -31,13 +31,22 @@ class SnapPreseedPluginProperties(PluginProperties, frozen=True):
 
     plugin: Literal["snap-preseed"] = "snap-preseed"
 
-    snap_preseed_snaps: list[str]
+    snap_preseed_snaps: list[str] = []
     snap_preseed_channel: str | None = None
     snap_preseed_model_assert: str = ""
     snap_preseed_validation: Literal["ignore", "enforce"] = "ignore"
     snap_preseed_assertions: list[str] = []
     snap_preseed_revisions: str | None = None
     snap_preseed_write_revisions: str | bool = False
+
+    @model_validator(mode="after")
+    def _snaps_or_model_assert(self) -> Self:
+        """snap-preseed-snaps or snap-preseed-model-assert must be set."""
+        if not (self.snap_preseed_snaps or self.snap_preseed_model_assert):
+            raise ValueError(
+                "One of snap-preseed-snaps or snap-preseed-model-assert must be set."
+            )
+        return self
 
     @field_validator("snap_preseed_snaps")
     @classmethod
