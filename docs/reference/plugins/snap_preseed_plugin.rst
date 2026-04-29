@@ -3,8 +3,8 @@
 Snap Preseed Plugin
 ===================
 
-The snap-preseed plugin seeds snaps into a Classic Ubuntu image by running ``snap
-prepare-image --classic``, making them available on first boot.
+The snap-preseed plugin seeds snaps into a Classic image by running ``snap prepare-image
+--classic``, making them available on first boot.
 
 
 Keys
@@ -18,10 +18,11 @@ snap-preseed-snaps
 
 **Type** list of strings
 
-**Required**
+The snaps to seed into the image. Valid entries are:
 
-The snaps to seed into the image. Each entry can be a snap name or a path to a local
-snap.
+- a snap name
+- a snap name and channel in the format ``snap-name/channel``
+- a path to a local snap within the project directory
 
 
 snap-preseed-channel
@@ -29,7 +30,8 @@ snap-preseed-channel
 
 **Type** string
 
-The default channel to use when fetching snaps from the store.
+The default channel to use when fetching snaps from the store. This is overridden by any
+channel specified directly in a snap reference.
 
 
 snap-preseed-model-assert
@@ -37,7 +39,7 @@ snap-preseed-model-assert
 
 **Type** string
 
-The path to a model assertion file that defines the Ubuntu Classic image.
+The path to a model assertion file that defines the snaps to seed in the image.
 
 
 snap-preseed-validation
@@ -45,7 +47,7 @@ snap-preseed-validation
 
 **Type** string
 
-**Default** ``ignore``
+**Default** ``enforce``
 
 The validation mode for snap signatures. Valid values are ``ignore`` and
 ``enforce``.
@@ -88,7 +90,7 @@ Example
 -------
 
 The following snippet seeds the ``core24`` snap and the ``hello-world`` snap from the
-``latest/stable`` channel into an Ubuntu Classic image.
+``latest/stable`` channel into an image.
 
 .. code-block:: yaml
 
