@@ -51,7 +51,9 @@ uc-prepare-validation
 
 **Default** ``enforce``
 
-The validation mode for snap signatures. Valid values are ``ignore`` and ``enforce``.
+Controls whether `validation set
+<https://snapcraft.io/docs/explanation/how-snaps-work/validation-sets>`_ constraints are
+enforced. Valid values are ``ignore`` and ``enforce``.
 
 
 uc-prepare-assertions
@@ -68,6 +70,13 @@ uc-prepare-revisions
 **Type** string
 
 Path to a manifest file specifying snap revisions to use.
+
+The following is an example manifest file:
+
+.. code-block:: text
+
+    core24 1587
+    snapd 26865
 
 
 uc-prepare-write-revisions
@@ -104,7 +113,9 @@ uc-prepare-apparmor-features-dir
 
 **Type** string
 
-Path to the AppArmor features directory to use during preseeding.
+Path to the `AppArmor features
+<https://gitlab.com/apparmor/apparmor/-/wikis/AppArmorInterfaces/#syskernelsecurityapparmorfeatures>`_
+directory to use during preseeding.
 
 This directory should be a snapshot of ``sys/kernel/security/apparmor/features`` from
 the target system. If not specified, the ``sys/kernel/security/apparmor/features`` from
