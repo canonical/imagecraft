@@ -34,7 +34,7 @@ class SnapPreseedPluginProperties(PluginProperties, frozen=True):
     snap_preseed_snaps: list[str] = []
     snap_preseed_channel: str | None = None
     snap_preseed_model_assert: str = ""
-    snap_preseed_validation: Literal["ignore", "enforce"] | None = None
+    snap_preseed_validation: Literal["ignore", "enforce"] = "enforce"
     snap_preseed_assertions: list[str] = []
     snap_preseed_revisions: str | None = None
     snap_preseed_write_revisions: str | bool = False
@@ -83,10 +83,8 @@ class SnapPreseedPlugin(Plugin):
             "prepare-image",
             "--classic",
             f"--arch={self._part_info.target_arch}",
+            f"--validation={options.snap_preseed_validation}",
         ]
-
-        if options.snap_preseed_validation:
-            cmd.append(f"--validation={options.snap_preseed_validation}")
 
         if options.snap_preseed_channel:
             cmd.append(f"--channel={options.snap_preseed_channel}")

@@ -33,7 +33,7 @@ class UcPreparePluginProperties(PluginProperties, frozen=True):
     uc_prepare_model_assert: str
     uc_prepare_snaps: list[str] = []
     uc_prepare_channel: str | None = None
-    uc_prepare_validation: Literal["ignore", "enforce"] | None = None
+    uc_prepare_validation: Literal["ignore", "enforce"] = "enforce"
     uc_prepare_assertions: list[str] = []
     uc_prepare_revisions: str | None = None
     uc_prepare_write_revisions: str | bool = False
@@ -97,7 +97,7 @@ class UcPreparePlugin(Plugin):
         """Return a list of commands to run during the build step."""
         options = cast(UcPreparePluginProperties, self._options)
 
-        cmd = ["snap", "prepare-image"]
+        cmd = ["snap", "prepare-image", f"--validation={options.uc_prepare_validation}"]
 
         if options.uc_prepare_preseed:
             cmd.append("--preseed")
@@ -112,9 +112,6 @@ class UcPreparePlugin(Plugin):
 
         if options.uc_prepare_sysfs_overlay:
             cmd.append(f"--sysfs-overlay={options.uc_prepare_sysfs_overlay}")
-
-        if options.uc_prepare_validation:
-            cmd.append(f"--validation={options.uc_prepare_validation}")
 
         if options.uc_prepare_channel:
             cmd.append(f"--channel={options.uc_prepare_channel}")
