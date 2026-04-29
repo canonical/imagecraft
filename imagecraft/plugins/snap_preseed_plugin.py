@@ -44,7 +44,7 @@ class SnapPreseedPluginProperties(PluginProperties, frozen=True):
         """snap-preseed-snaps or snap-preseed-model-assert must be set."""
         if not (self.snap_preseed_snaps or self.snap_preseed_model_assert):
             raise ValueError(
-                "One of snap-preseed-snaps or snap-preseed-model-assert must be set."
+                "At least one of snap-preseed-snaps or snap-preseed-model-assert must be set."
             )
         return self
 
