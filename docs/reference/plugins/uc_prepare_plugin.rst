@@ -45,7 +45,7 @@ uc-prepare-validation
 
 **Type** string
 
-**Default** ``ignore``
+**Default** ``enforce``
 
 The validation mode for snap signatures. Valid values are ``ignore`` and ``enforce``.
 
@@ -83,7 +83,7 @@ uc-prepare-preseed
 
 **Default** ``false``
 
-If ``true``, the plugin runs the snap preseeding process to reduce first-time boot.
+If ``true``, the plugin runs the snap preseeding process to reduce first-boot time.
 
 
 uc-prepare-preseed-sign-key
@@ -115,8 +115,8 @@ enabled.
 Output
 ------
 
-The seed content for the image is places under ``system-seed``. Use ``organize`` to
-place it in the appropriate partition.
+The seed content for the image is placed under ``system-seed``. Use ``organize`` to
+place it in the desired partition.
 
 
 Example
