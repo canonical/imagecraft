@@ -69,6 +69,13 @@ snap-preseed-revisions
 
 Path to a manifest file specifying snap revisions to use.
 
+Each line in a manifest file identifies a snap by name and revision number, like so:
+
+.. code-block:: text
+
+    core24 1587
+    snapd 26865
+
 
 snap-preseed-write-revisions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
