@@ -20,7 +20,11 @@ uc-prepare-model-assert
 
 **Required**
 
-The path to the model assertion file that defines the Ubuntu core image.
+The path to the model assertion file that defines the Ubuntu Core image.
+
+The `Create a model
+<https://documentation.ubuntu.com/core/tutorials/build-your-first-image/create-a-model>`_
+tutorial from the Ubuntu Core documentation contains more details.
 
 
 uc-prepare-snaps
@@ -101,6 +105,10 @@ uc-prepare-apparmor-features-dir
 **Type** string
 
 Path to the AppArmor features directory to use during preseeding.
+
+This directory should be a snapshot of ``sys/kernel/security/apparmor/features`` from
+the target system. If not specified, the ``sys/kernel/security/apparmor/features`` from
+the host system will be used when ``uc-prepare-preseed`` is enabled.
 
 
 uc-prepare-sysfs-overlay
