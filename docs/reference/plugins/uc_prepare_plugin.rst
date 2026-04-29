@@ -71,7 +71,7 @@ uc-prepare-revisions
 
 Path to a manifest file specifying snap revisions to use.
 
-The following is an example manifest file:
+Each line in a manifest file identifies a snap by name and revision number, like so:
 
 .. code-block:: text
 
