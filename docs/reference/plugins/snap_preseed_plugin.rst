@@ -49,8 +49,9 @@ snap-preseed-validation
 
 **Default** ``enforce``
 
-The validation mode for snap signatures. Valid values are ``ignore`` and
-``enforce``.
+Controls whether `validation set
+<https://snapcraft.io/docs/explanation/how-snaps-work/validation-sets>`_ constraints are
+enforced. Valid values are ``ignore`` and ``enforce``.
 
 
 snap-preseed-assertions
