@@ -39,7 +39,7 @@ snap-preseed-model-assert
 
 **Type** string
 
-The path to a model assertion file that defines the snaps to seed in the image.
+The path to a model assertion file that defines the snaps to seed into the image.
 
 
 snap-preseed-validation
