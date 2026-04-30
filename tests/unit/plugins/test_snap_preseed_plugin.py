@@ -33,7 +33,8 @@ def part_info(new_dir):
 
 def test_missing_snaps_or_model_assert_key():
     with pytest.raises(
-        ValidationError, match="At least one of snap-preseed-snaps or snap-preseed-model-assert"
+        ValidationError,
+        match="At least one of snap-preseed-snaps or snap-preseed-model-assert",
     ):
         SnapPreseedPluginProperties.unmarshal({})
 
