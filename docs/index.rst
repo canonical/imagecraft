@@ -8,13 +8,11 @@ Imagecraft
 **Imagecraft** is the command-line tool for building bootable, pre-installed disk
 images.
 
-The tool builds images from a declarative project file written with a clear,
-human-readable syntax. Builds take place in an isolated environment and follow a series
-of consistent, reproducible steps that can be adjusted for individual images.
+It builds images from a declarative project file written with a clear, human-readable
+syntax and is operated through a command-line interface.
 
-Imagecraft simplifies image customization and maintenance by keeping the image's
-essential details in one place. Work that normally requires disparate tools and manual
-adjustments can be done by editing the project file and rebuilding your image.
+Imagecraft centralizes the definition and maintenance of images by incorporating
+processes from established tools and storing the image's essential details in one place.
 
 Imagecraft is for DevOps and platform engineers, systems administrators, and hobbyists
 who create and maintain images for embedded, IoT, and cloud systems.
@@ -34,6 +32,9 @@ In this documentation
     * - **Vocabulary and syntax**
       - :ref:`commands` • :ref:`reference-imagecraft-yaml` •
         :ref:`reference-platform-grammar`
+    * - **File manipulation**
+      - :ref:`explanation-parts` • :ref:`plugins` • :ref:`filesets_explanation` •
+        :ref:`Overlays <explanation-overlay-step>`
 
 
 How this documentation is organized
