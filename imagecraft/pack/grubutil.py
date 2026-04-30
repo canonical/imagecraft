@@ -200,10 +200,10 @@ def _part_num(name: str, structure: StructureList) -> int | None:
     """Get the partition number for a given name based on its position."""
     for i, structure_item in enumerate(structure):
         if structure_item.name == name:
-            if structure_item.partition_number is None:
+            if structure_item.partition_number is None:  # ty: ignore[unresolved-attribute]
                 # Partition numbers start at 1, so offset the index
                 return i + 1
-            return structure_item.partition_number
+            return structure_item.partition_number  # ty: ignore[unresolved-attribute]
     return None
 
 

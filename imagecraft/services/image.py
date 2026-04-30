@@ -207,7 +207,7 @@ class ImageService(AppService):
             mapping[vol_name] = loop_dev
             volume = project.volumes[vol_name]
             for i, structure in enumerate(volume.structure, start=1):
-                part_num = structure.partition_number or i
+                part_num = structure.partition_number or i  # ty: ignore[unresolved-attribute]
                 mapping[f"{vol_name}/{structure.name}"] = f"{loop_dev}p{part_num}"
 
         return mapping
