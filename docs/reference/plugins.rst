@@ -1,3 +1,7 @@
+.. meta::
+    :description: Plugins determine how parts are built and encapsulate common tools and
+                  commands used for image creation.
+
 .. _plugins:
 
 Plugins
