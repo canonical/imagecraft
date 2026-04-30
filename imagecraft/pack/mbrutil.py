@@ -36,8 +36,8 @@ MBR_RESERVED_SIZE: int = _MBR_RESERVED_SECTORS * SECTOR_SIZE_512
 # MBR supports 4 primary partition slots. When more than 4 partitions are
 # needed, slot 4 is used for an extended container and the remaining entries
 # become logical partitions. Each logical partition carries a 1 MiB EBR.
-_MAX_PRIMARY_SLOTS = 4
-_PRIMARY_SLOTS_WITH_EXTENDED = 3
+MAX_PRIMARY_SLOTS = 4
+PRIMARY_SLOTS_WITH_EXTENDED = 3
 _EBR_OVERHEAD_SECTORS = 2048
 
 
@@ -87,9 +87,9 @@ def _create_mbr_layout(
 
     structure = layout.structure
 
-    if len(structure) > _MAX_PRIMARY_SLOTS:
-        primary_items = structure[:_PRIMARY_SLOTS_WITH_EXTENDED]
-        logical_items = structure[_PRIMARY_SLOTS_WITH_EXTENDED:]
+    if len(structure) > MAX_PRIMARY_SLOTS:
+        primary_items = structure[:PRIMARY_SLOTS_WITH_EXTENDED]
+        logical_items = structure[PRIMARY_SLOTS_WITH_EXTENDED:]
         boot_in_logicals = [
             item for item in logical_items if item.role == Role.SYSTEM_BOOT.value
         ]
@@ -97,11 +97,11 @@ def _create_mbr_layout(
             names = ", ".join(item.name for item in boot_in_logicals)
             raise MBRPartitionError(
                 "A system-boot partition must be within the first "
-                f"{_PRIMARY_SLOTS_WITH_EXTENDED} partitions when an extended "
+                f"{PRIMARY_SLOTS_WITH_EXTENDED} partitions when an extended "
                 "partition is required.",
                 details=f"Offending partitions: {names}",
                 resolution=f"Move {names} to one of the first "
-                f"{_PRIMARY_SLOTS_WITH_EXTENDED} partition slots.",
+                f"{PRIMARY_SLOTS_WITH_EXTENDED} partition slots.",
             )
     else:
         primary_items = structure
@@ -162,10 +162,10 @@ def _create_mbr_layout(
 def get_image_size(sector_size: int, layout: MBRVolume) -> int:
     """Determine the necessary image size in bytes for an MBR layout."""
     image_bytes = MBR_RESERVED_SIZE
-    needs_extended = len(layout.structure) > _MAX_PRIMARY_SLOTS
+    needs_extended = len(layout.structure) > MAX_PRIMARY_SLOTS
     for i, structure_item in enumerate(layout.structure):
         image_bytes += diskutil.align_to_sectors(structure_item.size, sector_size)
-        if needs_extended and i >= _PRIMARY_SLOTS_WITH_EXTENDED:
+        if needs_extended and i >= PRIMARY_SLOTS_WITH_EXTENDED:
             image_bytes += _EBR_OVERHEAD_SECTORS * sector_size
     return image_bytes
 
