@@ -16,23 +16,19 @@
 
 import atexit
 import contextlib
-import json
 import pathlib
 import shutil
-import subprocess
 import time
 from collections.abc import Mapping
-from typing import Any, cast
+from typing import cast
 
 from craft_application import AppMetadata, AppService, ServiceFactory
 from craft_cli import CraftError, emit
 
+from imagecraft import losetup
 from imagecraft.models import Project
 from imagecraft.models.volume import GPTVolume, PartitionSchema
 from imagecraft.pack import gptutil
-from imagecraft.subprocesses import run
-
-_LOSETUP_BIN = "losetup"
 
 
 class ImageService(AppService):
@@ -94,20 +90,11 @@ class ImageService(AppService):
 
         return self._images
 
-    def _get_all_loop_devices(self) -> list[dict[str, Any]]:
-        """Return a list of all loop devices on the system."""
-        try:
-            result = run(_LOSETUP_BIN, "--json")
-            return cast(list[dict[str, Any]], json.loads(result.stdout)["loopdevices"])
-        except (subprocess.CalledProcessError, KeyError, json.JSONDecodeError):
-            return []
-
     def attach_images(self) -> Mapping[str, str]:
         """Attach all created images as loop devices.
 
         This method is idempotent. It will reuse existing loop devices if they
-        are already attached to the correct files, and clean up stale devices
-        pointing to deleted inodes.
+        are already attached to the correct files.
         """
         if self._loop_devices:
             return self._loop_devices
@@ -115,47 +102,16 @@ class ImageService(AppService):
         if self._images is None:
             raise ValueError("Images must be created before attaching.")
 
-        all_devices = self._get_all_loop_devices()
-
         for name, image_path in self._images.items():
-            attached_device: str | None = None
-
-            # 1. Check for existing devices pointing to this file.
-            for dev in all_devices:
-                back_file = pathlib.Path(dev["back-file"])
-                try:
-                    if image_path.samefile(back_file):
-                        attached_device = dev["name"]
-                        emit.debug(
-                            f"Reusing existing loop device {attached_device} for {image_path}"
-                        )
-                        break
-                except FileNotFoundError:
-                    # Stale inode: file deleted and recreated.
-                    if back_file == image_path:
-                        emit.debug(
-                            f"Detaching stale loop device {dev['name']} for {image_path}"
-                        )
-                        run(_LOSETUP_BIN, "-d", dev["name"])
-
-            # 2. Attach a fresh device if none was found/reused.
-            if not attached_device:
-                try:
-                    attached_device = run(
-                        _LOSETUP_BIN,
-                        "--find",
-                        "--show",
-                        "--partscan",
-                        str(image_path),
-                    ).stdout.strip()
-                    emit.debug(f"Attached {image_path} as {attached_device}")
-                except subprocess.CalledProcessError as err:
-                    raise CraftError(
-                        f"Failed to attach loop device for {image_path}.",
-                        details=str(err),
-                        resolution="Ensure loop devices are available and you have sufficient permissions (sudo).",
-                    ) from err
-
+            try:
+                attached_device = losetup.attach(image_path)[0]
+                emit.debug(f"Attached {image_path} as {attached_device}")
+            except Exception as err:
+                raise CraftError(
+                    f"Failed to attach loop device for {image_path}.",
+                    details=str(err),
+                    resolution="Ensure loop devices are available and you have sufficient permissions (sudo).",
+                ) from err
             self._loop_devices[name] = attached_device
 
         if not self._atexit_registered:
@@ -174,7 +130,7 @@ class ImageService(AppService):
             start_time = time.monotonic()
             while time.monotonic() - start_time < 10:  # noqa: PLR2004 (10 seconds)
                 try:
-                    run(_LOSETUP_BIN, "-d", device)
+                    losetup.detach(device)
                     success = True
                     break
                 except Exception:  # noqa: BLE001
