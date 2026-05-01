@@ -13,7 +13,7 @@ commands used for image creation.
 - :ref:`reference-mmdebstrap-plugin`
 - :ref:`craft_parts_dump_plugin`
 - :ref:`craft_parts_nil_plugin`
-- :ref:`_reference-snap-preseed-plugin`
+- :ref:`reference-snap-preseed-plugin`
 
 
 .. toctree::
