@@ -1,15 +1,25 @@
+.. meta::
+    :description: Plugins determine how parts are built and encapsulate common tools and
+                  commands used for image creation.
+
 .. _plugins:
 
 Plugins
 =======
 
-This section contains an in-depth description of the plugins available in
-Imagecraft.
+Plugins determine how parts are built. In Imagecraft, they often encapsulate tools and
+commands used for image creation.
+
+- :ref:`reference-mmdebstrap-plugin`
+- :ref:`craft_parts_dump_plugin`
+- :ref:`craft_parts_nil_plugin`
+- :ref:`craft_parts_preseed_plugin`
+
 
 .. toctree::
-   :maxdepth: 1
+    :hidden:
 
-   /common/craft-parts/reference/plugins/dump_plugin
-   plugins/mmdebstrap_plugin
-   /common/craft-parts/reference/plugins/nil_plugin
-   plugins/snap_preseed_plugin
+    /common/craft-parts/reference/plugins/dump_plugin
+    plugins/mmdebstrap_plugin
+    /common/craft-parts/reference/plugins/nil_plugin
+    plugins/snap_preseed_plugin
