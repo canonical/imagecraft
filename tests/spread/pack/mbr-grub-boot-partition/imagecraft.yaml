@@ -29,7 +29,7 @@ parts:
        noble \
        $CRAFT_PART_INSTALL/ \
        http://archive.ubuntu.com/ubuntu/
-      # mmdebstrap filed /dev with special files. Clean it.
+      # mmdebstrap filled /dev with special files. Clean it.
       rm -r $CRAFT_PART_INSTALL/dev/*
     organize:
       "*": (overlay)/
