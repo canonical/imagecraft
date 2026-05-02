@@ -19,6 +19,7 @@
 from craft_application import Application, AppMetadata
 from typing_extensions import override
 
+from imagecraft import plugins
 from imagecraft.models import project
 
 APP_METADATA = AppMetadata(
@@ -39,6 +40,7 @@ class Imagecraft(Application):
         from craft_parts.features import Features  # noqa: PLC0415
 
         Features(enable_partitions=True, enable_overlay=True)
+        plugins.setup_plugins()
 
     @override
     def _configure_services(self, provider_name: str | None) -> None:
