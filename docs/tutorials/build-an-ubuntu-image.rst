@@ -217,7 +217,7 @@ Because we're building our image on the bare base, its file system is currently 
 directory. Let's start building our Ubuntu file system with the ``parts`` key.
 
 *Parts* are the means by which we source packages for and manipulate the files in our
-image. Most importantly, they give us access to the *overlay file system*, which is
+image. More importantly, they give us access to the *overlay file system*, which is
 where we'll manipulate our image's contents.
 
 We'll create a Debian root file system with a part that uses the ``mmdebstrap`` plugin.
