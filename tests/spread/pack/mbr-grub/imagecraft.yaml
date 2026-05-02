@@ -47,7 +47,7 @@ parts:
     after: [packages]
     overlay-script: |
       cat << EOF > $CRAFT_OVERLAY/etc/fstab
-      LABEL=writable/ext4discard,errors=remount-ro01
+      LABEL=writable / ext4 discard,errors=remount-ro 0 1
       EOF
 
   # add user to test override-overlay
