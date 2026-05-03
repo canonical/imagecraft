@@ -19,7 +19,7 @@ from unittest.mock import call
 
 import fcntl
 import pytest
-from imagecraft.models import Volume
+from imagecraft.models import GPTVolume
 from imagecraft.pack.image import Image
 
 
@@ -52,7 +52,7 @@ class TestImage:
         mock_flock = mocker.patch("fcntl.flock")
         mocker.patch("builtins.open", mocker.mock_open())
 
-        volume = Volume.unmarshal(
+        volume = GPTVolume.unmarshal(
             {
                 "schema": "gpt",
                 "structure": [
@@ -158,7 +158,7 @@ class TestImage:
         new_dir: Path,
         has_data_partition: bool,  # noqa: FBT001
     ):
-        volume = Volume.unmarshal(volume_data)
+        volume = GPTVolume.unmarshal(volume_data)
         disk_path = Path(new_dir, "pc.img")
         disk_path.touch(exist_ok=True)
         image = Image(
@@ -243,7 +243,7 @@ class TestImage:
         new_dir: Path,
         has_boot_partition: bool,  # noqa: FBT001
     ):
-        volume = Volume.unmarshal(volume_data)
+        volume = GPTVolume.unmarshal(volume_data)
         disk_path = Path(new_dir, "pc.img")
         disk_path.touch(exist_ok=True)
         image = Image(

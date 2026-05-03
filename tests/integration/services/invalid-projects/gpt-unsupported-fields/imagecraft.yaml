@@ -1,0 +1,37 @@
+name: simple-project
+version: "0.1"
+summary: An image that uses unsupported volume structure fields in a GPT schema.
+description: |
+  The `content` and `min-size` keys in the volume schema are not supported by Imagecraft.
+  Because they are supported by other tools like snapd, we explicitly error out when these
+  fields are included in the file.
+base: bare
+build-base: devel
+
+platforms:
+  amd64:
+  arm64:
+  riscv64:
+
+filesystems:
+  default:
+    - mount: /
+      device: (volume/disk/rootfs)
+
+parts:
+  my-part:
+    plugin: nil
+
+volumes:
+  disk:
+    schema: gpt
+    structure:
+      - name: rootfs
+        role: system-data
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        filesystem: ext4
+        min-size: 1G # Not supported!
+        size: 6G
+        content: # This field is not supported!
+          - source: boot-assets/
+            target: /

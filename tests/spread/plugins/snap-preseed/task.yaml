@@ -1,0 +1,19 @@
+summary: Test snap-preseed plugin
+
+systems: [ubuntu-24.04-64]
+
+execute: |
+  imagecraft pack --verbose --destructive-mode
+
+  test -f disk.img
+
+  test -d prime/var/lib/snapd/seed/
+  test -f prime/var/lib/snapd/seed/snaps/hello-world_*.snap
+  test -f prime/var/lib/snapd/seed/snaps/core_*.snap
+
+  unsquashfs -d core-snap prime/var/lib/snapd/seed/snaps/core_*.snap --extract-file meta/snap.yaml
+  grep -q "armhf" core-snap/meta/snap.yaml
+
+restore: |
+  rm -rf disk.img core-snap
+  imagecraft clean --destructive-mode

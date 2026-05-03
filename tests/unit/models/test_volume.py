@@ -18,12 +18,19 @@ import re
 
 import pytest
 from imagecraft.models import Role, Volume
-from imagecraft.models.volume import StructureList
+from imagecraft.models.volume import (
+    GPTVolume,
+    HybridVolume,
+    MBRVolume,
+    StructureList,
+)
 from pydantic import TypeAdapter, ValidationError
 
 
 def test_volume_valid():
-    volume = Volume.model_validate(
+    volume_adapter = TypeAdapter(Volume)
+
+    volume = volume_adapter.validate_python(
         {
             "schema": "gpt",
             "structure": [
@@ -69,7 +76,7 @@ def test_volume_valid():
     ("error_value", "error_class", "volume"),
     [
         (
-            "1 validation error for Volume\nschema",
+            "1 validation error for Volume\n  Unable to extract tag",
             ValidationError,
             {
                 "structure": [
@@ -83,8 +90,8 @@ def test_volume_valid():
                 ],
             },
         ),
-        (
-            "1 validation error for Volume\nschema",
+        pytest.param(
+            "1 validation error for Volume\n  Input tag",
             ValidationError,
             {
                 "schema": "",
@@ -98,9 +105,10 @@ def test_volume_valid():
                     }
                 ],
             },
+            id="missing-schema",
         ),
-        (
-            "1 validation error for Volume\nstructure.0.name\n  String should match pattern",
+        pytest.param(
+            "1 validation error for Volume\ngpt.structure.0.name\n  String should match pattern",
             ValidationError,
             {
                 "schema": "gpt",
@@ -114,9 +122,10 @@ def test_volume_valid():
                     }
                 ],
             },
+            id="empty-name",
         ),
         (
-            "1 validation error for Volume\nstructure.0.name\n  String should match pattern",
+            "1 validation error for Volume\ngpt.structure.0.name\n  String should match pattern",
             ValidationError,
             {
                 "schema": "gpt",
@@ -132,7 +141,7 @@ def test_volume_valid():
             },
         ),
         (
-            "1 validation error for Volume\nstructure\n  List should have at least 1 item after validation, not 0",
+            "1 validation error for Volume\ngpt.structure\n  List should have at least 1 item after validation, not 0",
             ValidationError,
             {
                 "schema": "gpt",
@@ -140,7 +149,7 @@ def test_volume_valid():
             },
         ),
         (
-            "1 validation error for Volume\nstructure.0.role\n  Input should be 'system-data' or 'system-boot'",
+            "1 validation error for Volume\ngpt.structure.0.role\n  Input should be '",
             ValidationError,
             {
                 "schema": "gpt",
@@ -156,7 +165,7 @@ def test_volume_valid():
             },
         ),
         pytest.param(
-            "1 validation error for Volume\nstructure\n  Value error, Duplicate filesystem labels: ['test']",
+            "1 validation error for Volume\ngpt.structure\n  Value error, Duplicate filesystem labels: ['test']",
             ValidationError,
             {
                 "schema": "gpt",
@@ -180,7 +189,7 @@ def test_volume_valid():
             id="duplicate-values",
         ),
         (
-            "1 validation error for Volume\nstructure.0.type",
+            "1 validation error for Volume\ngpt.structure.0.type",
             ValidationError,
             {
                 "schema": "gpt",
@@ -196,7 +205,7 @@ def test_volume_valid():
             },
         ),
         (
-            "1 validation error for Volume\nstructure.0.filesystem",
+            "1 validation error for Volume\ngpt.structure.0.filesystem",
             ValidationError,
             {
                 "schema": "gpt",
@@ -212,7 +221,7 @@ def test_volume_valid():
             },
         ),
         (
-            "1 validation error for Volume\nstructure.0.id\n  Input should be a valid UUID",
+            "1 validation error for Volume\ngpt.structure.0.id\n  Input should be a valid UUID",
             ValidationError,
             {
                 "schema": "gpt",
@@ -229,7 +238,7 @@ def test_volume_valid():
             },
         ),
         (
-            "1 validation error for Volume\nstructure.0.name\n  String should have at most 36 characters",
+            "1 validation error for Volume\ngpt.structure.0.name\n  String should have at most 36 characters",
             ValidationError,
             {
                 "schema": "gpt",
@@ -245,7 +254,7 @@ def test_volume_valid():
             },
         ),
         (
-            "1 validation error for Volume\nstructure.0.size\n  Field required",
+            "1 validation error for Volume\ngpt.structure.0.size\n  Field required",
             ValidationError,
             {
                 "schema": "gpt",
@@ -260,7 +269,7 @@ def test_volume_valid():
             },
         ),
         (
-            "1 validation error for Volume\nstructure.0.size\n  Value error, size must be expressed in bytes, optionally with M or G unit.",
+            "1 validation error for Volume\ngpt.structure.0.size\n  Value error, size must be expressed in bytes, optionally with M or G unit.",
             ValidationError,
             {
                 "schema": "gpt",
@@ -276,7 +285,7 @@ def test_volume_valid():
             },
         ),
         (
-            "1 validation error for Volume\nstructure.0.size\n  Value error, size must be expressed in bytes, optionally with M or G unit.",
+            "1 validation error for Volume\ngpt.structure.0.size\n  Value error, size must be expressed in bytes, optionally with M or G unit.",
             ValidationError,
             {
                 "schema": "gpt",
@@ -292,7 +301,7 @@ def test_volume_valid():
             },
         ),
         (
-            "1 validation error for Volume\nstructure\n  Value error, Duplicate filesystem labels: ['label1']",
+            "1 validation error for Volume\ngpt.structure\n  Value error, Duplicate filesystem labels: ['label1']",
             ValidationError,
             {
                 "schema": "gpt",
@@ -317,7 +326,7 @@ def test_volume_valid():
             },
         ),
         (
-            "1 validation error for Volume\nstructure\n  Value error, Duplicate filesystem labels: ['test2']",
+            "1 validation error for Volume\ngpt.structure\n  Value error, Duplicate filesystem labels: ['test2']",
             ValidationError,
             {
                 "schema": "gpt",
@@ -347,13 +356,11 @@ def test_volume_invalid(
     error_class,
     volume,
 ):
-    def load_volume(volume, raises):
-        with pytest.raises(raises) as err:
-            Volume(**volume)
+    volume_adapter = TypeAdapter(Volume, config={"title": "Volume"})
+    with pytest.raises(error_class) as exc_info:
+        volume_adapter.validate_python(volume)
 
-        return str(err.value)
-
-    assert error_value in load_volume(volume, error_class)
+    assert error_value in str(exc_info.value)
 
 
 @pytest.mark.parametrize(
@@ -460,3 +467,265 @@ def test_structure_list_success(structures: list[dict]):
 def test_structure_list_errors(structures: list[dict], error_message):
     with pytest.raises(ValidationError, match=error_message):
         TypeAdapter(StructureList).validate_python(structures)
+
+
+# ---------------------------------------------------------------------------
+# MBRVolume
+# ---------------------------------------------------------------------------
+
+_MBR_SEED = {
+    "name": "ubuntu-seed",
+    "role": "system-seed",
+    "type": "0C",
+    "filesystem": "vfat",
+    "size": "1200M",
+}
+_MBR_DATA = {
+    "name": "ubuntu-data",
+    "role": "system-data",
+    "type": "83",
+    "filesystem": "ext4",
+    "size": "1500M",
+}
+
+
+@pytest.mark.parametrize(
+    ("structure_type", "structure"),
+    [
+        ("0C", _MBR_SEED),
+        ("83", _MBR_DATA),
+    ],
+    ids=["fat32", "linux"],
+)
+def test_mbr_volume_valid(structure_type, structure):
+    volume_adapter = TypeAdapter(Volume)
+    volume = volume_adapter.validate_python({"schema": "mbr", "structure": [structure]})
+    assert isinstance(volume, MBRVolume)
+    assert volume.volume_schema == "mbr"
+    assert volume.structure[0].structure_type == structure_type
+
+
+def test_mbr_volume_invalid_type():
+    volume_adapter = TypeAdapter(Volume)
+    with pytest.raises(ValidationError, match=r"mbr\.structure\.0\.type"):
+        volume_adapter.validate_python(
+            {
+                "schema": "mbr",
+                "structure": [
+                    {
+                        "name": "rootfs",
+                        "role": "system-data",
+                        "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+                        "filesystem": "ext4",
+                        "size": "6G",
+                    }
+                ],
+            }
+        )
+
+
+def test_mbr_volume_duplicate_filesystem_labels():
+    volume_adapter = TypeAdapter(Volume)
+    with pytest.raises(
+        ValidationError,
+        match=re.escape("Value error, Duplicate filesystem labels: ['ubuntu-data']"),
+    ):
+        volume_adapter.validate_python(
+            {
+                "schema": "mbr",
+                "structure": [
+                    {**_MBR_SEED, "filesystem-label": "ubuntu-data"},
+                    _MBR_DATA,
+                ],
+            }
+        )
+
+
+# ---------------------------------------------------------------------------
+# GPTVolume vs MBRVolume discriminated union
+# ---------------------------------------------------------------------------
+
+
+def test_volume_gpt_schema_produces_gpt_volume():
+    volume = TypeAdapter(Volume).validate_python(
+        {
+            "schema": "gpt",
+            "structure": [
+                {
+                    "name": "rootfs",
+                    "role": "system-data",
+                    "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+                    "filesystem": "ext4",
+                    "size": "6G",
+                }
+            ],
+        }
+    )
+    assert isinstance(volume, GPTVolume)
+
+
+def test_volume_mbr_schema_produces_mbr_volume():
+    volume = TypeAdapter(Volume).validate_python(
+        {"schema": "mbr", "structure": [_MBR_DATA]}
+    )
+    assert isinstance(volume, MBRVolume)
+
+
+# ---------------------------------------------------------------------------
+# content and min-size fields
+# ---------------------------------------------------------------------------
+
+_VALID_GPT_STRUCTURE = {
+    "name": "rootfs",
+    "role": "system-data",
+    "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+    "filesystem": "ext4",
+    "size": "6G",
+}
+_VALID_MBR_STRUCTURE = _MBR_DATA
+
+
+@pytest.mark.parametrize(
+    ("schema", "base_structure"),
+    [
+        ("gpt", _VALID_GPT_STRUCTURE),
+        ("mbr", _VALID_MBR_STRUCTURE),
+    ],
+)
+def test_content_null_is_accepted(schema, base_structure):
+    TypeAdapter(Volume).validate_python(
+        {"schema": schema, "structure": [{**base_structure, "content": None}]}
+    )
+
+
+@pytest.mark.parametrize(
+    ("schema", "base_structure"),
+    [
+        ("gpt", _VALID_GPT_STRUCTURE),
+        ("mbr", _VALID_MBR_STRUCTURE),
+    ],
+)
+def test_content_non_null_is_rejected(schema, base_structure):
+    with pytest.raises(
+        ValidationError,
+        match="Imagecraft does not support the 'content' key in volume structures.",
+    ):
+        TypeAdapter(Volume).validate_python(
+            {
+                "schema": schema,
+                "structure": [
+                    {**base_structure, "content": [{"source": "boot/", "target": "/"}]}
+                ],
+            }
+        )
+
+
+@pytest.mark.parametrize(
+    ("schema", "base_structure"),
+    [
+        ("gpt", _VALID_GPT_STRUCTURE),
+        ("mbr", _VALID_MBR_STRUCTURE),
+    ],
+)
+def test_min_size_null_is_accepted(schema, base_structure):
+    TypeAdapter(Volume).validate_python(
+        {"schema": schema, "structure": [{**base_structure, "min-size": None}]}
+    )
+
+
+@pytest.mark.parametrize(
+    ("schema", "base_structure"),
+    [
+        ("gpt", _VALID_GPT_STRUCTURE),
+        ("mbr", _VALID_MBR_STRUCTURE),
+    ],
+)
+def test_min_size_non_null_is_rejected(schema, base_structure):
+    with pytest.raises(
+        ValidationError,
+        match="Imagecraft does not support the 'min-size' key in volume structures.",
+    ):
+        TypeAdapter(Volume).validate_python(
+            {"schema": schema, "structure": [{**base_structure, "min-size": "16M"}]}
+        )
+
+
+# ---------------------------------------------------------------------------
+# HybridVolume
+# ---------------------------------------------------------------------------
+
+_HYBRID_SEED = {
+    "name": "ubuntu-seed",
+    "role": "system-seed",
+    "type": "0C,C12A7328-F81F-11D2-BA4B-00A0C93EC93B",
+    "filesystem": "vfat",
+    "size": "1200M",
+}
+_HYBRID_DATA = {
+    "name": "ubuntu-data",
+    "role": "system-data",
+    "type": "83,0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+    "filesystem": "ext4",
+    "size": "1500M",
+}
+
+
+@pytest.mark.parametrize(
+    ("structure_type", "structure"),
+    [
+        ("0C,C12A7328-F81F-11D2-BA4B-00A0C93EC93B", _HYBRID_SEED),
+        ("83,0FC63DAF-8483-4772-8E79-3D69D8477DE4", _HYBRID_DATA),
+    ],
+    ids=["fat32-efi", "linux-linux-data"],
+)
+def test_hybrid_volume_valid(structure_type, structure):
+    volume = TypeAdapter(Volume).validate_python(
+        {"schema": "mbr,gpt", "structure": [structure]}
+    )
+    assert isinstance(volume, HybridVolume)
+    assert volume.volume_schema == "mbr,gpt"
+    assert volume.structure[0].structure_type == structure_type
+
+
+def test_hybrid_volume_schema_produces_hybrid_volume():
+    volume = TypeAdapter(Volume).validate_python(
+        {"schema": "mbr,gpt", "structure": [_HYBRID_DATA]}
+    )
+    assert isinstance(volume, HybridVolume)
+
+
+@pytest.mark.parametrize(
+    "bad_type",
+    [
+        pytest.param("0C", id="mbr-only"),
+        pytest.param("0FC63DAF-8483-4772-8E79-3D69D8477DE4", id="gpt-only"),
+        pytest.param(
+            "FF,0FC63DAF-8483-4772-8E79-3D69D8477DE4", id="invalid-mbr-component"
+        ),
+        pytest.param("0C,NOTAGUUID", id="invalid-gpt-component"),
+    ],
+)
+def test_hybrid_volume_invalid_type(bad_type):
+    with pytest.raises(ValidationError, match="String should match pattern"):
+        TypeAdapter(Volume).validate_python(
+            {
+                "schema": "mbr,gpt",
+                "structure": [{**_HYBRID_DATA, "type": bad_type}],
+            }
+        )
+
+
+def test_hybrid_volume_duplicate_filesystem_labels():
+    with pytest.raises(
+        ValidationError,
+        match=re.escape("Value error, Duplicate filesystem labels: ['ubuntu-data']"),
+    ):
+        TypeAdapter(Volume).validate_python(
+            {
+                "schema": "mbr,gpt",
+                "structure": [
+                    {**_HYBRID_SEED, "filesystem-label": "ubuntu-data"},
+                    _HYBRID_DATA,
+                ],
+            }
+        )

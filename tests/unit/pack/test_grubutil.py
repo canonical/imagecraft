@@ -20,6 +20,7 @@ from craft_parts.filesystem_mounts import FilesystemMount
 from craft_platforms import DebianArchitecture
 from imagecraft.errors import ImageError
 from imagecraft.models import Volume
+from imagecraft.models.volume import GPTVolume
 from imagecraft.pack.chroot import Mount
 from imagecraft.pack.grubutil import _image_mounts, setup_grub
 from imagecraft.pack.image import Image
@@ -27,7 +28,7 @@ from imagecraft.pack.image import Image
 
 @pytest.fixture
 def volume():
-    return Volume.unmarshal(
+    return GPTVolume.unmarshal(
         {
             "schema": "gpt",
             "structure": [
@@ -109,7 +110,7 @@ def test_setup_grub(mocker, new_dir, volume, filesystem_mount):
     ("volume", "arch", "message"),
     [
         (
-            Volume.unmarshal(
+            GPTVolume.unmarshal(
                 {
                     "schema": "gpt",
                     "structure": [
@@ -128,7 +129,7 @@ def test_setup_grub(mocker, new_dir, volume, filesystem_mount):
             "Skipping GRUB installation because no boot partition was found",
         ),
         (
-            Volume.unmarshal(
+            GPTVolume.unmarshal(
                 {
                     "schema": "gpt",
                     "structure": [
@@ -147,7 +148,7 @@ def test_setup_grub(mocker, new_dir, volume, filesystem_mount):
             "Skipping GRUB installation because no data partition was found",
         ),
         (
-            Volume.unmarshal(
+            GPTVolume.unmarshal(
                 {
                     "schema": "gpt",
                     "structure": [
@@ -207,7 +208,7 @@ def test_setup_grub_partitions(mocker, new_dir, volume, arch, emitter, message):
     [
         (
             "/dev/loop99",
-            Volume.unmarshal(
+            GPTVolume.unmarshal(
                 {
                     "schema": "gpt",
                     "structure": [
@@ -251,7 +252,7 @@ def test_setup_grub_partitions(mocker, new_dir, volume, arch, emitter, message):
         ),
         (
             "/dev/loop99",
-            Volume.unmarshal(
+            GPTVolume.unmarshal(
                 {
                     "schema": "gpt",
                     "structure": [
@@ -303,7 +304,7 @@ def test_image_mounts(
     [
         (
             "/dev/loop99",
-            Volume.unmarshal(
+            GPTVolume.unmarshal(
                 {
                     "schema": "gpt",
                     "structure": [

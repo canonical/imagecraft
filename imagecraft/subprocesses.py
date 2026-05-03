@@ -33,6 +33,7 @@ def run(cmd: str, *args: Any, **kwargs: Any) -> CompletedProcess[str]:
         "text": True,
         "check": True,
         "stdout": PIPE,
+        "stderr": PIPE,
     }
     for key, value in defaults.items():
         if key not in kwargs:

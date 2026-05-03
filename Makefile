@@ -20,11 +20,15 @@ endif
 
 include common.mk
 
+# Instructions and skills are imported from canonical/copilot-collections.
+# This extends PRETTIER_FILES from common.mk.
+PRETTIER_FILES += !.github/instructions/** !.github/skills/**
+
 .PHONY: format
 format: format-ruff format-codespell format-prettier format-pre-commit  ## Run all automatic formatters
 
 .PHONY: lint
-lint: lint-ruff lint-codespell lint-mypy lint-prettier lint-pyright lint-shellcheck lint-docs lint-twine lint-uv-lockfile  ## Run all linters
+lint: lint-ruff lint-codespell lint-ty lint-prettier lint-shellcheck lint-docs lint-twine lint-uv-lockfile  ## Run all linters
 
 .PHONY: pack
 pack: pack-pip  ## Build all packages

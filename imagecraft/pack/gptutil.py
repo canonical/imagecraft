@@ -21,7 +21,7 @@ from typing import Any, cast
 
 from craft_cli import CraftError, emit
 
-from imagecraft.models import Role, Volume
+from imagecraft.models import GPTVolume, Role
 from imagecraft.pack import diskutil
 from imagecraft.subprocesses import run
 
@@ -69,7 +69,7 @@ def _create_gpt_layout(
     *,
     imagepath: Path,
     sector_size: int,
-    layout: Volume,
+    layout: GPTVolume,
 ) -> None:
     """Partition image.
 
@@ -102,9 +102,12 @@ def _create_gpt_layout(
         }
         if structure_item.role == Role.SYSTEM_BOOT.value:
             partition["bootable"] = None
-        if structure_item.id:
+        if hasattr(structure_item, "id") and structure_item.id is not None:
             partition["uuid"] = str(structure_item.id)
-        if structure_item.partition_number is not None:
+        if (
+            hasattr(structure_item, "partition_number")
+            and structure_item.partition_number is not None
+        ):
             partition["partition-number"] = str(structure_item.partition_number)
         partitions.append(partition)
         start += sectors
@@ -145,7 +148,7 @@ NON_MBR_START_OFFSET: int = 2048
 PARTITION_RESERVED_SIZE: int = NON_MBR_START_OFFSET * SECTOR_SIZE_512
 
 
-def image_size(sector_size: int, layout: Volume) -> int:
+def image_size(sector_size: int, layout: GPTVolume) -> int:
     """Determine necessary image size in bytes."""
     # For now be conservative and replicate safe behavior of reserving the
     # first 1MiB of the image for partition table. This must be adapted when
@@ -161,7 +164,7 @@ def image_size(sector_size: int, layout: Volume) -> int:
 def create_empty_gpt_image(
     imagepath: Path,
     sector_size: int,
-    layout: Volume,
+    layout: GPTVolume,
 ) -> None:
     """Create a zeroed image file with a GPT partition table, but no filesystems or data.
 

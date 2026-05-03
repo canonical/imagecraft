@@ -17,7 +17,6 @@
 """Main Imagecraft Application."""
 
 from craft_application import Application, AppMetadata
-from craft_parts.plugins.plugins import PluginType
 from typing_extensions import override
 
 from imagecraft import plugins
@@ -36,15 +35,12 @@ class Imagecraft(Application):
     """Imagecraft application definition."""
 
     @override
-    def _get_app_plugins(self) -> dict[str, PluginType]:
-        return plugins.get_app_plugins()
-
-    @override
     def _enable_craft_parts_features(self) -> None:
         # pylint: disable=import-outside-toplevel
         from craft_parts.features import Features  # noqa: PLC0415
 
         Features(enable_partitions=True, enable_overlay=True)
+        plugins.setup_plugins()
 
     @override
     def _configure_services(self, provider_name: str | None) -> None:

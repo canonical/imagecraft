@@ -22,7 +22,7 @@ import re
 import typing
 import uuid
 from collections.abc import Collection
-from typing import Annotated, Literal, Self, cast
+from typing import Annotated, Literal, Self
 
 from craft_application.models import (
     CraftBaseModel,
@@ -38,9 +38,11 @@ from pydantic import (
     ByteSize,
     Field,
     StringConstraints,
+    ValidationInfo,
     field_validator,
     model_validator,
 )
+from pydantic_core import PydanticCustomError
 
 MIB = 1 << 20  # 1 MiB (2^20)
 GIB = 1 << 30  # 1 GiB (2^30)
@@ -53,6 +55,12 @@ PARTITION_COMPILED_STRICT_REGEX = re.compile(
 VOLUME_NAME_COMPILED_REGEX = PARTITION_COMPILED_STRICT_REGEX
 STRUCTURE_NAME_COMPILED_REGEX = PARTITION_COMPILED_STRICT_REGEX
 STRUCTURE_SIZE_COMPILED_REGEX = re.compile(r"^(?P<size>\d+)\s*(?P<unit>[M,G]{0,1})$")
+
+_UUID_PATTERN = (
+    r"[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}"
+)
+_MBR_TYPE_PATTERN = r"(?:0[Cc]|83)"
+HYBRID_PARTITION_TYPE_REGEX = re.compile(rf"^{_MBR_TYPE_PATTERN},{_UUID_PATTERN}$")
 
 GPT_NAME_MAX_LENGTH = 36
 
@@ -114,6 +122,13 @@ VolumeName = typing.Annotated[
 ]
 
 
+class MBRPartitionType(str, enum.Enum):
+    """Supported MBR volume types."""
+
+    FAT32 = "0C"
+    LINUX = "83"
+
+
 class GptType(str, enum.Enum):
     """Supported GUID Partition types."""
 
@@ -161,9 +176,15 @@ class Role(str, enum.Enum):
     SYSTEM_BOOT = "system-boot"
     """The partition stores the image's boot assets."""
 
+    SYSTEM_SEED = "system-seed"
+    """The partition stores the seed used to provision the device."""
+
+    SYSTEM_SAVE = "system-save"
+    """The partition stores data preserved across factory resets."""
+
 
 class StructureItem(CraftBaseModel):
-    """Structure item of the image."""
+    """A single structure inside a volume."""
 
     name: StructureName = Field(
         description="The name of the partition.",
@@ -182,40 +203,10 @@ class StructureItem(CraftBaseModel):
     The name is interpreted as a UTF-16 encoded string.
     """
 
-    id: uuid.UUID | None = Field(
-        default=None,
-        description="The partition's unique identifier.",
-        examples=[
-            "6F8C47A6-1C2D-4B35-8B1E-9DE3C4E9E3FF",
-            "E3B0C442-98FC-1FC0-9B42-9AC7E5BD4B35",
-        ],
-    )
-    """The partition's unique identifier.
-
-    The identifier must be a unique 32-digit hexadecimal number in the GPT UUID format.
-    """
-
     role: Role = Field(
         description="The partition's purpose in the image.",
         examples=["system-data", "system-boot"],
     )
-
-    structure_type: GptType = Field(
-        alias="type",
-        description="The type of the partition.",
-        examples=[
-            "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
-            "EBD0A0A2-B9E5-4433-87C0-68B6B72699C7",
-        ],
-    )
-    """The type of the partition.
-
-    For GPT partitions, the value must be the standard 32-digit hexadecimal number
-    associated with the type.
-
-    This is distinct from the ``structure.<partition>.id`` key, which is unique among
-    all partitions, regardless of type.
-    """
 
     size: StructureSize = Field(
         description="The size of the partition, in bytes.",
@@ -244,6 +235,97 @@ class StructureItem(CraftBaseModel):
     Labels must be unique to their volume.
     """
 
+    content: None = Field(
+        default=None,
+        deprecated="Imagecraft does not support the content field.",
+    )
+
+    min_size: None = Field(
+        default=None, deprecated="Imagecraft does not support the min-size field."
+    )
+
+    @field_validator("content", "min_size", mode="before")
+    @classmethod
+    def _field_not_supported(cls, value: object, info: ValidationInfo) -> None:
+        if value is not None:
+            field_alias = (
+                info.field_name.replace("_", "-")
+                if info.field_name is not None
+                else "<unknown>"
+            )
+            raise PydanticCustomError(
+                "field_not_supported",
+                "Imagecraft does not support the '{field_alias}' key in volume structures.",
+                {"field_alias": field_alias},
+            )
+
+    def __hash__(self) -> int:
+        return hash(self.name)
+
+    def __eq__(self, other: object) -> bool:
+        if type(other) is type(self) and hasattr(other, "name"):
+            return bool(self.name == other.name)
+
+        return False
+
+    @model_validator(mode="after")
+    def _set_default_filesystem_label(self) -> Self:
+        if not self.filesystem_label:
+            self.filesystem_label = self.name
+        return self
+
+
+class MBRStructureItem(StructureItem):
+    """An item on an MBR-schema volume."""
+
+    structure_type: MBRPartitionType = Field(
+        alias="type",
+        description="The type of the partition.",
+        examples=[
+            "0C",
+            "83",
+        ],
+    )
+    """The MBR partition type code.
+
+    For MBR partitions, the value is the partition type byte written as a
+    hexadecimal code, such as ``0C`` for FAT32 or ``83`` for Linux.
+    """
+
+
+class GPTStructureItem(StructureItem):
+    """An item on a GPT-schema volume."""
+
+    id: uuid.UUID | None = Field(
+        default=None,
+        description="The partition's unique identifier.",
+        examples=[
+            "6F8C47A6-1C2D-4B35-8B1E-9DE3C4E9E3FF",
+            "E3B0C442-98FC-1FC0-9B42-9AC7E5BD4B35",
+        ],
+    )
+    """The partition's unique identifier.
+
+    The identifier must be a unique 32-digit hexadecimal number in the GPT UUID format.
+    """
+
+    structure_type: GptType = Field(
+        alias="type",
+        description="The type of the partition.",
+        examples=[
+            "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+            "EBD0A0A2-B9E5-4433-87C0-68B6B72699C7",
+        ],
+    )
+    """The type of the partition.
+
+    For GPT partitions, the value must be the standard 32-digit hexadecimal number
+    associated with the type.
+
+    This is distinct from the ``structure.<partition>.id`` key, which is unique among
+    all partitions, regardless of type.
+    """
+
     partition_number: int | None = Field(
         default=None,
         description="(Optional) The partition number for this partition.",
@@ -256,21 +338,6 @@ class StructureItem(CraftBaseModel):
     other partitions must also explicitly set their partition number as unique integers.
     """
 
-    def __hash__(self) -> int:
-        return hash(self.name)
-
-    def __eq__(self, other: object) -> bool:
-        if type(other) is type(self):
-            return self.name == cast(StructureItem, other).name
-
-        return False
-
-    @model_validator(mode="after")
-    def _set_default_filesystem_label(self) -> Self:
-        if not self.filesystem_label:
-            self.filesystem_label = self.name
-        return self
-
 
 class PartitionSchema(str, enum.Enum):
     """Supported partition schemas."""
@@ -278,10 +345,16 @@ class PartitionSchema(str, enum.Enum):
     GPT = "gpt"
     """The GUID partition table (GPT) schema."""
 
+    MBR = "mbr"
+    """The Master Boot Record (MBR) schema."""
+
+    HYBRID = "mbr,gpt"
+    """A hybrid MBR/GPT schema, providing both partition tables simultaneously."""
+
 
 def _validate_structure_items_partition_numbers(
-    structures: Collection[StructureItem],
-) -> Collection[StructureItem]:
+    structures: Collection[GPTStructureItem],
+) -> Collection[GPTStructureItem]:
     partition_numbers = {structure.partition_number for structure in structures}
 
     # This could be loosened, but it would require us to generate these partition
@@ -324,41 +397,62 @@ def _validate_structure_items_partition_numbers(
     return structures
 
 
-StructureList = Annotated[
-    list[StructureItem],
+GPTStructureList = Annotated[
+    list[GPTStructureItem],
     AfterValidator(_validate_structure_items_partition_numbers),
 ]
 
 
-class Volume(CraftBaseModel):
-    """Volume defining properties of the image."""
+MBRStructureList = Annotated[list[MBRStructureItem], Field(min_length=1)]
 
-    volume_schema: Literal[PartitionSchema.GPT] = Field(
-        alias="schema",
-        description="The partitioning schema of the image.",
-        examples=["gpt"],
-    )
-    """The partitioning schema of the image.
 
-    Imagecraft currently supports GUID partition tables (GPT).
-    """
+HybridPartitionType = Annotated[
+    str, StringConstraints(pattern=HYBRID_PARTITION_TYPE_REGEX)
+]
 
-    structure: StructureList = Field(
-        min_length=1,
-        description="The partitions that comprise the image.",
+
+class HybridStructureItem(StructureItem):
+    """An item on a hybrid MBR/GPT-schema volume."""
+
+    id: uuid.UUID | None = Field(
+        default=None,
+        description="The partition's unique identifier.",
         examples=[
-            "[{name: efi, type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B, filesystem: vfat, role: system-boot, filesystem-label: EFI System, size: 256M}, {name: rootfs, type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4, filesystem: ext4, filesystem-label: writable, role: system-data, size: 6G}]"
+            "6F8C47A6-1C2D-4B35-8B1E-9DE3C4E9E3FF",
         ],
     )
-    """The partitions that comprise the image.
+    """The partition's unique identifier in the GPT table.
 
-    Each entry in the ``structure`` list represents a disk partition in the final
-    image.
+    The identifier must be a unique 32-digit hexadecimal number in the GPT UUID format.
     """
 
-    @field_validator("structure", mode="after")
+    structure_type: HybridPartitionType = Field(
+        alias="type",
+        description="The hybrid MBR/GPT type of the partition.",
+        examples=["0C,C12A7328-F81F-11D2-BA4B-00A0C93EC93B"],
+    )
+    """The hybrid partition type, expressed as '<mbr-type>,<gpt-type>'.
+
+    The MBR component must be a two-digit hex code and the GPT component must be a
+    standard GUID.
+    """
+
+
+HybridStructureList = Annotated[list[HybridStructureItem], Field(min_length=1)]
+
+
+StructureList = GPTStructureList | MBRStructureList | HybridStructureList
+
+
+class BaseVolume(CraftBaseModel):
+    """Base class for volume definitions."""
+
+    @field_validator("structure", mode="after", check_fields=False)
     @classmethod
-    def _validate_structure(cls, value: StructureList) -> StructureList:
+    def _validate_no_duplicate_filesystem_labels(
+        cls, value: list[StructureItem]
+    ) -> list[StructureItem]:
+        """Raise ValueError if any two structures share a filesystem label."""
         fs_labels: list[str] = [str(v.filesystem_label) for v in value]
         fs_labels_set = set(fs_labels)
 
@@ -371,3 +465,78 @@ class Volume(CraftBaseModel):
             if count > 1 and item != ""
         ]
         raise ValueError(f"Duplicate filesystem labels: {dupes}")
+
+
+class GPTVolume(BaseVolume):
+    """Volume with a GUID Partition Table (GPT) schema."""
+
+    volume_schema: Literal[PartitionSchema.GPT] = Field(
+        alias="schema",
+        description="The partitioning schema of the image.",
+        examples=["gpt"],
+    )
+    """The partitioning schema of the image."""
+
+    structure: GPTStructureList = Field(
+        min_length=1,
+        description="The partitions that comprise the image.",
+        examples=[
+            "[{name: efi, type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B, filesystem: vfat, role: system-boot, filesystem-label: EFI System, size: 256M}, {name: rootfs, type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4, filesystem: ext4, filesystem-label: writable, role: system-data, size: 6G}]"
+        ],
+    )
+    """The partitions that comprise the image.
+
+    Each entry in the ``structure`` list represents a disk partition in the final
+    image.
+    """
+
+
+class MBRVolume(BaseVolume):
+    """Volume with a Master Boot Record (MBR) schema."""
+
+    volume_schema: Literal[PartitionSchema.MBR] = Field(
+        alias="schema",
+        description="The partitioning schema of the image.",
+        examples=["mbr"],
+    )
+    """The partitioning schema of the image."""
+
+    structure: MBRStructureList = Field(
+        description="The partitions that comprise the image.",
+        examples=[
+            "[{name: ubuntu-seed, type: 0C, filesystem: vfat, role: system-boot, size: 1200M}]"
+        ],
+    )
+    """The partitions that comprise the image.
+
+    Each entry in the ``structure`` list represents a disk partition in the final
+    image.
+    """
+
+
+class HybridVolume(BaseVolume):
+    """Volume with a hybrid MBR/GPT schema."""
+
+    volume_schema: Literal[PartitionSchema.HYBRID] = Field(
+        alias="schema",
+        description="The partitioning schema of the image.",
+        examples=["mbr,gpt"],
+    )
+    """The partitioning schema of the image."""
+
+    structure: HybridStructureList = Field(
+        description="The partitions that comprise the image.",
+        examples=[
+            "[{name: ubuntu-seed, type: 0C,C12A7328-F81F-11D2-BA4B-00A0C93EC93B, filesystem: vfat, role: system-seed, size: 1200M}]"
+        ],
+    )
+    """The partitions that comprise the image.
+
+    Each entry in the ``structure`` list represents a disk partition in the final
+    image.
+    """
+
+
+Volume = Annotated[
+    GPTVolume | MBRVolume | HybridVolume, Field(discriminator="volume_schema")
+]

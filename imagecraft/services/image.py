@@ -29,7 +29,7 @@ from craft_application import AppMetadata, AppService, ServiceFactory
 from craft_cli import CraftError, emit
 
 from imagecraft.models import Project
-from imagecraft.models.volume import PartitionSchema
+from imagecraft.models.volume import GPTVolume, PartitionSchema
 from imagecraft.pack import gptutil
 from imagecraft.subprocesses import run
 
@@ -85,7 +85,7 @@ class ImageService(AppService):
                     gptutil.create_empty_gpt_image(
                         imagepath=image_path,
                         sector_size=self._sector_size,
-                        layout=volume,
+                        layout=cast(GPTVolume, volume),
                     )
                 case _:
                     # Reaching this case is a bug.
@@ -227,7 +227,7 @@ class ImageService(AppService):
             mapping[vol_name] = loop_dev
             volume = project.volumes[vol_name]
             for i, structure in enumerate(volume.structure, start=1):
-                part_num = structure.partition_number or i
+                part_num = structure.partition_number or i  # ty: ignore[unresolved-attribute]
                 mapping[f"{vol_name}/{structure.name}"] = f"{loop_dev}p{part_num}"
 
         return mapping

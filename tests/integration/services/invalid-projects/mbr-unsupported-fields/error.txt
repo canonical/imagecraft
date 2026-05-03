@@ -1,0 +1,5 @@
+2 validation errors for VolumeFilesystemsModel
+volumes.disk.mbr.structure.0.content
+  Imagecraft does not support the 'content' key in volume structures. [type=field_not_supported, input_value=[{'source': '$kernel:dtbs...ssets/', 'target': '/'}], input_type=list]
+volumes.disk.mbr.structure.0.min-size
+  Imagecraft does not support the 'min-size' key in volume structures. [type=field_not_supported, input_value='1M', input_type=str]
