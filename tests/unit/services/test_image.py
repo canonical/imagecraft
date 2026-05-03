@@ -180,28 +180,26 @@ def test_attach_images_stale_inode(image_service, project_dir, mocker):
     )
 
 
-def test_attach_images_flock_released_on_detach(image_service, project_dir, mocker):
-    """attach_images() holds a shared flock; detach_images() closes the fd to release it."""
+def test_attach_images_flock_sync_and_release(image_service, project_dir, mocker):
+    """attach_images() acquires a shared flock briefly to sync with udev, then releases."""
     image_service._images = {"pc": project_dir / ".pc.img.tmp"}
 
     mocker.patch.object(image_service, "_get_all_loop_devices", return_value=[])
     mock_run = mocker.patch("imagecraft.services.image.run")
     mock_run.return_value.stdout = "/dev/loop8\n"
-    mocker.patch("fcntl.flock")
+    mock_flock = mocker.patch("fcntl.flock")
     mock_fd = mocker.MagicMock()
+    mock_fd.__enter__ = mocker.MagicMock(return_value=mock_fd)
+    mock_fd.__exit__ = mocker.MagicMock(return_value=False)
     mocker.patch("builtins.open", return_value=mock_fd)
 
     with patch("atexit.register"):
         image_service.attach_images()
 
-    assert len(image_service._loop_fds) == 1
-
-    # After detach the fd should be closed and the list cleared
-    mock_run.return_value = mocker.MagicMock()  # losetup -d
-    image_service.detach_images()
-
-    mock_fd.close.assert_called_once()
-    assert image_service._loop_fds == []
+    # Flock was acquired
+    mock_flock.assert_called_once_with(mock_fd, fcntl.LOCK_SH)
+    # fd was closed (lock released) immediately via the context manager
+    mock_fd.__exit__.assert_called_once()
 
 
 def test_detach_images_success(image_service, mocker):
