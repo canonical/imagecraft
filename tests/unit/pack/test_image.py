@@ -17,6 +17,7 @@ from subprocess import CompletedProcess
 from typing import Any
 from unittest.mock import call
 
+import fcntl
 import pytest
 from imagecraft.models import GPTVolume
 from imagecraft.pack.image import Image
@@ -48,6 +49,8 @@ def run(cmd: str, *args: Any, **kwargs: Any) -> CompletedProcess[str]:
 class TestImage:
     def test_loopdev(self, mocker, new_dir: Path):
         mock_run = mocker.patch("imagecraft.pack.image.run", side_effect=run)
+        mock_flock = mocker.patch("fcntl.flock")
+        mocker.patch("builtins.open", mocker.mock_open())
 
         volume = GPTVolume.unmarshal(
             {
@@ -78,6 +81,7 @@ class TestImage:
             call("losetup", "--json"),
             call("losetup", "-d", "/dev/loop99"),
         ]
+        mock_flock.assert_called_once_with(mocker.ANY, fcntl.LOCK_SH)
 
     @pytest.mark.parametrize(
         ("volume_data", "has_data_partition"),
@@ -248,3 +252,4 @@ class TestImage:
         )
 
         assert image.has_boot_partition == has_boot_partition
+

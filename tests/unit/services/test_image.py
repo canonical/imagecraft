@@ -12,6 +12,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import fcntl
 import subprocess
 from typing import cast
 from unittest.mock import MagicMock, patch
@@ -131,6 +132,8 @@ def test_attach_images_new(image_service, project_dir, mocker):
     mocker.patch.object(image_service, "_get_all_loop_devices", return_value=[])
 
     mock_run.return_value.stdout = "/dev/loop8\n"
+    mock_flock = mocker.patch("fcntl.flock")
+    mocker.patch("builtins.open", return_value=mocker.MagicMock())
 
     with patch("atexit.register") as mock_atexit:
         devices = image_service.attach_images()
@@ -144,6 +147,8 @@ def test_attach_images_new(image_service, project_dir, mocker):
             str(project_dir / ".pc.img.tmp"),
         )
         mock_atexit.assert_called_once_with(image_service.detach_images)
+
+    mock_flock.assert_called_once_with(mocker.ANY, fcntl.LOCK_SH)
 
 
 def test_attach_images_reuse(image_service, project_dir, mocker):
@@ -161,11 +166,15 @@ def test_attach_images_reuse(image_service, project_dir, mocker):
     # Mock samefile to return True
     mocker.patch("pathlib.Path.samefile", return_value=True)
     mock_run = mocker.patch("imagecraft.services.image.run")
+    mock_flock = mocker.patch("fcntl.flock")
+    mocker.patch("builtins.open", return_value=mocker.MagicMock())
 
     devices = image_service.attach_images()
 
     assert devices == {"pc": "/dev/loop9"}
     mock_run.assert_not_called()  # Should not call losetup attach
+
+    mock_flock.assert_called_once_with(mocker.ANY, fcntl.LOCK_SH)
 
 
 def test_attach_images_stale_inode(image_service, project_dir, mocker):
@@ -184,6 +193,8 @@ def test_attach_images_stale_inode(image_service, project_dir, mocker):
     mocker.patch("pathlib.Path.samefile", side_effect=FileNotFoundError)
     mock_run = mocker.patch("imagecraft.services.image.run")
     mock_run.return_value.stdout = "/dev/loop11\n"
+    mocker.patch("fcntl.flock")
+    mocker.patch("builtins.open", return_value=mocker.MagicMock())
 
     devices = image_service.attach_images()
 
@@ -194,6 +205,28 @@ def test_attach_images_stale_inode(image_service, project_dir, mocker):
     mock_run.assert_any_call(
         "losetup", "--find", "--show", "--partscan", str(image_path)
     )
+
+
+def test_attach_images_flock_sync_and_release(image_service, project_dir, mocker):
+    """attach_images() acquires a shared flock briefly to sync with udev, then releases."""
+    image_service._images = {"pc": project_dir / ".pc.img.tmp"}
+
+    mocker.patch.object(image_service, "_get_all_loop_devices", return_value=[])
+    mock_run = mocker.patch("imagecraft.services.image.run")
+    mock_run.return_value.stdout = "/dev/loop8\n"
+    mock_flock = mocker.patch("fcntl.flock")
+    mock_fd = mocker.MagicMock()
+    mock_fd.__enter__ = mocker.MagicMock(return_value=mock_fd)
+    mock_fd.__exit__ = mocker.MagicMock(return_value=False)
+    mocker.patch("builtins.open", return_value=mock_fd)
+
+    with patch("atexit.register"):
+        image_service.attach_images()
+
+    # Flock was acquired
+    mock_flock.assert_called_once_with(mock_fd, fcntl.LOCK_SH)
+    # fd was closed (lock released) immediately via the context manager
+    mock_fd.__exit__.assert_called_once()
 
 
 def test_detach_images_success(image_service, mocker):
