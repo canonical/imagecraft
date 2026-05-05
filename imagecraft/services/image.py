@@ -16,12 +16,13 @@
 
 import atexit
 import contextlib
+import fcntl
 import json
 import pathlib
 import shutil
 import subprocess
 import time
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
 from typing import Any, cast
 
 from craft_application import AppMetadata, AppService, ServiceFactory
@@ -114,6 +115,11 @@ class ImageService(AppService):
         This method is idempotent. It will reuse existing loop devices if they
         are already attached to the correct files, and clean up stale devices
         pointing to deleted inodes.
+
+        Callers that subsequently mutate a partition (mkfs, mount,
+        partprobe, …) should wrap the operation in :meth:`locked_disk` to
+        coordinate with systemd-udevd and avoid the post-attach
+        partition-rescan race.
         """
         if self._loop_devices:
             return self._loop_devices
@@ -219,6 +225,30 @@ class ImageService(AppService):
                 part_num = getattr(item, "partition_number", None) or i
             result[item.name] = part_num
         return result
+
+    @contextlib.contextmanager
+    def locked_disk(self, volume_name: str) -> Iterator[None]:
+        """Hold a BSD ``LOCK_EX`` flock on the volume's whole-disk loop node.
+
+        Wrap any operation that mutates the device or its partitions (mkfs,
+        mount, partprobe, dd to a partition, …) in this context manager.
+        systemd-udevd takes ``LOCK_SH | LOCK_NB`` on the whole-disk node
+        before processing block-device events for the disk *or any of its
+        partitions*; while we hold ``LOCK_EX`` udev requeues those events
+        for after we release. This both drains any in-flight udev work
+        before the operation starts (the ``LOCK_EX`` blocks while udev
+        holds ``LOCK_SH``) and prevents udev from racing the operation.
+        See https://systemd.io/BLOCK_DEVICE_LOCKING/.
+        """
+        if volume_name not in self._loop_devices:
+            raise ValueError(
+                f"No loop device attached for volume {volume_name!r}; call "
+                "attach_images() first."
+            )
+        loop_dev = self._loop_devices[volume_name]
+        with pathlib.Path(loop_dev).open("rb") as loop_fd:
+            fcntl.flock(loop_fd, fcntl.LOCK_EX)
+            yield
 
     def get_loop_paths(self) -> Mapping[str, str]:
         """Return a mapping of loop device paths for all volumes and their partitions.

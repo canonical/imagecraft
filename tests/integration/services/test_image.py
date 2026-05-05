@@ -12,6 +12,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import re
+import stat
+from pathlib import Path
 
 import pytest
 from craft_application import ServiceFactory
@@ -138,3 +140,33 @@ def test_get_partition_loop_paths(image_service: ImageService, new_dir):
     assert paths["pc/rootfs"].endswith("p2")
 
     image_service.detach_images()
+
+
+@pytest.mark.requires_root
+def test_locked_disk_partition_nodes_stable(image_service: ImageService, new_dir):
+    """Partition device nodes are stable inside a locked_disk() context.
+
+    Regression test for the post-losetup udev partition-rescan race
+    (https://systemd.io/BLOCK_DEVICE_LOCKING/). On entry to locked_disk,
+    the LOCK_EX acquisition drains any in-flight systemd-udevd
+    processing, so by the time the body runs the partition nodes the
+    kernel created from --partscan must be present.
+    """
+    image_service.create_images()
+    image_service.attach_images()
+    try:
+        with image_service.locked_disk("pc"):
+            paths = image_service.get_loop_paths()
+            for key, device_path in paths.items():
+                if "/" not in key:
+                    continue  # skip volume-level entries
+                device_node = Path(device_path)
+                assert device_node.exists(), (
+                    f"Partition device node {device_path!r} missing inside "
+                    "locked_disk()"
+                )
+                assert stat.S_ISBLK(device_node.stat().st_mode), (
+                    f"{device_path!r} exists but is not a block device"
+                )
+    finally:
+        image_service.detach_images()

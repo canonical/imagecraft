@@ -60,12 +60,17 @@ class ImagecraftPackService(PackageService):
                 )
                 loop_path = Path(loop_paths[f"{volume_name}/{structure_item.name}"])
 
-                diskutil.format_device(
-                    device_path=loop_path,
-                    fstype=structure_item.filesystem,
-                    label=structure_item.filesystem_label,
-                    content_dir=partition_prime_dir,
-                )
+                # Hold LOCK_EX on the whole-disk node while mkfs runs so
+                # systemd-udevd doesn't race the partition-table rescan
+                # that follows the partition's superblock write. See
+                # ImageService.locked_disk for the full protocol.
+                with image_service.locked_disk(volume_name):
+                    diskutil.format_device(
+                        device_path=loop_path,
+                        fstype=structure_item.filesystem,
+                        label=structure_item.filesystem_label,
+                        content_dir=partition_prime_dir,
+                    )
 
             image_service.verify_images()
         finally:
