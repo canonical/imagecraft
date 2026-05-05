@@ -215,6 +215,10 @@ def _image_mounts(
                 fstype=None,
                 src=f"{loop_dev}p{partnum}",
                 relative_mountpoint=entry.mount,
+                # Hold LOCK_EX on the whole-disk node for the duration
+                # of mount(2) so we don't race the post-losetup udev
+                # partition-rescan that briefly removes /dev/loopNpM.
+                lock_device=loop_dev,
             )
         )
     return image_mounts
