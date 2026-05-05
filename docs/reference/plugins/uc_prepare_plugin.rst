@@ -42,15 +42,17 @@ uc-prepare-snaps
 
 **Type** list of strings
 
-Snaps to seed into the image in addition to those required by the model assertion. For
-``grade: dangerous`` models, valid entries are:
+Snaps to seed into the image in addition to those required by the model assertion. Valid
+entries are:
 
 - a snap name
 - a snap name and channel in the format ``<snap-name>/<channel>``
 - a path to a local snap within the project directory
 
-For higher grades (``signed``, ``secured``), only snaps declared as optional in the
-model assertion can be specified and must not be referenced by a local path.
+For model assertions with grades higher than ``dangerous`` (``signed``, ``secured``), only
+snaps already declared in the model assertion can be specified and must not be referenced
+by a local path. This is useful for including snaps that are listed as optional in the
+model assertion.
 
 
 uc-prepare-channel
@@ -59,7 +61,7 @@ uc-prepare-channel
 **Type** string
 
 The default channel to use when fetching snaps from the store. Requires the model
-to grade to be set to ``grade: dangerous``.
+assertion grade to be set to ``grade: dangerous``.
 
 
 uc-prepare-validation
