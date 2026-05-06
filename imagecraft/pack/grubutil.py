@@ -22,7 +22,12 @@ from craft_parts.filesystem_mounts import FilesystemMount
 from craft_platforms import DebianArchitecture
 
 from imagecraft import errors
-from imagecraft.models.volume import StructureList
+from imagecraft.models.volume import (
+    MBRStructureItem,
+    PartitionSchema,
+    StructureList,
+)
+from imagecraft.pack import mbrutil
 from imagecraft.pack.chroot import Chroot, Mount
 from imagecraft.pack.image import Image
 from imagecraft.subprocesses import run
@@ -33,6 +38,9 @@ _ARCH_TO_GRUB_EFI_TARGET: dict[str, str] = {
     DebianArchitecture.ARMHF: "arm-efi",
 }
 
+_GRUB_BIOS_TARGET = "i386-pc"
+_GRUB_BIOS_ARCHS = {DebianArchitecture.AMD64, DebianArchitecture.I386}
+
 
 def _grub_install(grub_target: str, loop_dev: str) -> None:
     """Install grub in the image.
@@ -41,15 +49,23 @@ def _grub_install(grub_target: str, loop_dev: str) -> None:
     :param loop_dev: loop device to install grub on
     """
     check_grub_install = ["grub-install", "-V"]
-    grub_install_command = [
-        "grub-install",
-        loop_dev,
-        "--boot-directory=/boot",
-        "--efi-directory=/boot/efi",
-        f"--target={grub_target}",
-        "--uefi-secure-boot",
-        "--no-nvram",
-    ]
+    if grub_target == _GRUB_BIOS_TARGET:
+        grub_install_command = [
+            "grub-install",
+            "--boot-directory=/boot",
+            f"--target={grub_target}",
+            loop_dev,
+        ]
+    else:
+        grub_install_command = [
+            "grub-install",
+            loop_dev,
+            "--boot-directory=/boot",
+            "--efi-directory=/boot/efi",
+            f"--target={grub_target}",
+            "--uefi-secure-boot",
+            "--no-nvram",
+        ]
 
     update_grub_command = [
         "update-grub",
@@ -114,12 +130,6 @@ def setup_grub(
     """
     emit.progress("Setting up GRUB in the image")
 
-    if not image.has_boot_partition:
-        emit.progress(
-            "Skipping GRUB installation because no boot partition was found",
-            permanent=True,
-        )
-        return
     if not image.has_data_partition:
         emit.progress(
             "Skipping GRUB installation because no data partition was found",
@@ -127,9 +137,23 @@ def setup_grub(
         )
         return
 
-    if arch not in _ARCH_TO_GRUB_EFI_TARGET:
-        emit.progress("Cannot install GRUB on this architecture", permanent=True)
-        return
+    schema = image.volume.volume_schema
+    if schema == PartitionSchema.MBR:
+        if arch not in _GRUB_BIOS_ARCHS:
+            emit.progress("Cannot install GRUB on this architecture", permanent=True)
+            return
+        grub_target = _GRUB_BIOS_TARGET
+    else:  # GPT or hybrid — EFI boot
+        if not image.has_boot_partition:
+            emit.progress(
+                "Skipping GRUB installation because no boot partition was found",
+                permanent=True,
+            )
+            return
+        if arch not in _ARCH_TO_GRUB_EFI_TARGET:
+            emit.progress("Cannot install GRUB on this architecture", permanent=True)
+            return
+        grub_target = _ARCH_TO_GRUB_EFI_TARGET[arch]
 
     mount_dir = workdir / "mount"
     mount_dir.mkdir(exist_ok=True)
@@ -159,7 +183,7 @@ def setup_grub(
         try:
             chroot.execute(
                 target=_grub_install,
-                grub_target=_ARCH_TO_GRUB_EFI_TARGET[arch],
+                grub_target=grub_target,
                 loop_dev=loop_dev,
             )
         except errors.ChrootMountError as err:
@@ -197,13 +221,22 @@ def _image_mounts(
 
 
 def _part_num(name: str, structure: StructureList) -> int | None:
-    """Get the partition number for a given name based on its position."""
+    """Get the partition number for a given name based on its position.
+
+    For MBR volumes with extended partitions (>4 entries), logical partitions
+    start at 5 because slot 4 is reserved for the synthesised extended container.
+    """
+    needs_extended = len(structure) > mbrutil.MAX_PRIMARY_SLOTS and isinstance(
+        structure[0], MBRStructureItem
+    )
     for i, structure_item in enumerate(structure):
         if structure_item.name == name:
-            if structure_item.partition_number is None:  # ty: ignore[unresolved-attribute]
-                # Partition numbers start at 1, so offset the index
-                return i + 1
-            return structure_item.partition_number  # ty: ignore[unresolved-attribute]
+            if getattr(structure_item, "partition_number", None) is not None:
+                return structure_item.partition_number  # type: ignore[union-attr]
+            pos = i + 1  # 1-based
+            if needs_extended and pos > mbrutil.PRIMARY_SLOTS_WITH_EXTENDED:
+                return pos + 1  # skip slot 4 (extended container)
+            return pos
     return None
 
 

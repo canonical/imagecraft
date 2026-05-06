@@ -13,37 +13,27 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import subprocess
+from typing import cast
 from unittest.mock import MagicMock, patch
 
 import pytest
-from craft_application import AppMetadata, ServiceFactory
+from craft_application import ServiceFactory
 from imagecraft.models import Project, Volume
-from imagecraft.models.volume import GPTStructureItem, PartitionSchema
+from imagecraft.models.volume import GPTStructureItem, MBRVolume, PartitionSchema
 from imagecraft.services.image import ImageService
 
 
 @pytest.fixture
-def mock_app():
-    return MagicMock(spec=AppMetadata)
-
-
-@pytest.fixture
-def mock_services():
-    return MagicMock(spec=ServiceFactory)
-
-
-@pytest.fixture
-def project_dir(tmp_path):
-    return tmp_path / "project"
-
-
-@pytest.fixture
-def image_service(mock_app, mock_services, project_dir):
-    project_dir.mkdir()
-    svc = ImageService(mock_app, mock_services, project_dir=project_dir)
+def image_service(default_factory: ServiceFactory):
+    svc = cast(ImageService, default_factory.get("image"))
     yield svc
     # Prevent atexit handlers registered during tests from firing with real devices.
     svc._loop_devices.clear()
+
+
+@pytest.fixture
+def project_dir(image_service: ImageService):
+    return image_service._project_dir
 
 
 @pytest.fixture
@@ -69,10 +59,12 @@ def test_get_images_uninitialized(image_service):
         image_service.get_images()
 
 
-def test_create_images_success(image_service, mock_services, mock_project, project_dir):
-    mock_project_service = MagicMock()
-    mock_project_service.get.return_value = mock_project
-    mock_services.get.return_value = mock_project_service
+def test_create_images_success(
+    image_service, default_factory, mock_project, project_dir, mocker
+):
+    mocker.patch.object(
+        default_factory.get("project"), "get", return_value=mock_project
+    )
 
     with patch("imagecraft.pack.gptutil.create_empty_gpt_image") as mock_create:
         images = image_service.create_images()
@@ -83,17 +75,52 @@ def test_create_images_success(image_service, mock_services, mock_project, proje
         mock_create.assert_called_once()
 
 
-def test_create_images_idempotent(image_service, mock_services, mock_project):
-    mock_project_service = MagicMock()
-    mock_project_service.get.return_value = mock_project
-    mock_services.get.return_value = mock_project_service
+def test_create_images_mbr(image_service, default_factory, project_dir, mocker):
+    mbr_vol = MBRVolume.unmarshal(
+        {
+            "schema": "mbr",
+            "structure": [
+                {
+                    "name": "boot",
+                    "role": "system-boot",
+                    "type": "83",
+                    "filesystem": "ext4",
+                    "size": "256M",
+                },
+                {
+                    "name": "rootfs",
+                    "role": "system-data",
+                    "type": "83",
+                    "filesystem": "ext4",
+                    "size": "5G",
+                },
+            ],
+        }
+    )
+    mock_project = MagicMock(spec=Project)
+    mock_project.volumes = {"pi": mbr_vol}
+    mocker.patch.object(
+        default_factory.get("project"), "get", return_value=mock_project
+    )
+
+    with patch("imagecraft.pack.mbrutil.create_empty_mbr_image") as mock_create:
+        images = image_service.create_images()
+
+        expected_path = project_dir / ".pi.img.tmp"
+        assert images == {"pi": expected_path}
+        mock_create.assert_called_once()
+
+
+def test_create_images_idempotent(image_service, default_factory, mock_project, mocker):
+    project_service = default_factory.get("project")
+    mock_get = mocker.patch.object(project_service, "get", return_value=mock_project)
 
     with patch("imagecraft.pack.gptutil.create_empty_gpt_image"):
         first_call = image_service.create_images()
         second_call = image_service.create_images()
 
         assert first_call is second_call
-        mock_services.get.assert_called_once()  # Only called once
+        mock_get.assert_called_once()  # Only called once
 
 
 def test_attach_images_new(image_service, project_dir, mocker):
@@ -199,12 +226,11 @@ def test_detach_images_retry(image_service, mocker):
     assert image_service._loop_devices == {}
 
 
-def test_get_loop_paths(image_service, mock_services, mock_project):
+def test_get_loop_paths(image_service, default_factory, mock_project, mocker):
     image_service._loop_devices = {"pc": "/dev/loop8"}
-
-    mock_project_service = MagicMock()
-    mock_project_service.get.return_value = mock_project
-    mock_services.get.return_value = mock_project_service
+    mocker.patch.object(
+        default_factory.get("project"), "get", return_value=mock_project
+    )
 
     mapping = image_service.get_loop_paths()
 
@@ -215,12 +241,153 @@ def test_get_loop_paths(image_service, mock_services, mock_project):
     }
 
 
-def test_verify_images(image_service, project_dir):
+def test_get_loop_paths_mbr_plain(image_service, default_factory, mocker):
+    """MBR with ≤4 partitions: numbers are plain 1-based positions."""
+    vol = MBRVolume.unmarshal(
+        {
+            "schema": "mbr",
+            "structure": [
+                {
+                    "name": "boot",
+                    "role": "system-boot",
+                    "type": "83",
+                    "filesystem": "ext4",
+                    "size": "256M",
+                },
+                {
+                    "name": "rootfs",
+                    "role": "system-data",
+                    "type": "83",
+                    "filesystem": "ext4",
+                    "size": "5G",
+                },
+            ],
+        }
+    )
+    mock_project = MagicMock(spec=Project)
+    mock_project.volumes = {"pi": vol}
+    mocker.patch.object(
+        default_factory.get("project"), "get", return_value=mock_project
+    )
+    image_service._loop_devices = {"pi": "/dev/loop8"}
+
+    mapping = image_service.get_loop_paths()
+
+    assert mapping == {
+        "pi": "/dev/loop8",
+        "pi/boot": "/dev/loop8p1",
+        "pi/rootfs": "/dev/loop8p2",
+    }
+
+
+def test_get_loop_paths_mbr_extended(image_service, default_factory, mocker):
+    """MBR with >4 partitions: logical partitions start at 5, skipping slot 4."""
+    vol = MBRVolume.unmarshal(
+        {
+            "schema": "mbr",
+            "structure": [
+                {
+                    "name": "boot",
+                    "role": "system-boot",
+                    "type": "83",
+                    "filesystem": "ext4",
+                    "size": "256M",
+                },
+                {
+                    "name": "p2",
+                    "role": "system-boot",
+                    "type": "83",
+                    "filesystem": "ext4",
+                    "size": "256M",
+                },
+                {
+                    "name": "p3",
+                    "role": "system-boot",
+                    "type": "83",
+                    "filesystem": "ext4",
+                    "size": "256M",
+                },
+                {
+                    "name": "logical1",
+                    "role": "system-boot",
+                    "type": "83",
+                    "filesystem": "ext4",
+                    "size": "256M",
+                },
+                {
+                    "name": "logical2",
+                    "role": "system-data",
+                    "type": "83",
+                    "filesystem": "ext4",
+                    "size": "1G",
+                },
+            ],
+        }
+    )
+    mock_project = MagicMock(spec=Project)
+    mock_project.volumes = {"pi": vol}
+    mocker.patch.object(
+        default_factory.get("project"), "get", return_value=mock_project
+    )
+    image_service._loop_devices = {"pi": "/dev/loop8"}
+
+    mapping = image_service.get_loop_paths()
+
+    assert mapping == {
+        "pi": "/dev/loop8",
+        "pi/boot": "/dev/loop8p1",
+        "pi/p2": "/dev/loop8p2",
+        "pi/p3": "/dev/loop8p3",
+        "pi/logical1": "/dev/loop8p5",
+        "pi/logical2": "/dev/loop8p6",
+    }
+
+
+def test_verify_images_gpt(
+    image_service, default_factory, mock_project, project_dir, mocker
+):
+    mocker.patch.object(
+        default_factory.get("project"), "get", return_value=mock_project
+    )
     image_service._images = {"pc": project_dir / ".pc.img.tmp"}
 
     with patch("imagecraft.pack.gptutil.verify_partition_tables") as mock_verify:
         image_service.verify_images()
         mock_verify.assert_called_once_with(project_dir / ".pc.img.tmp")
+
+
+def test_verify_images_mbr(image_service, default_factory, project_dir, mocker):
+    mbr_vol = MBRVolume.unmarshal(
+        {
+            "schema": "mbr",
+            "structure": [
+                {
+                    "name": "boot",
+                    "role": "system-boot",
+                    "type": "83",
+                    "filesystem": "ext4",
+                    "size": "256M",
+                },
+                {
+                    "name": "rootfs",
+                    "role": "system-data",
+                    "type": "83",
+                    "filesystem": "ext4",
+                    "size": "5G",
+                },
+            ],
+        }
+    )
+    mock_project = MagicMock(spec=Project)
+    mock_project.volumes = {"pi": mbr_vol}
+    mocker.patch.object(
+        default_factory.get("project"), "get", return_value=mock_project
+    )
+    image_service._images = {"pi": project_dir / ".pi.img.tmp"}
+
+    with patch("imagecraft.pack.mbrutil.verify_partition_tables") as mock_verify:
+        image_service.verify_images()
+        mock_verify.assert_called_once_with(project_dir / ".pi.img.tmp")
 
 
 def test_finalize_images(image_service, project_dir, mocker):
