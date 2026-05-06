@@ -71,6 +71,7 @@ PNG
 PR
 prepended
 preseed
+preseeds
 preseeding
 Pygments
 pymarkdown

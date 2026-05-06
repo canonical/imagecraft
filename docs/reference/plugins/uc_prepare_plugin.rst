@@ -8,13 +8,11 @@ UC Prepare plugin
 =================
 
 The UC Prepare plugin creates the seed directory for Ubuntu Core images with the ``snap
-prepare-image`` command. This downloads snaps and their associated assertions from the
-Snap store, organizing them into a structure that ``snapd`` reads at first boot to
-install to the system.
+prepare-image`` command. This downloads snaps and their assertions from the Snap Store
+and prepares them to be installed during the initial boot.
 
-The plugin can also preseed the image, which performs administrative tasks for the
-snaps being seeded during the image-building phase rather than during the initial boot,
-reducing first-boot time.
+The plugin can also install snaps and run their hooks when the image is being packed.
+This process, known as *preseeding*, reduces the initial boot time.
 
 
 Keys
@@ -26,21 +24,21 @@ This plugin provides the following unique keys.
 uc-prepare-model-assert
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-**Type** string
+**Type:** string
 
 **Required**
 
-The path to the model assertion file that defines the target device, including its
-required snaps.
+The path to the model assertion file that defines the target device and its required
+snaps.
 
-For a complete reference of the contents of a model assertion, refer to `Ubuntu Core |
-model <https://documentation.ubuntu.com/core/reference/assertions/model/>`_.
+The Ubuntu Core documentation details model assertions and their fields in the `model
+<https://documentation.ubuntu.com/core/reference/assertions/model/>`_.
 
 
 uc-prepare-snaps
 ~~~~~~~~~~~~~~~~
 
-**Type** list of strings
+**Type:** list of strings
 
 Snaps to seed into the image in addition to those required by the model assertion. Valid
 entries are:
@@ -49,25 +47,25 @@ entries are:
 - a snap name and channel in the format ``<snap-name>/<channel>``
 - a path to a local snap within the project directory
 
-For model assertions with grades higher than ``dangerous`` (``signed``, ``secured``), only
-snaps already declared in the model assertion can be specified and must not be referenced
-by a local path. This is useful for including snaps that are listed as optional in the
-model assertion.
+For model assertions with a grade of ``signed`` or ``secured``, only snaps declared in
+the model assertion can be specified, and they can't be referenced by a local path. This
+is commonly used to include optional snaps from the model assertion.
 
 
 uc-prepare-channel
 ~~~~~~~~~~~~~~~~~~
 
-**Type** string
+**Type:** string
 
-The default channel to use when fetching snaps from the store. Requires the model
-assertion grade to be set to ``grade: dangerous``.
+The default store channel to fetch snaps from, overriding any channels in the model
+assertion. If this key is set, the model assertion's ``grade`` must be set to
+``dangerous``.
 
 
 uc-prepare-validation
 ~~~~~~~~~~~~~~~~~~~~~
 
-**Type** string
+**Type:** string
 
 **Default:** ``enforce``
 
@@ -79,15 +77,18 @@ enforced. Valid values are ``ignore`` and ``enforce``.
 uc-prepare-assertions
 ~~~~~~~~~~~~~~~~~~~~~
 
-**Type** list of strings
+**Type:** list of strings
 
 Additional assertion files to include in the image.
+
+The Ubuntu Core documentation lists the available assertion types in `Assertions
+<https://documentation.ubuntu.com/core/reference/assertions/>`_.
 
 
 uc-prepare-revisions
 ~~~~~~~~~~~~~~~~~~~~
 
-**Type** string
+**Type:** string
 
 Path to a manifest file specifying snap revisions to use.
 
@@ -102,29 +103,28 @@ Each line in a manifest file identifies a snap by name and revision number, like
 uc-prepare-write-revisions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-**Type** string or boolean
+**Type:** string or boolean
 
 **Default:** ``False``
 
-If ``true``, the plugin writes a manifest file with the resolved snap revisions to
-``seed.manifest``. If a string, it is treated as the path to which the manifest will be
-written.
+If set to ``true``, the plugin writes the resolved snap revisions to the
+``seed.manifest`` file. If set to a file path, the revisions are written there instead.
 
 
 uc-prepare-preseed
 ~~~~~~~~~~~~~~~~~~
 
-**Type** boolean
+**Type:** boolean
 
-**Default** ``false``
+**Default:** ``false``
 
-If ``true``, the plugin runs the snap preseeding process to reduce first-boot time.
+If set to ``true``, the plugin preseeds snaps to improve the initial boot speed.
 
 
 uc-prepare-preseed-sign-key
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-**Type** string
+**Type:** string
 
 The signing key for the preseed assertion. Requires ``uc-prepare-preseed`` to be
 set to ``true``.
@@ -133,7 +133,7 @@ set to ``true``.
 uc-prepare-apparmor-features-dir
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-**Type** string
+**Type:** string
 
 Path to the `AppArmor features
 <https://gitlab.com/apparmor/apparmor/-/wikis/AppArmorInterfaces/#syskernelsecurityapparmorfeatures>`_
@@ -147,7 +147,7 @@ from the host system is used.
 uc-prepare-sysfs-overlay
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-**Type** string
+**Type:** string
 
 Path to a sysfs overlay directory for preseeding. Requires ``uc-prepare-preseed`` to be
 set to ``true``.
