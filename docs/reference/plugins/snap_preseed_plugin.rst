@@ -40,8 +40,8 @@ snap-preseed-channel
 **Type:** string
 
 The default store channel to fetch snaps from, overriding any channels in the model
-assertion, if one is provided. If the model assertion has a ``grade`` set, the ``grade``
-must be set to ``dangerous``.
+assertion, if one is provided. For model assertion with a grade, the ``grade`` must be
+set to ``dangerous``.
 
 This is overridden by snaps listed with a channel in ``snap-preseed-snaps``.
 
