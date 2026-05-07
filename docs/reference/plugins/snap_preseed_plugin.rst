@@ -40,8 +40,10 @@ snap-preseed-channel
 **Type:** string
 
 The default store channel to fetch snaps from, overriding any channels in the model
-assertion, if one is provided. If a model assertion with a ``grade`` is provided, the
-``grade`` must be set to ``dangerous``.
+assertion, if one is provided. If the model assertion has a ``grade`` set, the ``grade``
+must be set to ``dangerous``.
+
+This is overridden by snaps listed with a channel in ``snap-preseed-snaps``.
 
 
 snap-preseed-model-assert
@@ -113,8 +115,8 @@ The seeded snaps are placed in ``var/lib/snapd/seed``. Use the :ref:`organize
 Example
 -------
 
-The following snippet seeds the ``core24`` snap and the ``hello-world`` snap from the
-``latest/edge`` channel into an image.
+The following snippet seeds the ``core24`` snap from the ``latest/stable`` channel and
+the ``hello-world`` snap from the ``latest/edge`` channel into a classic image.
 
 .. code-block:: yaml
 

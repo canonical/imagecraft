@@ -61,6 +61,8 @@ The default store channel to fetch snaps from, overriding any channels in the mo
 assertion. If this key is set, the model assertion's ``grade`` must be set to
 ``dangerous``.
 
+This is overridden by snaps listed with a channel in ``uc-prepare-snaps``.
+
 
 uc-prepare-validation
 ~~~~~~~~~~~~~~~~~~~~~
