@@ -77,7 +77,7 @@ snap-preseed-assertions
 
 Additional assertion files to include in the image.
 
-The Ubuntu Core documentation lists available assertion type in `Assertions
+The Ubuntu Core documentation lists the available assertion types in `Assertions
 <https://documentation.ubuntu.com/core/reference/assertions/>`_.
 
 
@@ -100,6 +100,8 @@ snap-preseed-write-revisions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 **Type:** string or boolean
+
+**Default:** ``False``
 
 If set to ``true``, the plugin writes the resolved snap revisions to the
 ``seed.manifest`` file. If set to a file path, the revisions are written there instead.
