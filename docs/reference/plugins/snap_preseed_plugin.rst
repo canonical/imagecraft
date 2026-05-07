@@ -1,6 +1,6 @@
 .. meta::
     :description: Reference for the Snap Preseed plugin, which creates the seed directory
-                  for classic system images.
+                  for classic images.
 
 .. _reference-snap-preseed-plugin:
 
