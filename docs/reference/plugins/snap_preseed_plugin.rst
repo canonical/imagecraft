@@ -1,10 +1,15 @@
+.. meta::
+    :description: Reference for the Snap Preseed plugin, which creates the seed directory
+                  for classic system images.
+
 .. _reference-snap-preseed-plugin:
 
-Snap Preseed Plugin
+Snap Preseed plugin
 ===================
 
-The snap-preseed plugin seeds snaps into a Classic image by running ``snap prepare-image
---classic``, making them available on first boot.
+The Snap Preseed plugin creates the seed directory for a classic image with the ``snap
+prepare-image --classic`` command. This downloads snaps and their assertions from the
+Snap Store and prepares them to be installed during the initial boot.
 
 
 Keys
@@ -16,38 +21,47 @@ This plugin provides the following unique keys.
 snap-preseed-snaps
 ~~~~~~~~~~~~~~~~~~
 
-**Type** list of strings
+**Type:** list of strings
 
 The snaps to seed into the image. Valid entries are:
 
 - a snap name
-- a snap name and channel in the format ``snap-name/channel``
+- a snap name and channel in the format ``<snap-name>/<channel>``
 - a path to a local snap within the project directory
+
+If a model assertion with a grade of ``signed`` or ``secured`` is provided, only snaps
+declared in the model assertion can be specified, and they can't be referenced by a local
+path. This is commonly used to include optional snaps from the model assertion.
 
 
 snap-preseed-channel
 ~~~~~~~~~~~~~~~~~~~~
 
-**Type** string
+**Type:** string
 
-The default channel to use when fetching snaps from the store. This is overridden by any
-channel specified directly in a snap reference.
+The default store channel to fetch snaps from, overriding any channels in the model
+assertion, if one is provided. If a model assertion with a ``grade`` is provided, the
+``grade`` must be set to ``dangerous``.
 
 
 snap-preseed-model-assert
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-**Type** string
+**Type:** string
 
-The path to a model assertion file that defines the snaps to seed into the image.
+The path to the model assertion file that defines the target device. If this key is set,
+the model assertion should have ``classic`` set to ``true``.
+
+The Ubuntu Core documentation details model assertions and their fields in `model
+<https://documentation.ubuntu.com/core/reference/assertions/model/>`_.
 
 
 snap-preseed-validation
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-**Type** string
+**Type:** string
 
-**Default** ``enforce``
+**Default:** ``enforce``
 
 Controls whether `validation set
 <https://snapcraft.io/docs/explanation/how-snaps-work/validation-sets>`_ constraints are
@@ -57,15 +71,18 @@ enforced. Valid values are ``ignore`` and ``enforce``.
 snap-preseed-assertions
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-**Type** list of strings
+**Type:** list of strings
 
 Additional assertion files to include in the image.
+
+The Ubuntu Core documentation lists available assertion type in `Assertions
+<https://documentation.ubuntu.com/core/reference/assertions/>`_.
 
 
 snap-preseed-revisions
 ~~~~~~~~~~~~~~~~~~~~~~
 
-**Type** string
+**Type:** string
 
 Path to a manifest file specifying snap revisions to use.
 
@@ -80,25 +97,24 @@ Each line in a manifest file identifies a snap by name and revision number, like
 snap-preseed-write-revisions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-**Type** string or boolean
+**Type:** string or boolean
 
-If ``true``, the plugin writes a manifest file with the resolved snap revisions to
-``seed.manifest``. If a string, it is treated as the path to which the manifest will be
-written.
+If set to ``true``, the plugin writes the resolved snap revisions to the
+``seed.manifest`` file. If set to a file path, the revisions are written there instead.
 
 
 Output
 ------
 
-The seeded snaps are placed in ``var/lib/snapd/seed``. Use ``organize`` to place them in
-the root filesystem.
+The seeded snaps are placed in ``var/lib/snapd/seed``. Use the :ref:`organize
+<PartSpec.organize_files>` key to place ``var`` in the root file system.
 
 
 Example
 -------
 
 The following snippet seeds the ``core24`` snap and the ``hello-world`` snap from the
-``latest/stable`` channel into an image.
+``latest/edge`` channel into an image.
 
 .. code-block:: yaml
 
@@ -107,6 +123,6 @@ The following snippet seeds the ``core24`` snap and the ``hello-world`` snap fro
      plugin: snap-preseed
      snap-preseed-snaps:
        - core24
-       - hello-world/latest/stable
+       - hello-world/latest/edge
      organize:
        "var/*": (overlay)/var/
