@@ -28,8 +28,8 @@ from craft_application import AppMetadata, AppService, ServiceFactory
 from craft_cli import CraftError, emit
 
 from imagecraft.models import Project
-from imagecraft.models.volume import GPTVolume, PartitionSchema
-from imagecraft.pack import gptutil
+from imagecraft.models.volume import GPTVolume, MBRVolume, PartitionSchema
+from imagecraft.pack import gptutil, mbrutil
 from imagecraft.subprocesses import run
 
 _LOSETUP_BIN = "losetup"
@@ -84,6 +84,12 @@ class ImageService(AppService):
                         imagepath=image_path,
                         sector_size=self._sector_size,
                         layout=cast(GPTVolume, volume),
+                    )
+                case PartitionSchema.MBR:
+                    mbrutil.create_empty_mbr_image(
+                        imagepath=image_path,
+                        sector_size=self._sector_size,
+                        layout=cast(MBRVolume, volume),
                     )
                 case _:
                     # Reaching this case is a bug.
@@ -190,6 +196,30 @@ class ImageService(AppService):
                         f"Failed to detach loop device {device} after 10 seconds."
                     )
 
+    def _get_partition_numbers(self, volume: GPTVolume | MBRVolume) -> dict[str, int]:
+        """Return a mapping of partition name to disk partition number for a volume.
+
+        For GPT and plain MBR (≤4 partitions), numbers are 1-based positions,
+        respecting any explicit partition_number on the structure item.
+        For MBR with extended partitions (>4), the first 3 are primaries (1-3),
+        slot 4 is the synthesised extended container, and logical partitions
+        start at 5.
+        """
+        structure = volume.structure
+        needs_extended = (
+            volume.volume_schema == PartitionSchema.MBR
+            and len(structure) > mbrutil.MAX_PRIMARY_SLOTS
+        )
+        result: dict[str, int] = {}
+        for i, item in enumerate(structure, start=1):
+            if needs_extended and i > mbrutil.PRIMARY_SLOTS_WITH_EXTENDED:
+                # Skip slot 4 (extended container) — logicals start at 5
+                part_num = i + 1
+            else:
+                part_num = getattr(item, "partition_number", None) or i
+            result[item.name] = part_num
+        return result
+
     def get_loop_paths(self) -> Mapping[str, str]:
         """Return a mapping of loop device paths for all volumes and their partitions.
 
@@ -206,8 +236,9 @@ class ImageService(AppService):
         for vol_name, loop_dev in self._loop_devices.items():
             mapping[vol_name] = loop_dev
             volume = project.volumes[vol_name]
-            for i, structure in enumerate(volume.structure, start=1):
-                part_num = structure.partition_number or i  # ty: ignore[unresolved-attribute]
+            part_numbers = self._get_partition_numbers(volume)
+            for structure in volume.structure:
+                part_num = part_numbers[structure.name]
                 mapping[f"{vol_name}/{structure.name}"] = f"{loop_dev}p{part_num}"
 
         return mapping
@@ -217,8 +248,14 @@ class ImageService(AppService):
         if self._images is None:
             return
 
-        for image_path in self._images.values():
-            gptutil.verify_partition_tables(image_path)
+        project = cast(Project, self._services.get("project").get())
+        for name, image_path in self._images.items():
+            schema = project.volumes[name].volume_schema
+            match schema:
+                case PartitionSchema.GPT:
+                    gptutil.verify_partition_tables(image_path)
+                case PartitionSchema.MBR:
+                    mbrutil.verify_partition_tables(image_path)
 
     def finalize_images(self, dest: pathlib.Path) -> Mapping[str, pathlib.Path]:
         """Move hidden image files to their final destination.

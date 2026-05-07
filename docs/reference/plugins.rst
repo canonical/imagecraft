@@ -14,6 +14,7 @@ commands used for image creation.
 - :ref:`craft_parts_dump_plugin`
 - :ref:`craft_parts_nil_plugin`
 - :ref:`reference-snap-preseed-plugin`
+- :ref:`reference-uc-prepare-plugin`
 
 
 .. toctree::
@@ -23,3 +24,4 @@ commands used for image creation.
     plugins/mmdebstrap_plugin
     /common/craft-parts/reference/plugins/nil_plugin
     plugins/snap_preseed_plugin
+    plugins/uc_prepare_plugin

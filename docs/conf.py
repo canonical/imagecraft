@@ -131,6 +131,7 @@ linkcheck_ignore = [
     r"^https://([\w-]*\.)?npmjs.org",
     r"^https://rsync.samba.org",
     r"^https://ubuntu.com",
+    r"^https://gitlab.com/apparmor/apparmor/",
     # r"http://127.0.0.1:8000",
     # r"https://apt-repo.com",
     # # Linkcheck is unable to properly handled matrix.to URLs containing # and :

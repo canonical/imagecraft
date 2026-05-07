@@ -70,6 +70,9 @@ plantuml
 PNG
 PR
 prepended
+preseed
+preseeds
+preseeding
 Pygments
 pymarkdown
 QEMU
@@ -97,6 +100,7 @@ subkey
 subproject
 subprojects
 SVG
+sysfs
 tex
 texinfo
 texlive
