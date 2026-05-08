@@ -1,13 +1,13 @@
 .. meta::
-    :description: Reference for the Snap Preseed plugin, which creates the seed directory
+    :description: Reference for the Snap-preseed plugin, which creates the seed directory
                   for classic images.
 
 .. _reference-snap-preseed-plugin:
 
-Snap Preseed plugin
+Snap-preseed plugin
 ===================
 
-The Snap Preseed plugin creates the seed directory for a classic image with the ``snap
+The Snap-preseed plugin creates the seed directory for a classic image with the ``snap
 prepare-image --classic`` command. This downloads snaps and their assertions from the
 Snap Store and prepares them to be installed during the initial boot.
 
@@ -16,6 +16,18 @@ Keys
 ----
 
 This plugin provides the following unique keys.
+
+
+snap-preseed-model-assert
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Type:** string
+
+The path to the model assertion file that defines the target device. If this key is set,
+the model assertion's ``classic`` key must be set to ``true``.
+
+The Ubuntu Core documentation details model assertions and their fields in `model
+<https://documentation.ubuntu.com/core/reference/assertions/model/>`_.
 
 
 snap-preseed-snaps
@@ -29,9 +41,9 @@ The snaps to seed into the image. Valid entries are:
 - a snap name and channel in the format ``<snap-name>/<channel>``
 - a path to a local snap within the project directory
 
-If a model assertion with a grade of ``signed`` or ``secured`` is provided, only snaps
-declared in the model assertion can be specified, and they can't be referenced by a local
-path. This is commonly used to include optional snaps from the model assertion.
+If the model assertion has a grade of ``signed`` or ``secured``, only snaps declared in
+the model assertion can be specified, and they can't be referenced by a local path. This
+is commonly used to include optional snaps from the model assertion.
 
 
 snap-preseed-channel
@@ -40,22 +52,10 @@ snap-preseed-channel
 **Type:** string
 
 The default store channel to fetch snaps from, overriding any channels in the model
-assertion, if one is provided. For model assertion with a grade, the ``grade`` must be
-set to ``dangerous``.
+assertion, if one is provided. If a model assertion is provided and has a grade, it
+must be set to ``dangerous``.
 
 This is overridden by snaps listed with a channel in ``snap-preseed-snaps``.
-
-
-snap-preseed-model-assert
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-**Type:** string
-
-The path to the model assertion file that defines the target device. If this key is set,
-the model assertion should have ``classic`` set to ``true``.
-
-The Ubuntu Core documentation details model assertions and their fields in `model
-<https://documentation.ubuntu.com/core/reference/assertions/model/>`_.
 
 
 snap-preseed-validation

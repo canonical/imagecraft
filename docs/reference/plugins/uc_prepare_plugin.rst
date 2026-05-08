@@ -1,13 +1,13 @@
 .. meta::
-    :description: Reference for the UC Prepare plugin, which creates the seed directory
+    :description: Reference for the uc-prepare plugin, which creates the seed directory
                   for Ubuntu Core images.
 
 .. _reference-uc-prepare-plugin:
 
-UC Prepare plugin
+uc-prepare plugin
 =================
 
-The UC Prepare plugin creates the seed directory for Ubuntu Core images with the ``snap
+The uc-prepare plugin creates the seed directory for Ubuntu Core images with the ``snap
 prepare-image`` command. This downloads snaps and their assertions from the Snap Store
 and prepares them to be installed during the initial boot.
 
@@ -47,7 +47,7 @@ entries are:
 - a snap name and channel in the format ``<snap-name>/<channel>``
 - a path to a local snap within the project directory
 
-For model assertions with a grade of ``signed`` or ``secured``, only snaps declared in
+If the model assertion has a grade of ``signed`` or ``secured``, only snaps declared in
 the model assertion can be specified, and they can't be referenced by a local path. This
 is commonly used to include optional snaps from the model assertion.
 
