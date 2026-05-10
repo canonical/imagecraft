@@ -16,6 +16,7 @@
 
 import atexit
 import contextlib
+import fcntl
 import json
 import pathlib
 import shutil
@@ -161,6 +162,13 @@ class ImageService(AppService):
                         details=str(err),
                         resolution="Ensure loop devices are available and you have sufficient permissions (sudo).",
                     ) from err
+
+            # 3. Briefly acquire a shared lock to synchronize with udev.
+            # udev holds LOCK_EX while it processes the device; LOCK_SH here
+            # blocks until udev is done, then releases so udev is free to
+            # process further events on the device.
+            with open(attached_device, "rb") as loop_fd:
+                fcntl.flock(loop_fd, fcntl.LOCK_SH)
 
             self._loop_devices[name] = attached_device
 
