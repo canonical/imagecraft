@@ -178,7 +178,7 @@ lint-ty: install-ty  ##- Check types with Astral ty
 ifneq ($(CI),)
 	@echo ::group::$@
 endif
-	ty check --python .venv/bin/python $(SOURCES)
+	ty check --python .venv $(SOURCES)
 ifneq ($(CI),)
 	@echo ::endgroup::
 endif
