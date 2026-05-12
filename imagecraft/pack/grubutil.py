@@ -231,8 +231,9 @@ def _part_num(name: str, structure: StructureList) -> int | None:
     )
     for i, structure_item in enumerate(structure):
         if structure_item.name == name:
-            if getattr(structure_item, "partition_number", None) is not None:
-                return structure_item.partition_number  # type: ignore[union-attr]
+            explicit = getattr(structure_item, "partition_number", None)
+            if explicit is not None:
+                return explicit
             pos = i + 1  # 1-based
             if needs_extended and pos > mbrutil.PRIMARY_SLOTS_WITH_EXTENDED:
                 return pos + 1  # skip slot 4 (extended container)
