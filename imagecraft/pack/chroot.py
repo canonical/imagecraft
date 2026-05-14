@@ -14,11 +14,13 @@
 
 """Execute a callable in a chroot environment."""
 
+import contextlib
+import fcntl
 import logging
 import multiprocessing
 import os
 import subprocess
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from multiprocessing.connection import Connection
 from pathlib import Path
 from typing import Any
@@ -38,6 +40,7 @@ class Mount:
     _relative_mountpoint: str
     _options: list[str] | None = None
     _mountpoint: Path | None = None
+    _lock_device: str | None = None
 
     def __init__(
         self,
@@ -46,12 +49,22 @@ class Mount:
         relative_mountpoint: str,
         *,
         options: list[str] | None = None,
+        lock_device: str | None = None,
     ) -> None:
         self._fstype = fstype
         self._src = src
         self._relative_mountpoint = relative_mountpoint
         if options:
             self._options = options
+        # Whole-disk block device whose udev processing must be drained
+        # before mount(2). Set this for partition mounts on a loop
+        # device whose partition nodes were just (re)scanned, to avoid
+        # racing the post-losetup udev partition-rescan window. The
+        # BSD LOCK_EX is held only across the mount(2) syscall — long
+        # enough to serialize with udev, short enough not to block
+        # subsequent udev rules. See
+        # https://systemd.io/BLOCK_DEVICE_LOCKING/.
+        self._lock_device = lock_device
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Mount):
@@ -62,7 +75,18 @@ class Mount:
             and self._relative_mountpoint == other._relative_mountpoint
             and self._options == other._options
             and self._mountpoint == other._mountpoint
+            and self._lock_device == other._lock_device
         )
+
+    @contextlib.contextmanager
+    def _udev_lock(self) -> Iterator[None]:
+        """Hold LOCK_EX on the configured lock device, or no-op if unset."""
+        if self._lock_device is None:
+            yield
+            return
+        with Path(self._lock_device).open("rb") as fd:
+            fcntl.flock(fd, fcntl.LOCK_EX)
+            yield
 
     def mount(self, base_path: Path) -> None:
         """Mount the mountpoint.
@@ -83,7 +107,8 @@ class Mount:
             )
 
         logger.debug("[pid=%d] mount %r on chroot", pid, str(self._mountpoint))
-        os_utils.mount(self._src, str(self._mountpoint), *args)
+        with self._udev_lock():
+            os_utils.mount(self._src, str(self._mountpoint), *args)
 
     def umount(self, *, lazy: bool = False) -> None:
         """Umount the mountpoint."""

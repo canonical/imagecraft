@@ -12,6 +12,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import fcntl
 import subprocess
 from typing import cast
 from unittest.mock import MagicMock, patch
@@ -194,6 +195,31 @@ def test_attach_images_stale_inode(image_service, project_dir, mocker):
     mock_run.assert_any_call(
         "losetup", "--find", "--show", "--partscan", str(image_path)
     )
+
+
+def test_locked_disk_takes_lock_ex_on_whole_disk(image_service, mocker):
+    """locked_disk takes LOCK_EX on the whole-disk node and releases on exit."""
+    image_service._loop_devices = {"pc": "/dev/loop8"}
+    mock_flock = mocker.patch("fcntl.flock")
+    mock_open_obj = mocker.mock_open()
+    mock_path_open = mocker.patch("pathlib.Path.open", mock_open_obj)
+
+    with image_service.locked_disk("pc"):
+        # locked_disk opens the whole-disk node and holds LOCK_EX.
+        mock_path_open.assert_called_once_with("rb")
+        mock_flock.assert_called_once_with(mock_open_obj.return_value, fcntl.LOCK_EX)
+        # Lock is held while inside the context.
+        mock_open_obj.return_value.__exit__.assert_not_called()
+
+    # Closing the fd (releasing LOCK_EX) happens on context exit.
+    mock_open_obj.return_value.__exit__.assert_called_once()
+
+
+def test_locked_disk_unknown_volume_raises(image_service):
+    """locked_disk raises if attach_images hasn't recorded the volume."""
+    with pytest.raises(ValueError, match="No loop device attached"):
+        with image_service.locked_disk("pc"):
+            pass
 
 
 def test_detach_images_success(image_service, mocker):

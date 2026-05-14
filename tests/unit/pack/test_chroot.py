@@ -12,6 +12,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import fcntl
 import multiprocessing
 import subprocess
 from pathlib import Path
@@ -253,3 +254,60 @@ class TestMount:
             str(raised.value)
             == f"Failed to mount on {new_dir}/inexistent/destination: mountpoint does not exist."
         )
+
+    def test_mount_holds_lock_during_mount_syscall(
+        self, mocker, new_dir, relative_path
+    ):
+        """When lock_device is set, LOCK_EX is held across the mount(2) call."""
+        (new_dir / relative_path).mkdir()
+        events: list[str] = []
+        opened_paths: list[Path] = []
+
+        def fake_mount(*_args, **_kwargs):
+            events.append("mount")
+
+        def fake_flock(_fd, op):
+            assert op == fcntl.LOCK_EX
+            events.append("flock")
+
+        def fake_close(*_a, **_k):
+            events.append("close")
+
+        mock_open_obj = mocker.mock_open()
+        mock_open_obj.return_value.__exit__.side_effect = fake_close
+
+        def fake_path_open(self, *args, **kwargs):
+            opened_paths.append(self)
+            return mock_open_obj(*args, **kwargs)
+
+        mocker.patch("imagecraft.pack.chroot.os_utils.mount", side_effect=fake_mount)
+        mocker.patch("pathlib.Path.open", autospec=True, side_effect=fake_path_open)
+        mocker.patch("fcntl.flock", side_effect=fake_flock)
+
+        mount = Mount(
+            fstype=None,
+            src="/dev/loop8p1",
+            relative_mountpoint=relative_path,
+            lock_device="/dev/loop8",
+        )
+        mount.mount(base_path=new_dir)
+
+        # Lock is taken on the whole-disk node, held across mount(2),
+        # then released.
+        assert opened_paths == [Path("/dev/loop8")]
+        mock_open_obj.assert_called_once_with("rb")
+        assert events == ["flock", "mount", "close"]
+
+    def test_mount_no_lock_when_unset(self, mocker, new_dir, relative_path):
+        """Without lock_device, no flock is taken (default behavior unchanged)."""
+        (new_dir / relative_path).mkdir()
+        mocker.patch("imagecraft.pack.chroot.os_utils.mount")
+        mock_flock = mocker.patch("fcntl.flock")
+        mock_path_open = mocker.patch("pathlib.Path.open")
+
+        Mount(fstype=None, src="/test", relative_mountpoint=relative_path).mount(
+            base_path=new_dir
+        )
+
+        mock_flock.assert_not_called()
+        mock_path_open.assert_not_called()
