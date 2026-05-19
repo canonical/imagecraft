@@ -1,13 +1,13 @@
 .. meta::
-    :description: Reference for the uc-prepare plugin, which creates the seed directory
+    :description: Reference for the UC-prepare plugin, which creates the seed directory
                   for Ubuntu Core images.
 
 .. _reference-uc-prepare-plugin:
 
-uc-prepare plugin
+UC-prepare plugin
 =================
 
-The uc-prepare plugin creates the seed directory for Ubuntu Core images with the ``snap
+The UC-prepare plugin creates the seed directory for Ubuntu Core images with the ``snap
 prepare-image`` command. This downloads snaps and their assertions from the Snap Store
 and prepares them to be installed during the initial boot.
 
