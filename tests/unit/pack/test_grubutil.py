@@ -14,6 +14,7 @@
 
 import contextlib
 from pathlib import Path
+from typing import cast
 from unittest.mock import MagicMock
 
 import pytest
@@ -23,8 +24,10 @@ from imagecraft.errors import ImageError
 from imagecraft.models import Volume
 from imagecraft.models.volume import (
     GPTStructureItem,
+    GPTStructureList,
     GPTVolume,
     MBRStructureItem,
+    MBRStructureList,
     MBRVolume,
 )
 from imagecraft.pack.chroot import Mount
@@ -472,20 +475,22 @@ def test_image_mounts_errors(
     ],
 )
 def test_part_num_gpt(name, structure_spec, expected):
-    structure = []
+    items = []
     for spec in structure_spec:
         item = MagicMock(spec=GPTStructureItem)
         item.name = spec["name"]
         item.partition_number = spec["partition_number"]
-        structure.append(item)
+        items.append(item)
+    structure = cast(GPTStructureList, items)
 
     assert _part_num(name, structure) == expected
 
 
 def test_part_num_mbr_plain():
-    structure = [
-        MagicMock(spec=MBRStructureItem, partition_number=None) for _ in range(3)
-    ]
+    structure = cast(
+        MBRStructureList,
+        [MagicMock(spec=MBRStructureItem, partition_number=None) for _ in range(3)],
+    )
     for i, name in enumerate(["boot", "data", "rootfs"]):
         structure[i].name = name
 
@@ -495,9 +500,10 @@ def test_part_num_mbr_plain():
 
 
 def test_part_num_mbr_extended():
-    structure = [
-        MagicMock(spec=MBRStructureItem, partition_number=None) for _ in range(5)
-    ]
+    structure = cast(
+        MBRStructureList,
+        [MagicMock(spec=MBRStructureItem, partition_number=None) for _ in range(5)],
+    )
     for i, name in enumerate(["boot", "p2", "p3", "logical1", "logical2"]):
         structure[i].name = name
 

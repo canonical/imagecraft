@@ -28,7 +28,12 @@ from craft_application import AppMetadata, AppService, ServiceFactory
 from craft_cli import CraftError, emit
 
 from imagecraft.models import Project
-from imagecraft.models.volume import GPTVolume, MBRVolume, PartitionSchema
+from imagecraft.models.volume import (
+    GPTVolume,
+    HybridVolume,
+    MBRVolume,
+    PartitionSchema,
+)
 from imagecraft.pack import gptutil, mbrutil
 from imagecraft.subprocesses import run
 
@@ -196,7 +201,9 @@ class ImageService(AppService):
                         f"Failed to detach loop device {device} after 10 seconds."
                     )
 
-    def _get_partition_numbers(self, volume: GPTVolume | MBRVolume) -> dict[str, int]:
+    def _get_partition_numbers(
+        self, volume: GPTVolume | MBRVolume | HybridVolume
+    ) -> dict[str, int]:
         """Return a mapping of partition name to disk partition number for a volume.
 
         For GPT and plain MBR (≤4 partitions), numbers are 1-based positions,
