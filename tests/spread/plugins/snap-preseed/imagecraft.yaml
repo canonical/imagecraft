@@ -30,6 +30,6 @@ parts:
   snaps:
     plugin: snap-preseed
     snap-preseed-snaps:
-      - hello-world/latest/stable
+      - hello-world@latest/stable
     organize:
       "var/*": (overlay)/var/

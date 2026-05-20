@@ -24,9 +24,9 @@ from imagecraft.plugins._utils import resolve_snap, validate_snap_refs
         ("core24", "core24"),
         ("  core24  ", "core24"),
         ("./my-snap_1.0_amd64.snap", "./my-snap_1.0_amd64.snap"),
-        ("hello-world/latest/stable", "hello-world=latest/stable"),
-        ("core24/stable", "core24=stable"),
-        ("  hello-world/latest/stable  ", "hello-world=latest/stable"),
+        ("hello-world@latest/stable", "hello-world=latest/stable"),
+        ("core24@stable", "core24=stable"),
+        ("  hello-world @ latest/stable  ", "hello-world=latest/stable"),
     ],
 )
 def test_resolve_snap(snap, expected):
@@ -36,12 +36,15 @@ def test_resolve_snap(snap, expected):
 def test_validate_snap_ref_valid():
     valid_refs = [
         "hello-world",
-        "hello-world/edge",
-        "hello-world/24",
-        "hello-world/stable/hotfix",
-        "hello-world/24/beta/hotfix",
+        "hello-world@edge",
+        "hello-world @ edge",
+        "hello-world@24",
+        "hello-world@stable/hotfix",
+        "hello-world @ stable/hotfix",
+        "hello-world@24/beta/hotfix",
         "my-snap-123",
         "/path/to/local.snap",
+        "hello-world@latest/edge",
     ]
 
     assert validate_snap_refs(valid_refs) == valid_refs

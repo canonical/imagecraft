@@ -178,7 +178,7 @@ def test_get_build_commands_with_snaps(part_info):
     properties = UcPreparePluginProperties.unmarshal(
         {
             "uc-prepare-model-assert": "model.assert",
-            "uc-prepare-snaps": ["core24", "hello-world/latest/stable"],
+            "uc-prepare-snaps": ["core24", "hello-world@latest/stable"],
         }
     )
 
