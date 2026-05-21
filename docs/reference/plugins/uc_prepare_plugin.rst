@@ -44,7 +44,8 @@ Snaps to seed into the image in addition to those required by the model assertio
 entries are:
 
 - a snap name
-- a snap name and channel in the format ``<snap-name>/<channel>``
+- a snap name and channel in the format ``<snap-name> @ <channel>`` (spaces around ``@``
+  are optional)
 - a path to a local snap within the project directory
 
 If the model assertion has a grade of ``signed`` or ``secured``, only snaps declared in

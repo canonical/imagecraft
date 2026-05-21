@@ -38,7 +38,8 @@ snap-preseed-snaps
 The snaps to seed into the image. Valid entries are:
 
 - a snap name
-- a snap name and channel in the format ``<snap-name>/<channel>``
+- a snap name and channel in the format ``<snap-name> @ <channel>`` (spaces around ``@``
+  are optional)
 - a path to a local snap within the project directory
 
 If the model assertion has a grade of ``signed`` or ``secured``, only snaps declared in
@@ -127,6 +128,6 @@ the ``hello-world`` snap from the ``latest/edge`` channel into a classic image.
      plugin: snap-preseed
      snap-preseed-snaps:
        - core24
-       - hello-world/latest/edge
+       - hello-world @ latest/edge
      organize:
        "var/*": (overlay)/var/
