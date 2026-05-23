@@ -66,8 +66,14 @@ def test_pack(
     mock_detach.assert_called_once()
     mock_finalize.assert_called_once_with(dest_path)
 
-    # grubutil called on the final image
-    mock_grubutil.setup_grub.assert_called_once()
+    # Phase-B grub flow: prepare runs BEFORE the format loop (so the
+    # rootfs prime dir gets /boot/grub/grub.cfg before mke2fs -d reads
+    # it), install runs AFTER finalize_images.
+    mock_grubutil.prepare_grub_assets.assert_called_once()
+    # install_grub_to_image is only called when prepare returned a
+    # non-None GrubAssets; the autospec mock returns a MagicMock which
+    # is truthy, so install should be called.
+    mock_grubutil.install_grub_to_image.assert_called_once()
     mock_image_cls.assert_called_once()
 
     # Old functions must NOT be called

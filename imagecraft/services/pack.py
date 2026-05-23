@@ -51,6 +51,26 @@ class ImagecraftPackService(PackageService):
         project_dirs = self._services.get("lifecycle").project_info.dirs
         loop_paths = image_service.get_loop_paths()
 
+        # Phase B grub asset preparation must happen BEFORE the
+        # partition-format loop: update-grub writes /boot/grub/grub.cfg
+        # into the rootfs prime dir, and the ESP shim/grub files are
+        # laid down in the boot prime dir, so that mke2fs -d / mkfs.vfat
+        # + mcopy pick them up automatically.
+        arch = self._services.get("lifecycle").project_info.target_arch
+        prime_dirs_map = {
+            get_partition_name(volume_name, s): project_dirs.get_prime_dir(
+                partition=get_partition_name(volume_name, s)
+            )
+            for s in volume.structure
+        }
+        grub_assets = grubutil.prepare_grub_assets(
+            arch=arch,
+            volume_name=volume_name,
+            volume=volume,
+            prime_dirs=prime_dirs_map,
+            workdir=project_dirs.work_dir,
+        )
+
         try:
             for structure_item in volume.structure:
                 partition_name = get_partition_name(volume_name, structure_item)
@@ -73,19 +93,13 @@ class ImagecraftPackService(PackageService):
 
         images = image_service.finalize_images(dest)
 
-        filesystem_mount = self._services.get(
-            "lifecycle"
-        ).project_info.default_filesystem_mount
-        arch = self._services.get("lifecycle").project_info.target_arch
-        for volume_name, path in images.items():
-            volume = project.volumes[volume_name]
-            image = Image(volume=volume, disk_path=path)
-            grubutil.setup_grub(
-                image=image,
-                workdir=project_dirs.work_dir,
-                arch=arch,
-                filesystem_mount=filesystem_mount,
-            )
+        # Post-finalisation: dd boot.img + core.img into the final
+        # image. No loop devices, no image mounts.
+        if grub_assets is not None:
+            for vol_name, path in images.items():
+                vol = project.volumes[vol_name]
+                image = Image(volume=vol, disk_path=path)
+                grubutil.install_grub_to_image(image=image, assets=grub_assets)
 
         return list(images.values())
 
