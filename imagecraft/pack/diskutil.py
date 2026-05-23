@@ -14,10 +14,11 @@
 
 """Disk-related utility functions."""
 
+import json
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal, cast
+from typing import Any, Literal, cast
 
 from craft_cli import CraftError, emit
 
@@ -264,6 +265,65 @@ def format_populate_partition(
         )
         return
     raise CraftError(f"Unsupported filesystem: {fstype}")
+
+
+@dataclass
+class PartitionGeometry:
+    """Geometry of a partition within a disk image."""
+
+    sector_offset: int
+    """Start sector of the partition within the image."""
+
+    sector_count: int
+    """Number of sectors occupied by the partition."""
+
+    sector_size: int
+    """Sector size of the image, in bytes."""
+
+    @property
+    def size_bytes(self) -> int:
+        """Return the partition size in bytes."""
+        return self.sector_count * self.sector_size
+
+
+def _read_sfdisk_partition_table(imagepath: Path) -> dict[str, Any]:
+    """Return the parsed sfdisk --json partition table for a disk image.
+
+    Works for both GPT and MBR partition tables.
+
+    :raises CalledProcessError: If sfdisk fails.
+    """
+    result = run("sfdisk", "--json", imagepath, stderr=subprocess.PIPE)
+    return cast(dict[str, Any], json.loads(result.stdout)["partitiontable"])
+
+
+def get_partition_geometry(
+    imagepath: Path, partition_number: int
+) -> PartitionGeometry:
+    """Return the on-disk geometry of the given partition.
+
+    Looks up the partition by node suffix (``<imagepath><partition_number>``),
+    which works for both GPT and MBR images partitioned via sfdisk.
+
+    :param imagepath: Path to the disk image file.
+    :param partition_number: 1-based partition number as written in the
+        partition table (for MBR with an extended container, logical
+        partitions start at 5).
+    :raises CraftError: If the partition cannot be found in the table.
+    """
+    table = _read_sfdisk_partition_table(imagepath)
+    sector_size = int(table.get("sectorsize", 512))
+    target_node = f"{imagepath}{partition_number}"
+    for partition in table.get("partitions", []):
+        if partition.get("node") == target_node:
+            return PartitionGeometry(
+                sector_offset=int(partition["start"]),
+                sector_count=int(partition["size"]),
+                sector_size=sector_size,
+            )
+    raise CraftError(
+        f"No partition numbered {partition_number} in {imagepath}",
+    )
 
 
 def inject_partition_into_image(
