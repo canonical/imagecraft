@@ -20,7 +20,6 @@ from imagecraft.pack.diskutil import (
     bytes_to_sectors,
     create_zero_image,
     format_populate_partition,
-    inject_partition_into_image,
 )
 from imagecraft.pack.gptutil import (
     SUPPORTED_SECTOR_SIZES,
@@ -36,7 +35,6 @@ __all__ = [
     "bytes_to_sectors",
     "create_zero_image",
     "format_populate_partition",
-    "inject_partition_into_image",
     "SUPPORTED_SECTOR_SIZES",
     "create_empty_gpt_image",
     "get_partition_sector_offset",

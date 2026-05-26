@@ -81,6 +81,25 @@ class DiskSize:
         return bytes_to_sectors(bytes_=self.bytesize, sector_size=self.sector_size)
 
 
+@dataclass
+class PartitionGeometry:
+    """Geometry of a partition within a disk image."""
+
+    sector_offset: int
+    """Start sector of the partition within the image."""
+
+    sector_count: int
+    """Number of sectors occupied by the partition."""
+
+    sector_size: int
+    """Sector size of the image, in bytes."""
+
+    @property
+    def size_bytes(self) -> int:
+        """Return the partition size in bytes."""
+        return self.sector_count * self.sector_size
+
+
 # Image file operations
 
 
@@ -104,6 +123,8 @@ def _format_populate_ext_partition(
     content_dir: Path | None,
     partitionpath: Path,
     label: str | None = None,
+    offset_bytes: int = 0,
+    size_bytes: int | None = None,
 ) -> None:
     """Format a partition/device as EXT3/4 and embed content.
 
@@ -111,6 +132,10 @@ def _format_populate_ext_partition(
     :param content_dir: Directory containing contents for partition, or None.
     :param partitionpath: Path to partition file or block device.
     :param label: Ext Filesystem label, empty if not supplied.
+    :param offset_bytes: Byte offset within ``partitionpath`` at which to create
+        the filesystem. 0 means the start of the file/device.
+    :param size_bytes: Size of the filesystem to create, in bytes. When None,
+        mke2fs uses the remainder of the device after ``offset_bytes``.
     :raises CalledProcessError: If mke2fs fails.
     """
     mke2fs_args: list[str | Path] = ["-t", fstype]
@@ -121,7 +146,16 @@ def _format_populate_ext_partition(
     if label is not None:
         mke2fs_args.extend(["-L", label])
 
+    if offset_bytes:
+        mke2fs_args.extend(["-E", f"offset={offset_bytes}"])
+
     mke2fs_args.append(partitionpath)
+
+    if size_bytes is not None:
+        # The fs-size argument with a 'k' suffix is an absolute size that does
+        # not depend on the block size mke2fs picks. Round down to whole KiB so
+        # the filesystem never extends past the partition's end.
+        mke2fs_args.append(f"{size_bytes // 1024}k")
 
     with emit.open_stream(f"Creating {fstype} partition (label: {label!r})") as stream:
         run("mke2fs", *mke2fs_args, stdout=stream, stderr=stream)
@@ -134,6 +168,9 @@ def _format_populate_fat_partition(  # pylint: disable=too-many-arguments
     content_dir: Path | None,
     partitionpath: Path,
     label: str | None = None,
+    offset_bytes: int = 0,
+    sector_size: int = 512,
+    size_bytes: int | None = None,
 ) -> None:
     """Format a partition/device as FAT and copy content.
 
@@ -142,6 +179,12 @@ def _format_populate_fat_partition(  # pylint: disable=too-many-arguments
     :param content_dir: Directory containing contents for partition, or None.
     :param partitionpath: Path to partition file or block device.
     :param label: Fat Filesystem label, empty if not supplied.
+    :param offset_bytes: Byte offset within ``partitionpath`` at which to create
+        the filesystem. 0 means the start of the file/device.
+    :param sector_size: Logical sector size, used to translate ``offset_bytes``
+        into the sector unit that ``mkfs.fat --offset`` expects.
+    :param size_bytes: Size of the filesystem to create, in bytes. When None,
+        mkfs.fat uses the remainder of the device after the offset.
     :raises CalledProcessError: If mkfs.xxx or mcopy fails.
     """
     mkdosfs_args: list[str | Path] = []
@@ -152,7 +195,15 @@ def _format_populate_fat_partition(  # pylint: disable=too-many-arguments
     if label is not None:
         mkdosfs_args.extend(["-n", label])
 
+    if offset_bytes:
+        mkdosfs_args.extend(["--offset", str(offset_bytes // sector_size)])
+
     mkdosfs_args.append(partitionpath)
+
+    if size_bytes is not None:
+        # block-count is in 1024-byte blocks; round down to whole KiB so the
+        # filesystem stays within the partition.
+        mkdosfs_args.append(str(size_bytes // 1024))
 
     with emit.open_stream(f"Creating {fattype} partition (label: {label!r})") as stream:
         run("mkfs." + fattype, *mkdosfs_args, stdout=stream, stderr=stream)
@@ -165,7 +216,12 @@ def _format_populate_fat_partition(  # pylint: disable=too-many-arguments
         # empty.
         # Note that the documentation for mcopy's -i flag can be hard to find - some is here:
         # https://www.gnu.org/software/mtools/manual/mtools.html#drive-letters
-        mcopy_cmd = f"mcopy -n -o -s -i{str(partitionpath)} {content_dir}/* ::"
+        # A '@@<byte-offset>' suffix tells mtools where the filesystem starts
+        # within the image, mirroring mkfs.fat's --offset.
+        image_arg = str(partitionpath)
+        if offset_bytes:
+            image_arg = f"{image_arg}@@{offset_bytes}"
+        mcopy_cmd = f"mcopy -n -o -s -i{image_arg} {content_dir}/* ::"
         with emit.open_stream("Copying files to partition") as stream:
             run("bash", "-c", mcopy_cmd, stdout=stream, stderr=stream)
 
@@ -229,21 +285,41 @@ def format_populate_partition(
     content_dir: Path,
     partitionpath: Path,
     label: str | None = None,
+    geometry: PartitionGeometry | None = None,
 ) -> None:
     """Format a partition and copy files.
 
+    When ``geometry`` is given, the filesystem is created in place at the
+    partition's offset within ``partitionpath`` (which is then the whole disk
+    image) and constrained to the partition's size. mke2fs, mkfs.fat and mcopy
+    all support writing at an offset, so this lets imagecraft build partitions
+    directly inside the image without loop devices or an intermediate copy.
+    When ``geometry`` is None, the whole of ``partitionpath`` is formatted.
+
     :param fstype: Type of FS - one of (vfat, fat16, ext3, ext4).
     :param content_dir: Directory containing contents for partition.
-    :param partitionpath: Path to partition file.
-    :param disk_size: Disk size attributes.
+    :param partitionpath: Path to the partition file, or the disk image when
+        ``geometry`` is supplied.
     :param label: Filesystem label, empty if not supplied.
+    :param geometry: Optional on-disk geometry of the partition within
+        ``partitionpath``.
     """
+    offset_bytes = 0
+    sector_size = 512
+    size_bytes: int | None = None
+    if geometry is not None:
+        offset_bytes = geometry.sector_offset * geometry.sector_size
+        sector_size = geometry.sector_size
+        size_bytes = geometry.size_bytes
+
     if fstype.value.startswith("ext"):
         _format_populate_ext_partition(
             fstype=cast(ExtT, fstype.value),
             content_dir=content_dir,
             partitionpath=partitionpath,
             label=label,
+            offset_bytes=offset_bytes,
+            size_bytes=size_bytes,
         )
         return
     if "fat" in fstype.value:
@@ -262,28 +338,12 @@ def format_populate_partition(
             content_dir=content_dir,
             partitionpath=partitionpath,
             label=label,
+            offset_bytes=offset_bytes,
+            sector_size=sector_size,
+            size_bytes=size_bytes,
         )
         return
     raise CraftError(f"Unsupported filesystem: {fstype}")
-
-
-@dataclass
-class PartitionGeometry:
-    """Geometry of a partition within a disk image."""
-
-    sector_offset: int
-    """Start sector of the partition within the image."""
-
-    sector_count: int
-    """Number of sectors occupied by the partition."""
-
-    sector_size: int
-    """Sector size of the image, in bytes."""
-
-    @property
-    def size_bytes(self) -> int:
-        """Return the partition size in bytes."""
-        return self.sector_count * self.sector_size
 
 
 def _read_sfdisk_partition_table(imagepath: Path) -> dict[str, Any]:
@@ -297,9 +357,7 @@ def _read_sfdisk_partition_table(imagepath: Path) -> dict[str, Any]:
     return cast(dict[str, Any], json.loads(result.stdout)["partitiontable"])
 
 
-def get_partition_geometry(
-    imagepath: Path, partition_number: int
-) -> PartitionGeometry:
+def get_partition_geometry(imagepath: Path, partition_number: int) -> PartitionGeometry:
     """Return the on-disk geometry of the given partition.
 
     Looks up the partition by node suffix (``<imagepath><partition_number>``),
@@ -324,50 +382,3 @@ def get_partition_geometry(
     raise CraftError(
         f"No partition numbered {partition_number} in {imagepath}",
     )
-
-
-def inject_partition_into_image(
-    *,
-    partition: Path,
-    imagepath: Path,
-    sector_offset: int,
-    disk_size: DiskSize,
-) -> None:
-    """Inject partition into image.
-
-    :param partition: Path to partition file.
-    :param imagepath: Path to image file.
-    :param sector_offset: Number of image sectors to skip before writing.
-    :param disk_size: Disk size attributes.
-    :raises CalledProcessError: If dd fails.
-    """
-    part_size = partition.stat().st_size
-    requested_size = disk_size.sector_size * disk_size.sector_count
-    if part_size != requested_size:
-        raise CraftError(
-            f"Partition {partition.name!r} not expected size "
-            f"(actual: {part_size} vs. expected: {requested_size})."
-        )
-
-    cmd = [
-        "dd",
-        f"if={str(partition)}",
-        f"of={str(imagepath)}",
-        f"bs={disk_size.sector_size}",
-        f"seek={sector_offset}",
-        "status=progress",
-        "conv=notrunc,sparse",
-    ]
-    with subprocess.Popen(
-        cmd,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-    ) as dd_proc:
-        if not dd_proc.stdout:
-            return
-        for line in iter(dd_proc.stdout.readline, ""):
-            emit.trace(line)
-        ret = dd_proc.wait()
-    if ret:
-        raise subprocess.CalledProcessError(ret, cmd)

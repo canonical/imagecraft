@@ -14,8 +14,6 @@
 
 """Imagecraft Package service."""
 
-import contextlib
-import tempfile
 from pathlib import Path
 from typing import cast
 
@@ -57,9 +55,7 @@ class ImagecraftPackService(PackageService):
         for structure_item in volume.structure:
             partition_name = get_partition_name(volume_name, structure_item)
             emit.progress(f"Preparing partition {partition_name}")
-            partition_prime_dir = project_dirs.get_prime_dir(
-                partition=partition_name
-            )
+            partition_prime_dir = project_dirs.get_prime_dir(partition=partition_name)
 
             partition_number = partition_numbers[structure_item.name]
             geometry = diskutil.get_partition_geometry(
@@ -78,41 +74,18 @@ class ImagecraftPackService(PackageService):
                     f"requested size ({expected_sectors} sectors).",
                 )
 
-            # Build the partition contents in a temp file, then dd it into
-            # the disk image at the partition's sector offset. This avoids
-            # losetup entirely, which is needed so imagecraft can run inside
-            # unprivileged LXD containers.
-            safe_prefix = partition_name.replace("/", "_")
-            with tempfile.NamedTemporaryFile(
-                prefix=f".{safe_prefix}.part.",
-                suffix=".tmp",
-                dir=image_path.parent,
-                delete=False,
-            ) as tf:
-                part_path = Path(tf.name)
-            try:
-                with part_path.open("wb") as fh:
-                    fh.truncate(geometry.size_bytes)
-
-                diskutil.format_populate_partition(
-                    fstype=structure_item.filesystem,
-                    content_dir=partition_prime_dir,
-                    partitionpath=part_path,
-                    label=structure_item.filesystem_label,
-                )
-
-                diskutil.inject_partition_into_image(
-                    partition=part_path,
-                    imagepath=image_path,
-                    sector_offset=geometry.sector_offset,
-                    disk_size=diskutil.DiskSize(
-                        bytesize=geometry.size_bytes,
-                        sector_size=geometry.sector_size,
-                    ),
-                )
-            finally:
-                with contextlib.suppress(FileNotFoundError):
-                    part_path.unlink()
+            # Build the partition's filesystem directly inside the disk image
+            # at the partition's offset. mke2fs/mkfs.fat/mcopy all support
+            # writing at an offset, so this avoids losetup (needed to run
+            # inside unprivileged LXD containers) as well as the intermediate
+            # per-partition copy that a temp file + dd would require.
+            diskutil.format_populate_partition(
+                fstype=structure_item.filesystem,
+                content_dir=partition_prime_dir,
+                partitionpath=image_path,
+                label=structure_item.filesystem_label,
+                geometry=geometry,
+            )
 
         image_service.verify_images()
 

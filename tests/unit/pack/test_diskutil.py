@@ -154,6 +154,57 @@ def test_format_populate_partition(
     mocked_run.assert_has_calls(calls)
 
 
+def test_format_populate_partition_ext_with_offset(mocker, content, imagepath):
+    """An ext partition with geometry is written in place at its offset."""
+    mocked_run = mocker.patch("imagecraft.pack.diskutil.run", autospec=True)
+    geometry = diskutil.PartitionGeometry(
+        sector_offset=2048, sector_count=32768, sector_size=512
+    )
+
+    diskutil.format_populate_partition(
+        fstype=FileSystem.EXT4,
+        content_dir=content,
+        partitionpath=imagepath,
+        label="test",
+        geometry=geometry,
+    )
+
+    args = mocked_run.call_args_list[0].args
+    assert args[0] == "mke2fs"
+    # offset is in bytes; size is the partition size in KiB.
+    assert "-E" in args
+    assert f"offset={2048 * 512}" in args
+    assert f"{32768 * 512 // 1024}k" == args[-1]
+
+
+def test_format_populate_partition_fat_with_offset(mocker, content, imagepath):
+    """A FAT partition with geometry passes --offset to mkfs.fat and @@ to mcopy."""
+    mocked_run = mocker.patch("imagecraft.pack.diskutil.run", autospec=True)
+    geometry = diskutil.PartitionGeometry(
+        sector_offset=2048, sector_count=32768, sector_size=512
+    )
+
+    diskutil.format_populate_partition(
+        fstype=FileSystem.FAT16,
+        content_dir=content,
+        partitionpath=imagepath,
+        label="test",
+        geometry=geometry,
+    )
+
+    mkfs_args = mocked_run.call_args_list[0].args
+    assert mkfs_args[0] == "mkfs.fat"
+    # mkfs.fat --offset is in sectors; block-count is in KiB.
+    assert "--offset" in mkfs_args
+    assert str(2048) in mkfs_args
+    assert str(32768 * 512 // 1024) == mkfs_args[-1]
+
+    # mcopy targets the image at the partition's byte offset.
+    mcopy_args = mocked_run.call_args_list[1].args
+    assert mcopy_args[0] == "bash"
+    assert f"-i{imagepath}@@{2048 * 512}" in mcopy_args[2]
+
+
 # ── format_device ────────────────────────────────────────────────────────────
 
 

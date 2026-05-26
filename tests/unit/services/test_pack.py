@@ -88,9 +88,6 @@ def test_pack(
     mock_format_populate = mocker.patch(
         "imagecraft.services.pack.diskutil.format_populate_partition",
     )
-    mock_inject = mocker.patch(
-        "imagecraft.services.pack.diskutil.inject_partition_into_image",
-    )
     mock_grubutil = mocker.patch("imagecraft.services.pack.grubutil", autospec=True)
     mock_image_cls = mocker.patch("imagecraft.services.pack.Image", autospec=True)
 
@@ -103,28 +100,21 @@ def test_pack(
     # create_images is still called (it's idempotent).
     mock_create.assert_called_once()
 
-    # One format + one inject per partition (efi + rootfs).
+    # One format-and-populate per partition (efi + rootfs).
     assert mock_format_populate.call_count == len(volume.structure)
-    assert mock_inject.call_count == len(volume.structure)
     assert mock_get_geometry.call_count == len(volume.structure)
 
-    # Each format_populate call must use the structure's fstype/label.
+    # Each format_populate call writes directly into the disk image at the
+    # partition's geometry, using the structure's fstype/label.
     for call_args, structure_item in zip(
         mock_format_populate.call_args_list, volume.structure, strict=True
     ):
         kwargs = call_args.kwargs
         assert kwargs["fstype"] == structure_item.filesystem
         assert kwargs["label"] == structure_item.filesystem_label
-        # partitionpath is a temp file under the image dir.
-        assert kwargs["partitionpath"].parent == (tmp_path / ".pc.img.tmp").parent
-
-    # Each inject must use the matching sector offset.
-    for call_args, structure_item in zip(
-        mock_inject.call_args_list, volume.structure, strict=True
-    ):
-        kwargs = call_args.kwargs
-        assert kwargs["imagepath"] == tmp_path / ".pc.img.tmp"
-        assert kwargs["sector_offset"] == geometries[structure_item.name].sector_offset
+        # partitionpath is the disk image itself (no intermediate temp file).
+        assert kwargs["partitionpath"] == tmp_path / ".pc.img.tmp"
+        assert kwargs["geometry"] == geometries[structure_item.name]
 
     mock_verify.assert_called_once()
     mock_finalize.assert_called_once_with(dest_path)
@@ -169,53 +159,6 @@ def test_pack_size_mismatch_raises(
         return_value=bogus_geometry,
     )
     mocker.patch("imagecraft.services.pack.diskutil.format_populate_partition")
-    mocker.patch("imagecraft.services.pack.diskutil.inject_partition_into_image")
 
     with pytest.raises(CraftError, match="does not match the requested size"):
         pack_service.pack(prime_dir=tmp_path / "prime", dest=dest_path)
-
-
-def test_pack_cleans_temp_partition_files_on_error(
-    tmp_path,
-    enable_features,
-    default_factory: ServiceFactory,
-    pack_service: ImagecraftPackService,
-    mock_image_service: ImageService,
-    mocker,
-):
-    """The per-partition temp file must be removed even if formatting raises."""
-    dest_path = tmp_path / "dest"
-
-    project = default_factory.get("project").get()
-    volume = project.volumes["pc"]
-    first_item = volume.structure[0]
-
-    mocker.patch.object(mock_image_service, "create_images")
-    mocker.patch.object(mock_image_service, "verify_images")
-    mocker.patch.object(mock_image_service, "finalize_images")
-    mocker.patch("imagecraft.services.pack.grubutil", autospec=True)
-    mocker.patch("imagecraft.services.pack.Image", autospec=True)
-
-    mocker.patch(
-        "imagecraft.services.pack.diskutil.get_partition_geometry",
-        return_value=_geometry_for(first_item, 1),
-    )
-    captured_paths: list = []
-
-    def fail_format(*, partitionpath, **kwargs):
-        captured_paths.append(partitionpath)
-        raise RuntimeError("disk full")
-
-    mocker.patch(
-        "imagecraft.services.pack.diskutil.format_populate_partition",
-        side_effect=fail_format,
-    )
-    mocker.patch("imagecraft.services.pack.diskutil.inject_partition_into_image")
-
-    with pytest.raises(RuntimeError, match="disk full"):
-        pack_service.pack(prime_dir=tmp_path / "prime", dest=dest_path)
-
-    # The temp file used for the partition must have been cleaned up.
-    assert captured_paths
-    for path in captured_paths:
-        assert not path.exists()
