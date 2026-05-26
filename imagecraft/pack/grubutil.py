@@ -63,7 +63,7 @@ from imagecraft.models.volume import (
     Role,
     StructureItem,
 )
-from imagecraft.pack import gptutil
+from imagecraft.pack import rawcontent
 from imagecraft.pack.chroot import Chroot, Mount
 from imagecraft.subprocesses import run
 
@@ -315,67 +315,70 @@ def prepare_grub_assets(  # noqa: PLR0912 — phase-B orchestration is inherentl
     )
 
 
+def grub_raw_content(assets: GrubAssets) -> list[rawcontent.RawContent]:
+    """Translate prepared GRUB assets into generic raw-content records.
+
+    This is GRUB *policy* — the only place that knows where GRUB's raw
+    images belong:
+
+      * ``boot.img`` goes into the MBR boot-code region (bytes 0..440),
+        leaving the disk signature + partition table that follow intact;
+      * ``core.img`` goes into the BIOS-boot (ef02) partition on GPT, or
+        into the post-MBR gap (sector 1) on plain MBR.
+
+    The records are written by the bootloader-agnostic
+    :func:`imagecraft.pack.rawcontent.apply_raw_content`, which knows
+    nothing about GRUB.
+    """
+    items: list[rawcontent.RawContent] = []
+
+    if assets.boot_img is not None:
+        items.append(
+            rawcontent.RawContent(
+                source=assets.boot_img,
+                target=rawcontent.MbrBootCode(max_bytes=_MBR_BOOTCODE_LEN),
+                description="i386-pc boot.img",
+            )
+        )
+
+    if assets.core_img is not None:
+        target: rawcontent.RawContentTarget
+        if assets.bios_boot_partition_name is not None:
+            # GPT: core.img lives in the BIOS-boot (ef02) partition.
+            target = rawcontent.PartitionStart(
+                partition_name=assets.bios_boot_partition_name,
+                sector_size=_SECTOR_SIZE,
+            )
+        else:
+            # MBR: core.img lives in the post-MBR gap, which starts at
+            # sector 1 and runs up to the first partition (usually 2048
+            # sectors of slack).
+            target = rawcontent.SectorOffset(
+                sector=1, sector_size=_SECTOR_SIZE
+            )
+        items.append(
+            rawcontent.RawContent(
+                source=assets.core_img,
+                target=target,
+                description="GRUB core.img",
+            )
+        )
+
+    return items
+
+
 def install_grub_to_image(image: "Image", assets: GrubAssets) -> None:
     """Write boot.img + core.img into the final disk image.
 
-    Uses ``dd`` against the image file directly (no loop device).
+    Thin wrapper retained for :func:`setup_grub` and callers that hold an
+    :class:`Image`. Computes the GRUB raw-content policy via
+    :func:`grub_raw_content` and hands it to the generic applier — no
+    loop device, no GRUB-specific ``dd`` logic here.
     """
-    if assets.boot_img is None and assets.core_img is None:
-        return
-
-    disk_path = image.disk_path
-
-    # MBR bytes 0..440 = i386-pc boot.img. Bytes 440..512 are the disk
-    # signature + partition table — preserved by writing only the first
-    # 440 bytes (count=440 bs=1 conv=notrunc).
-    if assets.boot_img is not None:
-        emit.progress(f"Writing i386-pc boot.img to MBR of {disk_path}")
-        run(
-            "dd",
-            f"if={assets.boot_img}",
-            f"of={disk_path}",
-            "bs=1",
-            f"count={_MBR_BOOTCODE_LEN}",
-            "conv=notrunc",
-            stderr=subprocess.STDOUT,
-        )
-
-    # core.img placement.
-    if assets.core_img is not None:
-        if assets.bios_boot_partition_name is not None:
-            # GPT path: dd core.img into the BIOS-boot (ef02) partition.
-            sector = gptutil.get_partition_sector_offset(
-                disk_path, assets.bios_boot_partition_name
-            )
-            emit.progress(
-                f"Writing GRUB core.img to BIOS-boot partition "
-                f"{assets.bios_boot_partition_name!r} at sector {sector}"
-            )
-            run(
-                "dd",
-                f"if={assets.core_img}",
-                f"of={disk_path}",
-                f"bs={_SECTOR_SIZE}",
-                f"seek={sector}",
-                "conv=notrunc",
-                stderr=subprocess.STDOUT,
-            )
-        else:
-            # MBR path: dd core.img into the post-MBR gap (starting at
-            # sector 1, ending before the first partition — usually
-            # 2048 sectors of slack).
-            emit.progress(
-                f"Writing GRUB core.img to post-MBR gap of {disk_path}"
-            )
-            run(
-                "dd",
-                f"if={assets.core_img}",
-                f"of={disk_path}",
-                f"bs={_SECTOR_SIZE}",
-                "seek=1",
-                "conv=notrunc",
-                stderr=subprocess.STDOUT,
-            )
+    rawcontent.apply_raw_content(
+        disk_path=image.disk_path,
+        contents=grub_raw_content(assets),
+    )
 
 
 # ── Internals ─────────────────────────────────────────────────────────────────

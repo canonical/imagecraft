@@ -22,7 +22,7 @@ from craft_cli import emit
 from typing_extensions import override
 
 from imagecraft.models import Project, get_partition_name
-from imagecraft.pack import Image, diskutil, grubutil
+from imagecraft.pack import diskutil, grubutil, rawcontent
 from imagecraft.services.image import ImageService
 
 
@@ -93,13 +93,16 @@ class ImagecraftPackService(PackageService):
 
         images = image_service.finalize_images(dest)
 
-        # Post-finalisation: dd boot.img + core.img into the final
-        # image. No loop devices, no image mounts.
+        # Post-finalisation: write GRUB's raw boot images into the final
+        # disk. grubutil decides *what* bytes go *where* (policy); the
+        # generic rawcontent applier does the byte-writing (mechanism)
+        # and has no GRUB knowledge. No loop devices, no image mounts.
         if grub_assets is not None:
-            for vol_name, path in images.items():
-                vol = project.volumes[vol_name]
-                image = Image(volume=vol, disk_path=path)
-                grubutil.install_grub_to_image(image=image, assets=grub_assets)
+            raw_content = grubutil.grub_raw_content(grub_assets)
+            for path in images.values():
+                rawcontent.apply_raw_content(
+                    disk_path=path, contents=raw_content
+                )
 
         return list(images.values())
 

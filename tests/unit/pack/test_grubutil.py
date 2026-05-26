@@ -28,11 +28,17 @@ from imagecraft.pack.chroot import Mount
 from imagecraft.pack.grubutil import (
     GrubAssets,
     _phase_b_chroot_mounts,
+    grub_raw_content,
     install_grub_to_image,
     prepare_grub_assets,
     setup_grub,
 )
 from imagecraft.pack.image import Image
+from imagecraft.pack.rawcontent import (
+    MbrBootCode,
+    PartitionStart,
+    SectorOffset,
+)
 
 # ── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -441,95 +447,83 @@ def test_prepare_grub_assets_missing_shim_raises(
         )
 
 
-# ── install_grub_to_image ─────────────────────────────────────────────────────
+# ── grub_raw_content (policy) ─────────────────────────────────────────────────
 
 
-def test_install_grub_to_image_writes_mbr_and_ef02(
-    mocker, tmp_path, gpt_volume_with_bios_boot
-):
-    disk_path = tmp_path / "pc.img"
-    disk_path.write_bytes(b"\x00" * 2048)
-    image = Image(volume=gpt_volume_with_bios_boot, disk_path=disk_path)
-
+def test_grub_raw_content_gpt_emits_mbr_and_ef02(tmp_path):
+    """GPT with a BIOS-boot partition: boot.img → MBR, core.img → ef02."""
     boot_img = tmp_path / "boot.img"
-    boot_img.write_bytes(b"X" * 512)
     core_img = tmp_path / "core.img"
-    core_img.write_bytes(b"C" * 8192)
-
     assets = GrubAssets(
         boot_img=boot_img,
         core_img=core_img,
         bios_boot_partition_name="bios-boot",
     )
 
-    mock_run = mocker.patch("imagecraft.pack.grubutil.run")
-    mock_offset = mocker.patch(
-        "imagecraft.pack.grubutil.gptutil.get_partition_sector_offset",
-        return_value=34,
+    items = grub_raw_content(assets)
+
+    assert len(items) == 2
+    assert items[0].source == boot_img
+    assert items[0].target == MbrBootCode(max_bytes=440)
+    assert items[1].source == core_img
+    assert items[1].target == PartitionStart(
+        partition_name="bios-boot", sector_size=512
     )
 
-    install_grub_to_image(image=image, assets=assets)
 
-    # Two dd invocations: one for boot.img (count=440), one for core.img.
-    assert mock_run.call_count == 2
-    boot_call = mock_run.call_args_list[0]
-    assert boot_call.args[0] == "dd"
-    assert any(a == "bs=1" for a in boot_call.args)
-    assert any(a == "count=440" for a in boot_call.args)
-    assert any(a.startswith("of=") and "pc.img" in a for a in boot_call.args)
-
-    core_call = mock_run.call_args_list[1]
-    assert core_call.args[0] == "dd"
-    assert any(a == "seek=34" for a in core_call.args)
-    mock_offset.assert_called_once_with(disk_path, "bios-boot")
-
-
-def test_install_grub_to_image_mbr_writes_postmbr_gap(
-    mocker, tmp_path, mbr_volume_boot_rootfs
-):
-    disk_path = tmp_path / "pc.img"
-    disk_path.write_bytes(b"\x00" * 2048)
-    image = Image(volume=mbr_volume_boot_rootfs, disk_path=disk_path)
-
+def test_grub_raw_content_mbr_emits_postmbr_gap(tmp_path):
+    """No ef02 partition: core.img is placed in the post-MBR gap (sector 1)."""
     boot_img = tmp_path / "boot.img"
-    boot_img.write_bytes(b"X" * 512)
     core_img = tmp_path / "core.img"
-    core_img.write_bytes(b"C" * 8192)
-
     assets = GrubAssets(
         boot_img=boot_img,
         core_img=core_img,
         bios_boot_partition_name=None,
     )
 
-    mock_run = mocker.patch("imagecraft.pack.grubutil.run")
+    items = grub_raw_content(assets)
+
+    assert len(items) == 2
+    assert items[1].source == core_img
+    assert items[1].target == SectorOffset(sector=1, sector_size=512)
+
+
+def test_grub_raw_content_no_assets_is_empty():
+    items = grub_raw_content(
+        GrubAssets(boot_img=None, core_img=None, bios_boot_partition_name=None)
+    )
+    assert items == []
+
+
+# ── install_grub_to_image (thin shim) ─────────────────────────────────────────
+
+
+def test_install_grub_to_image_delegates_to_applier(
+    mocker, tmp_path, gpt_volume_with_bios_boot
+):
+    """The compat shim feeds grub policy to the generic raw-content applier."""
+    disk_path = tmp_path / "pc.img"
+    disk_path.write_bytes(b"\x00" * 2048)
+    image = Image(volume=gpt_volume_with_bios_boot, disk_path=disk_path)
+
+    boot_img = tmp_path / "boot.img"
+    boot_img.write_bytes(b"X" * 512)
+    assets = GrubAssets(
+        boot_img=boot_img,
+        core_img=None,
+        bios_boot_partition_name=None,
+    )
+
+    mock_apply = mocker.patch(
+        "imagecraft.pack.grubutil.rawcontent.apply_raw_content"
+    )
 
     install_grub_to_image(image=image, assets=assets)
 
-    assert mock_run.call_count == 2
-    core_call = mock_run.call_args_list[1]
-    # core.img goes to sector 1 (right after the MBR) when there's no
-    # ef02 partition.
-    assert any(a == "seek=1" for a in core_call.args)
-
-
-def test_install_grub_to_image_no_assets_is_noop(
-    mocker, tmp_path, gpt_volume_efi_rootfs
-):
-    disk_path = tmp_path / "pc.img"
-    disk_path.write_bytes(b"\x00" * 2048)
-    image = Image(volume=gpt_volume_efi_rootfs, disk_path=disk_path)
-
-    mock_run = mocker.patch("imagecraft.pack.grubutil.run")
-
-    install_grub_to_image(
-        image=image,
-        assets=GrubAssets(
-            boot_img=None, core_img=None, bios_boot_partition_name=None
-        ),
-    )
-
-    mock_run.assert_not_called()
+    mock_apply.assert_called_once()
+    kwargs = mock_apply.call_args.kwargs
+    assert kwargs["disk_path"] == disk_path
+    assert kwargs["contents"] == grub_raw_content(assets)
 
 
 # ── setup_grub orchestration ──────────────────────────────────────────────────
@@ -601,6 +595,7 @@ def test_module_exports_grub_assets_and_entry_points():
     """Public surface the rest of imagecraft depends on."""
     assert hasattr(grubutil, "GrubAssets")
     assert callable(grubutil.prepare_grub_assets)
+    assert callable(grubutil.grub_raw_content)
     assert callable(grubutil.install_grub_to_image)
     assert callable(grubutil.setup_grub)
 
