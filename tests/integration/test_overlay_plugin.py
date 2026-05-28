@@ -46,8 +46,13 @@ parts:
       "*": (overlay)/
     override-build: |
       craftctl default
+      if [ "$CRAFT_ARCH_BUILD_FOR" = "arm64" ]; then
+        ARCHIVE_URL="https://ports.ubuntu.com/ubuntu-ports"
+      else:
+        ARCHIVE_URL="http://archive.ubuntu.com/ubuntu"
+      fi
       cat > $CRAFT_PART_INSTALL/etc/apt/sources.list << EOF
-      deb http://archive.ubuntu.com/ubuntu noble main universe
+      deb $ARCHIVE_URL noble main universe
       EOF
 
   overlay-part:
