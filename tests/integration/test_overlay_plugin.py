@@ -47,7 +47,7 @@ parts:
     override-build: |
       craftctl default
       if [ "$CRAFT_ARCH_BUILD_FOR" = "arm64" ]; then
-        ARCHIVE_URL="https://ports.ubuntu.com/ubuntu-ports"
+        ARCHIVE_URL="http://ports.ubuntu.com/ubuntu-ports"
       else
         ARCHIVE_URL="http://archive.ubuntu.com/ubuntu"
       fi
