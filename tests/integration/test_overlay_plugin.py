@@ -35,6 +35,9 @@ platforms:
   amd64:
     build-on: [amd64]
     build-for: [amd64]
+  arm64:
+    build-on: [arm64]
+    build-for: [arm64]
 
 parts:
   rootfs:
