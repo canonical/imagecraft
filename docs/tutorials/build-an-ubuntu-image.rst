@@ -12,8 +12,8 @@ image's partitions and content, and run the image with QEMU.
 You won't need to come prepared with an intimate understanding of software packaging or
 disk images, but familiarity with Linux paradigms and terminal operations is required.
 
-By the end of this tutorial, you'll have crafted an image that can serve as the basis
-for future projects.
+By the end of this tutorial, you'll have built a minimal, pre-installed Ubuntu image for
+AMD64 machines.
 
 
 Lesson plan
@@ -28,16 +28,6 @@ building an image. You'll be shown how to:
 * Add packages to the image
 * Set a default user and password
 * Package the image
-
-
-What we'll work with
---------------------
-
-The object of this tutorial is to build a minimal, pre-installed Ubuntu image for AMD64
-machines.
-
-The final image will be named ``disk.img``, and we'll end the tutorial by running and
-testing it with QEMU.
 
 
 What you'll need
@@ -74,8 +64,8 @@ time to package our image.
 Set up the project
 ------------------
 
-We'll need a directory to hold our image project. Navigate to where you like to keep
-software projects and create the new directory with:
+We'll need a directory to hold our project. Navigate to where you like to keep software
+projects and create the new directory with:
 
 .. literalinclude:: code/build-an-ubuntu-image/task.yaml
     :language: bash
@@ -125,18 +115,6 @@ The ``summary`` and ``description`` keys tell consumers of our image a little mo
 about it. The summary is a one-line description, limited at 79 characters, while the
 description is more open-ended and can span multiple lines. These were both placeholders
 in the template project file, so we made them meaningful for our project.
-
-
-.. Define the target platform
-.. --------------------------
-
-.. We need to tell Imagecraft what CPU architecture our image builds and runs on. This is
-.. done with the ``platforms`` key.
-
-.. An image's target architecture influences its structure and contents, so its project
-.. file must be customized to each platform. Since we'll be building our image for AMD64
-.. machines, and our project file already targets the AMD64 architecture, we'll leave the
-.. ``platforms`` key as is.
 
 
 .. _tutorial-define-the-partitions:
@@ -220,7 +198,7 @@ directory. Let's start building our Ubuntu file system with the ``parts`` key.
 image. More importantly, they give us access to the *overlay file system*, which is
 where we'll manipulate our image's contents.
 
-We'll create a Debian root file system with a part that uses the ``mmdebstrap`` plugin.
+We'll create a Debian root file system with a part that uses the mmdebstrap plugin.
 
 In the ``parts`` key, replace the template part with the following ``rootfs`` part:
 
