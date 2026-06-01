@@ -183,7 +183,8 @@ def mount_call_test1(request, new_dir, relative_path):
         ),
         call(
             "/test",
-            request.getfixturevalue('new_dir') / request.getfixturevalue('relative_path'),
+            request.getfixturevalue("new_dir")
+            / request.getfixturevalue("relative_path"),
         ),
     )
 
@@ -198,7 +199,8 @@ def mount_call_test2(request, new_dir, relative_path):
         ),
         call(
             "/test",
-            request.getfixturevalue('new_dir') / request.getfixturevalue('relative_path'),
+            request.getfixturevalue("new_dir")
+            / request.getfixturevalue("relative_path"),
             "-tproc",
         ),
     )
@@ -215,7 +217,8 @@ def mount_call_test3(request, new_dir, relative_path):
         ),
         call(
             "devpts-build",
-            request.getfixturevalue('new_dir') / request.getfixturevalue('relative_path'),
+            request.getfixturevalue("new_dir")
+            / request.getfixturevalue("relative_path"),
             "-o",
             "nodev,nosuid",
             "-tdevpts",
