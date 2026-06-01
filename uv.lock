@@ -509,8 +509,8 @@ wheels = [
 
 [[package]]
 name = "craft-parts"
-version = "2.33.0.post22+gbbc6f9f1"
-source = { git = "https://github.com/canonical/craft-parts?rev=main#bbc6f9f163be0f95e9c3fd99dba170d725e783ce" }
+version = "2.33.0.post23+g139cbce6"
+source = { git = "https://github.com/canonical/craft-parts?rev=main#139cbce69c1ef9e62c0ecf36b7567061299f3444" }
 dependencies = [
     { name = "lxml" },
     { name = "pydantic" },
