@@ -7,6 +7,7 @@ Automake
 Autotools
 backend
 backends
+Bazel
 boolean
 bootable
 Bundler
