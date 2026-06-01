@@ -119,12 +119,12 @@ class OverlayTestPlugin(Plugin):
 
 @pytest.fixture(autouse=True)
 def register_plugins(monkeypatch):
-    plugins.register({"overlay-test-plugin": OverlayTestPlugin})
-    imagecraft_plugins = get_app_plugins()
+    imagecraft_plugins = {**get_app_plugins(), "overlay-test-plugin": OverlayTestPlugin}
     monkeypatch.setattr(
         "imagecraft.plugins.get_app_plugins",
-        lambda: {**imagecraft_plugins, "overlay-test-plugin": OverlayTestPlugin},
+        lambda: imagecraft_plugins,
     )
+    plugins.register(imagecraft_plugins)
     yield
     plugins.unregister("overlay-test-plugin")
 
