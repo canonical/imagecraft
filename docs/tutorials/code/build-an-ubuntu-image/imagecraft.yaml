@@ -22,9 +22,9 @@ volumes:
         filesystem-label: writable
         size: 3G
       - name: efi
+        role: system-boot
         type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
         filesystem: vfat
-        role: system-boot
         filesystem-label: UEFI
         size: 256M
 
@@ -42,7 +42,6 @@ parts:
     override-build: |
       craftctl default
       mkdir $CRAFT_PART_INSTALL/boot/efi
-
       cat << EOF > $CRAFT_PART_INSTALL/etc/apt/sources.list.d/ubuntu.sources
       Types: deb deb-src
       URIs: http://archive.ubuntu.com/ubuntu
