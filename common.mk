@@ -3,11 +3,12 @@
 
 SOURCES=$(wildcard *.py) $(PROJECT) tests
 
-# Env vars for the docs Starter Pack. They must be exported so make can pass them to the
+# Env vars for the docs Sphinx Stack. They must be exported so make can pass them to the
 # docs Makefile.
 export DOCS_BUILDDIR ?= _build
 export DOCS_VENVDIR ?= ../.venv
 export VALE_DIR ?= $(DOCS_VENVDIR)/lib/python*/site-packages/vale
+export SPHINX_AUTOBUILD_OPTS ?= --ignore "$(DOCS_VENVDIR)/*" --ignore "reference/commands/*" -D=llms_txt_enabled=0
 
 ifneq ($(OS),Windows_NT)
 	OS := $(shell uname)

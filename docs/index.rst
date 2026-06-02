@@ -1,4 +1,6 @@
-.. starcraft documentation root file
+.. meta::
+    :description: Starcraft is a command-line tool for generating artifacts of many kinds.
+
 
 Starcraft
 =========

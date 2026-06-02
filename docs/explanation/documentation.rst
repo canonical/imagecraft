@@ -42,4 +42,4 @@ documents follow:
 - :external+starflow:ref:`how-to-starcraft-style-guide`
 - `Canonical Style Guide <https://docs.ubuntu.com/styleguide>`__
 - `reStructuredText syntax reference
-  <https://canonical-starter-pack.readthedocs-hosted.com/stable/reference/rst-syntax-reference>`__
+  <https://documentation.ubuntu.com/sphinx-stack/latest/reference/rst-syntax-reference>`__

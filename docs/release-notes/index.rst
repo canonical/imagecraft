@@ -1,10 +1,13 @@
+.. meta::
+    :description: The index of release documentation for Starcraft. These release notes summarise the new features, bug fixes, and backwards-incompatible changes in each version.
+
 .. _release-notes:
 
 Release notes
 =============
 
 This page lists the notes for past releases of Starcraft, which summarise new features,
-bug fixes and backwards-incompatible changes in each version. It also contains the
+bug fixes, and backwards-incompatible changes in each version. It also contains the
 release and support policies for Starcraft.
 
 
