@@ -98,8 +98,11 @@ class MmdebstrapPlugin(Plugin):
 
         suite = options.mmdebstrap_suite or self._get_build_base_suite()
         cmd.append(f'{suite} "$CRAFT_PART_INSTALL" {self._get_default_mirror()}')
+        return [" ".join(cmd), *self._get_cleanup_commands()]
+
+    def _get_cleanup_commands(self) -> list[str]:
         return [
-            " ".join(cmd),
+            'for m in $(findmnt -rno TARGET | grep "^$CRAFT_PART_INSTALL/" | sort -r); do umount -lf "$m" 2>/dev/null || true; done',
             'rm -rf "$CRAFT_PART_INSTALL"/dev/*',
             'rm -rf "$CRAFT_PART_INSTALL"/etc/apt/sources.list.d/*',
             'rm -f "$CRAFT_PART_INSTALL"/etc/apt/sources.list',
