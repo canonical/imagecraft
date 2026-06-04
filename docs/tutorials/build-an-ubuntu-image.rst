@@ -11,8 +11,8 @@ In this tutorial, we'll build a custom Ubuntu image for AMD64 machines. We'll wo
 through everything from the initial project setup to the image's first boot.
 
 The tutorial takes about 25 minutes to complete. It doesn't require an intimate
-understanding of OS images, or disk images in general, but you'll need to be familiar
-with Linux paradigms and terminal usage.
+understanding of disk images, but you'll need to be familiar with Linux paradigms and
+terminal usage.
 
 
 What you'll build
