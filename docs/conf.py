@@ -282,7 +282,7 @@ rst_prolog = """
 # Add configuration for intersphinx mapping
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
-    "starflow": ("https://canonical-starflow.readthedocs-hosted.com", None),
+    "starflow": ("https://documentation.ubuntu.com/starflow/latest", None),
 }
 
 # Block Intersphinx from looking up external sources with internal references. In other
