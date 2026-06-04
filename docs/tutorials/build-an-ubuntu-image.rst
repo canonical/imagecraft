@@ -308,7 +308,7 @@ partition's active mount options, whether we want to dump the partition's utilit
 backup, and the file system check order.
 
 Let's create a part that writes this to the ``/etc/fstab/`` directory in the overlay
-file system. Add the following ``fstab`` part:
+file system. Add a new part named ``fstab``, defined as follows:
 
 .. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
     :language: yaml
@@ -333,7 +333,7 @@ For the purposes of this tutorial, we'll set up a ``login`` part that runs the
 built for production environments. In such cases, you should use a secure method that
 fits your image's application.
 
-Add the following ``login`` part:
+Add a new part named ``login``, defined as follows:
 
 .. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
     :language: yaml
@@ -380,7 +380,7 @@ Run and test the image
 ----------------------
 
 Before we run our image with QEMU, let's copy the UEFI variables from OVMF into a
-temporary directory so we don't compromise the originals:
+temporary directory so we don't compromise the originals.
 
 .. literalinclude:: code/build-an-ubuntu-image/task.yaml
     :language: bash
@@ -390,7 +390,7 @@ temporary directory so we don't compromise the originals:
 
 You'll need to repeat this step if you reboot your machine between runs.
 
-With no further ado, let's run the image with QEMU:
+With no further ado, let's run the image with QEMU.
 
 .. literalinclude:: code/build-an-ubuntu-image/task.yaml
     :language: bash
