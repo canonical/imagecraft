@@ -3,7 +3,13 @@ summary: Test the "Build an Ubuntu image" tutorial
 execute: |
   snap install imagecraft --beta --classic
   snap install multipass
-  apt install --yes qemu-system-x86 ovmf  # Differs from instructions
+
+  # This is what Spread runs
+  apt install --yes qemu-system-x86 ovmf
+  # This is what the user runs
+  sudo apt install qemu-system-x86
+  sudo apt install ovmf
+
   mkdir ubuntu-minimal
   cd ubuntu-minimal
   imagecraft init
@@ -12,7 +18,7 @@ execute: |
   imagecraft pack
   cp /usr/share/OVMF/OVMF_VARS_4M.fd /tmp/OVMF_VARS_4M.fd
 
-  # Note: This doesn't currently work in spread.
+  # This doesn't currently work in Spread
   # qemu-system-x86_64 \
   #   -accel kvm \
   #   -m 4G \

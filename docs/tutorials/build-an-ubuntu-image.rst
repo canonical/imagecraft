@@ -11,8 +11,8 @@ In this tutorial, we'll build a custom Ubuntu image for AMD64 machines. We'll wo
 through everything from the initial project setup to the image's first boot.
 
 The tutorial takes about 25 minutes to complete. It doesn't require an intimate
-understanding of software packaging or disk images, but you'll need to be familiar with
-Linux paradigms and terminal usage.
+understanding of OS images, or disk images in general, but you'll need to be familiar
+with Linux paradigms and terminal usage.
 
 
 What you'll build
@@ -21,9 +21,12 @@ What you'll build
 After installing the necessary tools, you'll start building a custom Ubuntu image from
 the ground up.
 
-You'll define the image's structure and content step by step. The image will be based on
-the suite of packages from Ubuntu 24.04 LTS, with some additional software to cater it
-to the tutorial.
+The tutorial guides you through the process of defining the image's structure and
+content step by step. The image will be based on the suite of packages from Ubuntu 24.04
+LTS, with some additional software to cater it to the tutorial.
+
+You'll end the tutorial by packaging the complete image and running it with QEMU, a
+popular machine emulator.
 
 Once you've completed the tutorial, you'll have practical experience with Imagecraft and
 a custom image you can add software to or model your next image from.
@@ -42,7 +45,7 @@ For this tutorial, you'll need:
 Install prerequisites
 ---------------------
 
-To begin, we'll need to install the Imagecraft snap. Open a terminal and run:
+To begin, let's install the Imagecraft snap. Open a terminal and run:
 
 .. literalinclude:: code/build-an-ubuntu-image/task.yaml
     :language: bash
@@ -59,19 +62,22 @@ time to package the image.
     :start-at: snap install multipass
     :end-at: snap install multipass
 
-We'll run our image with QEMU, a common choice for full-system emulation. Install it
-with:
+We'll run our image with QEMU. Install it with:
 
-.. code-block:: bash
-
-    sudo apt install qemu-system-x86
+.. literalinclude:: code/build-an-ubuntu-image/task.yaml
+    :language: bash
+    :dedent: 2
+    :start-at: sudo apt install qemu-system-x86
+    :end-at: sudo apt install qemu-system-x86
 
 Lastly, we'll need UEFI firmware to pass to QEMU. One of the most popular choices is
 OVMF.
 
-.. code-block:: bash
-
-    sudo apt install ovmf
+.. literalinclude:: code/build-an-ubuntu-image/task.yaml
+    :language: bash
+    :dedent: 2
+    :start-at: sudo apt install ovmf
+    :end-at: sudo apt install ovmf
 
 
 Set up the project
@@ -112,7 +118,7 @@ Replace the first six keys with:
 .. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
     :language: yaml
     :start-at: name: ubuntu-minimal
-    :end-at: Ubuntu 24.04 LTS, and it's booted with GRUB
+    :end-at: and it's booted with GRUB.
 
 The ``base`` key defines the files that make up the foundation of the image. We're
 starting with an empty directory, known as the *bare* base, and building it up from
@@ -134,16 +140,18 @@ Define the partitions
 ---------------------
 
 Now that we've described the image and declared its build details, we need to define its
-disk partitions. To do so, we'll customize the ``volumes`` key.
+partitions. To do so, we'll customize the ``volumes`` key.
 
 The ``volumes`` key contains a single entry, named ``disk``. The ``schema`` key tells us
-that this volume is partitioned with GPT, the only schema currently supported by
-Imagecraft. We'll define individual partitions in the volume's ``structure`` key.
+that ``disk`` is partitioned with GPT, the only schema currently supported by
+Imagecraft. We'll define individual partitions with entries in the entry's ``structure``
+key.
 
-The image will have two partitions: a root file system and an EFI system partition. The
-first was defined for us automatically. Before we go over its contents, let's define the
-EFI system partition the image will boot from. Add the following highlighted lines after
-the ``rootfs`` partition:
+The image will have two partitions: a root file system and an EFI system partition. Each
+will need their own entry in the ``structure`` key.The first was defined for us
+automatically. Before we go over its contents, let's define the EFI system partition the
+image will boot from. Add the following highlighted lines after the ``rootfs``
+partition:
 
 .. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
     :language: yaml
@@ -164,12 +172,13 @@ table. The ``rootfs`` partition was generated with the identifier for Linux file
 systems. The identifiers themselves come from the UEFI specification--don't worry about
 memorizing them.
 
-We set the ``filesystem`` key to ``vfat``, the most common file system for EFI system
-partitions. Since the ``rootfs`` partition will be for general usage, it uses the
-ext4 filesystem instead.
+We set the ``filesystem`` key to ``vfat`` for its compatibility with EFI system
+partitions. Since the ``rootfs`` partition will be for general usage, it uses the ext4
+filesystem instead.
 
 In both partitions, the ``filesystem-label`` key is set to a unique, human-readable
-name. We'll use these labels when we set up the file system table later on.
+name. This is for the benefit of you and anyone else who might work with the packaged
+image later on.
 
 
 Mount the partitions
@@ -193,8 +202,7 @@ Add the following highlighted lines to the end of the ``filesystems`` key:
     :emphasize-lines: 5, 6
 
 With this entry, we mounted the EFI system partition to the /boot/efi/ directory in the
-final image. Keep in mind that we'll need to create this directory when we set up the
-image's root file system.
+final image. We'll create this directory shortly.
 
 
 .. _tutorial-set-up-the-root-file-system:
@@ -206,12 +214,13 @@ Because we're building the image on the bare base, its file system is currently 
 directory. Let's start building it up with the ``parts`` key.
 
 *Parts* are the means by which we source packages for and manipulate the files in the
-image. More importantly, they give us access to the *overlay file system*, which is
-where we'll manipulate the image's contents.
+image. They're the primary way we interact with the *overlay file system*, which is
+where we'll build up the image's content.
 
 We'll create the file system with a part that uses the mmdebstrap plugin.
 
-In the ``parts`` key, replace the template part with the following ``rootfs`` part:
+In the ``parts`` key, replace the template part with a new part named ``rootfs``,
+defined as follows:
 
 .. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
     :language: yaml
@@ -225,7 +234,8 @@ we set the suite to ``noble``.
 The plugin removes the default sources configuration files, which limit us to the system
 packages from the ``noble`` suite's ``main`` component. If we want to install anything
 more than essential system packages, we'll need to add a new sources configuration file.
-We also still need to create the ``/boot/efi`` directory we mounted the ``efi`` partition to.
+We also still need to create the ``/boot/efi`` directory we mounted the ``efi``
+partition to.
 
 Add the following ``override-build`` key to the part:
 
@@ -265,11 +275,11 @@ Add essential packages
 
 We'll need some additional packages for the image to be bootable. Let's define a new
 part to source them. In this case, we don't need any special behavior, so we'll set the
-``plugin`` key to ``nil``. Add the following ``packages`` part:
+``plugin`` key to ``nil``. Add a new part named ``packages``, defined as follows:
 
 .. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
     :language: yaml
-    :lines: 56-64
+    :lines: 55-64
 
 With the exception of ``sl``, these packages add system essentials such as the kernel,
 core utilities, and boot loader. You won't need to worry about ``sl`` until we run the
@@ -302,14 +312,14 @@ file system. Add the following ``fstab`` part:
 
 .. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
     :language: yaml
-    :lines: 66-73
+    :lines: 65-72
 
 Here, we used the ``overlay-script`` key to write the table to the overlay file system,
 which is referenced through the ``$CRAFT_OVERLAY`` environment variable. Keep in mind
 that this environment variable is only available in parts that include, or depend on
 another part that includes, overlay keys.
 
-The partitions will now be mounted automatically every time the system boots.
+The partitions will now be mounted automatically when the system boots.
 
 
 Set the default user
