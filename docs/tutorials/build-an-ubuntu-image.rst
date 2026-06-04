@@ -1,17 +1,32 @@
 .. meta::
-    :description: Learn how to build a basic Ubuntu image with Imagecraft.
+    :description: Learn how to build a custom Ubuntu image with Imagecraft.
+
 
 .. _tutorial-build-an-ubuntu-image:
 
 Build an Ubuntu image
 =====================
 
-In this tutorial, we'll build a minimal Ubuntu image for AMD64 machines. We'll set up
-the project, define the image's partitions and content, and run the image with QEMU.
+In this tutorial, we'll build a custom Ubuntu image for AMD64 machines. We'll work
+through everything from the initial project setup to the image's first boot.
 
-It takes about 25 minutes to complete and doesn't require an intimate understanding of
-software packaging or disk images. However, this tutorial does require some familiarity
-with Linux paradigms and terminal usage.
+The tutorial takes about 25 minutes to complete. It doesn't require an intimate
+understanding of software packaging or disk images, but you'll need to be familiar with
+Linux paradigms and terminal usage.
+
+
+What you'll build
+-----------------
+
+After installing the necessary tools, you'll start building a custom Ubuntu image from
+the ground up.
+
+You'll define the image's structure and content step by step. The image will be based on
+the suite of packages from Ubuntu 24.04 LTS, with some additional software to cater it
+to the tutorial.
+
+Once you've completed the tutorial, you'll have practical experience with Imagecraft and
+a custom image you can add software to or model your next image from.
 
 
 What you'll need
@@ -35,7 +50,7 @@ To begin, we'll need to install the Imagecraft snap. Open a terminal and run:
     :start-at: snap install imagecraft --beta --classic
     :end-at: snap install imagecraft --beta --classic
 
-Let's also install Multipass, which will create the build environment when it comes
+Next, let's install Multipass, which will create the build environment when it comes
 time to package the image.
 
 .. literalinclude:: code/build-an-ubuntu-image/task.yaml
@@ -44,15 +59,15 @@ time to package the image.
     :start-at: snap install multipass
     :end-at: snap install multipass
 
-We'll run our image with QEMU, a common choice for full-system emulation. In your
-terminal, install it by running:
+We'll run our image with QEMU, a common choice for full-system emulation. Install it
+with:
 
 .. code-block:: bash
 
     sudo apt install qemu-system-x86
 
-We'll also need UEFI firmware. One of the most popular choices for QEMU is OVMF. Install
-it with:
+Lastly, we'll need UEFI firmware to pass to QEMU. One of the most popular choices is
+OVMF.
 
 .. code-block:: bash
 
@@ -90,7 +105,7 @@ Describe the image
 ------------------
 
 An image's project file starts with details like its name, version, and build
-environment. The ``init`` command declared these keys with some generic values. Let's
+environment. The ``init`` command set these keys to some generic values. Let's
 update the ``summary`` and ``description`` keys to better reflect the new project.
 Replace the first six keys with:
 
@@ -99,13 +114,13 @@ Replace the first six keys with:
     :start-at: name: ubuntu-minimal
     :end-at: Ubuntu 24.04 LTS, and it's booted with GRUB
 
-The ``base`` key defines the files that make up the foundation of the image. In
-Imagecraft, this is always an empty directory, known as the *bare* base, that must be
-built up manually.
+The ``base`` key defines the files that make up the foundation of the image. We're
+starting with an empty directory, known as the *bare* base, and building it up from
+scratch.
 
 The ``build-base`` key defines the operating system that's used to assemble the image.
-It does *not* have any influence on the image's contents. It's best to build with the
-latest Ubuntu LTS release in most cases, so we left this unchanged.
+It does *not* affect the image's contents. It's best to build with the latest Ubuntu LTS
+release in most cases, so we left this unchanged.
 
 The ``summary`` and ``description`` keys tell consumers of the image a little more
 about it. The summary is a one-line description, limited at 79 characters, while the
@@ -217,8 +232,8 @@ Add the following ``override-build`` key to the part:
 .. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
     :language: yaml
     :class: no-copybutton
-    :lines: 39-52
-    :emphasize-lines: 4-14
+    :lines: 39-51
+    :emphasize-lines: 4-13
 
 The ``override-build`` key replaces the plugin's default behavior. Since we want to
 extend the part's build instead of overriding it, we started the script with ``craftctl
@@ -256,12 +271,9 @@ part to source them. In this case, we don't need any special behavior, so we'll 
     :language: yaml
     :lines: 56-64
 
-With the exception of ``sl``, these packages add the system's essential components, such
-as the kernel, core utilities, and boot loader.
-
-We added the ``sl`` package to ensure that we can source packages from the extra
-components of the ``noble`` suite we added in the ``rootfs`` part. This isn't essential,
-but it's a fun way to test the image later.
+With the exception of ``sl``, these packages add system essentials such as the kernel,
+core utilities, and boot loader. You won't need to worry about ``sl`` until we run the
+image later on.
 
 
 Create the file system table
@@ -388,8 +400,8 @@ As you may recall from the ``login`` part, the default username is ``root`` and 
 is ``password``. Enter these into the QEMU shell now.
 
 By booting and logging in to the image, we've verified the presence of its essential
-packages. To show that the non-essential packages are in place, let's run the ``sl``
-command in the QEMU shell.
+packages. To ensure the packages from the extra components of the ``noble`` suite are in
+place, let's run the ``sl`` command in the QEMU shell.
 
 .. terminal::
     :output-only:
@@ -404,6 +416,7 @@ command in the QEMU shell.
     __/ =| o |=-~~\  /~~\  /~~\  /~~\ ____Y___________|__ |__________________________|_
      |/-=|___|=    ||    ||    ||    |_____/~\___/           |_D__D__D_|  |_D__D__D_|
       \_/      \O=====O=====O=====O_/      \_/                \_/   \_/    \_/   \_/
+
 
 Review the project file
 -----------------------
