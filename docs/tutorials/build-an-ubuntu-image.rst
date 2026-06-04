@@ -299,8 +299,8 @@ With how we set up the partitions and mount points, the table will read:
 .. code-block:: text
     :class: no-copybutton
 
-    LABEL=writable    /            ext4    discard,errors=remount-ro    0    1
-    LABEL=UEFI        /boot/efi    vfat    umask=0077                   0    1
+    LABEL=root        /            ext4    discard,errors=remount-ro    0    1
+    LABEL=uefi        /boot/efi    vfat    umask=0077                   0    1
 
 The first three columns should look familiar—these are the labels, mount points, and
 file system types we declared for our partitions. The last three columns declare each

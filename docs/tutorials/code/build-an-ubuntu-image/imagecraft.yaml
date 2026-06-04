@@ -67,7 +67,7 @@ parts:
     overlay-script: |
       cat << EOF > $CRAFT_OVERLAY/etc/fstab
       LABEL=root        /            ext4    discard,errors=remount-ro    0    1
-      LABEL=UEFI        /boot/efi    vfat    umask=0077                   0    1
+      LABEL=uefi        /boot/efi    vfat    umask=0077                   0    1
       EOF
 
   login:
