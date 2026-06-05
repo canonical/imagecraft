@@ -202,6 +202,9 @@ linkcheck_ignore = [
 # Give linkcheck multiple tries on failure
 linkcheck_retries = 20
 
+# Report timeouts as 'timeout' instead of 'broken'
+linkcheck_report_timeouts_as_broken = False
+
 
 ########################
 # Configuration extras #

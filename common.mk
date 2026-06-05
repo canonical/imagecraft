@@ -322,7 +322,7 @@ ifneq ($(CI),)
 	@echo ::group::$@
 endif
 	uv run $(UV_DOCS_GROUPS) sphinx-lint docs \
-	--ignore docs/.sphinx \
+	--ignore docs/_dev \
 	--ignore docs/_build \
 	--ignore docs/reference/commands \
 	--enable all \
