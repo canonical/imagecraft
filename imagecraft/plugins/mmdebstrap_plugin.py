@@ -101,11 +101,13 @@ class MmdebstrapPlugin(Plugin):
         return [" ".join(cmd), *self._get_cleanup_commands()]
 
     def _get_cleanup_commands(self) -> list[str]:
+        # unmount any leftover mounts
+        # skip content-removal if directory still mounted
         return [
             'for m in $(findmnt -rno TARGET | grep "^$CRAFT_PART_INSTALL/" | sort -r); do umount -lf "$m" 2>/dev/null || true; done',
             'mountpoint -q "$CRAFT_PART_INSTALL"/sys || rm -rf "$CRAFT_PART_INSTALL"/sys/*',
             'mountpoint -q "$CRAFT_PART_INSTALL"/proc || rm -rf "$CRAFT_PART_INSTALL"/proc/*',
-            'rm -rf "$CRAFT_PART_INSTALL"/dev/*',
+            'mountpoint -q "$CRAFT_PART_INSTALL"/dev || rm -rf "$CRAFT_PART_INSTALL"/dev/*',
             'rm -rf "$CRAFT_PART_INSTALL"/etc/apt/sources.list.d/*',
             'rm -f "$CRAFT_PART_INSTALL"/etc/apt/sources.list',
         ]
