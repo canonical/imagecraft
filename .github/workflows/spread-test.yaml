@@ -7,11 +7,29 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  filter:
+    runs-on: ubuntu-slim
+    outputs:
+      source-files: ${{ steps.filter.outputs.source-files }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+        id: filter
+        with:
+          # Combine multiple negation checks into a union (¬A ∧ ¬B ∧ ¬C), because individual entries are checked independently (A ∨ B ∨ C).
+          # If we ever need to filter only for docs, glob 'docs/**/*' and '**/*.md'
+          filters: |
+            source-files:
+              - '!({docs/**,*.md,**/*.md,.readthedocs.yaml})'
   snap-builds:
     runs-on: ubuntu-24.04
+    needs: filter
     # Only build the snap for pull requests, it's not needed on release branches
     # or on master since we have launchpad build recipes which do this already
-    if: ${{ github.event_name == 'pull_request' }}
+    if: ${{ github.event_name == 'pull_request' && needs.filter.outputs.source-files == 'true' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -30,7 +48,8 @@ jobs:
 
   spread:
     runs-on: [self-hosted, imagecraft]
-    needs: snap-builds
+    needs: [snap-builds, filter]
+    if: ${{ needs.filter.outputs.source-files == 'true' }}
     strategy:
       fail-fast: false
       matrix:
