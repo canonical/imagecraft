@@ -211,7 +211,7 @@ endif
 
 # Legacy alias for linting docs
 .PHONY: lint-docs
-lint-docs: docs-lint  ##- Lint the documenation
+lint-docs: docs-lint  ##- Lint the documentation
 
 .PHONY: lint-twine
 lint-twine: pack-pip  ##- Lint Python packages with twine
@@ -236,7 +236,7 @@ test-slow:  ##- Run slow tests
 	uv run pytest -m 'slow'
 
 .PHONY: test-coverage
-test-coverage:  ## Generate coverage report
+test-coverage:  ##- Generate coverage report
 ifeq ($(COVERAGE_SOURCE),)
 	uv run coverage run --source $(PROJECT),tests -m pytest
 else
