@@ -99,6 +99,7 @@ Starcraft
 subkey
 subproject
 subprojects
+sudo
 SVG
 sysfs
 tex
