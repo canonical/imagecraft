@@ -21,9 +21,9 @@ What we'll build
 After installing the necessary tools, we'll start building a custom Ubuntu image from
 the ground up.
 
-You'll be guided through the process of defining the image's structure and content step
-by step. The image will be based on the suite of packages from Ubuntu 24.04 LTS, with
-some additional software that caters it to the tutorial.
+We'll define the image's structure and content step by step. The image will be based on
+the suite of packages from Ubuntu 24.04 LTS, with some additional software that caters
+it to the tutorial.
 
 We'll end the tutorial by packaging the complete image and running it with QEMU, a
 popular machine emulator.
