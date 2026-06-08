@@ -12,20 +12,20 @@ through everything from the initial project setup to the image's first boot.
 
 The tutorial takes about 25 minutes to complete. It doesn't require an intimate
 understanding of disk images, but you'll need to be familiar with Linux paradigms and
-terminal usage.
+using the terminal.
 
 
-What you'll build
------------------
+What we'll build
+----------------
 
-After installing the necessary tools, you'll start building a custom Ubuntu image from
+After installing the necessary tools, we'll start building a custom Ubuntu image from
 the ground up.
 
-The tutorial guides you through the process of defining the image's structure and
-content step by step. The image will be based on the suite of packages from Ubuntu 24.04
-LTS, with some additional software to cater it to the tutorial.
+You'll be guided through the process of defining the image's structure and content step
+by step. The image will be based on the suite of packages from Ubuntu 24.04 LTS, with
+some additional software that caters it to the tutorial.
 
-You'll end the tutorial by packaging the complete image and running it with QEMU, a
+We'll end the tutorial by packaging the complete image and running it with QEMU, a
 popular machine emulator.
 
 Once you've completed the tutorial, you'll have practical experience with Imagecraft and
@@ -54,7 +54,7 @@ To begin, let's install the Imagecraft snap. Open a terminal and run:
     :end-at: snap install imagecraft --beta --classic
 
 Next, let's install Multipass, which will create the build environment when it comes
-time to package the image.
+time to package the image:
 
 .. literalinclude:: code/build-an-ubuntu-image/task.yaml
     :language: bash
@@ -84,7 +84,7 @@ Set up the project
 ------------------
 
 We'll need a directory to hold the project. Create a directory wherever you like to keep
-your software projects with:
+your software projects:
 
 .. literalinclude:: code/build-an-ubuntu-image/task.yaml
     :language: bash
@@ -111,9 +111,9 @@ Describe the image
 ------------------
 
 An image's project file starts with details like its name, version, and build
-environment. The ``init`` command set these keys to some generic values. Let's
-update the ``summary`` and ``description`` keys to better reflect the new project.
-Replace the first six keys with:
+environment. Imagecraft initialized these keys with generic values. Let's update the
+``summary`` and ``description`` keys to better reflect the new project. Replace the
+first six keys with:
 
 .. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
     :language: yaml
@@ -148,10 +148,9 @@ Imagecraft. We'll define individual partitions with entries in the entry's ``str
 key.
 
 The image will have two partitions: a root file system and an EFI system partition. Each
-will need their own entry in the ``structure`` key.The first was defined for us
-automatically. Before we go over its contents, let's define the EFI system partition the
-image will boot from. Add the following highlighted lines after the ``rootfs``
-partition:
+will need their own entry in the ``structure`` key. The first was defined for us
+automatically. Before we go over it, let's define the EFI system partition the image
+will boot from. Add the following highlighted lines after the ``rootfs`` partition:
 
 .. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
     :language: yaml
@@ -169,7 +168,7 @@ which tells Imagecraft that it contains the operating system.
 
 We set the ``type`` key to the identifier for EFI system partitions in a GUID partition
 table. The ``rootfs`` partition was generated with the identifier for Linux file
-systems. The identifiers themselves come from the UEFI specification--don't worry about
+systems. The identifiers themselves come from the UEFI specification---don't worry about
 memorizing them.
 
 We set the ``filesystem`` key to ``vfat`` for its compatibility with EFI system
@@ -198,7 +197,7 @@ Add the following highlighted lines to the end of the ``filesystems`` key:
     :language: yaml
     :class: no-copybutton
     :start-at: filesystems:
-    :end-at: mount: /boot/efi
+    :end-at: mount: /boot/efi/
     :emphasize-lines: 5, 6
 
 With this entry, we mounted the EFI system partition to the /boot/efi/ directory in the
@@ -215,7 +214,7 @@ directory. Let's start building it up with the ``parts`` key.
 
 *Parts* are the means by which we source packages for and manipulate the files in the
 image. They're the primary way we interact with the *overlay file system*, which is
-where we'll build up the image's content.
+where we'll build up the image.
 
 We'll create the file system with a part that uses the mmdebstrap plugin.
 
@@ -234,8 +233,8 @@ we set the suite to ``noble``.
 The plugin removes the default sources configuration files, which limit us to the system
 packages from the ``noble`` suite's ``main`` component. If we want to install anything
 more than essential system packages, we'll need to add a new sources configuration file.
-We also still need to create the ``/boot/efi`` directory we mounted the ``efi``
-partition to.
+We also still need to create the /boot/efi/ directory we mounted the ``efi`` partition
+to.
 
 Add the following ``override-build`` key to the part:
 
@@ -300,7 +299,7 @@ With how we set up the partitions and mount points, the table will read:
     :class: no-copybutton
 
     LABEL=root        /            ext4    discard,errors=remount-ro    0    1
-    LABEL=uefi        /boot/efi    vfat    umask=0077                   0    1
+    LABEL=uefi        /boot/efi/   vfat    umask=0077                   0    1
 
 The first three columns should look familiar—these are the labels, mount points, and
 file system types we declared for our partitions. The last three columns declare each
@@ -330,8 +329,7 @@ and password.
 
 For the purposes of this tutorial, we'll set up a ``login`` part that runs the
 ``chpasswd`` command in the overlay file system. This should *not* be done in images
-built for production environments. In such cases, you should use a secure method that
-fits your image's application.
+built for production environments.
 
 Add a new part named ``login``, defined as follows:
 
@@ -353,8 +351,7 @@ Pack the image
 --------------
 
 To isolate the image build from your machine, we'll pack the image in a Multipass VM.
-Once you're ready, open a new terminal in the ``ubuntu-minimal/`` project directory and
-run:
+Open a new terminal in the ``ubuntu-minimal/`` project directory and run:
 
 .. literalinclude:: code/build-an-ubuntu-image/task.yaml
     :language: bash
@@ -443,8 +440,7 @@ Conclusion
 ----------
 
 This marks the end of this image's journey. If you'd like to develop your crafting
-skills further, you can customize the ubuntu-minimal image or even build a new one
-from scratch.
+skills further, you can customize the image or even build a new one from scratch.
 
 If you create an image for a new system or architecture, we encourage you to share it
 with us on `Matrix <https://matrix.to/#/#starcraft-development:ubuntu.com>`__. We'd love

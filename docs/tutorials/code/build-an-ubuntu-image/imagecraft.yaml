@@ -33,7 +33,7 @@ filesystems:
     - device: (volume/disk/rootfs)
       mount: /
     - device: (volume/disk/efi)
-      mount: /boot/efi
+      mount: /boot/efi/
 
 parts:
   rootfs:
@@ -41,7 +41,7 @@ parts:
     mmdebstrap-suite: noble
     override-build: |
       craftctl default
-      mkdir $CRAFT_PART_INSTALL/boot/efi
+      mkdir $CRAFT_PART_INSTALL/boot/efi/
       cat << EOF > $CRAFT_PART_INSTALL/etc/apt/sources.list.d/ubuntu.sources
       Types: deb deb-src
       URIs: http://archive.ubuntu.com/ubuntu
@@ -67,7 +67,7 @@ parts:
     overlay-script: |
       cat << EOF > $CRAFT_OVERLAY/etc/fstab
       LABEL=root        /            ext4    discard,errors=remount-ro    0    1
-      LABEL=uefi        /boot/efi    vfat    umask=0077                   0    1
+      LABEL=uefi        /boot/efi/    vfat    umask=0077                   0    1
       EOF
 
   login:
