@@ -71,7 +71,7 @@ We'll run our image with QEMU. Install it with:
     :end-at: sudo apt install qemu-system-x86
 
 Lastly, we'll need UEFI firmware to pass to QEMU. One of the most popular choices is
-OVMF.
+OVMF. Install it with:
 
 .. literalinclude:: code/build-an-ubuntu-image/task.yaml
     :language: bash
@@ -93,7 +93,7 @@ your software projects:
     :end-at: cd ubuntu-minimal
 
 Images are built and configured through an ``imagecraft.yaml`` file, called the *project
-file*. Let's create one in the new project directory with the ``init`` command.
+file*. Let's create one in the new project directory with the ``init`` command:
 
 .. literalinclude:: code/build-an-ubuntu-image/task.yaml
     :language: bash
@@ -377,7 +377,7 @@ Run and test the image
 ----------------------
 
 Before we run our image with QEMU, let's copy the UEFI variables from OVMF into a
-temporary directory so we don't compromise the originals.
+temporary directory so we don't compromise the originals:
 
 .. literalinclude:: code/build-an-ubuntu-image/task.yaml
     :language: bash
@@ -387,7 +387,7 @@ temporary directory so we don't compromise the originals.
 
 You'll need to repeat this step if you reboot your machine between runs.
 
-With no further ado, let's run the image with QEMU.
+With no further ado, let's run the image with QEMU:
 
 .. literalinclude:: code/build-an-ubuntu-image/task.yaml
     :language: bash
