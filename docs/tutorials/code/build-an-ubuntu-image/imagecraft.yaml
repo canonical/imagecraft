@@ -2,11 +2,11 @@ name: ubuntu-minimal
 base: bare
 build-base: ubuntu@24.04
 version: '0.1'
-summary: A lightweight, pre-installed Ubuntu image for AMD64 machines.
+summary: A lightweight, unofficial Ubuntu image for AMD64 machines.
 description: |
-  The ubuntu-minimal image is a lightweight, pre-installed Ubuntu
-  image for AMD64 machines. Its root file system is based off of
-  Ubuntu 24.04 LTS, and it's booted with GRUB.
+  The ubuntu-minimal image is a lightweight, unofficial Ubuntu image for AMD64
+  machines. Its root file system and packages are based off of Ubuntu 24.04 LTS,
+  and it's booted with GRUB.
 
 platforms:
   amd64:
@@ -19,12 +19,12 @@ volumes:
         role: system-data
         type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
         filesystem: ext4
-        filesystem-label: writable
+        filesystem-label: root
         size: 3G
       - name: efi
+        role: system-boot
         type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
         filesystem: vfat
-        role: system-boot
         filesystem-label: UEFI
         size: 256M
 
@@ -33,7 +33,7 @@ filesystems:
     - device: (volume/disk/rootfs)
       mount: /
     - device: (volume/disk/efi)
-      mount: /boot/efi
+      mount: /boot/efi/
 
 parts:
   rootfs:
@@ -41,8 +41,7 @@ parts:
     mmdebstrap-suite: noble
     override-build: |
       craftctl default
-      mkdir $CRAFT_PART_INSTALL/boot/efi
-
+      mkdir $CRAFT_PART_INSTALL/boot/efi/
       cat << EOF > $CRAFT_PART_INSTALL/etc/apt/sources.list.d/ubuntu.sources
       Types: deb deb-src
       URIs: http://archive.ubuntu.com/ubuntu
@@ -67,8 +66,8 @@ parts:
     plugin: nil
     overlay-script: |
       cat << EOF > $CRAFT_OVERLAY/etc/fstab
-      LABEL=writable    /            ext4    discard,errors=remount-ro    0    1
-      LABEL=UEFI        /boot/efi    vfat    umask=0077                   0    1
+      LABEL=root        /            ext4    discard,errors=remount-ro    0    1
+      LABEL=uefi        /boot/efi/    vfat    umask=0077                   0    1
       EOF
 
   login:
