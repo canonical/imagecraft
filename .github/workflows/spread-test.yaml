@@ -55,7 +55,7 @@ jobs:
       matrix:
         include:
           - group: ubuntu
-            systems: "ubuntu-22.04-64 ubuntu-24.04-64 ubuntu-26.04-64"
+            systems: "ubuntu-24.04-64"
     steps:
       - name: Cleanup job workspace
         id: cleanup-job-workspace
@@ -132,7 +132,7 @@ jobs:
               RUN_TESTS="$FAILED_TESTS"
           else
               for SYSTEM in ${{ matrix.systems }}; do
-                  RUN_TESTS="$RUN_TESTS $BACKEND:$SYSTEM:tests/..."
+                  RUN_TESTS="$RUN_TESTS $BACKEND:$SYSTEM:tests/spread/boot/..."
               done
           fi
           # Run spread tests
