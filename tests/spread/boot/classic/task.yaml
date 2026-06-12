@@ -1,0 +1,25 @@
+summary: Boot classic image in QEMU
+
+systems: [ubuntu-24.04-64]
+
+prepare: |
+  tests.pkgs install qemu-system-x86 ovmf
+
+execute: |
+  imagecraft pack --destructive-mode
+
+  cp /usr/share/OVMF/OVMF_VARS_4M.fd /tmp/OVFM_VARS_4M.fd
+
+  qemu-system-x86_64 \
+  -accel kvm -accel tcg \
+  -nographic \
+  -m 1G \
+  -drive if=pflash,format=raw,readonly=on,file=/usr/share/OVMF/OVFM_CODE_4M.fd \
+  -drive if=pflash,format=raw,file=/tmp/OVFM_VARS_4M.fd \
+  -drive file=pc.img,format=raw,index=0,media=disk 2>&1 | tee output.log || true
+
+  MATCH "HELLO FROM IMAGECRAFT" output.log
+
+restore: |
+  imagecraft clean --destructive-mode || true
+  rm -f pc.img output.log /tmp/OVMF_VARS_4M.fd

@@ -195,6 +195,8 @@ suites:
     summary: Test imagecraft packing
   tests/spread/plugins/:
     summary: Test imagecraft plugins
+  tests/spread/boot/:
+    summary: Tests that boot images in QEMU
   docs/tutorials/code/:
     summary: Tests the Imagecraft tutorials
     systems:
