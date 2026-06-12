@@ -8,14 +8,14 @@ prepare: |
 execute: |
   imagecraft pack --destructive-mode
 
-  cp /usr/share/OVMF/OVMF_VARS_4M.fd /tmp/OVFM_VARS_4M.fd
+  cp /usr/share/OVMF/OVMF_VARS_4M.fd /tmp/OVMF_VARS_4M.fd
 
   qemu-system-x86_64 \
   -accel kvm -accel tcg \
   -nographic \
   -m 1G \
-  -drive if=pflash,format=raw,readonly=on,file=/usr/share/OVMF/OVFM_CODE_4M.fd \
-  -drive if=pflash,format=raw,file=/tmp/OVFM_VARS_4M.fd \
+  -drive if=pflash,format=raw,readonly=on,file=/usr/share/OVMF/OVMF_CODE_4M.fd \
+  -drive if=pflash,format=raw,file=/tmp/OVMF_VARS_4M.fd \
   -drive file=pc.img,format=raw,index=0,media=disk 2>&1 | tee output.log || true
 
   MATCH "HELLO FROM IMAGECRAFT" output.log
