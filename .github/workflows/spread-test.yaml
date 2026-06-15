@@ -56,6 +56,8 @@ jobs:
         include:
           - group: ubuntu
             systems: "ubuntu-24.04-64"
+          - group: ubuntu-arm
+            systems: "ubuntu-24.04-arm-64"
     steps:
       - name: Cleanup job workspace
         id: cleanup-job-workspace
