@@ -32,6 +32,17 @@ backends:
       - ubuntu-26.04-64:
           storage: 45G
           workers: 1
+  google-arm:
+    type: google
+    key: '$(HOST: echo "$SPREAD_GOOGLE_KEY")'
+    location: snapd-spread/us-central1-a
+    plan: t2a-standard-1
+    halt-timeout: 2h
+    systems:
+      - ubuntu-24.04-arm-64:
+          image: ubuntu-os-cloud/ubuntu-2404-lts-arm64
+          storage: 45G
+          workers: 1
   qemu:
     memory: 4G
     systems:
