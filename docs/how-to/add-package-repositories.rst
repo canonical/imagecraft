@@ -1,5 +1,5 @@
 .. meta::
-    :description: Add custom package repositories to an image.
+    :description: Add package repositories to your image.
 
 .. _add-package-repositories:
 
@@ -11,6 +11,7 @@ or after first boot, you'll need to add the corresponding package repositories. 
 done by defining the repository sources on your local machine and copying them to the
 image with a part.
 
+
 Define the repository sources
 -----------------------------
 
@@ -18,7 +19,7 @@ In your project directory, create a directory to hold the repository sources:
 
 .. code-block:: bash
 
-   mkdir apt-config
+    mkdir apt-config
 
 In this directory, create a ``.sources`` file for each desired repository using the
 DEB822 format. In each file, define the following fields:
@@ -50,13 +51,13 @@ For example, the ``.sources`` file for the Fish shell PPA would contain:
    Signed-By: /etc/apt/keyrings/fish-ppa.gpg
 
 When setting the ``Signed-By`` path, consider where you'll store the signing key in the
-final image. When you copy the key to the image later on, this path will need to match
-its destination.
+final image. When you copy the key to the image later on, its destination must match
+this path.
 
 While most ``.sources`` files will closely resemble the previous example, the patterns
 for your repository may differ. In such cases, refer to the `sources.list
-<https://manpages.ubuntu.com/manpages/resolute/man5/sources.list.html#deb822-style-format>`_,
-which contains a complete reference of the DEB822 format.
+<https://manpages.ubuntu.com/manpages/resolute/man5/sources.list.html#deb822-style-format>`__,
+manual page, which contains a complete reference of the DEB822 format.
 
 Download the signing key
 ------------------------
