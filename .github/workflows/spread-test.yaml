@@ -30,6 +30,9 @@ jobs:
     # Only build the snap for pull requests, it's not needed on release branches
     # or on master since we have launchpad build recipes which do this already
     if: ${{ github.event_name == 'pull_request' && needs.filter.outputs.source-files == 'true' }}
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -39,11 +42,13 @@ jobs:
       - name: Build imagecraft snap
         uses: canonical/craft-actions/snapcraft/pack@main
         id: build-imagecraft
+        with:
+          build-for: ${{ matrix.arch }}
 
       - name: Uploading imagecraft snap artifact
         uses: actions/upload-artifact@v6
         with:
-          name: snap
+          name: snap-${{ matrix.arch }}
           path: "*.snap"
 
   spread:
@@ -56,8 +61,10 @@ jobs:
         include:
           - group: ubuntu
             systems: "ubuntu-24.04-64"
+            arch: amd64
           - group: ubuntu-arm
             systems: "ubuntu-24.04-arm-64"
+            arch: arm64
     steps:
       - name: Cleanup job workspace
         id: cleanup-job-workspace
@@ -85,7 +92,7 @@ jobs:
       - name: Download previsouly build artifact
         uses: actions/download-artifact@v7
         with:
-          name: snap
+          name: snap-${{ matrix.arch }}
 
       - name: Prepare test results env and vars
         id: prepare-test-results-env
