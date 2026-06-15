@@ -62,7 +62,7 @@ parts:
 
       [Service]
       Type=oneshot
-      ExecStart=/bin/bash -c 'echo HELLO FROM IMAGECRAFT > /dev/ttyS0'
+      ExecStart=/bin/bash -c 'echo HELLO FROM IMAGECRAFT > /dev/ttyAMA0'
       ExecStartPost=/sbin/poweroff
 
       [Install]
