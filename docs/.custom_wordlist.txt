@@ -7,6 +7,7 @@ Automake
 Autotools
 backend
 backends
+Bazel
 boolean
 bootable
 Bundler
@@ -99,6 +100,7 @@ Starcraft
 subkey
 subproject
 subprojects
+sudo
 SVG
 sysfs
 tex

@@ -1,0 +1,45 @@
+name: overlay-plugin-test
+version: "0.1"
+summary: A test image
+description: This image exists purely for testing purposes, yo!
+base: bare
+build-base: ubuntu@24.04
+platforms:
+  amd64:
+  arm64:
+
+parts:
+  rootfs:
+    plugin: mmdebstrap
+    organize:
+      "*": (overlay)/
+    override-build: |
+      craftctl default
+      if [ "$CRAFT_ARCH_BUILD_FOR" = "arm64" ]; then
+        ARCHIVE_URL="http://ports.ubuntu.com/ubuntu-ports"
+      else
+        ARCHIVE_URL="http://archive.ubuntu.com/ubuntu"
+      fi
+      cat > $CRAFT_PART_INSTALL/etc/apt/sources.list << EOF
+      deb $ARCHIVE_URL noble main universe
+      EOF
+
+  overlay-part:
+    plugin: overlay-test-plugin
+    after: [rootfs]
+
+volumes:
+  pc:
+    schema: gpt
+    structure:
+      - name: rootfs
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        filesystem: ext4
+        filesystem-label: writable
+        role: system-data
+        size: 512M
+
+filesystems:
+  default:
+    - mount: /
+      device: (volume/pc/rootfs)
