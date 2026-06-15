@@ -63,7 +63,7 @@ make lint-docs
 - Follow the project's existing conventions regarding style, docstrings, logging, and
   comments.
 - Comments should explain complex business logic, non-obvious algorithms, regex, and
-  other "gotchas". Comments should brief, explain "why" not "how", and be helpful for
+  other "gotchas". Comments should be brief, explain "why" not "how", and be helpful for
   future maintainers.
 - Update relevant documentation and release notes to reflect code changes.
 
