@@ -78,6 +78,7 @@ Governance and policies
     :hidden:
 
     tutorials/index
+    how-to/index
     reference/index
     explanation/index
 
