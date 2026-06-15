@@ -42,19 +42,18 @@ parts:
       LABEL=UEFI	/boot/efi	vfat	umask=0077	0 1
       EOF
 
-  serial-console:
+  grub-menu:
     plugin: nil
     after: [rootfs]
     override-overlay: |
       cat << 'EOF' > /etc/default/grub
-      GRUB_CMDLINE_LINUX="console=tty0 console=ttys0,115200n8"
-      GRUB_TERMINAL="serial console"
-      GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no --stop=1"
+      GRUB_TIMEOUT=1
+      GRUB_TIMEOUT_STYLE=hidden
       EOF
 
   sentinel-service:
     plugin: nil
-    after: [serial-console]
+    after: [rootfs]
     override-overlay: |
       cat << 'EOF' > /etc/systemd/system/boot-sentinel.service
       [Unit]
