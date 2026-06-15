@@ -23,3 +23,6 @@ execute: |
 restore: |
   imagecraft clean --destructive-mode || true
   rm -f pc.img output.log /tmp/OVMF_VARS_4M.fd
+
+debug: |
+  cat output.log 2>/dev/null || echo "No serial output log"
