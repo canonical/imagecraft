@@ -35,7 +35,7 @@ jobs:
           - arch: amd64
             runner: ubuntu-24.04
           - arm64: arm64
-            runner: ubuntu-24.04-arm64
+            runner: ubuntu-24.04-arm
     runs-on: ${{ matrix.runner }}
     steps:
       - name: Checkout code
