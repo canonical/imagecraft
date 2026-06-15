@@ -25,14 +25,18 @@ jobs:
             source-files:
               - '!({docs/**,*.md,**/*.md,.readthedocs.yaml})'
   snap-builds:
-    runs-on: ubuntu-24.04
     needs: filter
     # Only build the snap for pull requests, it's not needed on release branches
     # or on master since we have launchpad build recipes which do this already
     if: ${{ github.event_name == 'pull_request' && needs.filter.outputs.source-files == 'true' }}
     strategy:
       matrix:
-        arch: [amd64, arm64]
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arm64: arm64
+            runner: ubuntu-24.04-arm64
+    runs-on: ${{ matrix.runner }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -42,8 +46,6 @@ jobs:
       - name: Build imagecraft snap
         uses: canonical/craft-actions/snapcraft/pack@main
         id: build-imagecraft
-        with:
-          build-for: ${{ matrix.arch }}
 
       - name: Uploading imagecraft snap artifact
         uses: actions/upload-artifact@v6
