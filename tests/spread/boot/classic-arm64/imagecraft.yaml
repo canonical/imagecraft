@@ -32,6 +32,12 @@ parts:
     organize:
       "*": (overlay)/
 
+  disable-cloud-init:
+    plugin: nil
+    after: [rootfs]
+    override-overlay: |
+      touch /etc/cloud/cloud-init.disabled
+
   # Define a fstab
   fstab:
     plugin: nil
