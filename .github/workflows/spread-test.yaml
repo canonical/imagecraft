@@ -64,9 +64,11 @@ jobs:
           - group: ubuntu
             systems: "ubuntu-24.04-64"
             arch: amd64
+            tests: "tests/..."
           - group: ubuntu-arm
             systems: "ubuntu-24.04-arm-64"
             arch: arm64
+            tests: "tests/spread/boot..."
     steps:
       - name: Cleanup job workspace
         id: cleanup-job-workspace
@@ -143,7 +145,7 @@ jobs:
               RUN_TESTS="$FAILED_TESTS"
           else
               for SYSTEM in ${{ matrix.systems }}; do
-                  RUN_TESTS="$RUN_TESTS $BACKEND:$SYSTEM:tests/spread/boot/..."
+                  RUN_TESTS="$RUN_TESTS $BACKEND:$SYSTEM:${{ matrix.tests }}"
               done
           fi
           # Run spread tests
@@ -176,7 +178,7 @@ jobs:
               echo "Determining which tests were executed"
               RUN_TESTS=""
               for SYSTEM in ${{ matrix.systems }}; do
-                  RUN_TESTS="$RUN_TESTS $BACKEND:$SYSTEM:tests/spread/boot/..."
+                  RUN_TESTS="$RUN_TESTS $BACKEND:$SYSTEM:${{ matrix.tests }}"
               done
               if [ -n "$FAILED_TESTS" ]; then
                   RUN_TESTS="$FAILED_TESTS"
