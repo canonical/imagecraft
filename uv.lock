@@ -35,6 +35,7 @@ constraints = [
     { name = "regex", specifier = ">=2021.11.10" },
     { name = "setuptools", specifier = ">=50" },
     { name = "sphinx-basic-ng", specifier = ">=1.0.0b1" },
+    { name = "starlette", specifier = ">=1.0.1" },
     { name = "tornado", specifier = ">=4.0" },
     { name = "urllib3", specifier = ">=2.0" },
     { name = "webencodings", specifier = ">=0.4.0" },
