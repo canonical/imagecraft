@@ -17,6 +17,7 @@ chpasswd
 cjk
 classpath
 CMake
+codenames
 colcon
 Craftctl
 crafters?

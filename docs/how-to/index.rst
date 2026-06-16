@@ -9,3 +9,5 @@ Imagecraft.
 .. toctree::
     :maxdepth: 1
     :hidden:
+
+    add-package-repositories
