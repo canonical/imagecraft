@@ -7,6 +7,7 @@ build-base: ubuntu@24.04
 
 platforms:
   amd64:
+  arm64:
 
 filesystems:
   default:
@@ -23,7 +24,6 @@ parts:
     mmdebstrap-packages:
       - ubuntu-server-minimal
       - grub2-common
-      - grub-efi-amd64
       - shim-signed
       - linux-image-generic
     override-build: |
@@ -31,6 +31,28 @@ parts:
       mkdir -p $CRAFT_PART_INSTALL/boot/efi
     organize:
       "*": (overlay)/
+
+  packages:
+    plugin: nil
+    after: [rootfs]
+    override-overlay: |
+      ARCH="$(dpkg --print-architecture)"
+      if [ "$ARCH" = "amd64" ]; then
+        URL="http://archive.ubuntu.com/ubuntu"
+      else
+        URL="http://ports.ubuntu.com/ubuntu-ports"
+      fi
+
+      echo "deb $URL noble main" > /etc/apt/sources.list
+
+      apt-get update
+      apt-get install -y grub-efi-$ARCH
+
+  disable-cloud-init:
+    plugin: nil
+    after: [rootfs]
+    override-overlay: |
+      touch /etc/cloud/cloud-init.disabled
 
   # Define a fstab
   fstab:
@@ -55,14 +77,20 @@ parts:
     plugin: nil
     after: [rootfs]
     override-overlay: |
-      cat << 'EOF' > /etc/systemd/system/boot-sentinel.service
+      if [ "$(dpkg --print-architecture)" == "amd64" ]; then
+        SERIAL_CONSOLE="/dev/ttyS0"
+      else
+        SERIAL_CONSOLE"/dev/ttyAMA0"
+      fi
+
+      cat << EOF > /etc/systemd/system/boot-sentinel.service
       [Unit]
       Description=Boot sentinel
       After=multi-user.target
 
       [Service]
       Type=oneshot
-      ExecStart=/bin/bash -c 'echo HELLO FROM IMAGECRAFT > /dev/ttyS0'
+      ExecStart=/bin/bash -c 'echo HELLO FROM IMAGECRAFT > $SERIAL_CONSOLE'
       ExecStartPost=/sbin/poweroff
 
       [Install]
