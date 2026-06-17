@@ -32,7 +32,7 @@ parts:
     organize:
       "*": (overlay)/
 
-  packages:
+  efi-packages:
     plugin: nil
     after: [rootfs]
     override-overlay: |
@@ -44,7 +44,6 @@ parts:
       fi
 
       echo "deb $URL noble main" > /etc/apt/sources.list
-
       apt-get update
       apt-get install -y grub-efi-$ARCH
 
@@ -54,14 +53,13 @@ parts:
     override-overlay: |
       touch /etc/cloud/cloud-init.disabled
 
-  # Define a fstab
   fstab:
     plugin: nil
     after: [rootfs]
     overlay-script: |
       cat << EOF > $CRAFT_OVERLAY/etc/fstab
       LABEL=writable	/	ext4	discard,errors=remount-ro	0	1
-      LABEL=UEFI	/boot/efi	vfat	umask=0077	0 1
+      LABEL=UEFI	/boot/efi	vfat	umask=0077,x-systemd.device-timeout=300s	0 1
       EOF
 
   grub-menu:
