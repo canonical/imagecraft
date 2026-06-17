@@ -75,7 +75,7 @@ parts:
     plugin: nil
     after: [rootfs]
     override-overlay: |
-      if [ "$(dpkg --print-architecture)" == "amd64" ]; then
+      if [ "$(dpkg --print-architecture)" = "amd64" ]; then
         SERIAL_CONSOLE="/dev/ttyS0"
       else
         SERIAL_CONSOLE="/dev/ttyAMA0"
