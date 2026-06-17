@@ -78,7 +78,7 @@ parts:
       if [ "$(dpkg --print-architecture)" == "amd64" ]; then
         SERIAL_CONSOLE="/dev/ttyS0"
       else
-        SERIAL_CONSOLE"/dev/ttyAMA0"
+        SERIAL_CONSOLE="/dev/ttyAMA0"
       fi
 
       cat << EOF > /etc/systemd/system/boot-sentinel.service
