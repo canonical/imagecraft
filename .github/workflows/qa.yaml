@@ -41,3 +41,5 @@ jobs:
     needs: filter
     with:
       source-files: ${{ needs.filter.outputs.source-files }}
+      fast-test-platforms: '["jammy", "noble", "ubuntu-26.04", "ubuntu-26.04-arm"]'
+      slow-test-platforms: '["jammy", "ubuntu-26.04", "ubuntu-26.04-arm"]'
