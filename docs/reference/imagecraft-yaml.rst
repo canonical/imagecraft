@@ -76,6 +76,31 @@ partitions.
 
 .. kitbash-field:: GPTVolume volume_schema
     :prepend-name: volumes.<volume-name>
+    :override-type: Literal['gpt', 'mbr', 'mbr,gpt']
+    :override-description:
+    :skip-examples:
+
+    The partitioning schema of the image.
+
+    **Supported values**
+
+    - ``gpt``: GUID Partition Table (GPT) schema (default).
+    - ``mbr``: Master Boot Record (MBR) schema.
+    - ``mbr,gpt``: Hybrid MBR/GPT schema, providing both partition tables simultaneously.
+
+    **Examples**
+
+    .. code-block:: yaml
+
+        schema: gpt
+
+    .. code-block:: yaml
+
+        schema: mbr
+
+    .. code-block:: yaml
+
+        schema: mbr,gpt
 
 .. kitbash-field:: GPTVolume structure
     :prepend-name: volumes.<volume-name>
@@ -93,12 +118,51 @@ The following keys can be declared for each partition listed in the volume's
 
 .. kitbash-field:: GPTStructureItem id
     :prepend-name: volumes.<volume-name>.structure.<partition>
+    :override-description:
+    :skip-examples:
+
+    The partition's unique identifier.
+
+    This key is only supported on **GPT** and **hybrid MBR/GPT** schemas. The identifier
+    must be a unique 32-digit hexadecimal number in the GPT UUID format.
+
+    **Examples**
+
+    .. code-block:: yaml
+
+        id: "6F8C47A6-1C2D-4B35-8B1E-9DE3C4E9E3FF"
 
 .. kitbash-field:: GPTStructureItem role
     :prepend-name: volumes.<volume-name>.structure.<partition>
 
 .. kitbash-field:: GPTStructureItem structure_type
     :prepend-name: volumes.<volume-name>.structure.<partition>
+    :override-type: str
+    :override-description:
+    :skip-examples:
+
+    The type of the partition. Depending on the volume's partitioning schema, the value must be:
+
+    - **GPT**: A standard GUID (e.g. ``C12A7328-F81F-11D2-BA4B-00A0C93EC93B`` for EFI).
+    - **MBR**: A two-digit hexadecimal partition type code (e.g. ``0C`` for FAT32 or ``83`` for Linux).
+    - **Hybrid**: A hybrid type string expressed as ``<mbr-type>,<gpt-type>`` (e.g. ``0C,C12A7328-F81F-11D2-BA4B-00A0C93EC93B``).
+
+    **Examples**
+
+    .. code-block:: yaml
+
+        # GPT schema
+        type: "C12A7328-F81F-11D2-BA4B-00A0C93EC93B"
+
+    .. code-block:: yaml
+
+        # MBR schema
+        type: "0C"
+
+    .. code-block:: yaml
+
+        # Hybrid MBR/GPT schema
+        type: "0C,C12A7328-F81F-11D2-BA4B-00A0C93EC93B"
 
 .. kitbash-field:: GPTStructureItem size
     :prepend-name: volumes.<volume-name>.structure.<partition>
@@ -111,6 +175,22 @@ The following keys can be declared for each partition listed in the volume's
 
 .. kitbash-field:: GPTStructureItem partition_number
     :prepend-name: volumes.<volume-name>.structure.<partition>
+    :override-description:
+    :skip-examples:
+
+    (Optional) The partition number for this partition.
+
+    This key is only supported on **GPT** partition schemas. GPT partitions are
+    numbered from 1 to 128.
+
+    If unset, partitions will start at 1 and be read in list order. If set, all
+    other partitions must also explicitly set their partition number as unique integers.
+
+    **Examples**
+
+    .. code-block:: yaml
+
+        partition_number: 1
 
 
 Filesystem keys
