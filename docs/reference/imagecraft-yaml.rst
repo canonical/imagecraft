@@ -87,7 +87,7 @@ partitions.
 
     **Supported values**
 
-    - ``gpt``: GUID Partition Table (GPT) schema (default).
+    - ``gpt``: GUID Partition Table (GPT) schema.
     - ``mbr``: Master Boot Record (MBR) schema.
     - ``mbr,gpt``: Hybrid MBR/GPT schema, providing both partition tables simultaneously.
 
