@@ -1,3 +1,6 @@
+.. meta::
+    :description: Reference for the imagecraft.yaml configuration file, covering syntax, keys, schemas, and examples for bootable disk images.
+
 .. _reference-imagecraft-yaml:
 
 imagecraft.yaml
