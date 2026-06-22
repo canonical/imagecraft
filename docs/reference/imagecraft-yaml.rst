@@ -89,13 +89,13 @@ partitions.
 
     .. list-table::
         :header-rows: 1
-        
+
         * - Value
           - Description
         * - ``gpt``
           - GUID Partition Table (GPT) schema.
         * - ``mbr``
-          - Master Boot Record (MBR) schema.
+          - :vale-ignore:`Master Boot Record` (MBR) schema.
         * - ``mbr,gpt``
           - Hybrid schema providing GPT and MBR partition tables simultaneously.
 
