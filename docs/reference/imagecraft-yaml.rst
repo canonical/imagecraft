@@ -99,19 +99,11 @@ partitions.
         * - ``mbr,gpt``
           - Hybrid schema providing GPT and MBR partition tables simultaneously.
 
-    **Examples**
+    **Example**
 
     .. code-block:: yaml
 
         schema: gpt
-
-    .. code-block:: yaml
-
-        schema: mbr
-
-    .. code-block:: yaml
-
-        schema: mbr,gpt
 
 .. kitbash-field:: GPTVolume structure
     :prepend-name: volumes.<volume-name>
