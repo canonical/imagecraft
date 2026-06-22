@@ -146,9 +146,9 @@ The following keys can be declared for each partition listed in the volume's
 
     The type of the partition. Depending on the volume's partitioning schema, the value must be:
 
-    - **GPT**: A standard GUID (e.g. ``C12A7328-F81F-11D2-BA4B-00A0C93EC93B`` for EFI).
-    - **MBR**: A two-digit hexadecimal partition type code (e.g. ``0C`` for FAT32 or ``83`` for Linux).
-    - **Hybrid**: A hybrid type string expressed as ``<mbr-type>,<gpt-type>`` (e.g. ``0C,C12A7328-F81F-11D2-BA4B-00A0C93EC93B``).
+    - **GPT**: A standard `GUID <https://en.wikipedia.org/wiki/GUID_Partition_Table#Partition_type_GUIDs>`_.
+    - **MBR**: A two-digit hexadecimal `partition type code <https://en.wikipedia.org/wiki/Partition_type>`_.
+    - **Hybrid**: A hybrid type string expressed as ``<mbr-type>,<gpt-type>``.
 
     **Examples**
 
