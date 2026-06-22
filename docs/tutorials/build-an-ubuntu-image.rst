@@ -143,10 +143,8 @@ Now that we've described the image and declared its build details, we need to de
 partitions. To do so, we'll customize the ``volumes`` key.
 
 The ``volumes`` key contains a single entry, named ``disk``. The ``schema`` key tells us
-that ``disk`` is partitioned with GPT, which is the recommended schema for most modern
-installations. Imagecraft also supports Master Boot Record (MBR) and hybrid MBR/GPT
-partitioning schemas. We'll define individual partitions with entries in the entry's
-``structure`` key.
+that ``disk`` is partitioned with GPT, the recommended schema for most images.
+We'll define individual partitions in the ``structure`` key.
 
 The image will have two partitions: a root file system and an EFI system partition. Each
 will need their own entry in the ``structure`` key. The first was defined for us

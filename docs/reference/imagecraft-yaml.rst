@@ -1,5 +1,5 @@
 .. meta::
-    :description: Reference for the imagecraft.yaml configuration file, covering syntax, keys, schemas, and examples for bootable disk images.
+    :description: Reference for the Imagecraft project file, with descriptions and examples of each of its keys.
 
 .. _reference-imagecraft-yaml:
 
@@ -85,11 +85,19 @@ partitions.
 
     The partitioning schema of the image.
 
-    **Supported values**
+    **Values**
 
-    - ``gpt``: GUID Partition Table (GPT) schema.
-    - ``mbr``: Master Boot Record (MBR) schema.
-    - ``mbr,gpt``: Hybrid MBR/GPT schema, providing both partition tables simultaneously.
+    .. list-table::
+        :header-rows: 1
+        
+        * - Value
+          - Description
+        * - ``gpt``
+          - GUID Partition Table (GPT) schema.
+        * - ``mbr``
+          - Master Boot Record (MBR) schema.
+        * - ``mbr,gpt``
+          - Hybrid schema providing GPT and MBR partition tables simultaneously.
 
     **Examples**
 
@@ -126,7 +134,7 @@ The following keys can be declared for each partition listed in the volume's
 
     The partition's unique identifier.
 
-    This key is only supported on **GPT** and **hybrid MBR/GPT** schemas. The identifier
+    This key is only supported on GPT and hybrid MBR/GPT schemas. The identifier
     must be a unique 32-digit hexadecimal number in the GPT UUID format.
 
     **Examples**
@@ -181,7 +189,7 @@ The following keys can be declared for each partition listed in the volume's
     :override-description:
     :skip-examples:
 
-    (Optional) The partition number for this partition.
+    The partition number for this partition.
 
     This key is only supported on **GPT** partition schemas. GPT partitions are
     numbered from 1 to 128.
