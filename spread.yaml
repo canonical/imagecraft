@@ -32,6 +32,17 @@ backends:
       - ubuntu-26.04-64:
           storage: 45G
           workers: 1
+  google-arm:
+    type: google
+    key: '$(HOST: echo "$SPREAD_GOOGLE_KEY")'
+    location: snapd-spread/us-central1-a
+    plan: t2a-standard-1
+    halt-timeout: 2h
+    systems:
+      - ubuntu-24.04-arm-64:
+          image: ubuntu-os-cloud/ubuntu-2404-lts-arm64
+          storage: 45G
+          workers: 1
   qemu:
     memory: 4G
     systems:
@@ -195,6 +206,8 @@ suites:
     summary: Test imagecraft packing
   tests/spread/plugins/:
     summary: Test imagecraft plugins
+  tests/spread/boot/:
+    summary: Tests that boot images in QEMU
   docs/tutorials/code/:
     summary: Tests the Imagecraft tutorials
     systems:
