@@ -1,5 +1,5 @@
 .. meta::
-    :description: lorem ipsum
+    :description: How to automate the configuration of new instances with cloud-init.
 
 .. _configure-instances-with-cloud-init:
 
