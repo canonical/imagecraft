@@ -12,7 +12,7 @@ embedding a cloud-init configuration into your image, you can automatically set 
 instances whether they're running in the cloud, a local virtual machine, or bare metal.
 
 
-Set up cloud init
+Set up cloud-init
 -----------------
 
 First, install cloud-init in your image as an overlay package. This is best done by
@@ -22,11 +22,11 @@ declaring a new part in your project file, similar to the following:
     :caption: imagecraft.yaml
 
     parts:
-    packages:
+      packages:
         plugin: nil
         overlay-packages:
-        # ...
-        - cloud-init
+          # ...
+          - cloud-init
 
 .. admonition:: Installing overlay packages
     :class: note
@@ -35,7 +35,7 @@ declaring a new part in your project file, similar to the following:
     overlay file system, such as APT with the :ref:`reference-mmdebstrap-plugin`.
 
 In the directory containing your project file, create a directory to hold the cloud-init
-configuration files
+configuration files:
 
 .. code-block:: bash
 
@@ -79,15 +79,15 @@ passwords to be reset when the user first logs in:
 
     #cloud-config
     users:
-    - default
-    - {name: user}
+      - default
+      - {name: user}
     password: default-pw
     chpasswd:
-    expire: true
-    users:
+      expire: true
+      users:
         - name: user
-        password: passw0rd
-        type: text
+          password: passw0rd
+          type: text
 
 Once you've written the file, validate it by installing cloud-init onto your local
 machine and running the ``schema`` command:
@@ -104,8 +104,9 @@ Copy cloud-init files
 ---------------------
 
 Copy the cloud-init files from your project directory to the image with a new part that
-uses the :ref:`craft_parts_dump_plugin` and the :ref:`PartSpec.organize_files` key. It
-should be processed after your root file system and system packages are in place.
+uses the :ref:`craft_parts_dump_plugin` and the :ref:`organize
+<PartSpec.organize_files>` key. It should be processed after your root file system and
+system packages are in place.
 
 In our example image, it's written like this:
 
@@ -113,11 +114,11 @@ In our example image, it's written like this:
     :caption: imagecraft.yaml
 
     parts:
-    cloud-init:
+      cloud-init:
         after: [rootfs, packages]
         plugin: dump
         source: cloud-init/
         organize:
-        "*": /var/lib/cloud/seed/nocloud/
+          "*": /var/lib/cloud/seed/nocloud/
 
 Now, any instances created from your image will be set up identically.
