@@ -54,7 +54,7 @@ jobs:
           path: "*.snap"
 
   spread:
-    runs-on: [self-hosted, imagecraft]
+    runs-on: [self-hosted, spread-enabled]
     needs: [snap-builds, filter]
     if: ${{ needs.filter.outputs.source-files == 'true' }}
     strategy:
