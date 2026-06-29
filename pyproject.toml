@@ -2,6 +2,7 @@
 name = "starcraft"
 description = "The basis for Starcraft team packages"
 dynamic = ["version"]
+# Applications should avoid CVEs in direct dependencies by setting a minimum version in 'dependencies'.
 dependencies = []
 classifiers = [
     "Development Status :: 1 - Planning",
@@ -16,6 +17,8 @@ readme = { file = "README.md", content-type = "text/markdown" }
 [project.scripts]
 starcraft-hello = "starcraft:hello"
 
+# Applications should avoid CVEs in optional, direct dependencies by setting a minimum
+# version in 'dependency-groups'.
 [dependency-groups]
 lint = [
     # Left empty for scaffolding and Makefile compatibility
@@ -75,7 +78,15 @@ tics = ["flake8", "pylint"]
 
 [tool.uv]
 constraint-dependencies = [
-    # Basic constraints to allow --resolution=lowest
+    # Basic constraints to allow --resolution=lowest.
+    #
+    # Libraries should avoid CVEs in direct and transitive dependencies by setting a
+    # minimum version in this section.
+    # This allows standalone builds to avoid CVEs while not placing undue constraints on
+    # downstream users of the library.
+    #
+    # Applications should avoid CVEs in transitive dependencies by setting a minimum
+    # version in this section.
     "cffi>=1.15",
     "iniconfig>=1.1.0",
     "httplib2>=0.20.0",
