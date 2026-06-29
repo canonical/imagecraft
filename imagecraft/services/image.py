@@ -88,13 +88,13 @@ class ImageService(AppService):
                     gptutil.create_empty_gpt_image(
                         imagepath=image_path,
                         sector_size=self._sector_size,
-                        layout=cast(GPTVolume, volume),
+                        layout=volume,
                     )
                 case PartitionSchema.MBR:
                     mbrutil.create_empty_mbr_image(
                         imagepath=image_path,
                         sector_size=self._sector_size,
-                        layout=cast(MBRVolume, volume),
+                        layout=volume,
                     )
                 case _:
                     # Reaching this case is a bug.
