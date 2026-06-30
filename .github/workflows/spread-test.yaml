@@ -28,7 +28,7 @@ jobs:
     needs: filter
     # Only build the snap for pull requests, it's not needed on release branches
     # or on master since we have launchpad build recipes which do this already
-    if: ${{ github.event_name == 'pull_request' && needs.filter.outputs.source-files == 'true' }}
+    if: ${{ github.event_name == 'pull_request' }}
     strategy:
       matrix:
         include:
@@ -37,18 +37,23 @@ jobs:
           - arch: arm64
             runner: ubuntu-24.04-arm
     runs-on: ${{ matrix.runner }}
+    # We add the same filter conditional to every step, because GitHub doesn't count a
+    # required-but-skipped job as complete if a matrix spawned it. Ugly workaround.
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
+        if: ${{ needs.filter.outputs.source-files == 'true' }}
         with:
           fetch-depth: 0
 
       - name: Build imagecraft snap
         uses: canonical/craft-actions/snapcraft/pack@main
         id: build-imagecraft
+        if: ${{ needs.filter.outputs.source-files == 'true' }}
 
       - name: Uploading imagecraft snap artifact
         uses: actions/upload-artifact@v6
+        if: ${{ needs.filter.outputs.source-files == 'true' }}
         with:
           name: snap-${{ matrix.arch }}
           path: "*.snap"
