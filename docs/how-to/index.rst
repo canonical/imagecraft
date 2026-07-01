@@ -11,3 +11,4 @@ Imagecraft.
     :hidden:
 
     add-package-repositories
+    configure-with-cloud-init
