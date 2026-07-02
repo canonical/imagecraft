@@ -20,7 +20,7 @@ parts:
     build-packages: ["mmdebstrap"]
     override-build: |
       mmdebstrap --arch $CRAFT_ARCH_BUILD_FOR \
-       --mode=sudo \
+       --mode=root \
        --format=dir \
        --variant=minbase \
        --include=apt \
