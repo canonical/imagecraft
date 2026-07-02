@@ -59,7 +59,7 @@ jobs:
           path: "*.snap"
 
   spread:
-    runs-on: [self-hosted, imagecraft]
+    runs-on: [self-hosted, spread-enabled]
     needs: [snap-builds, filter]
     if: ${{ needs.filter.outputs.source-files == 'true' }}
     strategy:
@@ -137,11 +137,11 @@ jobs:
           # Register a problem matcher to highlight spread failures
           echo "::add-matcher::.github/spread-problem-matcher.json"
 
-          BACKEND=google
+          BACKEND=openstack
           SPREAD=spread
 
           if [[ "${{ matrix.systems }}" =~ -arm- ]]; then
-            BACKEND=google-arm
+            BACKEND=openstack-arm
           fi
 
           RUN_TESTS=""
@@ -175,9 +175,9 @@ jobs:
               echo "Running spread log parser"
               ./tools/external/utils/log-parser spread.log --output spread-results.json
 
-              BACKEND=google
+              BACKEND=openstack
               if [[ "${{ matrix.systems }}" =~ -arm- ]]; then
-                BACKEND=google-arm
+                BACKEND=openstack-arm
               fi
 
               echo "Determining which tests were executed"
