@@ -1,5 +1,5 @@
 .. meta::
-    :description: How to install and configure default snaps on Ubuntu images.
+    :description: How to install and configure default snaps on Ubuntu Desktop, Server, and Core images.
 
 
 .. _how-to-pre-install-snaps:
@@ -55,7 +55,7 @@ your project file:
         gpg --homedir /home/ubuntu/.snap/gnupg --import $CRAFT_PART_SRC/sign.key
 
 .. admonition:: Required interaction during packing
-    :class: important
+    :class: caution
 
     When packing, you'll be prompted to unlock this signing key twice. If these prompts
     aren't acknowledged within a few minutes, the packing process will time out and
@@ -73,7 +73,6 @@ Next, copy the following part into your project file, replacing ``<assertion-nam
 
 .. code-block:: yaml
     :caption: imagecraft.yaml
-    :emphasize-lines: 5, 7
 
     uc-seed:
       after: [import-key]
@@ -132,7 +131,7 @@ Classic images
 To pre-install snaps into your classic image, declare a part that uses the Snap-preseed
 plugin. This plugin prepares the scaffolding for the snaps in the part's
 ``var/lib/snapd/seed/`` directory, which you'll need to copy into your image with the
-organize key.
+``organize`` key.
 
 For example, if you wanted to pre-install the ``core24`` snap from the ``latest/stable``
 channel and the ``hello-world`` snap from the ``latest/edge`` channel, your part would
