@@ -12,3 +12,4 @@ Imagecraft.
 
     add-package-repositories
     configure-with-cloud-init
+    pre-install-snaps

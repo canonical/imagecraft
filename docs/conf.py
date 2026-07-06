@@ -287,6 +287,7 @@ if "discourse_prefix" not in html_context and "discourse" in html_context:
 # Add configuration for intersphinx mapping
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
+    "ubuntu-core": ("https://documentation.ubuntu.com/core", None),
 }
 
 ##############################
