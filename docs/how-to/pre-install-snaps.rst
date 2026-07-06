@@ -134,7 +134,7 @@ plugin. This plugin prepares the scaffolding for the snaps in the part's
 ``var/lib/snapd/seed/`` directory, which you'll need to copy into your image with the
 organize key.
 
-For example, if you wanted to preinstall the ``core24`` snap from the ``latest/stable``
+For example, if you wanted to pre-install the ``core24`` snap from the ``latest/stable``
 channel and the ``hello-world`` snap from the ``latest/edge`` channel, your part would
 be declared as:
 
