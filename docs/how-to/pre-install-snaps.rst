@@ -57,7 +57,7 @@ your project file:
 .. admonition:: Required interaction during packing
     :class: important
 
-    When packing, you'll be prompted to unlock this signing key twice.If these prompts
+    When packing, you'll be prompted to unlock this signing key twice. If these prompts
     aren't acknowledged within a few minutes, the packing process will time out and
     fail.
 
@@ -80,7 +80,7 @@ Next, copy the following part into your project file, replacing ``<assertion-nam
       plugin: uc-prepare
       source: .
       uc-prepare-model-assert: <assertion-name>
-      uc-prepare-preseed: True
+      uc-prepare-preseed: true
       uc-prepare-preseed-sign-key: <key-name>
       organize:
         "system-seed/*": (volume/disk/ubuntu-seed)/
@@ -95,7 +95,7 @@ them to your image's ``ubuntu-seed`` partition, and cleans up the original copie
 they don't cause conflicts.
 
 If your model assertion contains optional snaps that you wish to install, list them with
-the uc-prepare-snaps key:
+the ``uc-prepare-snaps`` key:
 
 .. code-block:: yaml
     :caption: imagecraft.yaml
@@ -106,7 +106,7 @@ the uc-prepare-snaps key:
       plugin: uc-prepare
       source: .
       uc-prepare-model-assert: <assertion-name>
-      uc-prepare-preseed: True
+      uc-prepare-preseed: true
       uc-prepare-preseed-sign-key: <key-name>
       uc-prepare-snaps:
         - core22
@@ -131,7 +131,7 @@ Classic images
 
 To pre-install snaps into your classic image, declare a part that uses the Snap-preseed
 plugin. This plugin prepares the scaffolding for the snaps in the part's
-``var/lib/snapd/snap/`` directory, which you'll need to copy into your image with the
+``var/lib/snapd/seed/`` directory, which you'll need to copy into your image with the
 organize key.
 
 For example, if you wanted to preinstall the ``core24`` snap from the ``latest/stable``
