@@ -1,0 +1,7 @@
+[[IgnoredVulns]]
+id = "GHSA-pj65-3pf6-c5q4"
+[[IgnoredVulns]]
+id = "GHSA-rp8m-h266-53jh"
+reason = """
+These python-apt CVEs affect versions of the package from before 2023.
+"""
