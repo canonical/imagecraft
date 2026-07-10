@@ -1,0 +1,55 @@
+summary: Boot classic image in QEMU
+
+systems: [ubuntu-24.04-64, ubuntu-24.04-arm-64]
+
+prepare: |
+  ARCH=$(dpkg --print-architecture)
+  if [ "$ARCH" = "amd64" ]; then
+    tests.pkgs install qemu-system-x86 ovmf
+  elif [ "$ARCH" = "arm64" ]; then
+    tests.pkgs install qemu-system-arm qemu-efi-aarch64
+  else
+    echo "Unsupported arch: $ARCH"
+    exit 1
+  fi
+
+execute: |
+  cd sentinel && snapcraft pack --destructive-mode && cd ..
+  mv sentinel/sentinel_*.snap ./sentinel.snap
+  imagecraft pack --destructive-mode
+
+  ARCH=$(dpkg --print-architecture)
+  if [ "$ARCH" = "amd64" ]; then
+    QEMU_BIN="qemu-system-x86_64"
+    QEMU_ARGS=""
+    UEFI_CODE=/usr/share/OVMF/OVMF_CODE_4M.fd
+    UEFI_VARS=/usr/share/OVMF/OVMF_VARS_4M.fd
+  elif [ "$ARCH" = "arm64" ]; then
+    QEMU_BIN="qemu-system-aarch64"
+    QEMU_ARGS="-machine virt -cpu max"
+    UEFI_CODE=/usr/share/AAVMF/AAVMF_CODE.fd
+    UEFI_VARS=/usr/share/AAVMF/AAVMF_VARS.fd
+  else
+    echo "Unsupported arch: $ARCH"
+    exit 1
+  fi
+
+  cp "$UEFI_VARS" /tmp/uefi_vars.fd
+
+  $QEMU_BIN \
+    $QEMU_ARGS \
+    -accel kvm -accel tcg \
+    -nographic \
+    -m 1G \
+    -drive if=pflash,format=raw,readonly=on,file=$UEFI_CODE \
+    -drive if=pflash,format=raw,file=/tmp/uefi_vars.fd \
+    -drive file=pc.img,format=raw,index=0,if=virtio 2>&1 | tee output.log || true
+
+  MATCH "HELLO FROM IMAGECRAFT" output.log
+
+restore: |
+  imagecraft clean --destructive-mode || true
+  rm -f pc.img output.log /tmp/uefi_vars.fd sentinel.snap
+
+debug: |
+  cat output.log 2>/dev/null || echo "No serial output log"

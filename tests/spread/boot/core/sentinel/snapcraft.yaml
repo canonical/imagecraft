@@ -1,0 +1,21 @@
+name: sentinel
+version: "0.1"
+summary: Say hello and leave
+description: Outputs sentinel string to prove system booted
+base: core24
+confinement: devmode
+platforms:
+  amd64:
+  arm64:
+
+apps:
+  daemon:
+    command: bin/sentinel.sh
+    daemon: oneshot
+
+parts:
+  scripts:
+    plugin: dump
+    source: .
+    organize:
+      bin/sentinel.sh: bin/sentinel.sh
