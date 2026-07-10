@@ -3,6 +3,7 @@ summary: Boot classic image in QEMU
 systems: [ubuntu-24.04-64, ubuntu-24.04-arm-64]
 
 prepare: |
+  snap install snapcraft --classic
   ARCH=$(dpkg --print-architecture)
   if [ "$ARCH" = "amd64" ]; then
     tests.pkgs install qemu-system-x86 ovmf
