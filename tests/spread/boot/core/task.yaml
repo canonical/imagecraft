@@ -16,6 +16,13 @@ prepare: |
 execute: |
   cd sentinel && snapcraft pack --destructive-mode && cd ..
   mv sentinel/sentinel_*.snap ./sentinel.snap
+
+  if [ "$(dpkg --print-architecture)" = "amd64" ]; then
+    mv model-amd64.assert model.assert
+  else
+    mv model-arm64.assert model.assert
+  fi
+
   imagecraft pack --destructive-mode
 
   ARCH=$(dpkg --print-architecture)
