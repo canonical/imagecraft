@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ "$(dpkg --print-architecture)" = "amd64" ]; then
+if [ "$(uname -m)" = "x86_64" ]; then
   SERIAL_CONSOLE="/dev/ttyS0"
 else
   SERIAL_CONSOLE="/dev/ttyAMA0"
