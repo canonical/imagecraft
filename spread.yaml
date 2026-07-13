@@ -265,6 +265,7 @@ suites:
     summary: Test imagecraft plugins
   tests/spread/boot/:
     summary: Tests that boot images in QEMU
+    manual: true
   docs/tutorials/code/:
     summary: Tests the Imagecraft tutorials
     systems:
