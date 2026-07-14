@@ -27,3 +27,8 @@ repos:
         files: ^(.\/?)*\.(yaml|yml|json|json5|css|md)$
         additional_dependencies:
           - prettier@3.6.0 # renovate: datasource=npm
+  - repo: https://github.com/scop/pre-commit-shfmt
+    rev: "v3.13.1-1"
+    hooks:
+      - id: shfmt
+        exclude: '\.sh\.j2$'
