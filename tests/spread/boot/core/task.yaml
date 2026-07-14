@@ -15,18 +15,18 @@ prepare: |
   fi
 
 execute: |
+  ARCH=$(dpkg --print-architecture)
   cd sentinel && snapcraft pack --destructive-mode && cd ..
-  mv sentinel/sentinel_*.snap ./sentinel.snap
+  mv sentinel/sentinel_*_$ARCH.snap ./sentinel.snap
 
-  if [ "$(dpkg --print-architecture)" = "amd64" ]; then
-    mv model-amd64.assert model.assert
+  if [ "$ARCH" = "amd64" ]; then
+    echo "Not currently doing anything"
   else
-    mv model-arm64.assert model.assert
+    mv arm64/* .
   fi
 
   imagecraft pack --destructive-mode
 
-  ARCH=$(dpkg --print-architecture)
   if [ "$ARCH" = "amd64" ]; then
     QEMU_BIN="qemu-system-x86_64"
     QEMU_ARGS=""
