@@ -20,6 +20,10 @@ parts:
     uc-prepare-model-assert: model.assert
     uc-prepare-snaps:
       - sentinel.snap
+    override-build: |
+      craftctl default
+      grub-editenv "$CRAFT_PART_INSTALL"/system-seed/systems/*/grubenv set \
+        "snapd_full_cmdline_args=console=tty1 console=ttyAMA0 panic=-1 systemd.default_device_timeout_sec=300"
     organize:
       "system-seed/*": (volume/pc/ubuntu-seed)
     prime:
