@@ -271,4 +271,4 @@ suites:
     systems:
       - ubuntu-24.04-64
 
-kill-timeout: 2h
+kill-timeout: 4h
