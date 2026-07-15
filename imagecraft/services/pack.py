@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import cast
 
 from craft_application import PackageService, models
-from craft_cli import emit
+from craft_cli import CraftError, emit
 from typing_extensions import override
 
 from imagecraft.models import Project, get_partition_name
@@ -43,33 +43,51 @@ class ImagecraftPackService(PackageService):
         volume_name, volume = next(iter(project.volumes.items()))
 
         image_service = cast(ImageService, self._services.get("image"))
-        # Both calls are idempotent — the prologue hook will have run them
+        # create_images() is idempotent — the prologue hook will have run it
         # already during the lifecycle, but pack may be called standalone.
         image_service.create_images()
-        image_service.attach_images()
 
         project_dirs = self._services.get("lifecycle").project_info.dirs
-        loop_paths = image_service.get_loop_paths()
+        images = image_service.get_images()
+        image_path = images[volume_name]
+        partition_numbers = image_service._get_partition_numbers(volume)  # noqa: SLF001
 
-        try:
-            for structure_item in volume.structure:
-                partition_name = get_partition_name(volume_name, structure_item)
-                emit.progress(f"Preparing partition {partition_name}")
-                partition_prime_dir = project_dirs.get_prime_dir(
-                    partition=partition_name
+        for structure_item in volume.structure:
+            partition_name = get_partition_name(volume_name, structure_item)
+            emit.progress(f"Preparing partition {partition_name}")
+            partition_prime_dir = project_dirs.get_prime_dir(partition=partition_name)
+
+            partition_number = partition_numbers[structure_item.name]
+            geometry = diskutil.get_partition_geometry(
+                imagepath=image_path,
+                partition_number=partition_number,
+            )
+
+            # Sanity-check the on-disk size matches the structure spec.
+            expected_sectors = diskutil.bytes_to_sectors(
+                structure_item.size, geometry.sector_size
+            )
+            if geometry.sector_count != expected_sectors:
+                raise CraftError(
+                    f"Partition {partition_name!r} on-disk size "
+                    f"({geometry.sector_count} sectors) does not match the "
+                    f"requested size ({expected_sectors} sectors).",
                 )
-                loop_path = Path(loop_paths[f"{volume_name}/{structure_item.name}"])
 
-                diskutil.format_device(
-                    device_path=loop_path,
-                    fstype=structure_item.filesystem,
-                    label=structure_item.filesystem_label,
-                    content_dir=partition_prime_dir,
-                )
+            # Build the partition's filesystem directly inside the disk image
+            # at the partition's offset. mke2fs/mkfs.fat/mcopy all support
+            # writing at an offset, so this avoids losetup (needed to run
+            # inside unprivileged LXD containers) as well as the intermediate
+            # per-partition copy that a temp file + dd would require.
+            diskutil.format_populate_partition(
+                fstype=structure_item.filesystem,
+                content_dir=partition_prime_dir,
+                partitionpath=image_path,
+                label=structure_item.filesystem_label,
+                geometry=geometry,
+            )
 
-            image_service.verify_images()
-        finally:
-            image_service.detach_images()
+        image_service.verify_images()
 
         images = image_service.finalize_images(dest)
 
