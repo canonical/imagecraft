@@ -28,13 +28,13 @@ project = "Imagecraft"
 author = "Canonical"
 
 # Version string in sidebar
-if os.environ.get("READTHEDOCS_VERSION_TYPE", "external") == "external":  # PR or local build
-    # Because of setuptools, we can safely assume the version starts with `n.n`
-    major, minor, *_ = imagecraft.__version__.split(".")
-    release = f"{major}.{minor}"
-else:  # Branch build
-    rtd_version = os.environ.get("READTHEDOCS_VERSION", "latest")
-    release = "dev" if rtd_version == "latest" else rtd_version
+# if os.environ.get("READTHEDOCS_VERSION_TYPE", "external") == "external":  # PR or local build
+#     # Because of setuptools, we can safely assume the version starts with `n.n`
+#     major, minor, *_ = imagecraft.__version__.split(".")
+#     release = f"{major}.{minor}"
+# else:  # Branch build
+#     release = os.environ.get("READTHEDOCS_VERSION", "latest")
+release = "latest"
 
 # Sidebar documentation title; best kept reasonably short
 html_title = project + " documentation"
