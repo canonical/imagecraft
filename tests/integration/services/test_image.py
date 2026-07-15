@@ -12,6 +12,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import re
+import stat
+from pathlib import Path
 
 import pytest
 from craft_application import ServiceFactory
@@ -138,3 +140,30 @@ def test_get_partition_loop_paths(image_service: ImageService, new_dir):
     assert paths["pc/rootfs"].endswith("p2")
 
     image_service.detach_images()
+
+
+@pytest.mark.requires_root
+def test_attach_images_partition_nodes_exist(image_service: ImageService, new_dir):
+    """Partition device nodes must exist immediately after attach_images() returns.
+
+    This is a regression test for the udev race condition: without flock
+    synchronization, udev might not have finished creating the partition nodes
+    by the time losetup returns, causing mount to fail with
+    'special device does not exist'.
+    """
+    image_service.create_images()
+    image_service.attach_images()
+    try:
+        paths = image_service.get_loop_paths()
+        for key, device_path in paths.items():
+            if "/" not in key:
+                continue  # skip volume-level entries (e.g. "pc"); partitions use "vol/part"
+            device_node = Path(device_path)
+            assert device_node.exists(), (
+                f"Partition device node {device_path!r} does not exist"
+            )
+            assert stat.S_ISBLK(device_node.stat().st_mode), (
+                f"{device_path!r} exists but is not a block device"
+            )
+    finally:
+        image_service.detach_images()
