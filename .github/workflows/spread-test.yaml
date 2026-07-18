@@ -13,7 +13,7 @@ jobs:
       source-files: ${{ steps.filter.outputs.source-files }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
@@ -41,7 +41,7 @@ jobs:
     # required-but-skipped job as complete if a matrix spawned it. Ugly workaround.
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         if: ${{ needs.filter.outputs.source-files == 'true' }}
         with:
           fetch-depth: 0
@@ -52,7 +52,7 @@ jobs:
         if: ${{ needs.filter.outputs.source-files == 'true' }}
 
       - name: Uploading imagecraft snap artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: ${{ needs.filter.outputs.source-files == 'true' }}
         with:
           name: snap-${{ matrix.arch }}
@@ -81,7 +81,7 @@ jobs:
           rm -rf "${{ github.workspace }}"
           mkdir "${{ github.workspace }}"
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 2
           submodules: true
@@ -93,13 +93,13 @@ jobs:
         shell: bash
 
       - name: Get previous cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: "${{ github.workspace }}/.test-results"
           key: "${{ github.job }}-results-${{ github.run_id }}-${{ matrix.group }}-${{ steps.get-previous-attempt.outputs.previous_attempt }}"
 
       - name: Download previsouly build artifact
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: snap-${{ matrix.arch }}
 
@@ -201,7 +201,7 @@ jobs:
 
       - name: save spread test results to cache
         if: always()
-        uses: actions/cache/save@v5
+        uses: actions/cache/save@v6
         with:
           path: "${{ github.workspace }}/.test-results"
           key: "${{ github.job }}-results-${{ github.run_id }}-${{ matrix.group }}-${{ github.run_attempt }}"

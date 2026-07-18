@@ -19,7 +19,7 @@ jobs:
       source-files: ${{ steps.filter.outputs.source-files }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
@@ -46,7 +46,7 @@ jobs:
           fi
       - if: steps.decisions.outputs.PUBLISH == 'true'
         name: Checkout imagecraft
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -59,7 +59,7 @@ jobs:
 
       - if: steps.decisions.outputs.PUBLISH == 'true'
         name: Upload imagecraft snap artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: snap
           path: ${{ steps.build-imagecraft.outputs.snap }}
