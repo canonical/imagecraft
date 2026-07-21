@@ -5,6 +5,8 @@ import sys
 
 import craft_parts_docs  # type: ignore
 
+import imagecraft
+
 
 # Configuration for the Sphinx documentation builder.
 # All configuration specific to your project should be done in this file.
@@ -25,15 +27,23 @@ import craft_parts_docs  # type: ignore
 project = "Imagecraft"
 author = "Canonical"
 
+# Version string in sidebar
+# if os.environ.get("READTHEDOCS_VERSION_TYPE", "external") == "external":  # PR or local build
+#     # Because of setuptools, we can safely assume the version starts with `n.n`
+#     major, minor, *_ = imagecraft.__version__.split(".")
+#     release = f"{major}.{minor}"
+# else:  # Branch build
+#     release = os.environ.get("READTHEDOCS_VERSION", "latest")
+release = "latest"
+
 # Sidebar documentation title; best kept reasonably short
 html_title = project + " documentation"
 
 # Copyright string; shown at the bottom of the page
 copyright = "2023-%s, %s" % (datetime.date.today().year, author)
 
-# Use RTD canonical URL to ensure duplicate pages have a specific canonical URL
-html_baseurl = os.environ.get("READTHEDOCS_CANONICAL_URL", "/")
-ogp_site_url = html_baseurl
+
+ogp_site_url = "https://ubuntu.com/docs/imagecraft"
 
 # Preview name of the documentation website
 ogp_site_name = project
@@ -76,24 +86,27 @@ html_theme_options = {
 }
 
 # Project slug; see https://meta.discourse.org/t/what-is-category-slug/87897
-# slug = ''
+slug = "docs/imagecraft"
 
 
 #########################
 # Sitemap configuration #
 #########################
 
+# Use RTD canonical URL to ensure duplicate pages have a specific canonical URL
+html_baseurl = f"{ogp_site_url}/{release}/"
+
 # sphinx-sitemap uses html_baseurl to generate the full URL for each page:
-sitemap_url_scheme = '{link}'
+sitemap_url_scheme = "{link}"
 
 # Include `lastmod` dates in the sitemap:
 sitemap_show_lastmod = False
 
 # Exclude generated pages from the sitemap:
 sitemap_excludes = [
-    '404/',
-    'genindex/',
-    'search/',
+    "404/",
+    "genindex/",
+    "search/",
 ]
 
 
@@ -247,12 +260,13 @@ exclude_patterns = [
 
 # Adds custom CSS files, located under 'html_static_path'
 html_css_files = [
-    'css/cookie-banner.css'
+    "css/cookie-banner.css",
 ]
 
 # Adds custom JavaScript files, located under 'html_static_path'
 html_js_files = [
-    'js/bundle.js',
+    "js/bundle.js",
+    "js/overwrite-links.js",
 ]
 
 # Specifies a reST snippet to be appended to each .rst file
