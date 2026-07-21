@@ -8,4 +8,6 @@ fi
 echo "HELLO FROM IMAGECRAFT" > $SERIAL_CONSOLE
 
 sleep 5
-poweroff
+dbus-send --system --print-reply \
+        --dest=org.freedesktop.login1 /org/freedesktop/login1 \
+        "org.freedesktop.login1.Manager.PowerOff" boolean:true

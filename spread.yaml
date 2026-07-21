@@ -20,7 +20,7 @@ backends:
   openstack:
     key: '$(HOST: echo "$OS_CREDENTIALS_AMD64_PS7")'
     plan: shared.medium
-    halt-timeout: 4h
+    halt-timeout: 2h
     wait-timeout: 10m
     proxy: ingress-haproxy.ps7.canonical.com
     cidr-port-rel: [10.151.96.0/21:5000]
@@ -52,7 +52,7 @@ backends:
     type: openstack
     key: '$(HOST: echo "$OS_CREDENTIALS_STG_AMD64_PS7")'
     plan: shared.xsmall
-    halt-timeout: 4h
+    halt-timeout: 2h
     wait-timeout: 10m
     groups: [default]
     proxy: ingress-haproxy.ps7.canonical.com
@@ -64,8 +64,8 @@ backends:
   openstack-arm:
     type: openstack
     key: '$(HOST: echo "$OS_CREDENTIALS_ARM64_PS7")'
-    plan: shared.xsmall.arm64
-    halt-timeout: 4h
+    plan: shared.medium.arm64
+    halt-timeout: 2h
     wait-timeout: 10m
     groups: [default]
     proxy: ingress-haproxy.ps7.canonical.com
@@ -82,7 +82,7 @@ backends:
     type: openstack
     key: '$(HOST: echo "$OS_CREDENTIALS_STG_ARM64_PS7")'
     plan: shared.xsmall.arm64
-    halt-timeout: 4h
+    halt-timeout: 2h
     wait-timeout: 10m
     groups: [default]
     proxy: ingress-haproxy.ps7.canonical.com
@@ -271,4 +271,4 @@ suites:
     systems:
       - ubuntu-24.04-64
 
-kill-timeout: 4h
+kill-timeout: 2h

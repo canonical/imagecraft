@@ -66,18 +66,22 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # - group: ubuntu
-          #   systems: "ubuntu-22.04-64 ubuntu-24.04-64 ubuntu-26.04-64"
-          #   arch: amd64
-          #   tests: "tests/..."
-          # - group: boot
-          #   systems: "ubuntu-24.04-64"
-          #   arch: amd64
-          #   tests: "tests/spread/boot/..."
-          - group: boot-arm
+          - group: ubuntu
+            systems: "ubuntu-22.04-64 ubuntu-24.04-64 ubuntu-26.04-64"
+            arch: amd64
+            tests: "tests/..."
+          - group: boot-classic
+            systems: "ubuntu-24.04-64"
+            arch: amd64
+            tests: "tests/spread/boot/classic"
+          - group: boot-core
+            systems: "ubuntu-24.04-64"
+            arch: amd64
+            tests: "tests/spread/boot/core"
+          - group: boot-arm-classic
             systems: "ubuntu-24.04-arm-64"
             arch: arm64
-            tests: "tests/spread/boot/core"
+            tests: "tests/spread/boot/classic"
     steps:
       - name: Cleanup job workspace
         id: cleanup-job-workspace

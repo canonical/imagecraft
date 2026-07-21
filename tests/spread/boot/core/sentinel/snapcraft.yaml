@@ -7,11 +7,14 @@ confinement: devmode
 platforms:
   amd64:
   arm64:
+    build-on: [arm64, amd64]
+    build-for: arm64
 
 apps:
   daemon:
     command: bin/sentinel.sh
     daemon: oneshot
+    plugs: [shutdown]
 
 parts:
   scripts:

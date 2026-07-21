@@ -24,7 +24,7 @@ execute: |
     UEFI_VARS=/usr/share/OVMF/OVMF_VARS_4M.fd
   elif [ "$ARCH" = "arm64" ]; then
     QEMU_BIN="qemu-system-aarch64"
-    QEMU_ARGS="-machine virt -cpu max"
+    QEMU_ARGS="-machine virt -cpu neoverse-n1"
     UEFI_CODE=/usr/share/AAVMF/AAVMF_CODE.fd
     UEFI_VARS=/usr/share/AAVMF/AAVMF_VARS.fd
   else
@@ -36,7 +36,8 @@ execute: |
 
   $QEMU_BIN \
     $QEMU_ARGS \
-    -accel kvm -accel tcg \
+    -accel kvm -accel tcg,thread=multi \
+    -smp "$(nproc)" \
     -nographic \
     -m 1G \
     -drive if=pflash,format=raw,readonly=on,file=$UEFI_CODE \

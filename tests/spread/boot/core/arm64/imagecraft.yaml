@@ -7,6 +7,8 @@ build-base: ubuntu@24.04
 
 platforms:
   arm64:
+    build-on: [arm64, amd64]
+    build-for: arm64
 
 filesystems:
   default:
@@ -20,11 +22,6 @@ parts:
     uc-prepare-model-assert: model.assert
     uc-prepare-snaps:
       - sentinel.snap
-    override-build: |
-      craftctl default
-      CMD="console=ttyAMA0 panic=-1"
-      CMD="$CMD systemd.default_device_timeout_sec=300 systemd.default_timeout_start_sec=900 systemd.default_timeout_stop_sec=900"
-      grub-editenv "$CRAFT_PART_INSTALL"/system-seed/systems/*/grubenv set "snapd_full_cmdline_args=$CMD"
     organize:
       "system-seed/*": (volume/pc/ubuntu-seed)
     prime:
