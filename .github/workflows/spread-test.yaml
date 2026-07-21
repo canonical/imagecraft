@@ -70,14 +70,10 @@ jobs:
             systems: "ubuntu-22.04-64 ubuntu-24.04-64 ubuntu-26.04-64"
             arch: amd64
             tests: "tests/..."
-          - group: boot-classic
+          - group: boot
             systems: "ubuntu-24.04-64"
             arch: amd64
-            tests: "tests/spread/boot/classic"
-          - group: boot-core
-            systems: "ubuntu-24.04-64"
-            arch: amd64
-            tests: "tests/spread/boot/core"
+            tests: "tests/spread/boot/..."
           - group: boot-arm-classic
             systems: "ubuntu-24.04-arm-64"
             arch: arm64
