@@ -5,7 +5,7 @@ if [ "$(uname -m)" = "x86_64" ]; then
 else
   SERIAL_CONSOLE="/dev/ttyAMA0"
 fi
-echo "HELLO FROM IMAGECRAFT" > $SERIAL_CONSOLE
+echo "HELLO FROM SENTINEL SNAP" > $SERIAL_CONSOLE
 
 sleep 5
 dbus-send --system --print-reply \

@@ -45,7 +45,7 @@ execute: |
     -drive if=pflash,format=raw,file=/tmp/uefi_vars.fd \
     -drive file=pc.img,format=raw,index=0,if=virtio,cache=unsafe 2>&1 | tee output.log || true
 
-  MATCH "HELLO FROM IMAGECRAFT" output.log
+  MATCH "HELLO FROM SENTINEL SNAP" output.log
 
 restore: |
   imagecraft clean --destructive-mode || true
