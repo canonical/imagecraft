@@ -294,7 +294,7 @@ docs-auto:  ##- Render the documentation in a live session
 # Override for `install` target in docs project. We still need the Vale setup, so we
 # run that after the parent docs setup.
 .PHONY: docs-install
-docs-install: _setup-docs  ##- Set up documentation packages
+docs-install: setup-docs  ##- Set up documentation packages
 ifneq ($(CI),)
 ifeq ($(MAKELEVEL),0)
 	@echo ::group::$@
