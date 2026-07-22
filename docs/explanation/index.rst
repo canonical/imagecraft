@@ -22,6 +22,11 @@ Files travel as bundles through the parts lifecycle. These bundles are called
 
 * :ref:`filesets_explanation`
 
+Documentation
+-------------
+
+* :ref:`explanation-documentation`
+
 Cryptography
 ------------
 
@@ -37,5 +42,6 @@ communicating with local processes, and storing user credentials.
     /common/craft-parts/explanation/lifecycle
     overlay-step
     /common/craft-parts/explanation/filesets
+    documentation
     security-overview
     cryptography

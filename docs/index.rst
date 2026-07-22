@@ -35,6 +35,8 @@ In this documentation
     * - **File manipulation**
       - :ref:`explanation-parts` • :ref:`plugins` • :ref:`filesets_explanation` •
         :ref:`Overlays <explanation-overlay-step>`
+    * - **Release notes**
+      - :ref:`release-notes`
 
 
 How this documentation is organized
@@ -81,6 +83,7 @@ Governance and policies
     how-to/index
     reference/index
     explanation/index
+    release-notes/index
 
 .. toctree::
     :hidden:

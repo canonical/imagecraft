@@ -1,0 +1,11 @@
+[[IgnoredVulns]]
+id = "PYSEC-2026-3447"
+reason = "Setuptools is a build-time dependency for packaging and docs."
+
+[[IgnoredVulns]]
+id = "GHSA-pj65-3pf6-c5q4"
+reason = "python-apt is only used in Linux development and packaging workflows."
+
+[[IgnoredVulns]]
+id = "GHSA-rp8m-h266-53jh"
+reason = "python-apt is only used in Linux development and packaging workflows."

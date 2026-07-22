@@ -258,8 +258,7 @@ the ``rootfs`` key:
 .. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
     :language: yaml
     :class: no-copybutton
-    :start-at: rootfs:
-    :end-at: '*': (overlay)/
+    :lines: 39-53
     :emphasize-lines: 14, 15
 
 This copies the result of the part's build step to the root of the overlay file system,
