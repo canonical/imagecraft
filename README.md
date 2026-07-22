@@ -1,80 +1,62 @@
-# Imagecraft
+<If the software has approved imagery or logo, add it here.>
 
-[![Imagecraft][imagecraft-badge]][imagecraft-site]
-[![Tests][qa-badge]][qa-status]
-[![Documentation Status][rtd-badge]][rtd-latest]
-[![Codecov Status][codecov-badge]][codecov-status]
-[![Code Style][ruff-badge]][ruff-site]
+# Starcraft
 
-Imagecraft is a craft tool used to create Ubuntu bootable images. It
-follows the same principles as Snapcraft, but is focused on creating
-bootable images instead.
+<Include the build status badges.>
+
+<Answer elevator-pitch questions about the software – What is it? What does it do? What
+essential problem does it solve? Who is it useful for?>
+
+<If it's a library or framework and the solutions it provides are more open-ended, you
+can describe the project's overarching philosophy.>
+
+## Basic usage
+
+<Show the essence of the product with carefully-chosen examples of it in use. Give the
+prospective user a sense of what the software _feels_ like.>
+
+<This could be the constituent parts of the main user story, or smaller individual
+stories. Some examples:>
+
+- <For CLI apps and tools, three-to-five invocations of essential commands>
+- <For frameworks, some short examples of the structures and syntax>
+- <For libraries, the library name (`import <package>`) and the main APIs>
+
+## Installation
+
+<Briefly describe what platforms the software is supported on.>
+
+<Provide the simplest way to install it, prioritising the snap release on Ubuntu.>
+
+<If available, link to other installation methods in the documentation.>
 
 ## Documentation
 
-Imagecraft documentation is built from reStructuredText (`.rst`) files,
-most of them under the `docs/` folder in the source tree. [Build and
-browse the documentation
-locally](#build-and-browse-the-documentation-locally) if you prefer,
-although the [product
-website](https://canonical-imagecraft.readthedocs-hosted.com) is
-recommended.
-
-### Build and browse the documentation locally
-
-Clone the official source tree from GitHub into your computer\'s home
-directory. Its default location will then be `~/imagecraft/`. (You may
-clone the [Imagecraft
-repository](https://github.com/canonical/imagecraft) directly. However,
-it\'s protected: if you plan on [contributing to the
-project](#project-and-community), consider forking it to your own GitHub
-account then cloning that instead.)
-
-Install the documentation tools:
-
-```bash
-make setup-docs
-```
-
-Build and serve the documentation:
-
-```bash
-make docs-auto
-```
-
-Point your web browser to address `127.0.0.1:8080`.
+<Encourage the reader to start their journey with the documentation and link to it.>
 
 ## Community and support
 
+<Invite the user to participate in the community, with a link to the Code of Conduct and
+its central forums.>
+
 You can report any issues or bugs on the project's [GitHub
-repository](https://github.com/canonical/imagecraft/issues).
+repository](https://github.com/canonical/starcraft/issues).
 
-Imagecraft is covered by the [Ubuntu Code of
-Conduct](https://ubuntu.com/community/ethos/code-of-conduct).
+Starcraft is covered by the [Ubuntu Code of
+Conduct](https://ubuntu.com/community/docs/ethos/code-of-conduct).
 
-## Contribute to Imagecraft
+## Contribute to Starcraft
 
-Imagecraft is open source and part of the Canonical family. We would love your help.
+Starcraft is open source and part of the Canonical family. We would love your help.
 
-If you're interested, start with the [contribution guide](CONTRIBUTING.md).
+If you're interested, start with the [contribution guide](HACKING.md).
 
 We welcome any suggestions and help with the docs. The [Canonical Open Documentation
 Academy](https://github.com/canonical/open-documentation-academy) is the hub for doc
-development, including Imagecraft docs. No prior coding experience is required.
+development, including Starcraft docs. No prior coding experience is required.
 
 ## License and copyright
 
-Imagecraft is released under the [GPL-3.0 license](LICENSE).
+Starcraft is released under the [GPL-3.0 license](LICENSE).
 
-© 2023-2025 Canonical Ltd.
-
-[imagecraft-badge]: https://snapcraft.io/imagecraft/badge.svg
-[imagecraft-site]: https://snapcraft.io/imagecraft
-[rtd-badge]: https://readthedocs.com/projects/canonical-imagecraft/badge/?version=latest
-[rtd-latest]: https://canonical-imagecraft.readthedocs-hosted.com/latest/
-[ruff-badge]: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json
-[ruff-site]: https://github.com/astral-sh/ruff
-[codecov-badge]: https://codecov.io/github/canonical/imagecraft/coverage.svg?branch=main
-[codecov-status]: https://codecov.io/github/canonical/imagecraft?branch=main
-[qa-badge]: https://github.com/canonical/imagecraft/actions/workflows/qa.yaml/badge.svg?branch=main&event=push
-[qa-status]: https://github.com/canonical/imagecraft/actions/workflows/qa.yaml
+© <start year>-<current year> Canonical Ltd.
