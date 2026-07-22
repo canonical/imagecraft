@@ -61,6 +61,7 @@ toctree
 txt
 uncomment(ing)?
 URL
+uv
 utils
 VMs
 WCAG
@@ -72,3 +73,5 @@ xindy
 xml
 yaml
 YouTube
+mmdebstrap
+rootfs

@@ -19,6 +19,7 @@ DOCS_PDFPACKAGES      ?= latexmk fonts-freefont-otf texlive-latex-recommended te
 DOCS_VOCAB            ?= $(DEV_DIR)/styles/config/vocabularies/Canonical
 VALE_DIR              ?= $(DOCS_VENVDIR)/lib/python*/site-packages/vale
 VALE_CONFIG           ?= $(DEV_DIR)/vale.ini
+PA11Y_PATH            ?= $(DEV_DIR)/node_modules/pa11y/bin/pa11y.js
 PA11Y_CMD             ?= $(DEV_DIR)/node_modules/pa11y/bin/pa11y.js --config $(DEV_DIR)/pa11y.json
 CONFIRM_SUDO          ?= N
 CHECK_PATH            ?= $(filter-out $(DOCS_VENVDIR) $(DOCS_BUILDDIR),$(wildcard *))
@@ -67,7 +68,7 @@ $(DOCS_VENVDIR):
 	@touch $(DOCS_VENVDIR)
 
 pa11y-install:
-	@command -v $(PA11Y_CMD) >/dev/null || { \
+	@command -v $(PA11Y_PATH) >/dev/null || { \
 			echo "Installing \"pa11y\" from npm..."; echo; \
 			mkdir -p $(DEV_DIR)/node_modules/ ; \
 			npm install --prefix $(DEV_DIR) pa11y; \
