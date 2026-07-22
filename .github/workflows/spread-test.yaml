@@ -70,10 +70,14 @@ jobs:
             systems: "ubuntu-22.04-64 ubuntu-24.04-64 ubuntu-26.04-64"
             arch: amd64
             tests: "tests/..."
-          - group: ubuntu-arm
+          - group: boot
+            systems: "ubuntu-24.04-64"
+            arch: amd64
+            tests: "tests/spread/boot/..."
+          - group: boot-arm-classic
             systems: "ubuntu-24.04-arm-64"
             arch: arm64
-            tests: "tests/spread/boot/..."
+            tests: "tests/spread/boot/classic"
     steps:
       - name: Cleanup job workspace
         id: cleanup-job-workspace
