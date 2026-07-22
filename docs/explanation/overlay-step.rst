@@ -15,8 +15,8 @@ The location of the partition-specific overlays is made available in the
 ``overlay`` can be used to specify which files will be
 migrated to the next steps, and when omitted its default value will be ``"*"``.
 
-Example part using ``override-overlay``
---------------------------------------
+Example part using override-overlay
+-----------------------------------
 
 Use ``override-overlay`` when a part needs to replace the default overlay step
 with custom shell commands.
