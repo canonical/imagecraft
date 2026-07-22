@@ -39,7 +39,7 @@ There is no single way to write, but there are guidelines and patterns that Imag
 documents follow:
 
 - `Diátaxis <https://diataxis.fr>`__
-- `Starcraft style guide <https://canonical-starcraft.readthedocs-hosted.com/latest/reference/starcraft-style-guide/>`__
+- `Starcraft style guide <https://documentation.ubuntu.com/starflow/latest/how-to/starcraft-style-guide/>`__
 - `Canonical Style Guide <https://docs.ubuntu.com/styleguide>`__
 - `reStructuredText syntax reference
   <https://documentation.ubuntu.com/sphinx-stack/latest/reference/rst-syntax-reference>`__
