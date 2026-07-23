@@ -68,7 +68,12 @@ parts:
     override-overlay: |
       cat << 'EOF' > /etc/default/grub
       GRUB_TIMEOUT=1
-      GRUB_TIMEOUT_STYLE=hidden
+      GRUB_RECORDFAIL_TIMEOUT=1
+      GRUB_TIMEOUT_STYLE=menu
+      GRUB_TERMINAL="console serial"
+      GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no --stop=1"
+      GRUB_CMDLINE_LINUX_DEFAULT=""
+      GRUB_CMDLINE_LINUX="console=ttyS0,115200n8 console=tty1"
       EOF
 
   sentinel-service:
@@ -84,18 +89,18 @@ parts:
       cat << EOF > /etc/systemd/system/boot-sentinel.service
       [Unit]
       Description=Boot sentinel
-      After=multi-user.target
 
       [Service]
       Type=oneshot
-      ExecStart=/bin/bash -c 'echo HELLO FROM IMAGECRAFT > $SERIAL_CONSOLE'
+      ExecStart=/bin/bash -c 'echo HELLO FROM IMAGECRAFT > /var/lib/boot-sentinel.txt; echo HELLO FROM IMAGECRAFT > $SERIAL_CONSOLE || true'
       ExecStartPost=/sbin/poweroff
 
       [Install]
       WantedBy=multi-user.target
       EOF
 
-      systemctl enable boot-sentinel.service
+      mkdir -p /etc/systemd/system/multi-user.target.wants
+      ln -sf /etc/systemd/system/boot-sentinel.service /etc/systemd/system/multi-user.target.wants/boot-sentinel.service
 
 volumes:
   pc:

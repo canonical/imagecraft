@@ -31,10 +31,9 @@ execute: |
     echo "Unsupported arch: $ARCH"
     exit 1
   fi
-
   cp "$UEFI_VARS" /tmp/uefi_vars.fd
 
-  $QEMU_BIN \
+  timeout 180 $QEMU_BIN \
     $QEMU_ARGS \
     -accel kvm -accel tcg,thread=multi \
     -smp "$(nproc)" \
@@ -42,7 +41,7 @@ execute: |
     -m 1G \
     -drive if=pflash,format=raw,readonly=on,file=$UEFI_CODE \
     -drive if=pflash,format=raw,file=/tmp/uefi_vars.fd \
-    -drive file=pc.img,format=raw,index=0,if=virtio 2>&1 | tee output.log || true
+    -drive file=pc.img,format=raw,index=0,if=ide 2>&1 | tee output.log || true
 
   MATCH "HELLO FROM IMAGECRAFT" output.log
 

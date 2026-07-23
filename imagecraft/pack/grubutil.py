@@ -14,6 +14,7 @@
 
 """GRUB utils."""
 
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -41,6 +42,13 @@ _ARCH_TO_GRUB_EFI_TARGET: dict[str, str] = {
 _GRUB_BIOS_TARGET = "i386-pc"
 _GRUB_BIOS_ARCHS = {DebianArchitecture.AMD64, DebianArchitecture.I386}
 
+# Maps grub EFI target → (grub binary name under /EFI/<id>/, fallback sibling name)
+_EFI_TARGET_TO_FILENAMES: dict[str, tuple[str, str]] = {
+    "x86_64-efi": ("grubx64.efi", "grubx64.efi"),
+    "arm64-efi": ("grubaa64.efi", "grubaa64.efi"),
+    "arm-efi": ("grubarm.efi", "grubarm.efi"),
+}
+
 
 def _grub_install(grub_target: str, loop_dev: str) -> None:
     """Install grub in the image.
@@ -65,6 +73,9 @@ def _grub_install(grub_target: str, loop_dev: str) -> None:
             f"--target={grub_target}",
             "--uefi-secure-boot",
             "--no-nvram",
+            # Ubuntu's signed grub binary has /EFI/ubuntu compiled in as its
+            # $prefix, so the config and modules must live there.
+            "--bootloader-id=ubuntu",
         ]
 
     update_grub_command = [
@@ -116,6 +127,56 @@ def _grub_install(grub_target: str, loop_dev: str) -> None:
     except FileNotFoundError as err:
         raise errors.GRUBInstallError("Missing tool to install grub") from err
 
+    _populate_uefi_fallback(grub_target)
+
+
+def _extract_root_uuid(grub_cfg_src: Path) -> str:
+    """Extract rootfs UUID from a search.fs_uuid line in a GRUB config file."""
+    for line in grub_cfg_src.read_text(encoding="utf-8").splitlines():
+        if line.startswith("search.fs_uuid "):
+            parts = line.split()
+            if len(parts) > 1:
+                return parts[1]
+    return ""
+
+
+def _populate_uefi_fallback(grub_target: str) -> None:
+    """Populate UEFI fallback path with grub + config next to BOOT*.EFI.
+
+    We intentionally keep BOOT*.EFI as shim and provide grubx64.efi/grub.cfg
+    in the same directory, which is the location shim looks at first.
+    """
+    if grub_target not in _EFI_TARGET_TO_FILENAMES:
+        return
+
+    grub_fname, fallback_grub_fname = _EFI_TARGET_TO_FILENAMES[grub_target]
+    efi_dir = Path("/boot/efi/EFI")
+    grub_src = efi_dir / "ubuntu" / grub_fname
+    grub_cfg_src = efi_dir / "ubuntu" / "grub.cfg"
+    boot_grub = efi_dir / "BOOT" / fallback_grub_fname
+    boot_cfg = efi_dir / "BOOT" / "grub.cfg"
+
+    if not (grub_src.exists() and grub_cfg_src.exists()):
+        return
+
+    boot_grub.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(grub_src, boot_grub)
+    root_uuid = _extract_root_uuid(grub_cfg_src)
+    if root_uuid:
+        # In this path grub may start in command mode; `normal` enters
+        # menu mode and evaluates /boot/grub/grub.cfg from the rootfs.
+        stub = "\n".join(
+            [
+                f"search.fs_uuid {root_uuid} root",
+                "set prefix=($root)'/boot/grub'",
+                "normal",
+            ]
+        )
+        boot_cfg.write_text(stub + "\n", encoding="utf-8")
+        grub_cfg_src.write_text(stub + "\n", encoding="utf-8")
+    else:
+        shutil.copy2(grub_cfg_src, boot_cfg)
+
 
 def setup_grub(
     image: Image, workdir: Path, arch: str, filesystem_mount: FilesystemMount
@@ -161,16 +222,15 @@ def setup_grub(
     with image.attach_loopdev() as loop_dev:
         mounts: list[Mount] = [
             *_image_mounts(loop_dev, image.volume.structure, filesystem_mount),
+            # Use a recursive bind of the host's /dev so that loop devices
+            # created by losetup (e.g. /dev/loop5) are visible inside the
+            # chroot.  A fresh devtmpfs would not contain them, causing
+            # grub-install to fail silently when it cannot access the disk.
             Mount(
-                fstype="devtmpfs",
-                src="devtmpfs-build",
+                fstype=None,
+                src="/dev",
                 relative_mountpoint="/dev",
-            ),
-            Mount(
-                fstype="devpts",
-                src="devpts-build",
-                relative_mountpoint="/dev/pts",
-                options=["-o", "nodev,nosuid"],
+                options=["--rbind"],
             ),
             Mount(fstype="proc", src="proc-build", relative_mountpoint="proc"),
             Mount(fstype="sysfs", src="sysfs-build", relative_mountpoint="/sys"),
