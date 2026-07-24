@@ -169,7 +169,7 @@ def _populate_uefi_fallback(grub_target: str) -> None:
             [
                 f"search.fs_uuid {root_uuid} root",
                 "set prefix=($root)'/boot/grub'",
-                "normal",
+                "configfile $prefix/grub.cfg",
             ]
         )
         boot_cfg.write_text(stub + "\n", encoding="utf-8")
