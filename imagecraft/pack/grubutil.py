@@ -14,6 +14,7 @@
 
 """GRUB utils."""
 
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -32,6 +33,10 @@ from imagecraft.pack import mbrutil
 from imagecraft.pack.chroot import Chroot, Mount
 from imagecraft.pack.image import Image
 from imagecraft.subprocesses import run
+
+_UUID_REGEX = re.compile(
+    r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
+)
 
 _ARCH_TO_GRUB_EFI_TARGET: dict[str, str] = {
     DebianArchitecture.AMD64: "x86_64-efi",
@@ -131,12 +136,11 @@ def _grub_install(grub_target: str, loop_dev: str) -> None:
 
 
 def _extract_root_uuid(grub_cfg_src: Path) -> str:
-    """Extract rootfs UUID from a search.fs_uuid line in a GRUB config file."""
-    for line in grub_cfg_src.read_text(encoding="utf-8").splitlines():
-        if line.startswith("search.fs_uuid "):
-            parts = line.split()
-            if len(parts) > 1:
-                return parts[1]
+    """Extract rootfs UUID from a GRUB config file."""
+    text = grub_cfg_src.read_text(encoding="utf-8")
+    match = _UUID_REGEX.search(text)
+    if match:
+        return match.group(0)
     return ""
 
 
