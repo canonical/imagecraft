@@ -67,9 +67,9 @@ parts:
     after: [rootfs]
     override-overlay: |
       cat << 'EOF' > /etc/default/grub
-      GRUB_TIMEOUT=1
-      GRUB_RECORDFAIL_TIMEOUT=1
-      GRUB_TIMEOUT_STYLE=menu
+      GRUB_TIMEOUT=0
+      GRUB_RECORDFAIL_TIMEOUT=0
+      GRUB_TIMEOUT_STYLE=hidden
       GRUB_TERMINAL="console serial"
       GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no --stop=1"
       GRUB_CMDLINE_LINUX_DEFAULT=""
