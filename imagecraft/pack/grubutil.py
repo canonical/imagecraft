@@ -165,12 +165,23 @@ def _populate_uefi_fallback(grub_target: str) -> None:
 
     boot_grub.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(grub_src, boot_grub)
+
+    # Copy modules to EFI partition so GRUB can load ext2/part_gpt drivers
+    modules_src = Path("/boot/grub") / grub_target
+    if modules_src.exists():
+        boot_modules = efi_dir / "BOOT" / grub_target
+        ubuntu_modules = efi_dir / "ubuntu" / grub_target
+        if not boot_modules.exists():
+            shutil.copytree(modules_src, boot_modules, dirs_exist_ok=True)
+        if not ubuntu_modules.exists():
+            shutil.copytree(modules_src, ubuntu_modules, dirs_exist_ok=True)
+
     root_uuid = _extract_root_uuid(grub_cfg_src)
     if root_uuid:
-        # In this path grub may start in command mode; `normal` enters
-        # menu mode and evaluates /boot/grub/grub.cfg from the rootfs.
         stub = "\n".join(
             [
+                "insmod part_gpt",
+                "insmod ext2",
                 f"search.fs_uuid {root_uuid} root",
                 "set prefix=($root)'/boot/grub'",
                 "configfile $prefix/grub.cfg",
