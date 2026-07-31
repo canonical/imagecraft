@@ -57,7 +57,7 @@ Apply custom operations
 To apply custom operations to the files, use the ``override-overlay`` key in a separate
 part to run commands in the overlay file system.
 
-For example, to set the file permissions on ``/usr/bin/local/my-script.sh`` in the final
+For example, to set the file permissions on ``/usr/local/bin/my-script.sh`` in the final
 image:
 
 .. code-block:: yaml
