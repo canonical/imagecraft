@@ -16,6 +16,7 @@
 
 """The uc-prepare plugin."""
 
+import shlex
 from typing import Literal, cast
 
 from craft_parts.plugins import Plugin, PluginProperties
@@ -135,8 +136,13 @@ class UcPreparePlugin(Plugin):
 
         cmd.extend(f"--snap={resolve_snap(snap)}" for snap in options.uc_prepare_snaps)
 
-        cmd.append(
-            f"{options.uc_prepare_model_assert} {self._part_info.part_install_dir}"
-        )
+        prepare_dir = self._part_info.part_build_dir / "prepare-image"
+        cmd.append(options.uc_prepare_model_assert)
+        cmd.append(str(prepare_dir))
 
-        return [" ".join(cmd)]
+        return [
+            # snap prepare-image command will fail if prepare_dir is non-empty
+            f"rm -rf {prepare_dir} {self._part_info.part_install_dir}/system-seed",
+            shlex.join(cmd),
+            f"mv {prepare_dir}/system-seed {self._part_info.part_install_dir}/",
+        ]
