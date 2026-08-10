@@ -9,7 +9,9 @@ dependencies = [
     "craft-parts~=2.35.0",
     "craft-cli~=3.0",
     "craft-platforms~=0.6",
-    "craft-application~=7.1",
+    # TODO: switch back to a released craft-application~=7.1 once
+    # https://github.com/canonical/craft-application/pull/1153 is merged and released.
+    "craft-application @ git+https://github.com/canonical/craft-application@work/fix-1152",
     "craft-grammar~=2.3",
     "craft-providers~=3.7",
     "pydantic~=2.8",
