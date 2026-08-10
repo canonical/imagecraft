@@ -1,1 +1,0 @@
-/home/lengau/Work/Code/imagecraft/.github/instructions/starcraft-docs-style.instructions.md
