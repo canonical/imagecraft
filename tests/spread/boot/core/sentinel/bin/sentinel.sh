@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for dev in /dev/ttyS0 /dev/ttyAMA0 /dev/ttyAMA1; do
+for dev in /dev/console /dev/ttyS0 /dev/ttyAMA0 /dev/ttyAMA1; do
   echo "HELLO FROM SENTINEL SNAP" 2>/dev/null > "$dev"
 done
 
