@@ -55,11 +55,12 @@ _EFI_TARGET_TO_FILENAMES: dict[str, tuple[str, str]] = {
 }
 
 
-def _grub_install(grub_target: str, loop_dev: str) -> None:
+def _grub_install(grub_target: str, loop_dev: str, mount_dir: Path) -> None:
     """Install grub in the image.
 
     :param grub_target: target platform to install grub for.
     :param loop_dev: loop device to install grub on
+    :param mount_dir: mount directory for the image
     """
     check_grub_install = ["grub-install", "-V"]
     if grub_target == _GRUB_BIOS_TARGET:
@@ -132,7 +133,7 @@ def _grub_install(grub_target: str, loop_dev: str) -> None:
     except FileNotFoundError as err:
         raise errors.GRUBInstallError("Missing tool to install grub") from err
 
-    _populate_uefi_fallback(grub_target)
+    _populate_uefi_fallback(grub_target, mount_dir)
 
 
 def _extract_root_uuid(grub_cfg_src: Path) -> str:
@@ -144,7 +145,9 @@ def _extract_root_uuid(grub_cfg_src: Path) -> str:
     return ""
 
 
-def _populate_uefi_fallback(grub_target: str) -> None:
+def _populate_uefi_fallback(
+    grub_target: str, mount_dir: Path, efi_dir: Path = Path("/boot/efi/EFI")
+) -> None:
     """Populate UEFI fallback path with grub + config next to BOOT*.EFI.
 
     We intentionally keep BOOT*.EFI as shim and provide grubx64.efi/grub.cfg
@@ -154,11 +157,11 @@ def _populate_uefi_fallback(grub_target: str) -> None:
         return
 
     grub_fname, fallback_grub_fname = _EFI_TARGET_TO_FILENAMES[grub_target]
-    efi_dir = Path("/boot/efi/EFI")
     grub_src = efi_dir / "ubuntu" / grub_fname
     grub_cfg_src = efi_dir / "ubuntu" / "grub.cfg"
     boot_grub = efi_dir / "BOOT" / fallback_grub_fname
     boot_cfg = efi_dir / "BOOT" / "grub.cfg"
+    root_grub_cfg = mount_dir / "boot" / "grub" / "grub.cfg"
 
     if not (grub_src.exists() and grub_cfg_src.exists()):
         return
@@ -176,7 +179,7 @@ def _populate_uefi_fallback(grub_target: str) -> None:
         if not ubuntu_modules.exists():
             shutil.copytree(modules_src, ubuntu_modules, dirs_exist_ok=True)
 
-    root_uuid = _extract_root_uuid(grub_cfg_src)
+    root_uuid = _extract_root_uuid(root_grub_cfg) if root_grub_cfg.exists() else ""
     if root_uuid:
         stub = "\n".join(
             [
@@ -260,6 +263,7 @@ def setup_grub(
                 target=_grub_install,
                 grub_target=grub_target,
                 loop_dev=loop_dev,
+                mount_dir=mount_dir,
             )
         except errors.ChrootMountError as err:
             # Ignore mounting errors indicating the rootfs does not have
