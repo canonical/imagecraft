@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+missing=()
+for tool in uv ruff codespell shellcheck ty; do
+  if ! command -v "$tool" >/dev/null 2>&1; then
+    missing+=("$tool")
+  fi
+done
+
+if [ ! -x /project/.venv/bin/python ]; then
+  missing+=(".venv/bin/python")
+fi
+
+if [ "${#missing[@]}" -gt 0 ]; then
+  workshopctl set-health error "missing setup tools: ${missing[*]}"
+  exit 1
+fi
+
+workshopctl set-health okay

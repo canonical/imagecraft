@@ -31,7 +31,12 @@ from imagecraft.models.volume import (
     MBRVolume,
 )
 from imagecraft.pack.chroot import Mount
-from imagecraft.pack.grubutil import _image_mounts, _part_num, setup_grub
+from imagecraft.pack.grubutil import (
+    _image_mounts,
+    _part_num,
+    _populate_uefi_fallback,
+    setup_grub,
+)
 from imagecraft.pack.image import Image
 
 
@@ -307,6 +312,41 @@ def test_setup_grub_mbr_bios(mocker, new_dir, arch):
 
     assert mock_chroot.return_value.execute.called
     assert mock_chroot.return_value.execute.call_args.kwargs["grub_target"] == "i386-pc"
+
+
+@pytest.mark.usefixtures("new_dir")
+def test_populate_uefi_fallback_uses_root_grub_cfg(new_dir):
+    mount_dir = Path(new_dir, "mount")
+    efi_dir = Path(new_dir, "efi")
+    root_grub_cfg = mount_dir / "boot" / "grub" / "grub.cfg"
+    ubuntu_dir = efi_dir / "ubuntu"
+
+    root_grub_cfg.parent.mkdir(parents=True, exist_ok=True)
+    ubuntu_dir.mkdir(parents=True, exist_ok=True)
+    (mount_dir / "boot" / "grub" / "x86_64-efi").mkdir(parents=True, exist_ok=True)
+    root_grub_cfg.write_text(
+        "search.fs_uuid 12345678-1234-1234-1234-123456789abc root\n",
+        encoding="utf-8",
+    )
+    (ubuntu_dir / "grubx64.efi").write_text("grub-binary", encoding="utf-8")
+    (ubuntu_dir / "grub.cfg").write_text("normal\n", encoding="utf-8")
+
+    _populate_uefi_fallback("x86_64-efi", mount_dir, efi_dir=efi_dir)
+
+    expected_stub = (
+        "insmod part_gpt\n"
+        "insmod ext2\n"
+        "search.fs_uuid 12345678-1234-1234-1234-123456789abc root\n"
+        "set prefix=($root)'/boot/grub'\n"
+        "configfile $prefix/grub.cfg\n"
+    )
+    assert (efi_dir / "BOOT" / "grubx64.efi").read_text(
+        encoding="utf-8"
+    ) == "grub-binary"
+    assert (efi_dir / "ubuntu" / "grub.cfg").read_text(
+        encoding="utf-8"
+    ) == expected_stub
+    assert (efi_dir / "BOOT" / "grub.cfg").read_text(encoding="utf-8") == expected_stub
 
 
 @pytest.mark.parametrize(

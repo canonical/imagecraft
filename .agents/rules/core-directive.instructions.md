@@ -1,0 +1,1 @@
+/home/lengau/Work/Code/imagecraft/.github/instructions/core-directive.instructions.md

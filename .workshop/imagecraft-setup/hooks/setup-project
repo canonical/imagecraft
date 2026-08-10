@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd /project
+make setup
+uv tool install --force ruff
+uv tool install --force codespell
+uv tool install --force ty
