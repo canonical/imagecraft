@@ -11,7 +11,7 @@ dependencies = [
     "craft-platforms~=0.6",
     "craft-application~=7.1",
     "craft-grammar~=2.3",
-    "craft-providers~=3.0",
+    "craft-providers~=3.7",
     "pydantic~=2.8",
     "pygit2>=1.13.0,<1.15.0; python_version=='3.12'", # pin pygit2 to versions compatible with libgit2-1.7 for core24
     "pygit2>=1.19.0,<1.20.0; python_version=='3.14'", # Ubuntu 26.04 and core26
