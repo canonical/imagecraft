@@ -33,7 +33,7 @@ execute: |
   fi
   cp "$UEFI_VARS" /tmp/uefi_vars.fd
 
-  script -q -c "$QEMU_BIN \
+  script -q -c "timeout -k 10 180 $QEMU_BIN \
     $QEMU_ARGS \
     -accel kvm -accel tcg,thread=multi \
     -smp \"\$(nproc)\" \
