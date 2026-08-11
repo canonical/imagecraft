@@ -10,25 +10,62 @@ on:
   workflow_dispatch:
 
 jobs:
-  # Decide which manual suites should run, one output per suite/label so new
-  # manual suites can be added without affecting the others.
+  # Discover every suite marked `manual: true` in spread.yaml, and decide
+  # whether each one should run this workflow. A suite runs if:
+  # - This is an actual scheduled run
+  # - This is a manually triggered run via the Actions tab
+  # - This is a PR with that suite's specific "PR: Run Manual Spread (<suite>)" label
+  # Suite-specific jobs below still need to be added by hand (they encode
+  # which systems/runners to use), but they no longer need their own
+  # hardcoded label-matching logic: they just read this job's `suites` output.
   predicate:
     runs-on: ubuntu-slim
     outputs:
-      run-boot: ${{ steps.eval.outputs.run-boot }}
+      suites: ${{ steps.eval.outputs.suites }}
     steps:
-      - id: eval
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install yq
+        env:
+          YQ_VERSION: v4.53.3
         run: |
-          # OR's the conditions in which each manual suite should run:
-          # - This is an actual scheduled run
-          # - This is a manually triggered run via the Actions tab
-          # - This is a PR with the suite's specific label
-          run_boot=${{ contains(github.event.pull_request.labels.*.name, 'PR: Run Manual Spread (boot)') || contains(fromJSON('["schedule", "workflow_dispatch"]'), github.event_name) }}
-          echo "run-boot=$run_boot" >> "$GITHUB_OUTPUT"
+          mkdir -p "$HOME/.local/bin"
+          curl -sL "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64" -o "$HOME/.local/bin/yq"
+          chmod +x "$HOME/.local/bin/yq"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Discover manual spread suites and evaluate labels
+        id: eval
+        env:
+          PR_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+
+          # Extract every suite path in spread.yaml marked `manual: true`
+          manual_paths=$(yq e -o=json '.suites' spread.yaml | jq -r 'to_entries | map(select(.value.manual == true)) | .[].key')
+
+          run_flags="{}"
+          while IFS= read -r path; do
+            [ -z "$path" ] && continue
+            suite=$(basename "${path%/}")
+            label="PR: Run Manual Spread ($suite)"
+            has_label=$(jq --arg l "$label" 'any(.[]; . == $l)' <<< "$PR_LABELS")
+            if [ "$has_label" = "true" ] || [ "$EVENT_NAME" = "schedule" ] || [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+              should_run=true
+            else
+              should_run=false
+            fi
+            run_flags=$(jq --arg k "$suite" --argjson v "$should_run" '. + {($k): $v}' <<< "$run_flags")
+          done <<< "$manual_paths"
+
+          echo "Discovered manual suites: $run_flags"
+          echo "suites=$run_flags" >> "$GITHUB_OUTPUT"
 
   snap-builds:
     needs: predicate
-    if: needs.predicate.outputs.run-boot == 'true'
+    if: fromJSON(needs.predicate.outputs.suites).boot == true
     strategy:
       matrix:
         include:
@@ -55,7 +92,7 @@ jobs:
 
   boot:
     needs: [predicate, snap-builds]
-    if: needs.predicate.outputs.run-boot == 'true'
+    if: fromJSON(needs.predicate.outputs.suites).boot == true
     runs-on: [self-hosted, spread-enabled]
     strategy:
       fail-fast: false
