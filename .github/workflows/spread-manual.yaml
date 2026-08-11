@@ -1,0 +1,111 @@
+name: Spread (manual suites)
+
+on:
+  pull_request:
+    # The 3 default types + "labeled"
+    types: [labeled, opened, reopened, synchronize]
+  schedule:
+    # At 03:00 on Wednesday and Sunday.
+    - cron: "0 3 * * WED,SUN"
+  workflow_dispatch:
+
+jobs:
+  # Decide which manual suites should run, one output per suite/label so new
+  # manual suites can be added without affecting the others.
+  predicate:
+    runs-on: ubuntu-slim
+    outputs:
+      run-boot: ${{ steps.eval.outputs.run-boot }}
+    steps:
+      - id: eval
+        run: |
+          # OR's the conditions in which each manual suite should run:
+          # - This is an actual scheduled run
+          # - This is a manually triggered run via the Actions tab
+          # - This is a PR with the suite's specific label
+          run_boot=${{ contains(github.event.pull_request.labels.*.name, 'PR: Run Manual Spread (boot)') || contains(fromJSON('["schedule", "workflow_dispatch"]'), github.event_name) }}
+          echo "run-boot=$run_boot" >> "$GITHUB_OUTPUT"
+
+  snap-builds:
+    needs: predicate
+    if: needs.predicate.outputs.run-boot == 'true'
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Build imagecraft snap
+        uses: canonical/craft-actions/snapcraft/pack@main
+        id: build-imagecraft
+
+      - name: Uploading imagecraft snap artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: snap-${{ matrix.arch }}
+          path: "*.snap"
+
+  boot:
+    needs: [predicate, snap-builds]
+    if: needs.predicate.outputs.run-boot == 'true'
+    runs-on: [self-hosted, spread-enabled]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: boot
+            systems: "ubuntu-24.04-64"
+            arch: amd64
+            tests: "tests/spread/boot/..."
+          - group: boot-arm-classic
+            systems: "ubuntu-24.04-arm-64"
+            arch: arm64
+            tests: "tests/spread/boot/classic"
+    steps:
+      - name: Cleanup job workspace
+        run: |
+          rm -rf "${{ github.workspace }}"
+          mkdir "${{ github.workspace }}"
+
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+          submodules: true
+
+      - name: Download previously built artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: snap-${{ matrix.arch }}
+
+      - name: Run spread tests
+        run: |
+          # Register a problem matcher to highlight spread failures
+          echo "::add-matcher::.github/spread-problem-matcher.json"
+
+          BACKEND=openstack
+          if [[ "${{ matrix.systems }}" =~ -arm- ]]; then
+            BACKEND=openstack-arm
+          fi
+
+          RUN_TESTS=""
+          for SYSTEM in ${{ matrix.systems }}; do
+              RUN_TESTS="$RUN_TESTS $BACKEND:$SYSTEM:${{ matrix.tests }}"
+          done
+          echo "Running command: spread $RUN_TESTS"
+          spread $RUN_TESTS
+
+      - name: Discard spread workers
+        if: always()
+        run: |
+          shopt -s nullglob
+          for r in .spread-reuse.*.yaml; do
+            spread -discard -reuse-pid="$(echo "$r" | grep -o -E '[0-9]+')"
+          done
