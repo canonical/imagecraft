@@ -23,11 +23,7 @@ parts:
     uc-prepare-snaps:
       - sentinel.snap
     organize:
-      "system-seed/*": (volume/pc/ubuntu-seed)
-    prime:
-      - -kernel
-      - -gadget
-      - -resolved-content
+      system-seed: (volume/pc/ubuntu-seed)
 
 volumes:
   pc:

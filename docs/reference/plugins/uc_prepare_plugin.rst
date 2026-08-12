@@ -176,4 +176,4 @@ assertion file named ``model.assert``.
        plugin: uc-prepare
        uc-prepare-model-assert: model.assert
        organize:
-         "system-seed/*": (volume/disk/ubuntu-seed)/
+         system-seed: (volume/disk/ubuntu-seed)

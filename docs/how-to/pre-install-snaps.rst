@@ -82,16 +82,10 @@ Next, copy the following part into your project file, replacing ``<assertion-nam
       uc-prepare-preseed: true
       uc-prepare-preseed-sign-key: <key-name>
       organize:
-        "system-seed/*": (volume/disk/ubuntu-seed)/
-      prime:
-        - -kernel
-        - -gadget
-        - -resolved-content
-        - -system-seed
+        system-seed: (volume/disk/ubuntu-seed)
 
-This part prepares the scaffolding for the snaps in a ``system-seed/`` directory, copies
-them to your image's ``ubuntu-seed`` partition, and cleans up the original copies so
-they don't cause conflicts.
+This part prepares the scaffolding for the snaps in a ``system-seed/`` directory and
+moves it to your image's ``ubuntu-seed`` partition.
 
 If your model assertion contains optional snaps that you wish to install, list them with
 the ``uc-prepare-snaps`` key:
@@ -111,12 +105,7 @@ the ``uc-prepare-snaps`` key:
         - core22
         - hello-world@latest/edge
       organize:
-        "system-seed/*": (volume/disk/ubuntu-seed)/
-      prime:
-        - -kernel
-        - -gadget
-        - -resolved-content
-        - -system-seed
+        system-seed: (volume/disk/ubuntu-seed)
 
 To tweak the snaps' channels or revisions further, refer to the additional keys in the
 :ref:`reference-uc-prepare-plugin` reference. Configuration that deviates from the model
