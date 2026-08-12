@@ -326,7 +326,11 @@ def _setup_grub_efi(
                 boot_img, local_modules_dir, grub_target, boot_prefix
             )
             kernels = _find_kernels(boot_img, boot_prefix)
-            cfg = _generate_grub_cfg(kernels, root_uuid, boot_prefix)
+            emit.progress("Generating grub configuration file")
+            emit.progress("Adding boot menu entry for UEFI Firmware Settings")
+            cfg = _generate_grub_cfg(
+                kernels, root_uuid, boot_prefix, include_fw_setup=True
+            )
             local_cfg = tmp_dir / "real-grub.cfg"
             local_cfg.write_text(cfg, encoding="utf-8")
             imgfs.debugfs_write_file(
@@ -426,6 +430,7 @@ def _setup_grub_bios(image: Image, filesystem_mount: FilesystemMount) -> None:
                 f"{boot_prefix}/grub/{_GRUB_BIOS_TARGET}/boot.img",
             )
             kernels = _find_kernels(boot_img, boot_prefix)
+            emit.progress("Generating grub configuration file")
             cfg = _generate_grub_cfg(kernels, root_uuid, boot_prefix)
             local_cfg = tmp_dir / "real-grub.cfg"
             local_cfg.write_text(cfg, encoding="utf-8")
@@ -601,9 +606,19 @@ def _find_kernels(boot_img: Path, boot_prefix: str) -> list[tuple[str, str]]:
 
 
 def _generate_grub_cfg(
-    kernels: list[tuple[str, str]], root_uuid: str, boot_prefix: str
+    kernels: list[tuple[str, str]],
+    root_uuid: str,
+    boot_prefix: str,
+    *,
+    include_fw_setup: bool = False,
 ) -> str:
-    """Hand-generate a minimal grub.cfg with a menu entry per kernel found."""
+    """Hand-generate a minimal grub.cfg with a menu entry per kernel found.
+
+    :param include_fw_setup: Add a "UEFI Firmware Settings" menu entry that
+        reboots into the firmware setup UI via GRUB's ``fwsetup`` command
+        (mirrors what stock Ubuntu's ``/etc/grub.d/30_uefi-firmware`` script
+        generates). Only meaningful/available on EFI-booted systems.
+    """
     lines = [
         "set default=0",
         "set timeout=5",
@@ -619,6 +634,14 @@ def _generate_grub_cfg(
         if initrd:
             lines.append(f"\tinitrd {boot_prefix}/{initrd}")
         lines.append("}")
+    if include_fw_setup:
+        lines += [
+            'if [ "${fw_platform}" = "efi" ]; then',
+            "\tmenuentry 'UEFI Firmware Settings' {",
+            "\t\tfwsetup",
+            "\t}",
+            "fi",
+        ]
     return "\n".join(lines) + "\n"
 
 

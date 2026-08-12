@@ -42,6 +42,7 @@ from imagecraft.models.volume import (
     MBRStructureItem,
     MBRStructureList,
     MBRVolume,
+    PartitionSchema,
 )
 from imagecraft.pack import diskutil, gptutil, grubutil, imgfs, mbrutil
 from imagecraft.pack.diskutil import DiskSize
@@ -498,6 +499,19 @@ def test_generate_grub_cfg_with_separate_boot_partition_has_no_prefix():
     assert "initrd" not in cfg
 
 
+def test_generate_grub_cfg_without_fw_setup_has_no_uefi_entry():
+    cfg = grubutil._generate_grub_cfg([], "some-uuid", "/boot")
+    assert "UEFI Firmware Settings" not in cfg
+    assert "fwsetup" not in cfg
+
+
+def test_generate_grub_cfg_with_fw_setup_adds_uefi_entry():
+    cfg = grubutil._generate_grub_cfg([], "some-uuid", "/boot", include_fw_setup=True)
+    assert "menuentry 'UEFI Firmware Settings'" in cfg
+    assert "fwsetup" in cfg
+    assert 'if [ "${fw_platform}" = "efi" ]; then' in cfg
+
+
 def test_efi_stub_grub_cfg():
     cfg = grubutil._efi_stub_grub_cfg("abcd-uuid")
     assert "search.fs_uuid abcd-uuid root" in cfg
@@ -594,7 +608,7 @@ def test_setup_grub_efi_signed(new_dir, fake_kernel_files):
     (esp_content / "EFI/BOOT").mkdir(parents=True)
 
     volume = GPTVolume(
-        schema="gpt",
+        schema=PartitionSchema.GPT,
         structure=[
             GPTStructureItem(
                 name="efi",
@@ -687,7 +701,7 @@ def test_setup_grub_efi_unsigned(new_dir, fake_kernel_files):
     (esp_content / "EFI/BOOT").mkdir(parents=True)
 
     volume = GPTVolume(
-        schema="gpt",
+        schema=PartitionSchema.GPT,
         structure=[
             GPTStructureItem(
                 name="efi",
@@ -765,7 +779,7 @@ def test_setup_grub_efi_separate_boot_partition(new_dir, fake_kernel_files):
     (esp_content / "EFI/BOOT").mkdir(parents=True)
 
     volume = GPTVolume(
-        schema="gpt",
+        schema=PartitionSchema.GPT,
         structure=[
             GPTStructureItem(
                 name="efi",
@@ -857,7 +871,7 @@ def test_setup_grub_bios_mbr(new_dir, fake_kernel_files):
     fake_kernel_files(root_content / "boot")
 
     volume = MBRVolume(
-        schema="mbr",
+        schema=PartitionSchema.MBR,
         structure=[
             MBRStructureItem(
                 name="rootfs",
