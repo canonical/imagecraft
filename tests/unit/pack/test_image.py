@@ -152,7 +152,7 @@ class TestImage:
         self,
         volume_data: dict,
         new_dir: Path,
-        has_data_partition: bool,  # noqa: FBT001
+        has_data_partition: bool,
     ):
         volume = GPTVolume.unmarshal(volume_data)
         disk_path = Path(new_dir, "pc.img")
@@ -237,7 +237,7 @@ class TestImage:
         self,
         volume_data: dict,
         new_dir: Path,
-        has_boot_partition: bool,  # noqa: FBT001
+        has_boot_partition: bool,
     ):
         volume = GPTVolume.unmarshal(volume_data)
         disk_path = Path(new_dir, "pc.img")
