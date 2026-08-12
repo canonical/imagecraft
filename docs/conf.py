@@ -184,7 +184,7 @@ linkcheck_ignore = [
     r"^https://ubuntu.com",
     r"^https://gitlab.com/apparmor/apparmor/",
     r"^https://gitlab.gnome.org",
-    # Linkcheck is unable to properly handled matrix.to URLs containing # and :
+    # Linkcheck is unable to properly handle matrix.to URLs containing # and :
     # See https://github.com/sphinx-doc/sphinx/issues/13620
     r"^https://matrix.to/#",
 ]
