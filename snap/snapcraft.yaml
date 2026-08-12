@@ -29,7 +29,6 @@ apps:
 
 build-packages:
   - git
-  - libapt-pkg-dev
   - libyaml-dev
   - libxml2-dev
   - libxslt1-dev
@@ -61,7 +60,6 @@ parts:
       - libxml2
       - libxslt1.1
       - python-apt-common
-      - python3-apt
       - python3-pip
       - python3-setuptools
       - python3-wheel
@@ -81,7 +79,6 @@ parts:
       - "-usr/lib/x86_64-linux-gnu/libicutu.so.*"
       - "-usr/lib/x86_64-linux-gnu/libicui18n.so.*"
     organize:
-      "usr/lib/python3/dist-packages/apt*": "lib/python3.12/site-packages/"
       "usr/sbin/sfdisk": "libexec/imagecraft/sfdisk"
       "usr/bin/mcopy": "libexec/imagecraft/mcopy"
       "usr/bin/mtools": "libexec/imagecraft/mtools"
@@ -103,8 +100,17 @@ parts:
       - libfuse3-3
     organize:
       "usr/local/bin/fuse-overlayfs": "libexec/imagecraft/fuse-overlayfs"
+  python3-apt:
+    # Distro package providing libapt-pkg bindings, avoiding uv's PEP 625 sdist restriction.
+    plugin: nil
+    build-attributes:
+      - enable-patchelf
+    stage-packages:
+      - python3-apt
+    organize:
+      "usr/lib/python3/dist-packages/*": "lib/python3.12/site-packages/"
   imagecraft:
-    after: [imagecraft-libs]
+    after: [imagecraft-libs, python3-apt]
     source: .
     plugin: uv
     build-attributes:
