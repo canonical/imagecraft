@@ -107,6 +107,16 @@ def _create_mbr_layout(
         primary_items = structure
         logical_items = []
 
+    # The BIOS/SeaBIOS boot process requires exactly one partition to carry
+    # the "active"/bootable flag. Normally that's the system-boot partition,
+    # but layouts with no separate boot partition (grub-pc's core.img lives
+    # in the MBR gap, and grub.cfg/kernel live directly on the root
+    # filesystem) have no system-boot role at all, so fall back to marking
+    # the system-data partition bootable in that case.
+    bootable_role = Role.SYSTEM_BOOT.value
+    if not any(item.role == Role.SYSTEM_BOOT.value for item in structure):
+        bootable_role = Role.SYSTEM_DATA.value
+
     partitions: list[dict[str, str | None]] = []
     start = _MBR_RESERVED_SECTORS
     for structure_item in primary_items:
@@ -116,7 +126,7 @@ def _create_mbr_layout(
             "size": str(sectors),
             "type": structure_item.structure_type.value,
         }
-        if structure_item.role == Role.SYSTEM_BOOT.value:
+        if structure_item.role == bootable_role:
             partition["bootable"] = None
         partitions.append(partition)
         start += sectors
@@ -135,7 +145,7 @@ def _create_mbr_layout(
                 "size": str(logical_sectors),
                 "type": logical.structure_type.value,
             }
-            if logical.role == Role.SYSTEM_BOOT.value:
+            if logical.role == bootable_role:
                 logical_entry["bootable"] = None
             partitions.append(logical_entry)
             logical_start += logical_sectors + _EBR_OVERHEAD_SECTORS

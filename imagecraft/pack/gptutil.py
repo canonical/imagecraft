@@ -208,12 +208,59 @@ def _get_partition_info(imagepath: Path, partname: str) -> dict[str, Any]:
     raise CraftError(f"No partition named {partname} in {imagepath}")
 
 
+def _get_partition_info_by_number(imagepath: Path, partnum: int) -> dict[str, Any]:
+    """Return a dict representing info about the partnum'th (1-based) partition.
+
+    MBR partition tables have no per-partition name field (unlike GPT), so
+    MBR partitions must be looked up by their 1-based position instead.
+
+    :raises CalledProcessError: If sfdisk fails.
+    """
+    partitions = _get_partition_table(imagepath)["partitions"]
+    if not 1 <= partnum <= len(partitions):
+        raise CraftError(f"No partition number {partnum} in {imagepath}")
+    return cast(dict[str, Any], partitions[partnum - 1])
+
+
 def get_partition_sector_offset(imagepath: Path, partname: str) -> int:
     """Return the start sector (offset) for the partition indicated by partname.
 
     :raises CalledProcessError: If sfdisk fails.
     """
     return cast(int, _get_partition_info(imagepath, partname)["start"])
+
+
+def get_partition_size_sectors(imagepath: Path, partname: str) -> int:
+    """Return the size (in sectors) for the partition indicated by partname.
+
+    Uses sfdisk, which reads MBR and GPT partition tables alike, so this
+    works regardless of the volume schema.
+
+    :raises CalledProcessError: If sfdisk fails.
+    """
+    return cast(int, _get_partition_info(imagepath, partname)["size"])
+
+
+def get_partition_sector_offset_by_number(imagepath: Path, partnum: int) -> int:
+    """Return the start sector (offset) for the partnum'th (1-based) partition.
+
+    Use this instead of `get_partition_sector_offset` for MBR volumes, whose
+    partitions aren't named in sfdisk's output.
+
+    :raises CalledProcessError: If sfdisk fails.
+    """
+    return cast(int, _get_partition_info_by_number(imagepath, partnum)["start"])
+
+
+def get_partition_size_sectors_by_number(imagepath: Path, partnum: int) -> int:
+    """Return the size (in sectors) for the partnum'th (1-based) partition.
+
+    Use this instead of `get_partition_size_sectors` for MBR volumes, whose
+    partitions aren't named in sfdisk's output.
+
+    :raises CalledProcessError: If sfdisk fails.
+    """
+    return cast(int, _get_partition_info_by_number(imagepath, partnum)["size"])
 
 
 def verify_partition_tables(imagepath: Path) -> None:

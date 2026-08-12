@@ -205,6 +205,24 @@ def test_create_mbr_layout_calls_sfdisk(mocker, tmp_path, volume):
     assert "bootable" in stdin  # ubuntu-seed has role system-boot
 
 
+def test_create_mbr_layout_no_system_boot_marks_system_data_bootable(mocker, tmp_path):
+    # Regression test: layouts with no system-boot partition (e.g. grub-pc
+    # BIOS-only images where core.img lives in the MBR gap) must still mark
+    # a partition bootable, or SeaBIOS has no active partition to boot from
+    # and hangs at "Booting from Hard Disk...".
+    layout = MBRVolume.unmarshal(_VOLUME_SINGLE)
+    mocked_run = mocker.patch("imagecraft.pack.mbrutil.subprocess.run", autospec=True)
+
+    mbrutil._create_mbr_layout(
+        imagepath=tmp_path / "image.img",
+        sector_size=512,
+        layout=layout,
+    )
+
+    stdin = mocked_run.call_args.kwargs["input"]
+    assert "bootable" in stdin
+
+
 def test_create_mbr_layout_sfdisk_failure_raises(mocker, tmp_path, volume):
     mocked_run = mocker.patch("imagecraft.pack.mbrutil.subprocess.run", autospec=True)
     mocked_run.side_effect = subprocess.CalledProcessError(

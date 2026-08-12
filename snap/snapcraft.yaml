@@ -75,6 +75,7 @@ parts:
       - fdisk
       - coreutils
       - util-linux
+      - grub-common
     stage:
       - "-usr/lib/x86_64-linux-gnu/libicuio.so.*"
       - "-usr/lib/x86_64-linux-gnu/libicutest.so.*"
@@ -84,10 +85,15 @@ parts:
       "usr/lib/python3/dist-packages/apt*": "lib/python3.12/site-packages/"
       "usr/sbin/sfdisk": "libexec/imagecraft/sfdisk"
       "usr/bin/mcopy": "libexec/imagecraft/mcopy"
+      "usr/bin/mmd": "libexec/imagecraft/mmd"
+      "usr/bin/mdir": "libexec/imagecraft/mdir"
       "usr/bin/mtools": "libexec/imagecraft/mtools"
       "usr/bin/dd": "libexec/imagecraft/dd"
       "usr/bin/truncate": "libexec/imagecraft/truncate"
       "usr/sbin/mkfs*": "libexec/imagecraft/"
+      "usr/sbin/debugfs": "libexec/imagecraft/debugfs"
+      "usr/sbin/blkid": "libexec/imagecraft/blkid"
+      "usr/bin/grub-mkimage": "libexec/imagecraft/grub-mkimage"
   # Build our own version of fuse-overlayfs due to https://github.com/containers/fuse-overlayfs/issues/429
   # The apt and Launchpad repositories as of 23/07/25 do not have a sufficiently new version to get this patch
   fuse-overlayfs:
