@@ -1,7 +1,7 @@
 summary: Data written to sectors outside partitions via the loop device is preserved
 
 execute: |
-  imagecraft pack --verbose --destructive-mode
+  imagecraft pack --verbose --ignore=unmaintained --destructive-mode
   test -f disk.img
 
   # Verify that sector 100 is actually in the gap between the GPT partition
