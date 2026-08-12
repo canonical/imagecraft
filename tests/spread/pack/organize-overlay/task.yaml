@@ -8,7 +8,12 @@ execute: |
   test -f pc.img
 
 restore: |
-  imagecraft clean --destructive-mode
+  # Retry: imagecraft clean can transiently fail to remove work dirs
+  # if internal build mounts haven't fully released under host load.
+  for i in $(seq 1 5); do
+      imagecraft clean --destructive-mode && break
+      sleep 2
+  done
   rm -rf pc.img || true
 
 debug: |

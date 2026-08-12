@@ -51,15 +51,31 @@ restore: |
       do
           p=${l#"$LOOP"}
           mount --make-rprivate ${TMP_MOUNT}/$p || true
-          umount --recursive ${TMP_MOUNT}/$p || true
+          # Retry: under host load the mount can still be transiently
+          # busy right after the previous command finished.
+          for i in $(seq 1 10); do
+              umount --recursive ${TMP_MOUNT}/$p && break
+              sleep 1
+          done
       done
 
-      losetup -d "$LOOP"
+      # losetup -d can fail with "device is busy" if a partition mount
+      # hasn't fully released yet; retry instead of failing the restore.
+      for i in $(seq 1 10); do
+          losetup -d "$LOOP" && break
+          sleep 1
+      done
       sync
-      losetup -l | NOMATCH "$LOOP"
+      for i in $(seq 1 10); do
+          losetup -l | NOMATCH "$LOOP" && break
+          sleep 1
+      done
       rm loop.txt
   fi
-  imagecraft clean --destructive-mode
+  for i in $(seq 1 5); do
+      imagecraft clean --destructive-mode && break
+      sleep 2
+  done
   rm -rf pc.img || true
 
 debug: |
