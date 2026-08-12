@@ -149,8 +149,6 @@ dmypy.json
 .envrc
 
 # sphinx
-docs/warnings.txt
-docs/.sphinx/.wordlist.dic
 docs/reference/commands
 .DS_Store
 __pycache__

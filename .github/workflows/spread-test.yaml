@@ -93,7 +93,7 @@ jobs:
       - name: Get previous attempt
         id: get-previous-attempt
         run: |
-          echo "previous_attempt=$(( ${{ github.run_attempt }} - 1 ))" >> $GITHUB_OUTPUT
+          echo "previous_attempt=$(( ${{ github.run_attempt }} - 1 ))" >> "$GITHUB_OUTPUT"
         shell: bash
 
       - name: Get previous cache
@@ -112,10 +112,10 @@ jobs:
         run: |
           # Create test results directories and save vars
           TEST_RESULTS_DIR="${{ github.workspace }}/.test-results"
-          echo "TEST_RESULTS_DIR=$TEST_RESULTS_DIR" >> $GITHUB_ENV
+          echo "TEST_RESULTS_DIR=$TEST_RESULTS_DIR" >> "$GITHUB_ENV"
 
           # Save the var with the failed tests file
-          echo "FAILED_TESTS_FILE=$TEST_RESULTS_DIR/failed-tests" >> $GITHUB_ENV
+          echo "FAILED_TESTS_FILE=$TEST_RESULTS_DIR/failed-tests" >> "$GITHUB_ENV"
 
           # Make sure the test results dirs are created
           # This step has to be after the cache is restored
@@ -128,10 +128,10 @@ jobs:
           FAILED_TESTS=""
           if [ -f "$FAILED_TESTS_FILE" ]; then
               echo "Failed tests file found"
-              FAILED_TESTS="$(cat $FAILED_TESTS_FILE)"
+              FAILED_TESTS="$(cat "$FAILED_TESTS_FILE")"
               if [ -n "$FAILED_TESTS" ]; then
                   echo "Failed tests to run: $FAILED_TESTS"
-                  echo "FAILED_TESTS=$FAILED_TESTS" >> $GITHUB_ENV
+                  echo "FAILED_TESTS=$FAILED_TESTS" >> "$GITHUB_ENV"
               fi
           fi
 
@@ -153,6 +153,7 @@ jobs:
           if [ -n "$FAILED_TESTS" ]; then
               RUN_TESTS="$FAILED_TESTS"
           else
+              # shellcheck disable=SC2086 # matrix.systems is an intentional space-separated word list
               for SYSTEM in ${{ matrix.systems }}; do
                   RUN_TESTS="$RUN_TESTS $BACKEND:$SYSTEM:${{ matrix.tests }}"
               done
@@ -162,6 +163,7 @@ jobs:
           # propagated; and we use a subshell as this option could trigger
           # undesired changes elsewhere
           echo "Running command: $SPREAD $RUN_TESTS"
+          # shellcheck disable=SC2086 # RUN_TESTS is an intentional space-separated arg list for spread
           (set -o pipefail; $SPREAD $RUN_TESTS | tee spread.log)
 
       - name: Discard spread workers
