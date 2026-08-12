@@ -1,3 +1,6 @@
+.. meta::
+    :description: The practical, goal-oriented documentation for Imagecraft. These guides provide directions for completing tasks and solving problems with Imagecraft.
+
 .. _how-to-guides:
 
 How-to guides

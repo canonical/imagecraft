@@ -1,3 +1,6 @@
+.. meta::
+    :description: The tutorials for Imagecraft. These guided lessons build skills for using Imagecraft.
+
 .. _tutorials:
 
 Tutorials

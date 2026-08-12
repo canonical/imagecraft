@@ -5,12 +5,21 @@ on:
     branches:
       - main
       - hotfix/*
+      - work/check-policy # For development
 
 jobs:
   policy:
+    permissions:
+      contents: read
+      security-events: write
     uses: canonical/starflow/.github/workflows/policy.yaml@main
   python-scans:
     name: Security scan
     uses: canonical/starflow/.github/workflows/scan-python.yaml@main
     with:
-      uv-export-extra-args: "--group=docs --group=types"
+      osv-extra-args: "--config=osv-scanner.toml"
+      osv-exclude-paths: |
+        docs
+      uv-export-no-groups: |
+        docs
+        docs-sphinx-stack

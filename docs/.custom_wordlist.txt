@@ -52,6 +52,7 @@ lastmod
 LaTeX
 latexmk
 lcm
+Makefile
 Makefiles?
 mkdir
 mmdebstrap
@@ -73,8 +74,8 @@ PNG
 PR
 prepended
 preseed
-preseeds
 preseeding
+preseeds
 Pygments
 pymarkdown
 QEMU
@@ -97,6 +98,7 @@ sitemapindex
 Sphinx
 Spread
 spread_test_example
+Starbase
 Starcraft
 subkey
 subproject

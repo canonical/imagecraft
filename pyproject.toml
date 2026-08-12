@@ -37,6 +37,8 @@ imagecraft = "imagecraft.cli:run"
 
 apt = ["python-apt>=2.7.0;sys_platform=='linux'"]
 
+# Applications should avoid CVEs in optional, direct dependencies by setting a minimum
+# version in 'dependency-groups'.
 [dependency-groups]
 lint = [
     # Left empty for scaffolding and Makefile compatibility
@@ -50,39 +52,42 @@ types = [
 docs = [
     "pydantic-kitbash~=1.0",
     "sphinx-pydantic==0.1.1",
-    "sphinx-lint==1.0.2",
+    "sphinx-lint~=1.0",
     "sphinxext-rediraffe==0.3.0",
     # Missing from sphinxcontrib-details-directive, see
     # https://github.com/sphinx-contrib/sphinxcontrib-details-directive/issues/5
     "setuptools<82.0",
     "sphinxcontrib-details-directive",
-    {include-group = "docs-starter-pack"},
+    {include-group = "docs-sphinx-stack"},
 ]
 # We disable the unused but default SP dependencies slated for removal
 # https://warthogs.atlassian.net/browse/DOCPR-2387
-docs-starter-pack = [
-    "canonical-sphinx>=0.5.1",
+docs-sphinx-stack = [
+    "canonical-sphinx~=0.6",
     "myst-parser~=4.0",
-    "packaging>=25.0",
+    "packaging~=26.1",
     "rst2html>=2020.7.4",
-    "sphinx-autobuild>=2025.8.25",
-    # "sphinx-config-options>=0.1.0",
-    # "sphinx-contributor-listing>=0.1.0",
-    "sphinx-design>=0.6.1",
-    # "sphinx-filtered-toctree>=0.1.0",
-    # "sphinx-last-updated-by-git>=0.3.8",
-    "sphinx-notfound-page>=1.1.0",
-    # "sphinx-related-links>=0.1.1",
-    "sphinx-roles>=0.1.0",
-    "sphinx-sitemap~=2.6.0",
-    # "sphinx-tabs>=3.4.5",
-    "sphinx-terminal>=1.0.2",
-    # "sphinx-ubuntu-images>=0.1.0",
-    # "sphinx-youtube-links>=0.1.0",
-    "sphinxcontrib-jquery>=4.1",
-    # "sphinxcontrib-svg2pdfconverter[cairosvg]>=2.0.0",
-    "sphinxext-opengraph>=0.13.0",
-    "vale>=3.13.0.0",
+    "sphinx-autobuild>=2024.10.3",
+    # "sphinx-config-options~=0.1",
+    # "sphinx-contributor-listing~=0.1",
+    "sphinx-design==0.6.1",
+    # "sphinx-filtered-toctree~=0.1",
+    # "sphinx-last-updated-by-git~=0.3",
+    "sphinx-llm~=0.4",
+    "sphinx-notfound-page~=1.1",
+    "sphinx-related-links~=0.1",
+    # "sphinx-reredirects==0.1.6",
+    "sphinx-rerediraffe>=0.0.3,<1.0.0",
+    "sphinx-roles~=0.1",
+    "sphinx-sitemap~=2.9",
+    # "sphinx-tabs~=3.5",
+    "sphinx-terminal~=1.0",
+    # "sphinx-ubuntu-images~=0.1",
+    # "sphinx-youtube-links~=0.1",
+    "sphinxcontrib-jquery~=4.1",
+    # "sphinxcontrib-svg2pdfconverter[cairosvg]~=2.1",
+    "sphinxext-opengraph~=0.13",
+    "vale~=3.13",
 ]
 dev = [
     "build",
@@ -117,7 +122,15 @@ build-constraint-dependencies = [
     "maturin<1.10.0 ; python_version < '3.14'",
 ]
 constraint-dependencies = [
-    # Basic constraints to allow --resolution=lowest
+    # Basic constraints to allow --resolution=lowest.
+    #
+    # Libraries should avoid CVEs in direct and transitive dependencies by setting a
+    # minimum version in this section.
+    # This allows standalone builds to avoid CVEs while not placing undue constraints on
+    # downstream users of the library.
+    #
+    # Applications should avoid CVEs in transitive dependencies by setting a minimum
+    # version in this section.
     "build>=0.7.0",
     "cffi>=1.15",
     "iniconfig>=1.1.0",
@@ -378,7 +391,9 @@ strict-checking = true
 [tool.ruff.lint.pydocstyle]
 ignore-decorators = [ # Functions with these decorators don't have to have docstrings.
     "typing.overload", # Default configuration
-    # The next two are all variations on override, so child classes don't have to repeat parent classes' docstrings.
+    # The next four are all variations on override, so child classes don't have to repeat parent classes' docstrings.
+    "overrides.override",
+    "overrides.overrides",
     "typing.override",
     "typing_extensions.override",
 ]
@@ -399,8 +414,11 @@ classmethod-decorators = ["pydantic.validator", "pydantic.root_validator"]
     "S103",    # Allow `os.chmod` setting a permissive mask `0o555` on file or directory
     "S108",    # Allow Probable insecure usage of temporary file or directory
     "PLR0913", # Allow many arguments for test functions (useful if we need many fixtures)
+    "PLR0917", # Allow many positional arguments for test functions (useful if we need many fixtures)
     "PLR2004", # Allow magic values in tests
     "SLF",     # Allow accessing private members from tests.
+    "FBT001",  # Boolean-typed positional arguments are common in tests (e.g. parametrize)
+    "FBT002",  # Boolean default values are common in test helper functions
 ]
 "__init__.py" = [
     "I001", # isort leaves init files alone by default, this makes ruff ignore them too.

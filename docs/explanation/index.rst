@@ -1,3 +1,6 @@
+.. meta::
+    :description: The explanatory documentation for Imagecraft. These explanations aid in understanding the concepts and relationships of Imagecraft as a complete system.
+
 .. _explanation:
 
 Explanation

@@ -2,6 +2,7 @@ import datetime
 import os
 import pathlib
 import sys
+import textwrap
 
 import craft_parts_docs  # type: ignore
 
@@ -14,8 +15,8 @@ import imagecraft
 # A complete list of built-in Sphinx configuration values:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 #
-# Our starter pack uses the custom Canonical Sphinx extension
-# to keep all documentation based on it consistent and on brand:
+# The Sphinx Stack uses the Canonical Sphinx theme to keep all documentation consistent
+# and on brand:
 # https://github.com/canonical/canonical-sphinx
 
 
@@ -25,7 +26,9 @@ import imagecraft
 
 # Project name
 project = "Imagecraft"
-author = "Canonical"
+
+# Author name; used in the default copyright statement in the page footer
+author = "Canonical Ltd."
 
 # Version string in sidebar
 # if os.environ.get("READTHEDOCS_VERSION_TYPE", "external") == "external":  # PR or local build
@@ -36,13 +39,14 @@ author = "Canonical"
 #     release = os.environ.get("READTHEDOCS_VERSION", "latest")
 release = "latest"
 
-# Sidebar documentation title; best kept reasonably short
+# Sidebar documentation title
+# To disable the title, set it to an empty string.
 html_title = project + " documentation"
 
-# Copyright string; shown at the bottom of the page
-copyright = "2023-%s, %s" % (datetime.date.today().year, author)
+# The year in the copyright statement
+copyright = f"2023-{datetime.date.today().year}"
 
-
+# Documentation website URL
 ogp_site_url = "https://ubuntu.com/docs/imagecraft"
 
 # Preview name of the documentation website
@@ -52,7 +56,7 @@ ogp_site_name = project
 ogp_image = "https://assets.ubuntu.com/v1/253da317-image-document-ubuntudocs.svg"
 
 # Product favicon; shown in bookmarks, browser tabs, etc.
-# html_favicon = '.sphinx/_static/favicon.png'
+# html_favicon = ".sphinx/_static/favicon.png"
 
 # Dictionary of values to pass into the Sphinx context for all pages:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#confval-html_context
@@ -60,32 +64,40 @@ html_context = {
     # Product page URL; can be different from product docs URL
     "product_page": "github.com/canonical/imagecraft",
     # Product tag image; the orange part of your logo, shown in the page header
-    # 'product_tag': '_static/tag.png',
+    # "product_tag": "_static/tag.png",
+    # Your Discourse instance URL
     "discourse": "",
     # Your Mattermost channel URL
-    # "mattermost": "https://chat.canonical.com/canonical/channels/documentation",
+    "mattermost": "https://chat.canonical.com/canonical/channels/documentation",
     # Your Matrix channel URL
     "matrix": "https://matrix.to/#/#starcraft-development:ubuntu.com",
-    # Your documentation GitHub repository URL
+    # Your documentation GitHub repository URL. If set, links for viewing the
+    # documentation source files and creating GitHub issues are added at the bottom of
+    # each page.
     "github_url": "https://github.com/canonical/imagecraft",
     # Docs branch in the repo; used in links for viewing the source files
-    'repo_default_branch': 'main',
+    "repo_default_branch": "main",
     # Docs location in the repo; used in links for viewing the source files
     "repo_folder": "/docs/",
     # List contributors on individual pages
     "display_contributors": False,
     # Required for feedback button
-    'github_issues': 'https://github.com/canonical/imagecraft/issues',
+    "github_issues": "enabled",
+    # Passes the top-level 'author' value to the theme
+    "author": author,
+    # Documentation license information
+    "license": {
+        "name": "LGPL-3.0",
+        "url": "https://github.com/canonical/imagecraft/blob/main/LICENSE",
+    },
 }
-
-#html_extra_path = []
 
 # Enable the edit button on pages
 html_theme_options = {
-  'source_edit_link': "https://github.com/canonical/imagecraft",
+    "source_edit_link": "https://github.com/canonical/imagecraft",
 }
 
-# Project slug; see https://meta.discourse.org/t/what-is-category-slug/87897
+# The project slug passed to the sphinx-notfound-page extension
 slug = "docs/imagecraft"
 
 
@@ -94,7 +106,7 @@ slug = "docs/imagecraft"
 #########################
 
 # Use RTD canonical URL to ensure duplicate pages have a specific canonical URL
-html_baseurl = f"{ogp_site_url}/{release}/"
+html_baseurl = os.environ.get("READTHEDOCS_CANONICAL_URL", "/")
 
 # sphinx-sitemap uses html_baseurl to generate the full URL for each page:
 sitemap_url_scheme = "{link}"
@@ -122,10 +134,35 @@ templates_path = ["_templates"]
 # Redirects #
 #############
 
+# Add redirects to the 'redirects.txt' file
+# https://sphinxext-rediraffe.readthedocs.io/en/latest/
+
+# To set up redirects in the Read the Docs project dashboard:
+# https://docs.readthedocs.io/en/stable/guides/redirects.html
+
 rediraffe_redirects = "redirects.txt"
 
+# Strips '/index.html' from destination URLs when building with 'dirhtml'
+rediraffe_dir_only = True
 
-###########################g
+############################
+# sphinx-llm configuration #
+############################
+
+# This description is included in llms.txt to provide some initial context for your
+# product docs.
+llms_txt_description = textwrap.dedent(
+    """\
+    This is the documentation for Imagecraft, a craft tool used to create Ubuntu
+    bootable images.
+    """
+)
+
+# The base URL for references built by sphinx-markdown-builder.
+if os.environ.get("READTHEDOCS"):
+    markdown_http_base = html_baseurl
+
+###########################
 # Link checker exceptions #
 ###########################
 
@@ -139,24 +176,27 @@ linkcheck_ignore = [
     # Ignore releases, since we'll include the next release before it exists.
     r"^https://github.com/canonical/[a-z]*craft[a-z-]*/releases/.*",
     # Entire domains to ignore due to flakiness or issues
+    r"^https://github.com",
     r"^https://www.gnu.org/",
     r"^https://crates.io/",
     r"^https://([\w-]*\.)?npmjs.org",
     r"^https://rsync.samba.org",
     r"^https://ubuntu.com",
     r"^https://gitlab.com/apparmor/apparmor/",
-    # r"http://127.0.0.1:8000",
-    # r"https://apt-repo.com",
-    # # Linkcheck is unable to properly handled matrix.to URLs containing # and :
-    # # See https://github.com/sphinx-doc/sphinx/issues/13620
-    "https://matrix.to/#",
-    # # Entire domains to ignore due to flakiness or issues
-    # r"^https://www.gnu.org/",
-    # r"^https://ubuntu.com",
+    r"^https://gitlab.gnome.org",
+    # Linkcheck is unable to properly handle matrix.to URLs containing # and :
+    # See https://github.com/sphinx-doc/sphinx/issues/13620
+    r"^https://matrix.to/#",
 ]
+
+# Anchor strings to ignore
+# linkcheck_anchors_ignore = []
 
 # Give linkcheck multiple tries on failure
 linkcheck_retries = 20
+
+# Report timeouts as 'timeout' instead of 'broken'
+linkcheck_report_timeouts_as_broken = False
 
 
 ########################
@@ -170,13 +210,14 @@ extensions = [
     "canonical_sphinx",
     "notfound.extension",
     "sphinx_design",
-    # "sphinx_reredirects",
+    "sphinx_rerediraffe",
     # "sphinx_tabs.tabs",
     # "sphinxcontrib.jquery",
     "sphinxext.opengraph",
     # "sphinx_config_options",
     # "sphinx_contributor_listing",
     # "sphinx_filtered_toctree",
+    "sphinx_llm.txt",
     # "sphinx_related_links",
     "sphinx_roles",
     "sphinx_terminal",
@@ -190,7 +231,6 @@ extensions = [
     "pydantic_kitbash",
     "sphinxcontrib.details.directive",
     "sphinx-pydantic",
-    "sphinxext.rediraffe",
     "sphinx.ext.autodoc",
     "sphinx.ext.doctest",
     "sphinx.ext.ifconfig",
@@ -258,6 +298,11 @@ exclude_patterns = [
     "common/craft-parts/reference/plugins/jlink_plugin.rst",
 ]
 
+# common/craft-parts is symlinked from the installed craft-parts-docs
+# package (see setup() below), which is outside this git repository, so
+# skip git-log lookups for it.
+git_exclude_patterns = ["common/craft-parts/**"]
+
 # Adds custom CSS files, located under 'html_static_path'
 html_css_files = [
     "css/cookie-banner.css",
@@ -277,8 +322,8 @@ rst_epilog = """
 # disable_feedback_button = True
 
 # Your manpage URL
-# manpages_url = 'https://manpages.ubuntu.com/manpages/{codename}/en/' + \
-#     'man{section}/{page}.{section}.html'
+# manpages_url = "https://manpages.ubuntu.com/manpages/{codename}/en/" + \
+#     "man{section}/{page}.{section}.html"
 
 # Specifies a reST snippet to be prepended to each .rst file
 # This defines a :center: role that centers table cell content.
@@ -302,7 +347,13 @@ if "discourse_prefix" not in html_context and "discourse" in html_context:
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "ubuntu-core": ("https://documentation.ubuntu.com/core", None),
+    "starflow": ("https://documentation.ubuntu.com/starflow/latest", None),
 }
+
+# Block Intersphinx from looking up external sources with internal references. In other
+# words, only :external+<project>... will search in other projects.
+intersphinx_disabled_reftypes = ["std:*"]
+
 
 ##############################
 # Custom Craft configuration #
@@ -311,12 +362,15 @@ intersphinx_mapping = {
 project_dir = pathlib.Path(__file__).parents[1].resolve()
 sys.path.insert(0, str(project_dir.absolute()))
 
+
 def generate_cli_docs(nil):
     gen_cli_docs_path = (project_dir / "tools/docs/gen_cli_docs.py").resolve()
     os.system("%s %s" % (gen_cli_docs_path, project_dir / "docs"))
 
+
 def setup(app):
     app.connect("builder-inited", generate_cli_docs)
+
 
 # Setup libraries documentation snippets for use in imagecraft docs.
 common_docs_path = pathlib.Path(__file__).parent / "common"

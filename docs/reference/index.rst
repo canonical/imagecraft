@@ -1,3 +1,6 @@
+.. meta::
+    :description: The reference documentation for Imagecraft. These references describe the structure and function of the individual components in Imagecraft.
+
 .. _reference:
 
 Reference
