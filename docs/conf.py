@@ -298,6 +298,11 @@ exclude_patterns = [
     "common/craft-parts/reference/plugins/jlink_plugin.rst",
 ]
 
+# common/craft-parts is symlinked from the installed craft-parts-docs
+# package (see setup() below), which is outside this git repository, so
+# skip git-log lookups for it.
+git_exclude_patterns = ["common/craft-parts/**"]
+
 # Adds custom CSS files, located under 'html_static_path'
 html_css_files = [
     "css/cookie-banner.css",
