@@ -17,3 +17,8 @@ jobs:
     uses: canonical/starflow/.github/workflows/scan-python.yaml@main
     with:
       uv-export-extra-args: "--group=docs --group=types"
+      osv-exclude-paths: |
+        docs
+      uv-export-no-groups: |
+        docs
+        docs-starter-pack
