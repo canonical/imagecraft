@@ -75,6 +75,7 @@ parts:
       - fdisk
       - coreutils
       - util-linux
+      - grub-common
     stage:
       - "-usr/lib/x86_64-linux-gnu/libicuio.so.*"
       - "-usr/lib/x86_64-linux-gnu/libicutest.so.*"
@@ -92,6 +93,7 @@ parts:
       "usr/sbin/mkfs*": "libexec/imagecraft/"
       "usr/sbin/debugfs": "libexec/imagecraft/debugfs"
       "usr/sbin/blkid": "libexec/imagecraft/blkid"
+      "usr/bin/grub-mkimage": "libexec/imagecraft/grub-mkimage"
   # Build our own version of fuse-overlayfs due to https://github.com/containers/fuse-overlayfs/issues/429
   # The apt and Launchpad repositories as of 23/07/25 do not have a sufficiently new version to get this patch
   fuse-overlayfs:

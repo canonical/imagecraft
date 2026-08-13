@@ -1,0 +1,41 @@
+summary: Boot classic EFI image with Secure Boot enabled in QEMU
+
+systems: [ubuntu-24.04-64]
+
+prepare: |
+  tests.pkgs install qemu-system-x86 ovmf
+
+execute: |
+  imagecraft pack --destructive-mode
+
+  QEMU_BIN="qemu-system-x86_64"
+  # OVMF's "secboot" firmware build enforces Secure Boot policy, and the
+  # "ms" vars template ships the Microsoft UEFI CA that signs Canonical's
+  # shim/grub, so this is the combination that actually validates our
+  # signed boot chain rather than just booting with Secure Boot disabled.
+  UEFI_CODE=/usr/share/OVMF/OVMF_CODE_4M.secboot.fd
+  UEFI_VARS=/usr/share/OVMF/OVMF_VARS_4M.ms.fd
+  cp "$UEFI_VARS" /tmp/uefi_vars.fd
+
+  IMG_NAME=pc.img
+  test -f ${IMG_NAME}
+
+  script -q -c "$QEMU_BIN \
+    -accel kvm -accel tcg,thread=multi \
+    -smp \"\$(nproc)\" \
+    -nographic \
+    -m 1G \
+    -global driver=cfi.pflash01,property=secure,value=on \
+    -machine q35,smm=on \
+    -drive if=pflash,format=raw,unit=0,readonly=on,file=$UEFI_CODE \
+    -drive if=pflash,format=raw,unit=1,file=/tmp/uefi_vars.fd \
+    -drive file=${IMG_NAME},format=raw,index=0,if=virtio,cache=unsafe" output.log || true
+
+  MATCH "HELLO FROM IMAGECRAFT" output.log
+
+restore: |
+  imagecraft clean --destructive-mode || true
+  rm -f pc.img output.log /tmp/uefi_vars.fd
+
+debug: |
+  cat output.log 2>/dev/null || echo "No serial output log"
