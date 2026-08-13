@@ -41,7 +41,13 @@ _VOLUME_SINGLE_SFDISK_EXPECTED = {
     "unit": "sectors",
     "sectorsize": 512,
     "partitions": [
-        {"node": "disk.img1", "start": 2048, "size": 4194304, "type": "83"},
+        {
+            "node": "disk.img1",
+            "start": 2048,
+            "size": 4194304,
+            "type": "83",
+            "bootable": True,
+        },
     ],
 }
 
