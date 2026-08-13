@@ -205,6 +205,97 @@ def test_create_mbr_layout_calls_sfdisk(mocker, tmp_path, volume):
     assert "bootable" in stdin  # ubuntu-seed has role system-boot
 
 
+def test_create_mbr_layout_no_system_boot_marks_system_data_bootable(mocker, tmp_path):
+    # Regression test: layouts with no system-boot partition (e.g. grub-pc
+    # BIOS-only images where core.img lives in the MBR gap) must still mark
+    # a partition bootable, or SeaBIOS has no active partition to boot from
+    # and hangs at "Booting from Hard Disk...".
+    layout = MBRVolume.unmarshal(_VOLUME_SINGLE)
+    mocked_run = mocker.patch("imagecraft.pack.mbrutil.subprocess.run", autospec=True)
+
+    mbrutil._create_mbr_layout(
+        imagepath=tmp_path / "image.img",
+        sector_size=512,
+        layout=layout,
+    )
+
+    stdin = mocked_run.call_args.kwargs["input"]
+    assert "bootable" in stdin
+
+
+_VOLUME_MULTI_DATA_NO_BOOT = {
+    "schema": "mbr",
+    "structure": [
+        {
+            "name": "rootfs",
+            "role": "system-data",
+            "type": "83",
+            "filesystem": "ext4",
+            "size": "2G",
+        },
+        {
+            "name": "data",
+            "role": "system-data",
+            "type": "83",
+            "filesystem": "ext4",
+            "size": "1G",
+        },
+        {
+            "name": "home",
+            "role": "system-data",
+            "type": "83",
+            "filesystem": "ext4",
+            "size": "1G",
+        },
+    ],
+}
+
+
+def test_create_mbr_layout_marks_exactly_one_partition_bootable(mocker, tmp_path):
+    # An MBR may only have one active partition. When several partitions share
+    # the system-data role and there is no system-boot partition, only the
+    # first may be flagged, otherwise sfdisk writes several active entries and
+    # the firmware picks one unpredictably.
+    layout = MBRVolume.unmarshal(_VOLUME_MULTI_DATA_NO_BOOT)
+    mocked_run = mocker.patch("imagecraft.pack.mbrutil.subprocess.run", autospec=True)
+
+    mbrutil._create_mbr_layout(
+        imagepath=tmp_path / "image.img",
+        sector_size=512,
+        layout=layout,
+    )
+
+    stdin = mocked_run.call_args.kwargs["input"]
+    partition_lines = [line for line in stdin.splitlines() if line.startswith("start=")]
+    bootable_lines = [line for line in partition_lines if "bootable" in line]
+
+    assert len(partition_lines) == 3
+    assert len(bootable_lines) == 1
+    # It must be the first partition, which is the one holding the root
+    # filesystem GRUB was pointed at.
+    assert bootable_lines[0] == partition_lines[0]
+
+
+def test_create_mbr_layout_prefers_system_boot_over_system_data(mocker, tmp_path):
+    # When a system-boot partition exists it wins, and the system-data
+    # partition must not also be flagged.
+    layout = MBRVolume.unmarshal(_VOLUME_TWO_PARTS)
+    mocked_run = mocker.patch("imagecraft.pack.mbrutil.subprocess.run", autospec=True)
+
+    mbrutil._create_mbr_layout(
+        imagepath=tmp_path / "image.img",
+        sector_size=512,
+        layout=layout,
+    )
+
+    stdin = mocked_run.call_args.kwargs["input"]
+    partition_lines = [line for line in stdin.splitlines() if line.startswith("start=")]
+    bootable_lines = [line for line in partition_lines if "bootable" in line]
+
+    assert len(bootable_lines) == 1
+    assert bootable_lines[0] == partition_lines[0]
+
+
 def test_create_mbr_layout_sfdisk_failure_raises(mocker, tmp_path, volume):
     mocked_run = mocker.patch("imagecraft.pack.mbrutil.subprocess.run", autospec=True)
     mocked_run.side_effect = subprocess.CalledProcessError(
