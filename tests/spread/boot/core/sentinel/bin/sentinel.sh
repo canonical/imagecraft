@@ -1,11 +1,8 @@
 #!/bin/bash
 
-if [ "$(uname -m)" = "x86_64" ]; then
-  SERIAL_CONSOLE="/dev/ttyS0"
-else
-  SERIAL_CONSOLE="/dev/ttyAMA0"
-fi
-echo "HELLO FROM SENTINEL SNAP" > $SERIAL_CONSOLE
+for dev in /dev/console /dev/ttyS0 /dev/ttyAMA0 /dev/ttyAMA1; do
+  echo "HELLO FROM SENTINEL SNAP" 2>/dev/null > "$dev"
+done
 
 sleep 5
 dbus-send --system --print-reply \
