@@ -34,7 +34,6 @@ from imagecraft.models import (
     Role,
     Volume,
 )
-from imagecraft.pack import gptutil
 from imagecraft.subprocesses import run
 
 
@@ -574,6 +573,10 @@ def mount_volume(
     :param fakeroot: If True, pass fakeroot option to ext mounts.
     :returns: A CompositeMount managing all partition mounts.
     """
+    # Imported here to avoid a circular import: imagecraft.pack imports
+    # this module's consumers (grubutil), while gptutil lives in that package.
+    from imagecraft.pack import gptutil  # noqa: PLC0415
+
     mountpoint_overrides = mountpoint_overrides or {}
     mount_entries: list[tuple[str, BaseMount]] = []
 
