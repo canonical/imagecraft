@@ -206,10 +206,6 @@ def test_create_mbr_layout_calls_sfdisk(mocker, tmp_path, volume):
 
 
 def test_create_mbr_layout_no_system_boot_marks_system_data_bootable(mocker, tmp_path):
-    # Regression test: layouts with no system-boot partition (e.g. grub-pc
-    # BIOS-only images where core.img lives in the MBR gap) must still mark
-    # a partition bootable, or SeaBIOS has no active partition to boot from
-    # and hangs at "Booting from Hard Disk...".
     layout = MBRVolume.unmarshal(_VOLUME_SINGLE)
     mocked_run = mocker.patch("imagecraft.pack.mbrutil.subprocess.run", autospec=True)
 
@@ -252,10 +248,6 @@ _VOLUME_MULTI_DATA_NO_BOOT = {
 
 
 def test_create_mbr_layout_marks_exactly_one_partition_bootable(mocker, tmp_path):
-    # An MBR may only have one active partition. When several partitions share
-    # the system-data role and there is no system-boot partition, only the
-    # first may be flagged, otherwise sfdisk writes several active entries and
-    # the firmware picks one unpredictably.
     layout = MBRVolume.unmarshal(_VOLUME_MULTI_DATA_NO_BOOT)
     mocked_run = mocker.patch("imagecraft.pack.mbrutil.subprocess.run", autospec=True)
 
@@ -277,8 +269,6 @@ def test_create_mbr_layout_marks_exactly_one_partition_bootable(mocker, tmp_path
 
 
 def test_create_mbr_layout_prefers_system_boot_over_system_data(mocker, tmp_path):
-    # When a system-boot partition exists it wins, and the system-data
-    # partition must not also be flagged.
     layout = MBRVolume.unmarshal(_VOLUME_TWO_PARTS)
     mocked_run = mocker.patch("imagecraft.pack.mbrutil.subprocess.run", autospec=True)
 
