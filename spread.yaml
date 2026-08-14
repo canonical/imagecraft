@@ -145,7 +145,7 @@ backends:
       - ubuntu-22.04-64:
           workers: 2
       - ubuntu-24.04-64:
-          workers: 2
+          workers: 4
       - ubuntu-25.10-64:
           workers: 2
       - ubuntu-26.04-64:

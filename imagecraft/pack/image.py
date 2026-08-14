@@ -14,33 +14,10 @@
 
 """Image handling."""
 
-import contextlib
-import json
-from collections.abc import Generator, Iterator
 from pathlib import Path
-from typing import Any, cast
-
-from craft_cli import emit
 
 from imagecraft import errors
 from imagecraft.models import Role, Volume
-from imagecraft.subprocesses import run
-
-_LOSETUP_BIN = "losetup"
-
-
-def _get_loop_devices() -> list[dict[str, Any]]:
-    return cast(
-        list[dict[str, Any]],
-        json.loads(run(_LOSETUP_BIN, "--json").stdout.strip())["loopdevices"],
-    )
-
-
-def _detach_loop_device(
-    loop_device: str | Path, file: str | Path | None = None
-) -> None:
-    emit.debug(f"Detaching loop device {loop_device} (from {file})")
-    run(_LOSETUP_BIN, "-d", loop_device)
 
 
 class Image:
@@ -75,35 +52,3 @@ class Image:
     def has_boot_partition(self) -> bool:
         """Check if a boot partition is present in the image."""
         return any(s.role == Role.SYSTEM_BOOT for s in self.volume.structure)
-
-    @contextlib.contextmanager
-    def attach_loopdev(self) -> Iterator[str]:
-        """Attach a loop device for this image file."""
-        if not hasattr(self, "loop_device"):
-            # This command attaches a loop device and returns the path in /dev
-            self.loop_device = run(
-                _LOSETUP_BIN,
-                "--find",
-                "--show",
-                "--partscan",
-                self.disk_path,
-            ).stdout.strip()
-            emit.debug(
-                f"Attached image {self.disk_path} as loop device {self.loop_device}"
-            )
-        try:
-            yield self.loop_device
-        finally:
-            self._detach_loopdevs()
-
-    def _get_loopdevs(self) -> Generator[dict[str, Any]]:
-        """Return the loop devices attached from this image file."""
-        for loop_device in _get_loop_devices():
-            with contextlib.suppress(FileNotFoundError):
-                if self.disk_path.samefile(Path(loop_device["back-file"])):
-                    yield loop_device
-
-    def _detach_loopdevs(self) -> None:
-        """Detach all loop devices that are attached from this image file."""
-        for loop_device in self._get_loopdevs():
-            _detach_loop_device(loop_device["name"], file=loop_device["back-file"])
