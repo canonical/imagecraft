@@ -45,7 +45,7 @@ from imagecraft.models.volume import (
     MBRVolume,
     PartitionSchema,
 )
-from imagecraft.pack import diskutil, gptutil, grubutil, imgfs
+from imagecraft.pack import diskutil, gptutil, grubutil, imgfs, mbrutil
 from imagecraft.pack.diskutil import DiskSize
 from imagecraft.pack.image import Image
 
@@ -207,7 +207,7 @@ def test_setup_grub_skip_conditions(mocker, new_dir, volume, arch, emitter, mess
     workdir = Path(new_dir, "workdir")
     workdir.mkdir()
     setup_efi = mocker.patch("imagecraft.pack.grubutil._setup_grub_efi")
-    setup_bios = mocker.patch("imagecraft.pack.grubutil._setup_grub_bios_chroot")
+    setup_bios = mocker.patch("imagecraft.pack.grubutil._setup_grub_bios")
 
     grubutil.setup_grub(
         image=image, workdir=workdir, arch=arch, filesystem_mount=filesystem_mount
@@ -291,15 +291,13 @@ def test_setup_grub_dispatches_to_bios(mocker, new_dir, arch):
     image = Image(volume=volume, disk_path=disk_path)
     workdir = Path(new_dir, "workdir")
     workdir.mkdir()
-    setup_bios = mocker.patch("imagecraft.pack.grubutil._setup_grub_bios_chroot")
+    setup_bios = mocker.patch("imagecraft.pack.grubutil._setup_grub_bios")
 
     grubutil.setup_grub(
         image=image, workdir=workdir, arch=arch, filesystem_mount=filesystem_mount
     )
 
-    # BIOS/MBR still installs GRUB through a chroot until it is converted
-    # to direct disk image manipulation.
-    setup_bios.assert_called_once_with(image, workdir, "i386-pc", filesystem_mount)
+    setup_bios.assert_called_once_with(image, filesystem_mount)
 
 
 @pytest.mark.usefixtures("new_dir")
@@ -307,25 +305,16 @@ def test_setup_grub_catches_image_error(mocker, new_dir, emitter):
     """A raised ImageError (e.g. missing mount) is turned into a progress message."""
     from imagecraft import errors  # noqa: PLC0415
 
-    volume = GPTVolume.unmarshal(
+    volume = MBRVolume.unmarshal(
         {
-            "schema": "gpt",
+            "schema": "mbr",
             "structure": [
-                {
-                    "name": "efi",
-                    "role": "system-boot",
-                    "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
-                    "filesystem": "vfat",
-                    "size": "64M",
-                    "filesystem-label": "",
-                },
                 {
                     "name": "rootfs",
                     "role": "system-data",
-                    "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+                    "type": "83",
                     "filesystem": "ext4",
                     "size": "512M",
-                    "filesystem-label": "writable",
                 },
             ],
         }
@@ -333,16 +322,13 @@ def test_setup_grub_catches_image_error(mocker, new_dir, emitter):
     disk_path = Path(new_dir, "pc.img")
     disk_path.touch(exist_ok=True)
     filesystem_mount = FilesystemMount.unmarshal(
-        [
-            {"mount": "/", "device": "(volume/pc/rootfs)"},
-            {"mount": "/boot/efi", "device": "(volume/pc/efi)"},
-        ]
+        [{"mount": "/", "device": "(volume/pc/rootfs)"}]
     )
     image = Image(volume=volume, disk_path=disk_path)
     workdir = Path(new_dir, "workdir")
     workdir.mkdir()
     mocker.patch(
-        "imagecraft.pack.grubutil._setup_grub_efi",
+        "imagecraft.pack.grubutil._setup_grub_bios",
         side_effect=errors.ImageError(message="boom"),
     )
 
@@ -1097,3 +1083,96 @@ def test_setup_grub_efi_separate_boot_partition(new_dir, fake_kernel_files):
     # The ESP stub has to chain to the config on the boot partition.
     assert f"search.fs_uuid {boot_uuid} root" in stub
     assert "set prefix=($root)'/grub'" in stub
+
+
+@pytest.mark.slow
+@pytest.mark.usefixtures("new_dir")
+def test_setup_grub_bios_mbr(new_dir, fake_kernel_files):
+    """Legacy BIOS/MBR: core.img is embedded and the boot sector patched by hand."""
+    from imagecraft.models.volume import (  # noqa: PLC0415
+        FileSystem,
+        MBRPartitionType,
+        Role,
+    )
+
+    tmp_path = Path(new_dir)
+    root_content = tmp_path / "root_content"
+    _copy_grub_target_files(
+        Path("/usr/lib/grub/i386-pc"), root_content / "usr/lib/grub/i386-pc"
+    )
+    fake_kernel_files(root_content / "boot")
+
+    volume = MBRVolume(
+        schema=PartitionSchema.MBR,
+        structure=[
+            MBRStructureItem(
+                name="rootfs",
+                role=Role.SYSTEM_DATA,
+                size="256M",
+                filesystem=FileSystem.EXT4,
+                type=MBRPartitionType("83"),
+                filesystem_label="writable",
+            ),
+        ],
+    )
+    disk_path = tmp_path / "disk.img"
+    mbrutil.create_empty_mbr_image(imagepath=disk_path, sector_size=512, layout=volume)
+    _build_and_inject_partition(
+        disk_path=disk_path,
+        tmp_path=tmp_path,
+        fstype=volume.structure[0].filesystem,
+        content_dir=root_content,
+        label=volume.structure[0].filesystem_label,
+        partition_name="rootfs",
+        partition_number=1,
+    )
+    mbrutil.verify_partition_tables(disk_path)
+
+    image = Image(volume=volume, disk_path=disk_path)
+    filesystem_mount = FilesystemMount.unmarshal(
+        [{"mount": "/", "device": "(volume/pc/rootfs)"}]
+    )
+
+    grubutil.setup_grub(
+        image=image,
+        workdir=tmp_path / "work",
+        arch=DebianArchitecture.AMD64,
+        filesystem_mount=filesystem_mount,
+    )
+
+    with disk_path.open("rb") as f:
+        sector0 = f.read(512)
+    # Boot signature must be preserved.
+    assert sector0[0x1FE:0x200] == b"\x55\xaa"
+    kernel_sector = int.from_bytes(sector0[0x5C:0x64], "little")
+    assert kernel_sector == grubutil._BIOS_CORE_IMG_START_SECTOR
+
+    with disk_path.open("rb") as f:
+        f.seek(kernel_sector * 512)
+        core_start = f.read(512)
+    # core.img was embedded in the gap and isn't all zeros/empty.
+    assert any(core_start)
+    # Regression test: core.img's own embedded blocklist (in diskboot.img,
+    # its first sector) must be patched to point past its own first sector,
+    # or SeaBIOS boots the MBR/boot.img/diskboot.img chain but hangs
+    # indefinitely trying to load the rest of core.img from the wrong
+    # place. grub-mkimage only fills in the blocklist's length, so this
+    # start-sector patch is grubutil's responsibility (normally done by
+    # grub-bios-setup).
+    blocklist_start = int.from_bytes(
+        core_start[
+            grubutil._BIOS_BLOCKLIST_START_OFFSET : grubutil._BIOS_BLOCKLIST_START_OFFSET
+            + 8
+        ],
+        "little",
+    )
+    assert blocklist_start == kernel_sector + 1
+
+    root_offset = gptutil.get_partition_sector_offset_by_number(disk_path, 1)
+    root_size = gptutil.get_partition_size_sectors_by_number(disk_path, 1)
+    with imgfs.edit_ext_partition(disk_path, root_offset, root_size) as root_img:
+        assert imgfs.debugfs_exists(root_img, "/boot/grub/i386-pc/core.img")
+        assert imgfs.debugfs_exists(root_img, "/boot/grub/i386-pc/boot.img")
+        cfg_path = tmp_path / "grub.cfg.out"
+        imgfs.debugfs_read_file(root_img, "/boot/grub/grub.cfg", cfg_path)
+        assert "vmlinuz-6.8.0-generic" in cfg_path.read_text()

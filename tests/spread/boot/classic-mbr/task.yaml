@@ -1,0 +1,31 @@
+summary: Boot classic MBR (legacy BIOS) image in QEMU
+
+systems: [ubuntu-24.04-64]
+
+prepare: |
+  tests.pkgs install qemu-system-x86
+
+execute: |
+  imagecraft pack --destructive-mode
+
+  QEMU_BIN="qemu-system-x86_64"
+  IMG_NAME=pc.img
+  test -f ${IMG_NAME}
+
+  # No pflash/OVMF drives here: QEMU's default SeaBIOS firmware boots via
+  # the hand-rolled MBR boot sector + core.img written by grubutil, not UEFI.
+  script -q -c "$QEMU_BIN \
+    -accel kvm -accel tcg,thread=multi \
+    -smp \"\$(nproc)\" \
+    -nographic \
+    -m 1G \
+    -drive file=${IMG_NAME},format=raw,index=0,if=virtio,cache=unsafe" output.log || true
+
+  MATCH "HELLO FROM IMAGECRAFT" output.log
+
+restore: |
+  imagecraft clean --destructive-mode || true
+  rm -f pc.img output.log
+
+debug: |
+  cat output.log 2>/dev/null || echo "No serial output log"
