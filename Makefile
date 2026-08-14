@@ -45,6 +45,18 @@ APT_PACKAGES :=
 ifeq ($(shell which mtools),)
 APT_PACKAGES += mtools
 endif
+ifeq ($(shell command -v grub-mkimage 2>/dev/null),)
+APT_PACKAGES += grub-common
+endif
+# debugfs and blkid live in /usr/sbin, which is not on the default non-root
+# PATH on every distribution, so search there explicitly to avoid reinstalling
+# packages that are already present.
+ifeq ($(shell PATH="$(PATH):/usr/sbin:/sbin" command -v debugfs 2>/dev/null),)
+APT_PACKAGES += e2fsprogs
+endif
+ifeq ($(shell PATH="$(PATH):/usr/sbin:/sbin" command -v blkid 2>/dev/null),)
+APT_PACKAGES += util-linux
+endif
 ifeq ($(wildcard /usr/include/libxml2/libxml/xpath.h),)
 APT_PACKAGES += libxml2-dev
 endif
