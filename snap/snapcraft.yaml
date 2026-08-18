@@ -103,8 +103,24 @@ parts:
       - libfuse3-3
     organize:
       "usr/local/bin/fuse-overlayfs": "libexec/imagecraft/fuse-overlayfs"
+  rustc:
+    plugin: nil
+    build-packages:
+      - cargo-1.91
+      - rustc-1.91
+    override-build: |
+      # We need newer versions of cargo and rustc than the cargo
+      # and rustc packages provide, but they don't set the `cargo`
+      # and `rustc` commands needed by maturin.
+      # These commands specifically allow pydantic-core to build using the
+      # non-default rust.
+      mkdir -p "${CRAFT_PART_INSTALL}/bin"
+      ln -s $(which cargo-1.91) "${CRAFT_PART_INSTALL}/bin/cargo"
+      ln -s $(which rustc-1.91) "${CRAFT_PART_INSTALL}/bin/rustc"
+    prime:
+      - -*
   imagecraft:
-    after: [imagecraft-libs]
+    after: [imagecraft-libs, rustc]
     source: .
     plugin: uv
     build-attributes:
@@ -112,7 +128,6 @@ parts:
     build-packages:
       - libffi-dev
       - libgit2-dev
-      - cargo-1.89
       - pkg-config
       - git
     build-snaps:
@@ -127,10 +142,6 @@ parts:
     organize:
       bin/craftctl: libexec/imagecraft/craftctl
     override-build: |
-      # create symlinks for cargo/rustc so maturin can find them
-      ln -sf $(which cargo-1.89) /usr/local/bin/cargo
-      ln -sf $(which rustc-1.89) /usr/local/bin/rustc
-
       ${SNAP}/libexec/snapcraft/craftctl default
       sed -i -e '1 s|^#!/.*|#!/snap/imagecraft/current/bin/python -E|' $CRAFT_PART_INSTALL/bin/craftctl
       version="$(PYTHONPATH=$CRAFT_PART_INSTALL/lib/python3.12/site-packages "${CRAFT_STAGE}/usr/bin/python3" -c "import imagecraft;print(imagecraft.__version__)")"

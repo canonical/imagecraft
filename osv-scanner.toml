@@ -1,0 +1,13 @@
+[[IgnoredVulns]]
+id = "GHSA-pj65-3pf6-c5q4"
+[[IgnoredVulns]]
+id = "GHSA-rp8m-h266-53jh"
+reason = """
+These python-apt CVEs affect versions of the package from before 2023.
+"""
+
+[[IgnoredVulns]]
+id = "GHSA-h35f-9h28-mq5c"
+reason = """
+We are stuck with this version of Setuptools until we can move to the Sphinx Stack.
+"""
