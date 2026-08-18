@@ -222,7 +222,7 @@ def _partition_node_number(
     """
     device = str(table.get("device", ""))
     node = str(partition.get("node", ""))
-    suffix = node[len(device) :] if node.startswith(device) else node
+    suffix = node.removeprefix(device)
     match = re.fullmatch(r"p?(\d+)", suffix)
     return int(match.group(1)) if match else None
 
