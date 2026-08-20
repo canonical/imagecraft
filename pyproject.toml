@@ -112,10 +112,6 @@ explicit = true
 python-apt = { index = "python-apt-wheels" }
 
 [tool.uv]
-build-constraint-dependencies = [
-    # needed until we have rustc >= 1.78
-    "maturin<1.10.0 ; python_version < '3.14'",
-]
 constraint-dependencies = [
     # Basic constraints to allow --resolution=lowest
     "build>=0.7.0",
