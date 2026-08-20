@@ -115,8 +115,8 @@ parts:
       # These commands specifically allow pydantic-core to build using the
       # non-default rust.
       mkdir -p "${CRAFT_PART_INSTALL}/bin"
-      ln -s $(which cargo-1.91) "${CRAFT_PART_INSTALL}/bin/cargo"
-      ln -s $(which rustc-1.91) "${CRAFT_PART_INSTALL}/bin/rustc"
+      ln -sf "$(command -v cargo-1.91)" "${CRAFT_PART_INSTALL}/bin/cargo"
+      ln -sf "$(command -v rustc-1.91)" "${CRAFT_PART_INSTALL}/bin/rustc"
     prime:
       - -*
   imagecraft:
@@ -137,8 +137,6 @@ parts:
       - UV_COMPILE_BYTECODE: "1"
       - UV_NO_BINARY: "1"
       - MAKEOPTS: -j$(nproc --all)
-      - CARGO: cargo-1.89
-      - RUSTC: rustc-1.89
     organize:
       bin/craftctl: libexec/imagecraft/craftctl
     override-build: |
