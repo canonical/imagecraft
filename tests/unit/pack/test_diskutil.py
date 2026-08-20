@@ -12,6 +12,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from subprocess import CompletedProcess
 from unittest.mock import ANY, call
 
 import pytest
@@ -153,6 +154,57 @@ def test_format_populate_partition(
     mocked_run.assert_has_calls(calls)
 
 
+def test_format_populate_partition_ext_with_offset(mocker, content, imagepath):
+    """An ext partition with geometry is written in place at its offset."""
+    mocked_run = mocker.patch("imagecraft.pack.diskutil.run", autospec=True)
+    geometry = diskutil.PartitionGeometry(
+        sector_offset=2048, sector_count=32768, sector_size=512
+    )
+
+    diskutil.format_populate_partition(
+        fstype=FileSystem.EXT4,
+        content_dir=content,
+        partitionpath=imagepath,
+        label="test",
+        geometry=geometry,
+    )
+
+    args = mocked_run.call_args_list[0].args
+    assert args[0] == "mke2fs"
+    # offset is in bytes; size is the partition size in KiB.
+    assert "-E" in args
+    assert f"offset={2048 * 512}" in args
+    assert f"{32768 * 512 // 1024}k" == args[-1]
+
+
+def test_format_populate_partition_fat_with_offset(mocker, content, imagepath):
+    """A FAT partition with geometry passes --offset to mkfs.fat and @@ to mcopy."""
+    mocked_run = mocker.patch("imagecraft.pack.diskutil.run", autospec=True)
+    geometry = diskutil.PartitionGeometry(
+        sector_offset=2048, sector_count=32768, sector_size=512
+    )
+
+    diskutil.format_populate_partition(
+        fstype=FileSystem.FAT16,
+        content_dir=content,
+        partitionpath=imagepath,
+        label="test",
+        geometry=geometry,
+    )
+
+    mkfs_args = mocked_run.call_args_list[0].args
+    assert mkfs_args[0] == "mkfs.fat"
+    # mkfs.fat --offset is in sectors; block-count is in KiB.
+    assert "--offset" in mkfs_args
+    assert str(2048) in mkfs_args
+    assert str(32768 * 512 // 1024) == mkfs_args[-1]
+
+    # mcopy targets the image at the partition's byte offset.
+    mcopy_args = mocked_run.call_args_list[1].args
+    assert mcopy_args[0] == "bash"
+    assert f"-i{imagepath}@@{2048 * 512}" in mcopy_args[2]
+
+
 # ── format_device ────────────────────────────────────────────────────────────
 
 
@@ -234,3 +286,94 @@ def test_format_device_fat_no_content(mocker, device):
 
     assert mocked_run.call_count == 1
     assert mocked_run.call_args[0][0] == "mkfs.fat"
+
+
+# ── get_partition_geometry ───────────────────────────────────────────────────
+
+
+_GPT_SFDISK_JSON = """
+{
+   "partitiontable": {
+      "label": "gpt",
+      "device": "%(image)s",
+      "unit": "sectors",
+      "sectorsize": 512,
+      "partitions": [
+         {
+            "node": "%(image)s1",
+            "start": 2048,
+            "size": 524288,
+            "type": "C12A7328-F81F-11D2-BA4B-00A0C93EC93B",
+            "name": "efi"
+         },
+         {
+            "node": "%(image)s2",
+            "start": 526336,
+            "size": 12582912,
+            "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+            "name": "rootfs"
+         }
+      ]
+   }
+}
+"""
+
+_MBR_SFDISK_JSON = """
+{
+   "partitiontable": {
+      "label": "dos",
+      "device": "%(image)s",
+      "unit": "sectors",
+      "sectorsize": 512,
+      "partitions": [
+         {"node": "%(image)s1", "start": 2048, "size": 524288, "type": "0c", "bootable": true},
+         {"node": "%(image)s2", "start": 526336, "size": 10485760, "type": "83"}
+      ]
+   }
+}
+"""
+
+
+@pytest.mark.parametrize(
+    ("template", "image_name"),
+    [
+        (_GPT_SFDISK_JSON, "pc.img"),
+        (_MBR_SFDISK_JSON, "pi.img"),
+    ],
+)
+def test_get_partition_geometry(mocker, tmp_path, template, image_name):
+    image_path = tmp_path / image_name
+    fake_result = CompletedProcess(
+        args=[],
+        returncode=0,
+        stdout=template % {"image": str(image_path)},
+    )
+    mocker.patch(
+        "imagecraft.pack.diskutil.run", autospec=True, return_value=fake_result
+    )
+
+    geom1 = diskutil.get_partition_geometry(image_path, 1)
+    geom2 = diskutil.get_partition_geometry(image_path, 2)
+
+    assert geom1.sector_offset == 2048
+    assert geom1.sector_count == 524288
+    assert geom1.sector_size == 512
+    assert geom1.size_bytes == 524288 * 512
+
+    assert geom2.sector_offset == 526336
+    assert geom2.sector_size == 512
+
+
+def test_get_partition_geometry_missing(mocker, tmp_path):
+    image_path = tmp_path / "pc.img"
+    fake_result = CompletedProcess(
+        args=[],
+        returncode=0,
+        stdout=_GPT_SFDISK_JSON % {"image": str(image_path)},
+    )
+    mocker.patch(
+        "imagecraft.pack.diskutil.run", autospec=True, return_value=fake_result
+    )
+
+    with pytest.raises(CraftError, match="No partition numbered 9"):
+        diskutil.get_partition_geometry(image_path, 9)
