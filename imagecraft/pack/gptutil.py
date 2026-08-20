@@ -15,6 +15,7 @@
 """Utility functions for GPT-formatted disks."""
 
 import json
+import re
 import subprocess
 from pathlib import Path
 from typing import Any, cast
@@ -202,10 +203,43 @@ def _get_partition_info(imagepath: Path, partname: str) -> dict[str, Any]:
 
     :raises CalledProcessError: If sfdisk fails.
     """
-    for partition in _get_partition_table(imagepath)["partitions"]:
-        if partition["name"] == partname:
+    for partition in _get_partition_table(imagepath).get("partitions", []):
+        if partition.get("name") == partname:
             return cast(dict[str, Any], partition)
     raise CraftError(f"No partition named {partname} in {imagepath}")
+
+
+def _partition_node_number(
+    table: dict[str, Any], partition: dict[str, Any]
+) -> int | None:
+    """Return the partition number sfdisk reported for a partition entry.
+
+    sfdisk only lists partitions that are in use, so a table with gaps in its
+    numbering (possible for GPT, which lets users pick partition numbers) has
+    entries whose number doesn't match their position in the list. The number
+    has to be recovered from the node name, which is the device path with the
+    partition number (optionally prefixed by "p") appended.
+    """
+    device = str(table.get("device", ""))
+    node = str(partition.get("node", ""))
+    suffix = node.removeprefix(device)
+    match = re.fullmatch(r"p?(\d+)", suffix)
+    return int(match.group(1)) if match else None
+
+
+def _get_partition_info_by_number(imagepath: Path, partnum: int) -> dict[str, Any]:
+    """Return a dict representing info about partition number partnum (1-based).
+
+    MBR partition tables have no per-partition name field (unlike GPT), so
+    MBR partitions must be looked up by their number instead.
+
+    :raises CalledProcessError: If sfdisk fails.
+    """
+    table = _get_partition_table(imagepath)
+    for partition in table.get("partitions", []):
+        if _partition_node_number(table, partition) == partnum:
+            return cast(dict[str, Any], partition)
+    raise CraftError(f"No partition number {partnum} in {imagepath}")
 
 
 def get_partition_sector_offset(imagepath: Path, partname: str) -> int:
@@ -214,6 +248,39 @@ def get_partition_sector_offset(imagepath: Path, partname: str) -> int:
     :raises CalledProcessError: If sfdisk fails.
     """
     return cast(int, _get_partition_info(imagepath, partname)["start"])
+
+
+def get_partition_size_sectors(imagepath: Path, partname: str) -> int:
+    """Return the size (in sectors) for the partition indicated by partname.
+
+    Only GPT partitions are named in sfdisk's output; use
+    `get_partition_size_sectors_by_number` for MBR volumes.
+
+    :raises CalledProcessError: If sfdisk fails.
+    """
+    return cast(int, _get_partition_info(imagepath, partname)["size"])
+
+
+def get_partition_sector_offset_by_number(imagepath: Path, partnum: int) -> int:
+    """Return the start sector (offset) for partition number partnum (1-based).
+
+    Use this instead of `get_partition_sector_offset` for MBR volumes, whose
+    partitions aren't named in sfdisk's output.
+
+    :raises CalledProcessError: If sfdisk fails.
+    """
+    return cast(int, _get_partition_info_by_number(imagepath, partnum)["start"])
+
+
+def get_partition_size_sectors_by_number(imagepath: Path, partnum: int) -> int:
+    """Return the size (in sectors) for partition number partnum (1-based).
+
+    Use this instead of `get_partition_size_sectors` for MBR volumes, whose
+    partitions aren't named in sfdisk's output.
+
+    :raises CalledProcessError: If sfdisk fails.
+    """
+    return cast(int, _get_partition_info_by_number(imagepath, partnum)["size"])
 
 
 def verify_partition_tables(imagepath: Path) -> None:
