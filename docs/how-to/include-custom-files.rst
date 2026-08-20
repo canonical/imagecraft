@@ -6,13 +6,11 @@
 Include custom files
 ====================
 
-Images may need to include arbitrary files, such as custom scripts or packages beyond
-what's available in package archives. You can include custom files in your image by
-placing them in your project directory and copying them to the overlay file system with
-a part that uses the :ref:`dump plugin <craft_parts_dump_plugin>`.
+When crafting your image, you may need to copy custom scripts, pre-built packages,
+or other static files from your local machine to the image's file system. This is done
+by placing them in your image project directory and copying them to the overlay file
+system with the :ref:`craft_parts_dump_plugin`.
 
-To apply a configuration at first boot rather than baking it into the image, see
-:ref:`configure-instances-with-cloud-init`.
 
 
 Prepare the files
@@ -24,16 +22,14 @@ In your project directory, create a directory to hold the custom files:
 
     mkdir my-files
 
-Place the files you want to include in this directory, preserving any directory structure
-that they should have in the final image.
+Place the files you want to include in this directory, preserving the directory structure
+they should have in the final image.
 
 
 Copy the files to the image
 ---------------------------
 
-Copy the files to the image with a new part that uses the :ref:`dump plugin
-<craft_parts_dump_plugin>` and the :ref:`organize <PartSpec.organize_files>` key. The
-part should run after the root file system is in place.
+Copy the files to the image with a new part that uses the :ref:`craft_parts_dump_plugin` and the :ref:`organize <PartSpec.organize_files>` key. This part must be processed after the root file system is in place.
 
 For example, to copy the script ``my-files/my-script.sh`` to ``/usr/local/bin/``:
 
@@ -48,16 +44,18 @@ For example, to copy the script ``my-files/my-script.sh`` to ``/usr/local/bin/``
         organize:
           my-script.sh: (overlay)/usr/local/bin/my-script.sh
 
-The ``(overlay)/`` prefix ensures the file is copied to the overlay file system and
-appears in the final image at the specified path.
+The ``(overlay)/`` prefix in the destination file path causes the file to be copied
+into the image's overlay file system, which is where the image's contents are
+prepared.
 
-Apply custom operations
+
+Perform additional file operations
 -----------------------
 
 To apply custom operations to the files, use the ``override-overlay`` key in a separate
 part to run commands in the overlay file system.
 
-For example, to set the file permissions on ``/usr/local/bin/my-script.sh`` in the final
+For example, to modify the file permissions on ``/usr/local/bin/my-script.sh`` in the final
 image:
 
 .. code-block:: yaml
