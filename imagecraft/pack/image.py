@@ -15,6 +15,7 @@
 """Image handling."""
 
 import contextlib
+import fcntl
 import json
 from collections.abc import Generator, Iterator
 from pathlib import Path
@@ -88,10 +89,16 @@ class Image:
                 "--partscan",
                 self.disk_path,
             ).stdout.strip()
+            # Briefly acquire a shared lock to synchronize with udev.
+            # udev holds LOCK_EX while it processes the new device; a shared
+            # lock here blocks until udev is done, then releases immediately
+            # so udev is free to process further events on the device.
+            with open(self.loop_device, "rb") as loop_fd:
+                fcntl.flock(loop_fd, fcntl.LOCK_SH)
+        try:
             emit.debug(
                 f"Attached image {self.disk_path} as loop device {self.loop_device}"
             )
-        try:
             yield self.loop_device
         finally:
             self._detach_loopdevs()
