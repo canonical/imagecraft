@@ -45,17 +45,35 @@ APT_PACKAGES :=
 ifeq ($(shell which mtools),)
 APT_PACKAGES += mtools
 endif
-ifeq ($(shell command -v grub-mkimage 2>/dev/null),)
+ifeq ($(shell which mkfs.vfat),)
+APT_PACKAGES += dosfstools
+endif
+ifeq ($(shell which grub-mkimage),)
 APT_PACKAGES += grub-common
 endif
-# debugfs and blkid live in /usr/sbin, which is not on the default non-root
-# PATH on every distribution, so search there explicitly to avoid reinstalling
-# packages that are already present.
-ifeq ($(shell PATH="$(PATH):/usr/sbin:/sbin" command -v debugfs 2>/dev/null),)
+ifeq ($(shell which mke2fs),)
 APT_PACKAGES += e2fsprogs
 endif
-ifeq ($(shell PATH="$(PATH):/usr/sbin:/sbin" command -v blkid 2>/dev/null),)
-APT_PACKAGES += util-linux
+ifeq ($(shell which sfdisk),)
+APT_PACKAGES += fdisk
+endif
+ifeq ($(shell which fuse2fs),)
+APT_PACKAGES += fuse2fs
+endif
+ifeq ($(shell which fusefile),)
+APT_PACKAGES += fusefile
+endif
+# fusefat is only packaged for amd64 in Ubuntu 24.04 (Noble) universe repositories.
+# On newer releases it may be available across architectures, but on Noble it is only
+# available on x86_64/amd64.
+ifneq ($(VERSION_CODENAME),noble)
+ifeq ($(shell which fusefat),)
+APT_PACKAGES += fusefat
+endif
+else ifeq ($(shell uname -m),x86_64)
+ifeq ($(shell which fusefat),)
+APT_PACKAGES += fusefat
+endif
 endif
 ifeq ($(wildcard /usr/include/libxml2/libxml/xpath.h),)
 APT_PACKAGES += libxml2-dev
