@@ -56,7 +56,6 @@ from imagecraft.models.volume import (
     StructureList,
 )
 from imagecraft.pack import gptutil, mbrutil
-from imagecraft.pack.chroot import Chroot, Mount
 from imagecraft.pack.image import Image
 from imagecraft.subprocesses import run
 from imagecraft.utils.mount import mount_partition
@@ -111,6 +110,28 @@ _EFI_CORE_MODULES = [
 ]
 
 # Signed shim/grub filename suffixes, in preference order.
+# Core modules embedded into the standalone GRUB BIOS image.
+_BIOS_CORE_MODULES = [
+    "biosdisk",
+    "part_msdos",
+    "part_gpt",
+    "ext2",
+    "fat",
+    "normal",
+    "search",
+    "search_fs_uuid",
+    "boot",
+    "linux",
+    "configfile",
+]
+
+# Layout of GRUB's boot.img loaded by a legacy BIOS:
+_BIOS_KERNEL_SECTOR_OFFSET = 0x5C  # absolute sector of core.img (kernel)
+_BIOS_BOOT_CODE_SIZE = 0x1B8  # boot code length before the disk signature
+_BIOS_CORE_IMG_START_SECTOR = 4  # first sector of the MBR gap we may use
+# Offset of core.img's embedded blocklist start sector inside diskboot.img.
+_BIOS_BLOCKLIST_START_OFFSET = 0x1F4
+
 _SIGNED_SHIM_SUFFIXES = (".efi.signed.latest", ".efi.signed", ".efi.dualsigned")
 
 _DEFAULT_GRUB_PATH = "/etc/default/grub"
@@ -148,7 +169,7 @@ _STOCK_GRUB_DEFAULTS = GrubDefaults()
 
 def setup_grub(
     image: Image,
-    workdir: Path,
+    workdir: Path,  # noqa: ARG001 (kept for caller compatibility)
     arch: str,
     filesystem_mount: FilesystemMount,
 ) -> None:
@@ -176,7 +197,7 @@ def setup_grub(
         # Legacy BIOS/MBR images are still installed through a loop device
         # and a chroot. They move over to direct image manipulation in a
         # follow-up change, once the EFI path has settled.
-        _setup_grub_bios_chroot(image, workdir, _GRUB_BIOS_TARGET, filesystem_mount)
+        _setup_grub_bios(image, filesystem_mount)
         return
 
     # GPT or hybrid — EFI boot
@@ -309,7 +330,13 @@ def _setup_grub_efi(
                 shutil.copy2(signed["grub"], local_binary)
             else:
                 emit.progress(f"Building unsigned GRUB image ({grub_target})")
-                local_binary = _build_grub_image(rootfs, grub_target, grub_fname)
+                local_binary = _build_standalone_image(
+                    rootfs,
+                    grub_target,
+                    prefix="/EFI/ubuntu",
+                    modules=_EFI_CORE_MODULES,
+                    output_name=grub_fname,
+                )
 
             _deploy_efi_binary(
                 disk_path,
@@ -362,13 +389,20 @@ def _setup_grub_efi(
     emit.progress("GRUB installation complete")
 
 
-def _build_grub_image(rootfs: Path, grub_target: str, grub_fname: str) -> Path:
-    """Build a standalone GRUB EFI binary using the image's own grub-mkimage.
+def _build_standalone_image(
+    rootfs: Path,
+    grub_target: str,
+    *,
+    prefix: str,
+    modules: list[str],
+    output_name: str,
+) -> Path:
+    """Build a standalone GRUB image using the target rootfs's own grub-mkimage.
 
-    Running ``grub-mkimage`` inside a chroot of the mounted rootfs guarantees
-    the builder matches the module files it consumes — no host/image version
-    skew. The binary is built into ``/tmp`` inside the tree; the returned path
-    is on the host side of the same mount.
+    Running ``grub-mkimage`` via ``chroot(1)`` of the mounted rootfs
+    guarantees the builder matches the module files it consumes — no
+    host/image version skew. The binary is built into ``/tmp`` inside the
+    tree; the returned path is on the host side of the same mount.
 
     :raises errors.ImageError: If the image has no GRUB modules installed.
     :raises errors.GRUBInstallError: If the image's grub-mkimage fails.
@@ -382,12 +416,12 @@ def _build_grub_image(rootfs: Path, grub_target: str, grub_fname: str) -> Path:
         )
 
     # A fixed location inside the image's own /tmp — not a host temp file.
-    output_rel = Path("/tmp") / f"imagecraft-{grub_fname}"  # noqa: S108
+    output_rel = Path("/tmp") / f"imagecraft-{output_name}"  # noqa: S108
     output_host = rootfs / output_rel.relative_to("/")
     output_host.parent.mkdir(parents=True, exist_ok=True)
 
-    # Run the image's own grub-mkimage via chroot(1) as a plain subprocess:
-    # a clean single-threaded process, unaffected by any threads in this one.
+    # Run via chroot(1) as a plain subprocess: a clean single-threaded
+    # process, unaffected by any threads in this one.
     try:
         run(
             "chroot",
@@ -400,8 +434,8 @@ def _build_grub_image(rootfs: Path, grub_target: str, grub_fname: str) -> Path:
             "-O",
             grub_target,
             "-p",
-            "/EFI/ubuntu",
-            *_EFI_CORE_MODULES,
+            prefix,
+            *modules,
             stderr=subprocess.STDOUT,
         )
     except FileNotFoundError as err:
@@ -718,156 +752,149 @@ def _efi_stub_grub_cfg(boot_uuid: str, boot_prefix: str) -> str:
     )
 
 
-def _grub_install(grub_target: str, loop_dev: str) -> None:
-    """Install grub in the image.
+def _setup_grub_bios(image: Image, filesystem_mount: FilesystemMount) -> None:
+    """Install GRUB for a legacy BIOS/MBR image."""
+    structure = image.volume.structure
+    disk_path = image.disk_path
 
-    :param grub_target: target platform to install grub for.
-    :param loop_dev: loop device to install grub on
-    """
-    check_grub_install = ["grub-install", "-V"]
-    if grub_target == _GRUB_BIOS_TARGET:
-        grub_install_command = [
-            "grub-install",
-            "--boot-directory=/boot",
-            f"--target={grub_target}",
-            loop_dev,
-        ]
+    root_partition, root_offset, root_size = _partition_geometry(
+        disk_path, structure, filesystem_mount, "/"
+    )
+    has_separate_boot = _has_separate_boot(filesystem_mount)
+    if has_separate_boot:
+        _, boot_offset, boot_size = _partition_geometry(
+            disk_path, structure, filesystem_mount, "/boot"
+        )
     else:
-        grub_install_command = [
-            "grub-install",
-            loop_dev,
-            "--boot-directory=/boot",
-            "--efi-directory=/boot/efi",
-            f"--target={grub_target}",
-            "--uefi-secure-boot",
-            "--no-nvram",
-        ]
-
-    update_grub_command = [
-        "update-grub",
-    ]
-
-    # Divert os-probe to avoid writing wrong output in grub.cfg
-    os_prober = "/etc/grub.d/30_os-prober"
-    divert_base_command = "dpkg-divert"
-
-    divert_common_args = [
-        "--local",
-        "--divert",
-        os_prober + ".dpkg-divert",
-        "--rename",
-        os_prober,
-    ]
-
-    divert_os_prober_command = [divert_base_command, *list(divert_common_args)]
-
-    undivert_os_prober_command = [
-        divert_base_command,
-        "--remove",
-        *divert_common_args,
-    ]
-
-    # Check if grub-install is available, otherwise skip the installation without error
-    try:
-        run(*check_grub_install)
-    except FileNotFoundError:
-        emit.progress(
-            "Skipping GRUB installation because grub-install is not available",
-            permanent=True,
+        boot_partition, boot_offset, boot_size = (
+            root_partition,
+            root_offset,
+            root_size,
         )
-        return
+    # When /boot lives on its own partition, that partition's root directory
+    # *is* /boot, so paths written to it must not be prefixed with "/boot".
+    boot_prefix = "" if has_separate_boot else "/boot"
+    boot_partnum = _part_num(boot_partition, structure)
 
-    try:
-        for cmd in [
-            grub_install_command,
-            divert_os_prober_command,
-            update_grub_command,
-            undivert_os_prober_command,
-        ]:
-            res = run(*cmd, stderr=subprocess.STDOUT)
-            if res.stdout:
-                emit.debug(res.stdout)
-    except subprocess.CalledProcessError as err:
-        raise errors.GRUBInstallError("Fail to install grub") from err
-    except FileNotFoundError as err:
-        raise errors.GRUBInstallError("Missing tool to install grub") from err
+    with tempfile.TemporaryDirectory(prefix="imagecraft-grub-") as tmp_str:
+        tmp_dir = Path(tmp_str)
 
+        with mount_partition(
+            disk_path,
+            "ext4",
+            offset=root_offset * gptutil.SECTOR_SIZE_512,
+            size=root_size * gptutil.SECTOR_SIZE_512,
+        ) as rootfs:
+            modules_dir = rootfs / "usr/lib/grub" / _GRUB_BIOS_TARGET
+            if not modules_dir.is_dir():
+                # A rootfs with no GRUB package installed simply gets no
+                # bootloader; setup_grub turns this into a skip rather than
+                # failing the pack.
+                raise errors.ImageError(
+                    message=(
+                        f"GRUB modules for {_GRUB_BIOS_TARGET} are not "
+                        "installed in the image"
+                    )
+                )
+            boot_img_path = tmp_dir / "boot.img"
+            shutil.copy2(modules_dir / "boot.img", boot_img_path)
+            root_uuid = _read_ext_uuid(disk_path, root_offset * gptutil.SECTOR_SIZE_512)
+            grub_defaults = _read_grub_defaults(rootfs)
 
-def _setup_grub_bios_chroot(
-    image: Image,
-    workdir: Path,
-    grub_target: str,
-    filesystem_mount: FilesystemMount,
-) -> None:
-    """Install GRUB for a legacy BIOS/MBR image via a loop device and chroot.
-
-    This is the original, privileged installation path. It is retained only
-    for BIOS/MBR images until they are converted to direct disk image
-    manipulation, at which point this and its helpers are removed.
-    """
-    mount_dir = workdir / "mount"
-    mount_dir.mkdir(exist_ok=True)
-
-    with image.attach_loopdev() as loop_dev:
-        mounts: list[Mount] = [
-            *_image_mounts(loop_dev, image.volume.structure, filesystem_mount),
-            Mount(
-                fstype="devtmpfs",
-                src="devtmpfs-build",
-                relative_mountpoint="/dev",
-            ),
-            Mount(
-                fstype="devpts",
-                src="devpts-build",
-                relative_mountpoint="/dev/pts",
-                options=["-o", "nodev,nosuid"],
-            ),
-            Mount(fstype="proc", src="proc-build", relative_mountpoint="proc"),
-            Mount(fstype="sysfs", src="sysfs-build", relative_mountpoint="/sys"),
-            Mount(
-                fstype=None, src="/run", relative_mountpoint="/run", options=["--bind"]
-            ),
-        ]
-        chroot = Chroot(path=mount_dir, mounts=mounts)
-
-        try:
-            chroot.execute(
-                target=_grub_install,
-                grub_target=grub_target,
-                loop_dev=loop_dev,
+            # The BIOS core image is built by the image's own grub-mkimage
+            # (see _build_grub_image); its embedded blocklist is patched
+            # below once written to the MBR gap.
+            core_img_path = _build_standalone_image(
+                rootfs,
+                _GRUB_BIOS_TARGET,
+                prefix=f"(hd0,msdos{boot_partnum}){boot_prefix}/grub",
+                modules=_BIOS_CORE_MODULES,
+                output_name="core.img",
             )
-        except errors.ChrootMountError as err:
-            # Ignore mounting errors indicating the rootfs does not have
-            # the needed structure to install grub.
-            emit.progress(f"Cannot install GRUB on this rootfs: {err}", permanent=True)
+            # Read the image back while the rootfs mount is still open, and
+            # drop the in-image temporary afterwards.
+            core_img = core_img_path.read_bytes()
+            core_img_path.unlink(missing_ok=True)
 
-
-def _image_mounts(
-    loop_dev: str, structure: StructureList, filesystem_mount: FilesystemMount
-) -> list[Mount]:
-    """Generate a list of mounts for the structure, based on the given filesystem_mount.
-
-    :param loop_dev: loop device the disk is associated to
-    :param structure: StructureList describing the partition layout of the image
-    :param filesystem_mount: order in which partitions should be mounted
-    """
-    image_mounts: list[Mount] = []
-
-    for entry in filesystem_mount:
-        partition_name = _partition_name_from_device(entry.device)
-        partnum = _part_num(partition_name, structure)
-        if partnum is None:
-            raise errors.ImageError(
-                message=f"Cannot find a partition named {partition_name}"
-            )
-        image_mounts.append(
-            Mount(
-                fstype=None,
-                src=f"{loop_dev}p{partnum}",
-                relative_mountpoint=entry.mount,
-            )
+        bootfs_handle = mount_partition(
+            disk_path,
+            "ext4",
+            offset=boot_offset * gptutil.SECTOR_SIZE_512,
+            size=boot_size * gptutil.SECTOR_SIZE_512,
         )
-    return image_mounts
+        with bootfs_handle as bootfs:
+            # GRUB has to find its config and the kernels on whichever
+            # partition holds /boot, which isn't necessarily the root one.
+            boot_uuid = _read_ext_uuid(disk_path, boot_offset * gptutil.SECTOR_SIZE_512)
+            _write_ext_file(
+                bootfs,
+                core_img,
+                f"{boot_prefix}/grub/{_GRUB_BIOS_TARGET}/core.img",
+            )
+            _write_ext_file(
+                bootfs,
+                boot_img_path.read_bytes(),
+                f"{boot_prefix}/grub/{_GRUB_BIOS_TARGET}/boot.img",
+            )
+
+            kernels = _find_kernels(bootfs, boot_prefix)
+            emit.progress("Generating grub configuration file")
+            cfg = _generate_grub_cfg(
+                kernels, root_uuid, boot_uuid, boot_prefix, grub_defaults
+            )
+            _write_ext_file(bootfs, cfg.encode(), f"{boot_prefix}/grub/grub.cfg")
+
+        _install_bios_boot_sector(disk_path, boot_img_path, core_img)
+
+    emit.progress("GRUB installation complete")
+
+
+def _install_bios_boot_sector(disk_path: Path, boot_img: Path, core_img: bytes) -> None:
+    """Embed core.img in the MBR gap and patch boot.img's kernel-sector field.
+
+    This replicates what ``grub-bios-setup`` does on disk, without needing a
+    real block device for it to probe: boot.img's boot code (the first
+    0x1B8 bytes) is written to sector 0 with its kernel-sector field pointing
+    at core.img's location, while the disk signature/partition table/boot
+    signature already written by sfdisk are preserved untouched. core.img's
+    own embedded blocklist (in its first sector, diskboot.img) is also
+    patched to point at the disk-absolute sector following core.img's first
+    sector, since grub-mkimage only fills in the blocklist's length, not its
+    start sector.
+    """
+    boot_data = bytearray(boot_img.read_bytes())
+    if len(boot_data) != gptutil.SECTOR_SIZE_512:
+        raise errors.GRUBInstallError(f"Unexpected boot.img size: {len(boot_data)}")
+    boot_data[_BIOS_KERNEL_SECTOR_OFFSET : _BIOS_KERNEL_SECTOR_OFFSET + 8] = (
+        _BIOS_CORE_IMG_START_SECTOR.to_bytes(8, "little")
+    )
+
+    core_data = bytearray(core_img)
+    core_sectors = (
+        len(core_data) + gptutil.SECTOR_SIZE_512 - 1
+    ) // gptutil.SECTOR_SIZE_512
+    if (
+        _BIOS_CORE_IMG_START_SECTOR + core_sectors
+    ) * gptutil.SECTOR_SIZE_512 > mbrutil.MBR_RESERVED_SIZE:
+        raise errors.GRUBInstallError("core.img is too large to fit in the MBR gap")
+
+    # The blocklist's start sector is relative to the disk, not to core.img,
+    # and points to the sector right after diskboot.img (core.img's own
+    # first sector).
+    rest_of_core_start_sector = _BIOS_CORE_IMG_START_SECTOR + 1
+    core_data[_BIOS_BLOCKLIST_START_OFFSET : _BIOS_BLOCKLIST_START_OFFSET + 8] = (
+        rest_of_core_start_sector.to_bytes(8, "little")
+    )
+
+    with disk_path.open("r+b") as disk_file:
+        existing_sector0 = bytearray(disk_file.read(gptutil.SECTOR_SIZE_512))
+        new_sector0 = bytes(boot_data[:_BIOS_BOOT_CODE_SIZE]) + bytes(
+            existing_sector0[_BIOS_BOOT_CODE_SIZE : gptutil.SECTOR_SIZE_512]
+        )
+        disk_file.seek(0)
+        disk_file.write(new_sector0)
+        disk_file.seek(_BIOS_CORE_IMG_START_SECTOR * gptutil.SECTOR_SIZE_512)
+        disk_file.write(core_data)
 
 
 def _part_num(name: str, structure: StructureList) -> int | None:
