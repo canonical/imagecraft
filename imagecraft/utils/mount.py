@@ -80,6 +80,20 @@ def _unmount_path(
         raise last_err
 
 
+def _fuse_command(command: Sequence[str], description: str) -> None:
+    """Run a FUSE helper command, wrapping failures in ``MountError``.
+
+    :param command: The command and arguments to run.
+    :param description: Human-readable action description used when composing
+        the error message.
+    :raises errors.MountError: If the command fails or the binary is missing.
+    """
+    try:
+        run(*command)
+    except (subprocess.CalledProcessError, FileNotFoundError) as err:
+        raise errors.MountError(f"{description}: {err}") from err
+
+
 class BaseMount(abc.ABC):
     """Abstract base class for all filesystem mounts.
 
@@ -100,15 +114,6 @@ class BaseMount(abc.ABC):
     def is_mounted(self) -> bool:
         """Check if the filesystem is currently mounted."""
         return self._is_mounted
-
-    @property
-    def _mountpoint(self) -> Path | None:
-        """Alias for mountpoint property for internal consistency."""
-        return self.mountpoint
-
-    @_mountpoint.setter
-    def _mountpoint(self, value: Path | None) -> None:
-        self.mountpoint = value
 
     def _ensure_mountpoint(self, prefix: str) -> Path:
         """Ensure mountpoint directory exists and return it as a Path."""
@@ -147,8 +152,17 @@ class BaseMount(abc.ABC):
         """Exit context manager."""
         self.unmount()
 
+    def _cleanup(self) -> None:
+        """Reset mount state and remove the temporary mountpoint directory."""
+        self._is_mounted = False
+        if self._temp_dir is not None:
+            with contextlib.suppress(Exception):
+                self._temp_dir.cleanup()
+            self._temp_dir = None
+            self.mountpoint = None
 
-class VirtualOffsetDevice:
+
+class VirtualOffsetDevice(BaseMount):
     """Virtual partition device exposing a sub-slice of a disk image via fusefile.
 
     Used when mounting FAT filesystems with an offset > 0, as fusefat lacks native
@@ -159,21 +173,13 @@ class VirtualOffsetDevice:
     offset: int
     size: int
     part_file: Path | None
-    _temp_dir: tempfile.TemporaryDirectory[str] | None
-    _is_mounted: bool
 
     def __init__(self, disk_path: Path, offset: int, size: int) -> None:
+        super().__init__()
         self.disk_path = disk_path
         self.offset = offset
         self.size = size
         self.part_file = None
-        self._temp_dir = None
-        self._is_mounted = False
-
-    @property
-    def is_mounted(self) -> bool:
-        """Check if the virtual device is mounted."""
-        return self._is_mounted
 
     def mount(self) -> Path:
         """Create the virtual file and mount the slice via fusefile.
@@ -191,12 +197,13 @@ class VirtualOffsetDevice:
         emit.debug(f"Mounting virtual offset device {self.part_file} from {spec}")
 
         try:
-            run("fusefile", str(self.part_file), spec)
-        except (subprocess.CalledProcessError, FileNotFoundError) as err:
+            _fuse_command(
+                ["fusefile", str(self.part_file), spec],
+                "Failed to create virtual offset device with fusefile",
+            )
+        except errors.MountError:
             self._cleanup()
-            raise errors.MountError(
-                f"Failed to create virtual offset device with fusefile: {err}"
-            ) from err
+            raise
 
         self._is_mounted = True
         return self.part_file
@@ -218,25 +225,8 @@ class VirtualOffsetDevice:
             self._cleanup()
 
     def _cleanup(self) -> None:
-        self._is_mounted = False
+        super()._cleanup()
         self.part_file = None
-        if self._temp_dir is not None:
-            with contextlib.suppress(Exception):
-                self._temp_dir.cleanup()
-            self._temp_dir = None
-
-    def __enter__(self) -> Path:
-        """Enter context manager."""
-        return self.mount()
-
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: TracebackType | None,
-    ) -> None:
-        """Exit context manager."""
-        self.unmount()
 
 
 class ExtFuseMount(BaseMount):
@@ -299,22 +289,23 @@ class ExtFuseMount(BaseMount):
 
         emit.debug(f"Mounting ext partition with: {cmd}")
         try:
-            run(*cmd)
-        except (subprocess.CalledProcessError, FileNotFoundError) as err:
+            _fuse_command(
+                cmd,
+                f"Failed to mount ext partition {self.imagepath} at {mountpoint}",
+            )
+        except errors.MountError:
             self._cleanup()
-            raise errors.MountError(
-                f"Failed to mount ext partition {self.imagepath} at {mountpoint}: {err}"
-            ) from err
+            raise
 
         self._is_mounted = True
         return mountpoint
 
     def unmount(self, *, lazy: bool = False) -> None:
         """Unmount the ext partition."""
-        if not self.is_mounted or self._mountpoint is None:
+        if not self.is_mounted or self.mountpoint is None:
             return
 
-        mountpoint = self._mountpoint
+        mountpoint = self.mountpoint
         emit.debug(f"Unmounting ext partition at {mountpoint}")
         try:
             _unmount_path(mountpoint, lazy=lazy, retries=10)
@@ -324,14 +315,6 @@ class ExtFuseMount(BaseMount):
             ) from err
         finally:
             self._cleanup()
-
-    def _cleanup(self) -> None:
-        self._is_mounted = False
-        if self._temp_dir is not None:
-            with contextlib.suppress(Exception):
-                self._temp_dir.cleanup()
-            self._temp_dir = None
-            self._mountpoint = None
 
 
 class FatFuseMount(BaseMount):
@@ -402,26 +385,27 @@ class FatFuseMount(BaseMount):
 
         emit.debug(f"Mounting FAT partition with: {cmd}")
         try:
-            run(*cmd)
-        except (subprocess.CalledProcessError, FileNotFoundError) as err:
+            _fuse_command(
+                cmd,
+                f"Failed to mount FAT partition {self.imagepath} at {mountpoint}",
+            )
+        except errors.MountError:
             if self._vpart is not None:
                 with contextlib.suppress(Exception):
                     self._vpart.unmount()
                 self._vpart = None
             self._cleanup()
-            raise errors.MountError(
-                f"Failed to mount FAT partition {self.imagepath} at {mountpoint}: {err}"
-            ) from err
+            raise
 
         self._is_mounted = True
         return mountpoint
 
     def unmount(self, *, lazy: bool = False) -> None:
         """Unmount the FAT partition and its virtual offset device if used."""
-        if not self.is_mounted or self._mountpoint is None:
+        if not self.is_mounted or self.mountpoint is None:
             return
 
-        mountpoint = self._mountpoint
+        mountpoint = self.mountpoint
         emit.debug(f"Unmounting FAT partition at {mountpoint}")
         err_mount: Exception | None = None
         try:
@@ -443,14 +427,6 @@ class FatFuseMount(BaseMount):
             raise errors.MountError(
                 f"Failed to unmount FAT partition at {mountpoint}: {err_mount}"
             ) from err_mount
-
-    def _cleanup(self) -> None:
-        self._is_mounted = False
-        if self._temp_dir is not None:
-            with contextlib.suppress(Exception):
-                self._temp_dir.cleanup()
-            self._temp_dir = None
-            self._mountpoint = None
 
 
 def mount_partition(
@@ -568,7 +544,7 @@ class CompositeMount(BaseMount):
             with contextlib.suppress(Exception):
                 self._temp_dir.cleanup()
             self._temp_dir = None
-            self._mountpoint = None
+            self.mountpoint = None
 
         if errors_encountered:
             raise errors.MountError(
