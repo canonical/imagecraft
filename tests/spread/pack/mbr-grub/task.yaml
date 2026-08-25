@@ -29,6 +29,19 @@ execute: |
 
   LOOP=$(losetup --find --show --partscan ${IMG_NAME})
   echo $LOOP > loop.txt
+
+  # Partition devices are created asynchronously by the kernel after the
+  # partscan ioctl; wait for them to appear before using them.
+  count=0
+  until ls -d "$LOOP"p* >/dev/null 2>&1; do
+    count=$((count + 1))
+    if [ "$count" -ge 100 ]; then
+      echo "Timed out waiting for $LOOP partition devices" >&2
+      exit 1
+    fi
+    sleep 0.1
+  done
+
   for l in $(ls -d "$LOOP"p*)
   do
       p=${l#"$LOOP"}

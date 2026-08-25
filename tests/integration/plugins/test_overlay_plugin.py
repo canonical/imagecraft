@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import platform
 from pathlib import Path
 from typing import Literal
 
@@ -23,6 +24,14 @@ from craft_parts.plugins import Plugin, PluginProperties
 from imagecraft import application
 from imagecraft.plugins import get_app_plugins
 from typing_extensions import override
+
+
+def _host_is_noble() -> bool:
+    """Check if running on Ubuntu 24.04 (noble)."""
+    try:
+        return platform.freedesktop_os_release().get("VERSION_CODENAME") == "noble"
+    except (AttributeError, OSError):
+        return False
 
 
 @pytest.fixture
@@ -84,6 +93,11 @@ def test_overlay_plugin(
     imagecraft_app: application.Imagecraft,
     monkeypatch: pytest.MonkeyPatch,
 ):
+    if not _host_is_noble():
+        pytest.skip(
+            "destructive-mode builds require the host series to match the "
+            "project's build-base (ubuntu@24.04)"
+        )
     monkeypatch.setattr(
         "sys.argv",
         ["imagecraft", "pack", "--destructive-mode", "--verbosity", "debug"],

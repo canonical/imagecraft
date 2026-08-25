@@ -39,6 +39,9 @@ from imagecraft.subprocesses import run
 
 _LOSETUP_BIN = "losetup"
 
+# Maximum time to wait for kernel-created loop partition nodes to appear.
+_PARTSCAN_TIMEOUT_SECONDS = 10.0
+
 
 class ImageService(AppService):
     """Service for accessing the final image file."""
@@ -119,6 +122,9 @@ class ImageService(AppService):
         This method is idempotent. It will reuse existing loop devices if they
         are already attached to the correct files, and clean up stale devices
         pointing to deleted inodes.
+
+        Upon return, the partition device nodes for every attached image are
+        guaranteed to exist on disk.
         """
         if self._loop_devices:
             return self._loop_devices
@@ -168,12 +174,45 @@ class ImageService(AppService):
                     ) from err
 
             self._loop_devices[name] = attached_device
+            self._wait_for_partition_nodes(attached_device, name)
 
         if not self._atexit_registered:
             atexit.register(self.detach_images)
             self._atexit_registered = True
 
         return self._loop_devices
+
+    def _wait_for_partition_nodes(self, device: str, volume_name: str) -> None:
+        """Wait for a loop device's partition nodes to be created by the kernel.
+
+        After losetup sets up a device with ``--partscan``, the partition device
+        nodes (``/dev/loopXpN``) are created asynchronously by devtmpfs/udev, so
+        they may not be visible yet when losetup returns. Consumers of
+        :meth:`get_loop_paths` expect those nodes to exist immediately.
+
+        :raises CraftError: If the expected partition nodes do not appear within
+            the timeout.
+        """
+        project = cast(Project, self._services.get("project").get())
+        volume = project.volumes[volume_name]
+        part_numbers = sorted(set(self._get_partition_numbers(volume).values()))
+        expected_nodes = [pathlib.Path(f"{device}p{number}") for number in part_numbers]
+
+        deadline = time.monotonic() + _PARTSCAN_TIMEOUT_SECONDS
+        while missing := [node for node in expected_nodes if not node.exists()]:
+            if time.monotonic() > deadline:
+                raise CraftError(
+                    f"Partition devices did not appear for {device}: "
+                    f"{[str(node) for node in missing]}.",
+                    details=(
+                        "The kernel creates loop-device partition nodes asynchronously."
+                    ),
+                    resolution=(
+                        "Verify that udev is running and that the image has a "
+                        "valid partition table."
+                    ),
+                )
+            time.sleep(0.1)
 
     def detach_images(self) -> None:
         """Detach all attached loop devices.

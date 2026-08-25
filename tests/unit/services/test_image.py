@@ -12,12 +12,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import pathlib
 import subprocess
 from typing import cast
 from unittest.mock import MagicMock, patch
 
 import pytest
 from craft_application import ServiceFactory
+from craft_cli import CraftError
 from imagecraft.models import Project, Volume
 from imagecraft.models.volume import GPTStructureItem, MBRVolume, PartitionSchema
 from imagecraft.services.image import ImageService
@@ -129,6 +131,7 @@ def test_attach_images_new(image_service, project_dir, mocker):
     mock_run = mocker.patch("imagecraft.services.image.run")
     # Mock _get_all_loop_devices returns empty
     mocker.patch.object(image_service, "_get_all_loop_devices", return_value=[])
+    mocker.patch.object(image_service, "_wait_for_partition_nodes")
 
     mock_run.return_value.stdout = "/dev/loop8\n"
 
@@ -144,6 +147,9 @@ def test_attach_images_new(image_service, project_dir, mocker):
             str(project_dir / ".pc.img.tmp"),
         )
         mock_atexit.assert_called_once_with(image_service.detach_images)
+        image_service._wait_for_partition_nodes.assert_called_once_with(
+            "/dev/loop8", "pc"
+        )
 
 
 def test_attach_images_reuse(image_service, project_dir, mocker):
@@ -161,11 +167,13 @@ def test_attach_images_reuse(image_service, project_dir, mocker):
     # Mock samefile to return True
     mocker.patch("pathlib.Path.samefile", return_value=True)
     mock_run = mocker.patch("imagecraft.services.image.run")
+    mocker.patch.object(image_service, "_wait_for_partition_nodes")
 
     devices = image_service.attach_images()
 
     assert devices == {"pc": "/dev/loop9"}
     mock_run.assert_not_called()  # Should not call losetup attach
+    image_service._wait_for_partition_nodes.assert_called_once_with("/dev/loop9", "pc")
 
 
 def test_attach_images_stale_inode(image_service, project_dir, mocker):
@@ -184,6 +192,7 @@ def test_attach_images_stale_inode(image_service, project_dir, mocker):
     mocker.patch("pathlib.Path.samefile", side_effect=FileNotFoundError)
     mock_run = mocker.patch("imagecraft.services.image.run")
     mock_run.return_value.stdout = "/dev/loop11\n"
+    mocker.patch.object(image_service, "_wait_for_partition_nodes")
 
     devices = image_service.attach_images()
 
@@ -194,6 +203,74 @@ def test_attach_images_stale_inode(image_service, project_dir, mocker):
     mock_run.assert_any_call(
         "losetup", "--find", "--show", "--partscan", str(image_path)
     )
+    image_service._wait_for_partition_nodes.assert_called_once_with("/dev/loop11", "pc")
+
+
+def test_wait_for_partition_nodes_immediate(
+    image_service, default_factory, mock_project, mocker
+):
+    """Partition nodes that already exist require no waiting."""
+    mocker.patch.object(
+        default_factory.get("project"), "get", return_value=mock_project
+    )
+
+    exists_calls: list[str] = []
+
+    def fake_exists(self):
+        exists_calls.append(str(self))
+        return True
+
+    mocker.patch.object(pathlib.Path, "exists", autospec=True, side_effect=fake_exists)
+    mock_sleep = mocker.patch("time.sleep")
+
+    image_service._wait_for_partition_nodes("/dev/loop8", "pc")
+
+    assert sorted(exists_calls) == ["/dev/loop8p1", "/dev/loop8p2"]
+    mock_sleep.assert_not_called()
+
+
+def test_wait_for_partition_nodes_after_delay(
+    image_service, default_factory, mock_project, mocker
+):
+    """The wait polls until all partition nodes appear."""
+    mocker.patch.object(
+        default_factory.get("project"), "get", return_value=mock_project
+    )
+    mocker.patch("imagecraft.services.image.time.monotonic", side_effect=[0, 0.5])
+    mock_sleep = mocker.patch("time.sleep")
+
+    p1_polls = 0
+
+    def fake_exists(self):
+        nonlocal p1_polls
+        if str(self).endswith("p1"):
+            p1_polls += 1
+            return p1_polls > 1  # Appear after the first poll.
+        return True
+
+    mocker.patch.object(pathlib.Path, "exists", autospec=True, side_effect=fake_exists)
+
+    image_service._wait_for_partition_nodes("/dev/loop8", "pc")
+
+    assert p1_polls == 2
+    mock_sleep.assert_called_once_with(0.1)
+
+
+def test_wait_for_partition_nodes_timeout(
+    image_service, default_factory, mock_project, mocker
+):
+    """A CraftError is raised when partition nodes never appear."""
+    mocker.patch.object(
+        default_factory.get("project"), "get", return_value=mock_project
+    )
+    mocker.patch("imagecraft.services.image.time.monotonic", side_effect=[0, 11])
+    mocker.patch("time.sleep")
+    mocker.patch.object(
+        pathlib.Path, "exists", autospec=True, side_effect=lambda self: False
+    )
+
+    with pytest.raises(CraftError, match="did not appear for /dev/loop8"):
+        image_service._wait_for_partition_nodes("/dev/loop8", "pc")
 
 
 def test_detach_images_success(image_service, mocker):
