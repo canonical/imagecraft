@@ -44,6 +44,7 @@ def _unmount_path(
     lazy: bool = False,
     prefer_fuse2: bool = False,
     retries: int = 1,
+    err_msg: str = "Failed to unmount",
 ) -> None:
     """Unmount a FUSE mountpoint or virtual device file.
 
@@ -77,7 +78,7 @@ def _unmount_path(
         time.sleep(0.1)
 
     if last_err is not None:
-        raise last_err
+        raise errors.MountError(f"{err_msg}: {last_err}") from last_err
 
 
 def _try_fuse_command(command: Sequence[str], *, err_msg: str) -> None:
@@ -215,11 +216,13 @@ class VirtualOffsetDevice(BaseMount):
         part_file = self.part_file
         emit.debug(f"Unmounting virtual offset device {part_file}")
         try:
-            _unmount_path(part_file, lazy=lazy, prefer_fuse2=True, retries=30)
-        except (subprocess.CalledProcessError, FileNotFoundError) as err:
-            raise errors.MountError(
-                f"Failed to unmount virtual offset device {part_file}: {err}"
-            ) from err
+            _unmount_path(
+                part_file,
+                lazy=lazy,
+                prefer_fuse2=True,
+                retries=30,
+                err_msg=f"Failed to unmount virtual offset device {part_file}",
+            )
         finally:
             self._cleanup()
 
@@ -307,11 +310,12 @@ class ExtFuseMount(BaseMount):
         mountpoint = self.mountpoint
         emit.debug(f"Unmounting ext partition at {mountpoint}")
         try:
-            _unmount_path(mountpoint, lazy=lazy, retries=10)
-        except (subprocess.CalledProcessError, FileNotFoundError) as err:
-            raise errors.MountError(
-                f"Failed to unmount ext partition at {mountpoint}: {err}"
-            ) from err
+            _unmount_path(
+                mountpoint,
+                lazy=lazy,
+                retries=10,
+                err_msg=f"Failed to unmount ext partition at {mountpoint}",
+            )
         finally:
             self._cleanup()
 
@@ -408,8 +412,13 @@ class FatFuseMount(BaseMount):
         emit.debug(f"Unmounting FAT partition at {mountpoint}")
         err_mount: Exception | None = None
         try:
-            _unmount_path(mountpoint, lazy=lazy, retries=10)
-        except (subprocess.CalledProcessError, FileNotFoundError) as err:
+            _unmount_path(
+                mountpoint,
+                lazy=lazy,
+                retries=10,
+                err_msg=f"Failed to unmount FAT partition at {mountpoint}",
+            )
+        except errors.MountError as err:
             err_mount = err
         finally:
             if self._vpart is not None:
@@ -423,9 +432,7 @@ class FatFuseMount(BaseMount):
             self._cleanup()
 
         if err_mount is not None:
-            raise errors.MountError(
-                f"Failed to unmount FAT partition at {mountpoint}: {err_mount}"
-            ) from err_mount
+            raise err_mount
 
 
 def mount_partition(
