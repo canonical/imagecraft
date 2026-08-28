@@ -38,6 +38,19 @@ from imagecraft.pack import gptutil
 from imagecraft.subprocesses import run
 
 
+def _try_fuse_command(command: Sequence[str], *, err_msg: str) -> None:
+    """Run a FUSE helper command, wrapping failures in ``MountError``.
+
+    :param command: The command and arguments to run.
+    :param err_msg: Human-readable error message to raise on failure.
+    :raises errors.MountError: If the command fails or the binary is missing.
+    """
+    try:
+        run(*command)
+    except (subprocess.CalledProcessError, FileNotFoundError) as err:
+        raise errors.MountError(f"{err_msg}: {err}") from err
+
+
 def _unmount_path(
     target: Path,
     *,
@@ -63,35 +76,22 @@ def _unmount_path(
         else ["fusermount3", "fusermount", "umount"]
     )
 
-    last_err: Exception | None = None
+    last_err: errors.MountError | None = None
     for _ in range(retries):
         for cmd in candidates:
             if shutil.which(cmd) is None:
                 continue
             args = umount_args if cmd == "umount" else fuser_args
             try:
-                run(cmd, *args)
-            except (subprocess.CalledProcessError, FileNotFoundError) as err:
+                _try_fuse_command([cmd, *args], err_msg=err_msg)
+            except errors.MountError as err:
                 last_err = err
             else:
                 return
         time.sleep(0.1)
 
     if last_err is not None:
-        raise errors.MountError(f"{err_msg}: {last_err}") from last_err
-
-
-def _try_fuse_command(command: Sequence[str], *, err_msg: str) -> None:
-    """Run a FUSE helper command, wrapping failures in ``MountError``.
-
-    :param command: The command and arguments to run.
-    :param err_msg: Human-readable error message to raise on failure.
-    :raises errors.MountError: If the command fails or the binary is missing.
-    """
-    try:
-        run(*command)
-    except (subprocess.CalledProcessError, FileNotFoundError) as err:
-        raise errors.MountError(f"{err_msg}: {err}") from err
+        raise last_err
 
 
 class BaseMount(abc.ABC):
