@@ -575,6 +575,13 @@ class CompositeMount(BaseMount):
             )
 
 
+_DEFAULT_ROLE_MOUNTS: dict[Role, str] = {
+    Role.SYSTEM_DATA: "",
+    Role.SYSTEM_BOOT: "boot/efi",
+    Role.SYSTEM_SEED: "var/lib/snapd/seed",
+}
+
+
 def mount_volume(
     volume: Volume,
     disk_path: Path,
@@ -610,18 +617,10 @@ def mount_volume(
         if not filesystem:
             continue
 
-        # Determine relative mount path
-        rel_path: str
-        if item.name in mountpoint_overrides:
-            rel_path = mountpoint_overrides[item.name]
-        elif item.role == Role.SYSTEM_DATA:
-            rel_path = ""
-        elif item.role == Role.SYSTEM_BOOT:
-            rel_path = "boot/efi"
-        elif item.role == Role.SYSTEM_SEED:
-            rel_path = "var/lib/snapd/seed"
-        else:
-            rel_path = f"mnt/{item.name}"
+        rel_path = mountpoint_overrides.get(
+            item.name,
+            _DEFAULT_ROLE_MOUNTS.get(item.role, f"mnt/{item.name}"),
+        )
 
         # Calculate byte offset and size
         if is_gpt:
