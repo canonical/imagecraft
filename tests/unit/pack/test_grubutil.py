@@ -387,33 +387,30 @@ def test_part_num_gpt(name, structure_spec, expected):
     assert grubutil._part_num(name, structure) == expected
 
 
-def test_part_num_mbr_plain():
-    structure = cast(
-        MBRStructureList,
-        [MagicMock(spec=MBRStructureItem, partition_number=None) for _ in range(3)],
-    )
-    for i, name in enumerate(["boot", "data", "rootfs"]):
-        structure[i].name = name
-
-    assert grubutil._part_num("boot", structure) == 1
-    assert grubutil._part_num("data", structure) == 2
-    assert grubutil._part_num("rootfs", structure) == 3
-
-
-def test_part_num_mbr_extended():
-    structure = cast(
-        MBRStructureList,
-        [MagicMock(spec=MBRStructureItem, partition_number=None) for _ in range(5)],
-    )
-    for i, name in enumerate(["boot", "p2", "p3", "logical1", "logical2"]):
-        structure[i].name = name
-
-    assert grubutil._part_num("boot", structure) == 1
-    assert grubutil._part_num("p2", structure) == 2
-    assert grubutil._part_num("p3", structure) == 3
-    # slot 4 is the synthesised extended container — logical partitions start at 5
-    assert grubutil._part_num("logical1", structure) == 5
-    assert grubutil._part_num("logical2", structure) == 6
+@pytest.mark.parametrize(
+    ("names", "expected_part_nums"),
+    [
+        pytest.param(
+            ["boot", "data", "rootfs"],
+            {"boot": 1, "data": 2, "rootfs": 3},
+            id="plain-primary",
+        ),
+        pytest.param(
+            ["boot", "p2", "p3", "logical1", "logical2"],
+            {"boot": 1, "p2": 2, "p3": 3, "logical1": 5, "logical2": 6},
+            id="extended-container-skips-slot-4",
+        ),
+    ],
+)
+def test_part_num_mbr(names, expected_part_nums):
+    items = []
+    for name in names:
+        item = MagicMock(spec=MBRStructureItem, partition_number=None)
+        item.name = name
+        items.append(item)
+    structure = cast(MBRStructureList, items)
+    for name, expected in expected_part_nums.items():
+        assert grubutil._part_num(name, structure) == expected
 
 
 def test_partition_name_from_device():
@@ -423,45 +420,103 @@ def test_partition_name_from_device():
 # ── Small pure-logic helpers ─────────────────────────────────────────────
 
 
-def test_generate_grub_cfg_no_kernels():
-    cfg = grubutil._generate_grub_cfg([], "some-uuid", "some-uuid", "/boot")
-    assert "search --no-floppy --fs-uuid --set=root some-uuid" in cfg
-    assert "menuentry" not in cfg
-
-
-def test_generate_grub_cfg_with_kernel_and_boot_prefix():
+@pytest.mark.parametrize(
+    (
+        "kernels",
+        "root_uuid",
+        "boot_uuid",
+        "boot_prefix",
+        "defaults",
+        "expected",
+        "unexpected",
+    ),
+    [
+        pytest.param(
+            [],
+            "some-uuid",
+            "some-uuid",
+            "/boot",
+            grubutil.GrubDefaults(),
+            ["search --no-floppy --fs-uuid --set=root some-uuid", "set timeout=5"],
+            ["menuentry"],
+            id="no-kernels",
+        ),
+        pytest.param(
+            [("vmlinuz-1", "initrd.img-1")],
+            "uuid-x",
+            "uuid-x",
+            "/boot",
+            grubutil.GrubDefaults(),
+            [
+                'menuentry "vmlinuz-1"',
+                "linux /boot/vmlinuz-1 root=UUID=uuid-x ro",
+                "initrd /boot/initrd.img-1",
+            ],
+            [],
+            id="kernel-and-initrd",
+        ),
+        pytest.param(
+            [("vmlinuz-1", "")],
+            "uuid-x",
+            "uuid-boot",
+            "",
+            grubutil.GrubDefaults(),
+            [
+                "search --no-floppy --fs-uuid --set=root uuid-boot",
+                "linux /vmlinuz-1 root=UUID=uuid-x ro",
+            ],
+            ["initrd"],
+            id="separate-boot-partition",
+        ),
+        pytest.param(
+            [("vmlinuz-1", "")],
+            "uuid-x",
+            "uuid-x",
+            "/boot",
+            grubutil.GrubDefaults(cmdline="console=ttyS0 quiet"),
+            ["linux /boot/vmlinuz-1 root=UUID=uuid-x ro console=ttyS0 quiet"],
+            [],
+            id="cmdline-override",
+        ),
+        pytest.param(
+            [],
+            "uuid-x",
+            "uuid-x",
+            "/boot",
+            grubutil.GrubDefaults(timeout=0),
+            ["set timeout=0"],
+            [],
+            id="timeout-override",
+        ),
+    ],
+)
+def test_generate_grub_cfg(
+    kernels, root_uuid, boot_uuid, boot_prefix, defaults, expected, unexpected
+):
     cfg = grubutil._generate_grub_cfg(
-        [("vmlinuz-1", "initrd.img-1")], "uuid-x", "uuid-x", "/boot"
+        kernels, root_uuid, boot_uuid, boot_prefix, defaults
     )
-    assert 'menuentry "vmlinuz-1"' in cfg
-    assert "linux /boot/vmlinuz-1 root=UUID=uuid-x ro" in cfg
-    assert "initrd /boot/initrd.img-1" in cfg
+    for snippet in expected:
+        assert snippet in cfg
+    for snippet in unexpected:
+        assert snippet not in cfg
 
 
-def test_generate_grub_cfg_with_separate_boot_partition_has_no_prefix():
-    """When /boot is its own partition, paths aren't prefixed with /boot."""
-    cfg = grubutil._generate_grub_cfg([("vmlinuz-1", "")], "uuid-x", "uuid-boot", "")
-    assert "linux /vmlinuz-1 root=UUID=uuid-x ro" in cfg
-    assert "initrd" not in cfg
-
-
-def test_generate_grub_cfg_searches_boot_partition_not_root():
-    """The kernel lives on /boot, so GRUB has to select that partition."""
-    cfg = grubutil._generate_grub_cfg([("vmlinuz-1", "")], "uuid-root", "uuid-boot", "")
-    assert "search --no-floppy --fs-uuid --set=root uuid-boot" in cfg
-    assert "root=UUID=uuid-root" in cfg
-
-
-def test_generate_grub_cfg_appends_configured_cmdline():
-    """Kernel arguments from /etc/default/grub end up on the linux line."""
+@pytest.mark.parametrize("include_fw_setup", [True, False])
+def test_generate_grub_cfg_fw_setup(include_fw_setup):
     cfg = grubutil._generate_grub_cfg(
-        [("vmlinuz-1", "")],
-        "uuid-x",
-        "uuid-x",
-        "/boot",
-        grubutil.GrubDefaults(cmdline="console=ttyS0 quiet"),
+        [], "some-uuid", "some-uuid", "/boot", include_fw_setup=include_fw_setup
     )
-    assert "linux /boot/vmlinuz-1 root=UUID=uuid-x ro console=ttyS0 quiet" in cfg
+    snippets = [
+        "menuentry 'UEFI Firmware Settings'",
+        "fwsetup",
+        'if [ "${grub_platform}" = "efi" ]; then',
+    ]
+    for snippet in snippets:
+        if include_fw_setup:
+            assert snippet in cfg
+        else:
+            assert snippet not in cfg
 
 
 def _root_tree_with(tmp_path, content: str) -> Path:
@@ -609,37 +664,15 @@ def test_find_kernels_orders_newest_first(tmp_path):
     ]
 
 
-def test_generate_grub_cfg_uses_configured_timeout():
-    cfg = grubutil._generate_grub_cfg(
-        [], "uuid-x", "uuid-x", "/boot", grubutil.GrubDefaults(timeout=0)
-    )
-    assert "set timeout=0" in cfg
-
-
-def test_generate_grub_cfg_without_fw_setup_has_no_uefi_entry():
-    cfg = grubutil._generate_grub_cfg([], "some-uuid", "some-uuid", "/boot")
-    assert "UEFI Firmware Settings" not in cfg
-    assert "fwsetup" not in cfg
-
-
-def test_generate_grub_cfg_with_fw_setup_adds_uefi_entry():
-    cfg = grubutil._generate_grub_cfg(
-        [], "some-uuid", "some-uuid", "/boot", include_fw_setup=True
-    )
-    assert "menuentry 'UEFI Firmware Settings'" in cfg
-    assert "fwsetup" in cfg
-    assert 'if [ "${grub_platform}" = "efi" ]; then' in cfg
-
-
-def test_efi_stub_grub_cfg():
-    cfg = grubutil._efi_stub_grub_cfg("abcd-uuid", "/boot")
-    assert "search.fs_uuid abcd-uuid root" in cfg
-    assert "set prefix=($root)'/boot/grub'" in cfg
+@pytest.mark.parametrize(
+    ("boot_uuid", "boot_prefix", "expected_prefix"),
+    [
+        ("abcd-uuid", "/boot", "set prefix=($root)'/boot/grub'"),
+        ("boot-uuid", "", "set prefix=($root)'/grub'"),
+    ],
+)
+def test_efi_stub_grub_cfg(boot_uuid, boot_prefix, expected_prefix):
+    cfg = grubutil._efi_stub_grub_cfg(boot_uuid, boot_prefix)
+    assert f"search.fs_uuid {boot_uuid} root" in cfg
+    assert expected_prefix in cfg
     assert "configfile $prefix/grub.cfg" in cfg
-
-
-def test_efi_stub_grub_cfg_separate_boot_partition():
-    """A separate /boot partition holds grub at /grub, and has its own UUID."""
-    cfg = grubutil._efi_stub_grub_cfg("boot-uuid", "")
-    assert "search.fs_uuid boot-uuid root" in cfg
-    assert "set prefix=($root)'/grub'" in cfg

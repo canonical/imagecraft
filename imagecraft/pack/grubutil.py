@@ -70,18 +70,11 @@ _ARCH_TO_GRUB_EFI_TARGET: dict[str, str] = {
 _GRUB_BIOS_TARGET = "i386-pc"
 _GRUB_BIOS_ARCHS = {DebianArchitecture.AMD64, DebianArchitecture.I386}
 
-# Maps grub EFI target -> (grub binary filename, UEFI fallback filename).
-_EFI_TARGET_TO_FILENAMES: dict[str, tuple[str, str]] = {
-    "x86_64-efi": ("grubx64.efi", "BOOTX64.EFI"),
-    "arm64-efi": ("grubaa64.efi", "BOOTAA64.EFI"),
-    "arm-efi": ("grubarm.efi", "BOOTARM.EFI"),
-}
-
-# Maps grub EFI target -> shim filename, for Secure Boot deployments.
-_EFI_TARGET_TO_SHIM_FILENAME: dict[str, str] = {
-    "x86_64-efi": "shimx64.efi",
-    "arm64-efi": "shimaa64.efi",
-    "arm-efi": "shimarm.efi",
+# Maps grub EFI target -> (grub binary filename, UEFI fallback filename, shim filename).
+_EFI_TARGET_INFO: dict[str, tuple[str, str, str]] = {
+    "x86_64-efi": ("grubx64.efi", "BOOTX64.EFI", "shimx64.efi"),
+    "arm64-efi": ("grubaa64.efi", "BOOTAA64.EFI", "shimaa64.efi"),
+    "arm-efi": ("grubarm.efi", "BOOTARM.EFI", "shimarm.efi"),
 }
 
 # Core modules embedded into the standalone GRUB EFI image so it can find
@@ -197,15 +190,6 @@ def setup_grub(
         emit.progress(f"Cannot install GRUB on this rootfs: {err}", permanent=True)
 
 
-def _mount_entry(filesystem_mount: FilesystemMount, mount: str) -> str | None:
-    for entry in filesystem_mount:
-        if entry.mount.rstrip("/") == mount.rstrip("/") or (
-            mount == "/" and entry.mount in ("", "/")
-        ):
-            return entry.device
-    return None
-
-
 def _partition_geometry(
     disk_path: Path,
     structure: StructureList,
@@ -213,7 +197,16 @@ def _partition_geometry(
     mount: str,
 ) -> tuple[str, int, int]:
     """Return (partition_name, offset_sectors, size_sectors) for the given mountpoint."""
-    device = _mount_entry(filesystem_mount, mount)
+    # Locate the device string for this mount; "/" matches both "" and "/".
+    device = next(
+        (
+            e.device
+            for e in filesystem_mount
+            if e.mount.rstrip("/") == mount.rstrip("/")
+            or (mount == "/" and e.mount in ("", "/"))
+        ),
+        None,
+    )
     if device is None:
         raise errors.ImageError(message=f"No partition mounted at {mount!r}")
     partition_name = _partition_name_from_device(device)
@@ -231,10 +224,6 @@ def _partition_geometry(
         offset = gptutil.get_partition_sector_offset(disk_path, partition_name)
         size = gptutil.get_partition_size_sectors(disk_path, partition_name)
     return partition_name, offset, size
-
-
-def _has_separate_boot(filesystem_mount: FilesystemMount) -> bool:
-    return _mount_entry(filesystem_mount, "/boot") is not None
 
 
 def _setup_grub_efi(
@@ -256,7 +245,7 @@ def _setup_grub_efi(
     _, root_offset, root_size = _partition_geometry(
         disk_path, structure, filesystem_mount, "/"
     )
-    has_separate_boot = _has_separate_boot(filesystem_mount)
+    has_separate_boot = any(e.mount.rstrip("/") == "/boot" for e in filesystem_mount)
     if has_separate_boot:
         _, boot_offset, boot_size = _partition_geometry(
             disk_path, structure, filesystem_mount, "/boot"
@@ -266,13 +255,12 @@ def _setup_grub_efi(
     # When /boot lives on its own partition, that partition's root directory
     # *is* /boot, so paths written to it must not be prefixed with "/boot".
     boot_prefix = "" if has_separate_boot else "/boot"
-    _, esp_offset_sectors, esp_size_sectors = _partition_geometry(
+    _, esp_offset_sectors, _ = _partition_geometry(
         disk_path, structure, filesystem_mount, "/boot/efi"
     )
     esp_offset_bytes = esp_offset_sectors * sector
 
-    grub_fname, fallback_fname = _EFI_TARGET_TO_FILENAMES[grub_target]
-    shim_fname = _EFI_TARGET_TO_SHIM_FILENAME.get(grub_target)
+    grub_fname, fallback_fname, shim_fname = _EFI_TARGET_INFO[grub_target]
 
     with tempfile.TemporaryDirectory(prefix="imagecraft-grub-") as tmp_str:
         tmp_dir = Path(tmp_str)
@@ -491,32 +479,20 @@ def _deploy_efi_binary(
 ) -> None:
     """Deploy the GRUB EFI binary to both the vendor and fallback ESP paths."""
     bin_data = local_binary.read_bytes()
-    _write_esp_file(
-        disk_path, esp_offset_bytes, tmp_dir, bin_data, f"/EFI/ubuntu/{grub_fname}"
-    )
-    if signed_shim and shim_fname:
-        shim_data = signed_shim.read_bytes()
-        _write_esp_file(
-            disk_path, esp_offset_bytes, tmp_dir, shim_data, f"/EFI/ubuntu/{shim_fname}"
+    shim_data = signed_shim.read_bytes() if signed_shim and shim_fname else None
+    files = [
+        (f"/EFI/ubuntu/{grub_fname}", bin_data),
+        (f"/EFI/BOOT/{fallback_fname}", shim_data if shim_data else bin_data),
+    ]
+    if shim_data and shim_fname:
+        files.extend(
+            [
+                (f"/EFI/ubuntu/{shim_fname}", shim_data),
+                (f"/EFI/BOOT/{grub_fname}", bin_data),
+            ]
         )
-        _write_esp_file(
-            disk_path,
-            esp_offset_bytes,
-            tmp_dir,
-            shim_data,
-            f"/EFI/BOOT/{fallback_fname}",
-        )
-        _write_esp_file(
-            disk_path, esp_offset_bytes, tmp_dir, bin_data, f"/EFI/BOOT/{grub_fname}"
-        )
-    else:
-        _write_esp_file(
-            disk_path,
-            esp_offset_bytes,
-            tmp_dir,
-            bin_data,
-            f"/EFI/BOOT/{fallback_fname}",
-        )
+    for target_path, data in files:
+        _write_esp_file(disk_path, esp_offset_bytes, tmp_dir, data, target_path)
 
 
 def _dump_signed_efi_binaries(
@@ -528,10 +504,7 @@ def _dump_signed_efi_binaries(
     piece isn't installed (in which case an unsigned image should be built
     with grub-mkimage instead).
     """
-    grub_fname, _ = _EFI_TARGET_TO_FILENAMES[grub_target]
-    shim_fname = _EFI_TARGET_TO_SHIM_FILENAME.get(grub_target)
-    if shim_fname is None:
-        return None
+    grub_fname, _, shim_fname = _EFI_TARGET_INFO[grub_target]
 
     shim_base = shim_fname.removesuffix(".efi")
     shim_src = next(
@@ -711,7 +684,6 @@ def _grub_install(grub_target: str, loop_dev: str) -> None:
     :param grub_target: target platform to install grub for.
     :param loop_dev: loop device to install grub on
     """
-    check_grub_install = ["grub-install", "-V"]
     if grub_target == _GRUB_BIOS_TARGET:
         grub_install_command = [
             "grub-install",
@@ -730,33 +702,25 @@ def _grub_install(grub_target: str, loop_dev: str) -> None:
             "--no-nvram",
         ]
 
-    update_grub_command = [
-        "update-grub",
-    ]
-
-    # Divert os-probe to avoid writing wrong output in grub.cfg
+    # Divert os-prober to avoid writing wrong output in grub.cfg
     os_prober = "/etc/grub.d/30_os-prober"
-    divert_base_command = "dpkg-divert"
-
-    divert_common_args = [
+    divert_args = [
         "--local",
         "--divert",
-        os_prober + ".dpkg-divert",
+        f"{os_prober}.dpkg-divert",
         "--rename",
         os_prober,
     ]
-
-    divert_os_prober_command = [divert_base_command, *list(divert_common_args)]
-
-    undivert_os_prober_command = [
-        divert_base_command,
-        "--remove",
-        *divert_common_args,
+    commands = [
+        grub_install_command,
+        ["dpkg-divert", *divert_args],
+        ["update-grub"],
+        ["dpkg-divert", "--remove", *divert_args],
     ]
 
     # Check if grub-install is available, otherwise skip the installation without error
     try:
-        run(*check_grub_install)
+        run("grub-install", "-V")
     except FileNotFoundError:
         emit.progress(
             "Skipping GRUB installation because grub-install is not available",
@@ -765,12 +729,7 @@ def _grub_install(grub_target: str, loop_dev: str) -> None:
         return
 
     try:
-        for cmd in [
-            grub_install_command,
-            divert_os_prober_command,
-            update_grub_command,
-            undivert_os_prober_command,
-        ]:
+        for cmd in commands:
             res = run(*cmd, stderr=subprocess.STDOUT)
             if res.stdout:
                 emit.debug(res.stdout)
@@ -796,8 +755,23 @@ def _setup_grub_bios_chroot(
     mount_dir.mkdir(exist_ok=True)
 
     with image.attach_loopdev() as loop_dev:
+        image_mounts = []
+        for entry in filesystem_mount:
+            partition_name = _partition_name_from_device(entry.device)
+            partnum = _part_num(partition_name, image.volume.structure)
+            if partnum is None:
+                raise errors.ImageError(
+                    message=f"Cannot find a partition named {partition_name}"
+                )
+            image_mounts.append(
+                Mount(
+                    fstype=None,
+                    src=f"{loop_dev}p{partnum}",
+                    relative_mountpoint=entry.mount,
+                )
+            )
         mounts: list[Mount] = [
-            *_image_mounts(loop_dev, image.volume.structure, filesystem_mount),
+            *image_mounts,
             Mount(
                 fstype="devtmpfs",
                 src="devtmpfs-build",
@@ -827,34 +801,6 @@ def _setup_grub_bios_chroot(
             # Ignore mounting errors indicating the rootfs does not have
             # the needed structure to install grub.
             emit.progress(f"Cannot install GRUB on this rootfs: {err}", permanent=True)
-
-
-def _image_mounts(
-    loop_dev: str, structure: StructureList, filesystem_mount: FilesystemMount
-) -> list[Mount]:
-    """Generate a list of mounts for the structure, based on the given filesystem_mount.
-
-    :param loop_dev: loop device the disk is associated to
-    :param structure: StructureList describing the partition layout of the image
-    :param filesystem_mount: order in which partitions should be mounted
-    """
-    image_mounts: list[Mount] = []
-
-    for entry in filesystem_mount:
-        partition_name = _partition_name_from_device(entry.device)
-        partnum = _part_num(partition_name, structure)
-        if partnum is None:
-            raise errors.ImageError(
-                message=f"Cannot find a partition named {partition_name}"
-            )
-        image_mounts.append(
-            Mount(
-                fstype=None,
-                src=f"{loop_dev}p{partnum}",
-                relative_mountpoint=entry.mount,
-            )
-        )
-    return image_mounts
 
 
 def _part_num(name: str, structure: StructureList) -> int | None:

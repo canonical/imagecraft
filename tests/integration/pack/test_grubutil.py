@@ -196,13 +196,55 @@ def fake_kernel_files():
     return _make
 
 
+def _make_esp_content_dir(tmp_path: Path) -> Path:
+    """Return an empty ESP content staging directory with the required EFI subdirs."""
+    esp_content = tmp_path / "esp_content"
+    (esp_content / "EFI/BOOT").mkdir(parents=True)
+    return esp_content
+
+
+def _make_standard_gpt_image(
+    tmp_path: Path,
+    root_content: Path,
+    esp_content: Path,
+    *,
+    boot_content: Path | None = None,
+) -> tuple["Image", "FilesystemMount"]:
+    """Build a minimal GPT disk image and return (Image, FilesystemMount).
+
+    Creates a 2-partition layout (ESP + rootfs, or 3-partition with /boot) and
+    injects *content* directories into each partition.  The returned
+    ``FilesystemMount`` uses the standard ``(volume/pc/<name>)`` device
+    notation expected by setup_grub.
+    """
+    volume = _make_volume(boot_partition=boot_content is not None)
+    disk_path = tmp_path / "disk.img"
+    gptutil.create_empty_gpt_image(imagepath=disk_path, sector_size=512, layout=volume)
+    content_map = {"efi": esp_content, "rootfs": root_content}
+    mounts = [
+        {"mount": "/", "device": "(volume/pc/rootfs)"},
+        {"mount": "/boot/efi", "device": "(volume/pc/efi)"},
+    ]
+    if boot_content is not None:
+        content_map["boot"] = boot_content
+        mounts.insert(1, {"mount": "/boot", "device": "(volume/pc/boot)"})
+    for item in volume.structure:
+        _build_and_inject_partition(
+            disk_path=disk_path,
+            tmp_path=tmp_path,
+            fstype=item.filesystem,
+            content_dir=content_map[item.name],
+            label=item.filesystem_label,
+            partition_name=item.name,
+        )
+    return Image(volume=volume, disk_path=disk_path), FilesystemMount.unmarshal(mounts)
+
+
 @pytest.mark.slow
 @pytest.mark.requires_root
 @pytest.mark.usefixtures("new_dir")
 def test_setup_grub_efi_signed(new_dir, fake_kernel_files):
     """Signed shim+GRUB, when present in the rootfs, are deployed as-is."""
-    from imagecraft.models.volume import FileSystem, GptType, Role  # noqa: PLC0415
-
     tmp_path = Path(new_dir)
     root_content = tmp_path / "root_content"
     _copy_grub_target_files(
@@ -220,49 +262,8 @@ def test_setup_grub_efi_signed(new_dir, fake_kernel_files):
     shutil.copy2(signed_shim, root_content / "usr/lib/shim/shimx64.efi.signed.latest")
     fake_kernel_files(root_content / "boot")
 
-    esp_content = tmp_path / "esp_content"
-    (esp_content / "EFI/BOOT").mkdir(parents=True)
-
-    volume = GPTVolume(
-        schema=PartitionSchema.GPT,
-        structure=[
-            GPTStructureItem(
-                name="efi",
-                role=Role.SYSTEM_BOOT,
-                size="64M",
-                filesystem=FileSystem.VFAT,
-                type=GptType("C12A7328-F81F-11D2-BA4B-00A0C93EC93B"),
-            ),
-            GPTStructureItem(
-                name="rootfs",
-                role=Role.SYSTEM_DATA,
-                size="256M",
-                filesystem=FileSystem.EXT4,
-                type=GptType("0FC63DAF-8483-4772-8E79-3D69D8477DE4"),
-            ),
-        ],
-    )
-    disk_path = tmp_path / "disk.img"
-    gptutil.create_empty_gpt_image(imagepath=disk_path, sector_size=512, layout=volume)
-    for item, content in (
-        (volume.structure[0], esp_content),
-        (volume.structure[1], root_content),
-    ):
-        _build_and_inject_partition(
-            disk_path=disk_path,
-            tmp_path=tmp_path,
-            fstype=item.filesystem,
-            content_dir=content,
-            label=item.filesystem_label,
-            partition_name=item.name,
-        )
-
-    image = Image(volume=volume, disk_path=disk_path)
-    filesystem_mount = FilesystemMount.unmarshal(
-        [
-            {"mount": "/", "device": "(volume/pc/rootfs)"},
-            {"mount": "/boot/efi", "device": "(volume/pc/efi)"},
-        ]
+    image, filesystem_mount = _make_standard_gpt_image(
+        tmp_path, root_content, _make_esp_content_dir(tmp_path)
     )
 
     grubutil.setup_grub(
@@ -272,16 +273,16 @@ def test_setup_grub_efi_signed(new_dir, fake_kernel_files):
         filesystem_mount=filesystem_mount,
     )
 
-    ubuntu = _esp_mdir(disk_path, "/EFI/ubuntu")
+    ubuntu = _esp_mdir(image.disk_path, "/EFI/ubuntu")
     assert "grubx64" in ubuntu
     assert "shimx64" in ubuntu
-    boot = _esp_mdir(disk_path, "/EFI/BOOT")
+    boot = _esp_mdir(image.disk_path, "/EFI/BOOT")
     # Shim chainloads grub from beside itself, so the removable path
     # needs its own copy for the fallback boot to work.
     assert "BOOTX64" in boot
     assert "grubx64" in boot
 
-    with _mount_ext_partition(disk_path, "rootfs") as rootfs:
+    with _mount_ext_partition(image.disk_path, "rootfs") as rootfs:
         cfg = (rootfs / "boot/grub/grub.cfg").read_text()
         assert "vmlinuz-6.8.0-generic" in cfg
         assert "initrd.img-6.8.0-generic" in cfg
@@ -300,31 +301,8 @@ def test_setup_grub_efi_unsigned_requires_grub_mkimage_in_image(
         Path("/usr/lib/grub/x86_64-efi"), root_content / "usr/lib/grub/x86_64-efi"
     )
     fake_kernel_files(root_content / "boot")
-    esp_content = tmp_path / "esp_content"
-    (esp_content / "EFI/BOOT").mkdir(parents=True)
-
-    volume = _make_volume(boot_partition=False)
-    disk_path = tmp_path / "disk.img"
-    gptutil.create_empty_gpt_image(imagepath=disk_path, sector_size=512, layout=volume)
-    for item, content in (
-        (volume.structure[0], esp_content),
-        (volume.structure[1], root_content),
-    ):
-        _build_and_inject_partition(
-            disk_path=disk_path,
-            tmp_path=tmp_path,
-            fstype=item.filesystem,
-            content_dir=content,
-            label=item.filesystem_label,
-            partition_name=item.name,
-        )
-
-    image = Image(volume=volume, disk_path=disk_path)
-    filesystem_mount = FilesystemMount.unmarshal(
-        [
-            {"mount": "/", "device": "(volume/pc/rootfs)"},
-            {"mount": "/boot/efi", "device": "(volume/pc/efi)"},
-        ]
+    image, filesystem_mount = _make_standard_gpt_image(
+        tmp_path, root_content, _make_esp_content_dir(tmp_path)
     )
 
     with pytest.raises(errors.GRUBInstallError, match="grub-mkimage failed"):
@@ -344,31 +322,8 @@ def test_setup_grub_efi_skips_without_grub_modules(new_dir, fake_kernel_files, e
     tmp_path = Path(new_dir)
     root_content = tmp_path / "root_content"
     fake_kernel_files(root_content / "boot")
-    esp_content = tmp_path / "esp_content"
-    (esp_content / "EFI/BOOT").mkdir(parents=True)
-
-    volume = _make_volume(boot_partition=False)
-    disk_path = tmp_path / "disk.img"
-    gptutil.create_empty_gpt_image(imagepath=disk_path, sector_size=512, layout=volume)
-    for item, content in (
-        (volume.structure[0], esp_content),
-        (volume.structure[1], root_content),
-    ):
-        _build_and_inject_partition(
-            disk_path=disk_path,
-            tmp_path=tmp_path,
-            fstype=item.filesystem,
-            content_dir=content,
-            label=item.filesystem_label,
-            partition_name=item.name,
-        )
-
-    image = Image(volume=volume, disk_path=disk_path)
-    filesystem_mount = FilesystemMount.unmarshal(
-        [
-            {"mount": "/", "device": "(volume/pc/rootfs)"},
-            {"mount": "/boot/efi", "device": "(volume/pc/efi)"},
-        ]
+    image, filesystem_mount = _make_standard_gpt_image(
+        tmp_path, root_content, _make_esp_content_dir(tmp_path)
     )
 
     grubutil.setup_grub(
@@ -401,32 +356,8 @@ def test_setup_grub_efi_unsigned(new_dir, fake_kernel_files):
     (root_content / "etc/default/grub").write_text(
         'GRUB_CMDLINE_LINUX_DEFAULT="console=ttyS0,115200n8"\n'
     )
-
-    esp_content = tmp_path / "esp_content"
-    (esp_content / "EFI/BOOT").mkdir(parents=True)
-
-    volume = _make_volume(boot_partition=False)
-    disk_path = tmp_path / "disk.img"
-    gptutil.create_empty_gpt_image(imagepath=disk_path, sector_size=512, layout=volume)
-    for item, content in (
-        (volume.structure[0], esp_content),
-        (volume.structure[1], root_content),
-    ):
-        _build_and_inject_partition(
-            disk_path=disk_path,
-            tmp_path=tmp_path,
-            fstype=item.filesystem,
-            content_dir=content,
-            label=item.filesystem_label,
-            partition_name=item.name,
-        )
-
-    image = Image(volume=volume, disk_path=disk_path)
-    filesystem_mount = FilesystemMount.unmarshal(
-        [
-            {"mount": "/", "device": "(volume/pc/rootfs)"},
-            {"mount": "/boot/efi", "device": "(volume/pc/efi)"},
-        ]
+    image, filesystem_mount = _make_standard_gpt_image(
+        tmp_path, root_content, _make_esp_content_dir(tmp_path)
     )
 
     grubutil.setup_grub(
@@ -436,12 +367,12 @@ def test_setup_grub_efi_unsigned(new_dir, fake_kernel_files):
         filesystem_mount=filesystem_mount,
     )
 
-    ubuntu = _esp_mdir(disk_path, "/EFI/ubuntu")
+    ubuntu = _esp_mdir(image.disk_path, "/EFI/ubuntu")
     assert "grubx64" in ubuntu
     # No signed shim was available, so no shim binary should be deployed.
     assert "shimx64" not in ubuntu
 
-    with _mount_ext_partition(disk_path, "rootfs") as rootfs:
+    with _mount_ext_partition(image.disk_path, "rootfs") as rootfs:
         cfg = (rootfs / "boot/grub/grub.cfg").read_text()
         assert "console=ttyS0,115200n8" in cfg
         # The temporary in-image build output must not ship in the final image.
@@ -462,30 +393,11 @@ def test_setup_grub_efi_separate_boot_partition(new_dir, fake_kernel_files):
     boot_content = tmp_path / "boot_content"
     fake_kernel_files(boot_content)
 
-    esp_content = tmp_path / "esp_content"
-    (esp_content / "EFI/BOOT").mkdir(parents=True)
-
-    volume = _make_volume(boot_partition=True)
-    disk_path = tmp_path / "disk.img"
-    gptutil.create_empty_gpt_image(imagepath=disk_path, sector_size=512, layout=volume)
-    content_map = {"efi": esp_content, "boot": boot_content, "rootfs": root_content}
-    for item in volume.structure:
-        _build_and_inject_partition(
-            disk_path=disk_path,
-            tmp_path=tmp_path,
-            fstype=item.filesystem,
-            content_dir=content_map[item.name],
-            label=item.filesystem_label,
-            partition_name=item.name,
-        )
-
-    image = Image(volume=volume, disk_path=disk_path)
-    filesystem_mount = FilesystemMount.unmarshal(
-        [
-            {"mount": "/", "device": "(volume/pc/rootfs)"},
-            {"mount": "/boot/", "device": "(volume/pc/boot)"},
-            {"mount": "/boot/efi/", "device": "(volume/pc/efi)"},
-        ]
+    image, filesystem_mount = _make_standard_gpt_image(
+        tmp_path,
+        root_content,
+        _make_esp_content_dir(tmp_path),
+        boot_content=boot_content,
     )
 
     grubutil.setup_grub(
@@ -495,7 +407,7 @@ def test_setup_grub_efi_separate_boot_partition(new_dir, fake_kernel_files):
         filesystem_mount=filesystem_mount,
     )
 
-    with _mount_ext_partition(disk_path, "boot") as bootfs:
+    with _mount_ext_partition(image.disk_path, "boot") as bootfs:
         # The boot partition's *root* is /boot, so grub/kernels live directly
         # at its root, not nested under an extra "boot/" directory.
         entries = {entry.name for entry in bootfs.iterdir()}
@@ -511,13 +423,13 @@ def test_setup_grub_efi_separate_boot_partition(new_dir, fake_kernel_files):
         assert "linux /boot/vmlinuz-6.8.0-generic" not in cfg
 
         boot_uuid = grubutil._read_ext_uuid(
-            disk_path,
-            gptutil.get_partition_sector_offset(disk_path, "boot") * 512,
+            image.disk_path,
+            gptutil.get_partition_sector_offset(image.disk_path, "boot") * 512,
         )
 
     root_uuid = grubutil._read_ext_uuid(
-        disk_path,
-        gptutil.get_partition_sector_offset(disk_path, "rootfs") * 512,
+        image.disk_path,
+        gptutil.get_partition_sector_offset(image.disk_path, "rootfs") * 512,
     )
 
     assert boot_uuid != root_uuid
@@ -525,7 +437,7 @@ def test_setup_grub_efi_separate_boot_partition(new_dir, fake_kernel_files):
     assert f"search --no-floppy --fs-uuid --set=root {boot_uuid}" in cfg
     assert f"root=UUID={root_uuid}" in cfg
 
-    stub = _esp_type(disk_path, "/EFI/ubuntu/grub.cfg")
+    stub = _esp_type(image.disk_path, "/EFI/ubuntu/grub.cfg")
     # The ESP stub has to chain to the config on the boot partition.
     assert f"search.fs_uuid {boot_uuid} root" in stub
     assert "set prefix=($root)'/grub'" in stub
