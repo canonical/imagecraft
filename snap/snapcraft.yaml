@@ -72,6 +72,7 @@ parts:
       - mtools
       - dosfstools
       - e2fsprogs
+      - fuse2fs
       - fdisk
       - coreutils
       - util-linux
