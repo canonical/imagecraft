@@ -80,18 +80,17 @@ def _unmount_path(
         raise last_err
 
 
-def _fuse_command(command: Sequence[str], description: str) -> None:
+def _try_fuse_command(command: Sequence[str], *, err_msg: str) -> None:
     """Run a FUSE helper command, wrapping failures in ``MountError``.
 
     :param command: The command and arguments to run.
-    :param description: Human-readable action description used when composing
-        the error message.
+    :param err_msg: Human-readable error message to raise on failure.
     :raises errors.MountError: If the command fails or the binary is missing.
     """
     try:
         run(*command)
     except (subprocess.CalledProcessError, FileNotFoundError) as err:
-        raise errors.MountError(f"{description}: {err}") from err
+        raise errors.MountError(f"{err_msg}: {err}") from err
 
 
 class BaseMount(abc.ABC):
@@ -197,9 +196,9 @@ class VirtualOffsetDevice(BaseMount):
         emit.debug(f"Mounting virtual offset device {self.part_file} from {spec}")
 
         try:
-            _fuse_command(
+            _try_fuse_command(
                 ["fusefile", str(self.part_file), spec],
-                "Failed to create virtual offset device with fusefile",
+                err_msg="Failed to create virtual offset device with fusefile",
             )
         except errors.MountError:
             self._cleanup()
@@ -289,9 +288,9 @@ class ExtFuseMount(BaseMount):
 
         emit.debug(f"Mounting ext partition with: {cmd}")
         try:
-            _fuse_command(
+            _try_fuse_command(
                 cmd,
-                f"Failed to mount ext partition {self.imagepath} at {mountpoint}",
+                err_msg=f"Failed to mount ext partition {self.imagepath} at {mountpoint}",
             )
         except errors.MountError:
             self._cleanup()
@@ -385,9 +384,9 @@ class FatFuseMount(BaseMount):
 
         emit.debug(f"Mounting FAT partition with: {cmd}")
         try:
-            _fuse_command(
+            _try_fuse_command(
                 cmd,
-                f"Failed to mount FAT partition {self.imagepath} at {mountpoint}",
+                err_msg=f"Failed to mount FAT partition {self.imagepath} at {mountpoint}",
             )
         except errors.MountError:
             if self._vpart is not None:
