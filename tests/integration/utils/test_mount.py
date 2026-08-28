@@ -26,36 +26,6 @@ from imagecraft.utils.mount import (
 
 from tests.conftest import is_noble_non_amd64
 
-REQUIRED_EXECUTABLES: dict[str, str] = {
-    "fuse2fs": "fuse2fs",
-    "fusefile": "fusefile",
-    "fusermount3": "fuse3",
-}
-if not is_noble_non_amd64():
-    REQUIRED_EXECUTABLES["fusefat"] = "fusefat"
-
-
-@pytest.fixture(autouse=True, scope="module")
-def check_required_executables() -> None:
-    missing: list[str] = [
-        f"{binary} (install package: {pkg})"
-        for binary, pkg in REQUIRED_EXECUTABLES.items()
-        if shutil.which(binary) is None
-    ]
-    if missing:
-        missing_str = "\n  - ".join(missing)
-        missing_pkgs = " ".join(
-            dict.fromkeys(
-                pkg
-                for binary, pkg in REQUIRED_EXECUTABLES.items()
-                if shutil.which(binary) is None
-            )
-        )
-        pytest.fail(
-            f"Missing required executables for FUSE integration tests:\n  - {missing_str}\n"
-            f"Install them with:\n  sudo apt-get install {missing_pkgs}"
-        )
-
 
 @pytest.fixture(
     params=[
@@ -137,8 +107,13 @@ def test_mount_partition_standalone(
     fstype: FileSystem,
     fakeroot: bool,  # noqa: FBT001
 ):
-    if "fat" in fstype.value and is_noble_non_amd64():
-        pytest.skip("fusefat is unavailable on noble on non-amd64 architectures")
+    if "ext" in fstype.value and shutil.which("fuse2fs") is None:
+        pytest.skip("fuse2fs is not installed")
+    if "fat" in fstype.value:
+        if is_noble_non_amd64():
+            pytest.skip("fusefat is unavailable on noble on non-amd64 architectures")
+        if shutil.which("fusefat") is None:
+            pytest.skip("fusefat is not installed")
 
     img_path = tmp_path / f"standalone.{fstype.value}"
     with img_path.open("wb") as f:
@@ -173,9 +148,15 @@ def test_mount_partition_offset(
     fstype: FileSystem,
     fakeroot: bool,  # noqa: FBT001
 ):
+    if "ext" in fstype.value and shutil.which("fuse2fs") is None:
+        pytest.skip("fuse2fs is not installed")
     if "fat" in fstype.value:
         if is_noble_non_amd64():
             pytest.skip("fusefat is unavailable on noble on non-amd64 architectures")
+        if shutil.which("fusefat") is None:
+            pytest.skip("fusefat is not installed")
+        if shutil.which("fusefile") is None:
+            pytest.skip("fusefile is not installed")
         if os.geteuid() != 0:
             pytest.skip(
                 f"{fstype.value} offset mounts via fusefile require root permissions"
@@ -235,6 +216,14 @@ def test_volume_mount(
 ):
     if is_noble_non_amd64():
         pytest.skip("fusefat is unavailable on noble on non-amd64 architectures")
+    if (
+        shutil.which("fuse2fs") is None
+        or shutil.which("fusefat") is None
+        or shutil.which("fusefile") is None
+    ):
+        pytest.skip(
+            "Required FUSE binaries (fuse2fs, fusefat, fusefile) are not installed"
+        )
     disk_path = tmp_path / f"{volume_definition.volume_schema.value}_disk.raw"
     sector_size = gptutil.SECTOR_SIZE_512
 
