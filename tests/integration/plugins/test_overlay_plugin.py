@@ -24,6 +24,8 @@ from imagecraft import application
 from imagecraft.plugins import get_app_plugins
 from typing_extensions import override
 
+from tests.conftest import is_noble
+
 
 @pytest.fixture
 def custom_project_file(default_project_file: Path):
@@ -84,6 +86,11 @@ def test_overlay_plugin(
     imagecraft_app: application.Imagecraft,
     monkeypatch: pytest.MonkeyPatch,
 ):
+    if not is_noble():
+        pytest.skip(
+            "destructive-mode builds require the host series to match the "
+            "project's build-base (ubuntu@24.04)"
+        )
     monkeypatch.setattr(
         "sys.argv",
         ["imagecraft", "pack", "--destructive-mode", "--verbosity", "debug"],

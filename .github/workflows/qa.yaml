@@ -47,9 +47,9 @@ jobs:
     needs: filter
     with:
       source-files: ${{ needs.filter.outputs.source-files }}
-      fast-test-platforms: '["ubuntu-24.04", "ubuntu-24.04-arm"]'
+      fast-test-platforms: '["ubuntu-24.04", "ubuntu-24.04-arm", "ubuntu-26.04-arm"]'
       fast-test-python-versions: '["3.12"]'
-      slow-test-platforms: '["ubuntu-24.04", "ubuntu-24.04-arm"]'
+      slow-test-platforms: '["ubuntu-24.04", "ubuntu-24.04-arm", "ubuntu-26.04-arm"]'
       slow-test-python-versions: '["3.12"]'
       lowest-python-version: ""
       pytest-markers: requires_root
