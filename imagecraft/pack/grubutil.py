@@ -343,21 +343,11 @@ def _setup_grub_efi(
             )
             _write_ext_file(bootfs, cfg.encode(), f"{boot_prefix}/grub/grub.cfg")
 
-            stub_cfg = _efi_stub_grub_cfg(boot_uuid, boot_prefix)
-            _write_esp_file(
-                disk_path,
-                esp_offset_bytes,
-                tmp_dir,
-                stub_cfg.encode(),
-                "/EFI/ubuntu/grub.cfg",
-            )
-            _write_esp_file(
-                disk_path,
-                esp_offset_bytes,
-                tmp_dir,
-                stub_cfg.encode(),
-                "/EFI/BOOT/grub.cfg",
-            )
+            stub_cfg = _efi_stub_grub_cfg(boot_uuid, boot_prefix).encode()
+            for stub_path in ("/EFI/ubuntu/grub.cfg", "/EFI/BOOT/grub.cfg"):
+                _write_esp_file(
+                    disk_path, esp_offset_bytes, tmp_dir, stub_cfg, stub_path
+                )
 
     emit.progress("GRUB installation complete")
 
@@ -418,15 +408,11 @@ def _build_grub_image(rootfs: Path, grub_target: str, grub_fname: str) -> Path:
 
 def _fat_mkdir_p(spec: str, target_dir: str) -> None:
     """Recursively create a directory inside a FAT filesystem, ignoring existing."""
-    target_dir = target_dir.strip("/")
-    if not target_dir:
-        return
     current = ""
-    for part in target_dir.split("/"):
+    for part in target_dir.strip("/").split("/"):
+        if not part:
+            continue
         current += f"/{part}"
-        # mmd fails if the directory already exists; that's fine here, and
-        # mtools reports it the same way as a genuine failure, so the result
-        # is verified below instead.
         subprocess.run(
             ["mmd", "-i", spec, f"::{current}"],
             check=False,
@@ -504,43 +490,31 @@ def _deploy_efi_binary(
     shim_fname: str | None,
 ) -> None:
     """Deploy the GRUB EFI binary to both the vendor and fallback ESP paths."""
+    bin_data = local_binary.read_bytes()
     _write_esp_file(
-        disk_path,
-        esp_offset_bytes,
-        tmp_dir,
-        local_binary.read_bytes(),
-        f"/EFI/ubuntu/{grub_fname}",
+        disk_path, esp_offset_bytes, tmp_dir, bin_data, f"/EFI/ubuntu/{grub_fname}"
     )
     if signed_shim and shim_fname:
-        # Shim is the entry point that chainloads grubx64.efi from the
-        # same directory it resides in.
+        shim_data = signed_shim.read_bytes()
         _write_esp_file(
-            disk_path,
-            esp_offset_bytes,
-            tmp_dir,
-            signed_shim.read_bytes(),
-            f"/EFI/ubuntu/{shim_fname}",
+            disk_path, esp_offset_bytes, tmp_dir, shim_data, f"/EFI/ubuntu/{shim_fname}"
         )
         _write_esp_file(
             disk_path,
             esp_offset_bytes,
             tmp_dir,
-            signed_shim.read_bytes(),
+            shim_data,
             f"/EFI/BOOT/{fallback_fname}",
         )
         _write_esp_file(
-            disk_path,
-            esp_offset_bytes,
-            tmp_dir,
-            local_binary.read_bytes(),
-            f"/EFI/BOOT/{grub_fname}",
+            disk_path, esp_offset_bytes, tmp_dir, bin_data, f"/EFI/BOOT/{grub_fname}"
         )
     else:
         _write_esp_file(
             disk_path,
             esp_offset_bytes,
             tmp_dir,
-            local_binary.read_bytes(),
+            bin_data,
             f"/EFI/BOOT/{fallback_fname}",
         )
 
@@ -560,14 +534,16 @@ def _dump_signed_efi_binaries(
         return None
 
     shim_base = shim_fname.removesuffix(".efi")
-    shim_src = None
-    for suffix in _SIGNED_SHIM_SUFFIXES:
-        # Ubuntu ships some of these as symlinks managed by update-alternatives,
-        # so a candidate that doesn't resolve to a real file has to be skipped.
-        candidate = rootfs / f"usr/lib/shim/{shim_base}{suffix}".lstrip("/")
-        if candidate.is_file():
-            shim_src = candidate
-            break
+    shim_src = next(
+        (
+            candidate
+            for suffix in _SIGNED_SHIM_SUFFIXES
+            if (
+                candidate := rootfs / f"usr/lib/shim/{shim_base}{suffix}".lstrip("/")
+            ).is_file()
+        ),
+        None,
+    )
     grub_src = rootfs / f"usr/lib/grub/{grub_target}-signed/{grub_fname}.signed"
     if shim_src is None or not grub_src.is_file():
         return None
@@ -602,18 +578,21 @@ def _find_kernels(bootfs: Path, boot_prefix: str) -> list[tuple[str, str]]:
     search_dir = bootfs / boot_prefix.lstrip("/")
     if not search_dir.is_dir():
         return []
-    names = [entry.name for entry in search_dir.iterdir()]
+    names = {entry.name for entry in search_dir.iterdir()}
     vmlinuzes = sorted(
         (n for n in names if n.startswith("vmlinuz-")),
         key=_version_sort_key,
         reverse=True,
     )
-    kernels = []
-    for vmlinuz in vmlinuzes:
-        version = vmlinuz.removeprefix("vmlinuz-")
-        initrd = f"initrd.img-{version}"
-        kernels.append((vmlinuz, initrd if initrd in names else ""))
-    return kernels
+    return [
+        (
+            v,
+            initrd
+            if (initrd := f"initrd.img-{v.removeprefix('vmlinuz-')}") in names
+            else "",
+        )
+        for v in vmlinuzes
+    ]
 
 
 def _read_grub_defaults(rootfs: Path) -> GrubDefaults:
@@ -641,16 +620,19 @@ def _read_grub_defaults(rootfs: Path) -> GrubDefaults:
             raw = _GRUB_VAR_REF_RE.sub(lambda m: values.get(m.group(1), ""), raw)
         values[match.group("key")] = " ".join(raw.split())
 
-    parts = [
-        values.get("GRUB_CMDLINE_LINUX", ""),
-        values.get("GRUB_CMDLINE_LINUX_DEFAULT", ""),
-    ]
-    timeout = _DEFAULT_GRUB_TIMEOUT
-    with contextlib.suppress(ValueError):
-        timeout = int(values["GRUB_TIMEOUT"]) if "GRUB_TIMEOUT" in values else timeout
-    return GrubDefaults(
-        cmdline=" ".join(part for part in parts if part), timeout=timeout
+    cmdline = " ".join(
+        filter(
+            None,
+            [
+                values.get("GRUB_CMDLINE_LINUX"),
+                values.get("GRUB_CMDLINE_LINUX_DEFAULT"),
+            ],
+        )
     )
+    timeout = _DEFAULT_GRUB_TIMEOUT
+    with contextlib.suppress(ValueError, KeyError):
+        timeout = int(values["GRUB_TIMEOUT"])
+    return GrubDefaults(cmdline=cmdline, timeout=timeout)
 
 
 def _generate_grub_cfg(
@@ -686,19 +668,24 @@ def _generate_grub_cfg(
     ]
     extra = f" {defaults.cmdline}" if defaults.cmdline else ""
     for vmlinuz, initrd in kernels:
-        lines.append(f'menuentry "{vmlinuz}" {{')
-        lines.append(f"\tlinux {boot_prefix}/{vmlinuz} root=UUID={root_uuid} ro{extra}")
-        if initrd:
-            lines.append(f"\tinitrd {boot_prefix}/{initrd}")
-        lines.append("}")
+        lines.extend(
+            [
+                f'menuentry "{vmlinuz}" {{',
+                f"\tlinux {boot_prefix}/{vmlinuz} root=UUID={root_uuid} ro{extra}",
+                *([f"\tinitrd {boot_prefix}/{initrd}"] if initrd else []),
+                "}",
+            ]
+        )
     if include_fw_setup:
-        lines += [
-            'if [ "${grub_platform}" = "efi" ]; then',
-            "\tmenuentry 'UEFI Firmware Settings' {",
-            "\t\tfwsetup",
-            "\t}",
-            "fi",
-        ]
+        lines.extend(
+            [
+                'if [ "${grub_platform}" = "efi" ]; then',
+                "\tmenuentry 'UEFI Firmware Settings' {",
+                "\t\tfwsetup",
+                "\t}",
+                "fi",
+            ]
+        )
     return "\n".join(lines) + "\n"
 
 
