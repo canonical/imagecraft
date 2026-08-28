@@ -15,19 +15,12 @@
 #  with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Integration tests for the mmdebstrap plugin."""
 
-import platform
 from pathlib import Path
 
 import pytest
 from imagecraft import application
 
-
-def _host_is_noble() -> bool:
-    """Check if running on Ubuntu 24.04 (noble)."""
-    try:
-        return platform.freedesktop_os_release().get("VERSION_CODENAME") == "noble"
-    except (AttributeError, OSError):
-        return False
+from tests.conftest import is_noble
 
 
 @pytest.fixture
@@ -46,7 +39,7 @@ def test_mmdebstrap_cleanup(
     monkeypatch: pytest.MonkeyPatch,
 ):
     """Test that mmdebstrap plugin cleans up /sys, /proc and /dev."""
-    if not _host_is_noble():
+    if not is_noble():
         pytest.skip(
             "destructive-mode builds require the host series to match the "
             "project's build-base (ubuntu@24.04)"

@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 import os
+import platform
 import types
 from pathlib import Path
 from unittest import mock
@@ -22,6 +23,38 @@ import pytest
 from craft_application import ProjectService, ServiceFactory
 from imagecraft import cli, plugins
 from imagecraft.application import APP_METADATA
+
+
+def is_noble() -> bool:
+    """Check if running on Ubuntu 24.04 (noble)."""
+    try:
+        return platform.freedesktop_os_release().get("VERSION_CODENAME") == "noble"
+    except (AttributeError, OSError):
+        pass
+    os_release_path = Path("/etc/os-release")
+    if os_release_path.exists():
+        for line in os_release_path.read_text().splitlines():
+            if line.startswith("VERSION_CODENAME="):
+                return line.split("=", 1)[1].strip("\"'") == "noble"
+    return False
+
+
+def is_noble_non_amd64() -> bool:
+    """Check if running on Ubuntu Noble on a non-amd64 architecture.
+
+    The fusefat package is only available in Ubuntu universe repositories for
+    amd64 and i386 on Ubuntu 24.04 (Noble) and earlier. It was not built for
+    ARM64 or other non-x86 architectures on Noble.
+    """
+    if platform.machine() in ("x86_64", "AMD64"):
+        return False
+    return is_noble()
+
+
+@pytest.fixture
+def host_is_noble() -> bool:
+    """Fixture indicating if the host system is Ubuntu Noble."""
+    return is_noble()
 
 
 def pytest_runtest_setup(item: pytest.Item) -> None:

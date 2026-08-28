@@ -13,7 +13,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-import platform
 import shutil
 from pathlib import Path
 
@@ -25,35 +24,14 @@ from imagecraft.utils.mount import (
     mount_volume,
 )
 
-
-def _is_noble_non_amd64() -> bool:
-    """Check if running on Ubuntu Noble on a non-amd64 architecture.
-
-    The fusefat package is only available in Ubuntu universe repositories for
-    amd64 and i386 on Ubuntu 24.04 (Noble) and earlier. It was not built for
-    ARM64 or other non-x86 architectures on Noble.
-    """
-    if platform.machine() in ("x86_64", "AMD64"):
-        return False
-    try:
-        os_release = platform.freedesktop_os_release()
-        return os_release.get("VERSION_CODENAME") == "noble"
-    except (AttributeError, OSError):
-        pass
-    os_release_path = Path("/etc/os-release")
-    if os_release_path.exists():
-        for line in os_release_path.read_text().splitlines():
-            if line.startswith("VERSION_CODENAME="):
-                return line.split("=", 1)[1].strip("\"'") == "noble"
-    return False
-
+from tests.conftest import is_noble_non_amd64
 
 REQUIRED_EXECUTABLES: dict[str, str] = {
     "fuse2fs": "fuse2fs",
     "fusefile": "fusefile",
     "fusermount3": "fuse3",
 }
-if not _is_noble_non_amd64():
+if not is_noble_non_amd64():
     REQUIRED_EXECUTABLES["fusefat"] = "fusefat"
 
 
@@ -159,7 +137,7 @@ def test_mount_partition_standalone(
     fstype: FileSystem,
     fakeroot: bool,  # noqa: FBT001
 ):
-    if "fat" in fstype.value and _is_noble_non_amd64():
+    if "fat" in fstype.value and is_noble_non_amd64():
         pytest.skip("fusefat is unavailable on noble on non-amd64 architectures")
 
     img_path = tmp_path / f"standalone.{fstype.value}"
@@ -196,7 +174,7 @@ def test_mount_partition_offset(
     fakeroot: bool,  # noqa: FBT001
 ):
     if "fat" in fstype.value:
-        if _is_noble_non_amd64():
+        if is_noble_non_amd64():
             pytest.skip("fusefat is unavailable on noble on non-amd64 architectures")
         if os.geteuid() != 0:
             pytest.skip(
@@ -255,7 +233,7 @@ def test_volume_mount(
     volume_definition: GPTVolume | MBRVolume,
     tmp_path: Path,
 ):
-    if _is_noble_non_amd64():
+    if is_noble_non_amd64():
         pytest.skip("fusefat is unavailable on noble on non-amd64 architectures")
     disk_path = tmp_path / f"{volume_definition.volume_schema.value}_disk.raw"
     sector_size = gptutil.SECTOR_SIZE_512
