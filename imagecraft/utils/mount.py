@@ -475,10 +475,11 @@ def mount_partition(
     :param fakeroot: If True, pass fakeroot option to FUSE (ext only).
     :raises errors.MountError: If the filesystem type is unsupported.
     """
-    if isinstance(filesystem, FileSystem):
-        fs_str = filesystem.value.lower()
-    else:
-        fs_str = str(filesystem).lower()
+    fs_str = (
+        filesystem.value.lower()
+        if isinstance(filesystem, FileSystem)
+        else str(filesystem).lower()
+    )
     if fs_str in ("ext2", "ext3", "ext4"):
         return ExtFuseMount(
             imagepath,
@@ -619,14 +620,11 @@ def mount_volume(
             start_sector = gptutil.get_partition_sector_offset_by_number(disk_path, idx)
             size_sectors = gptutil.get_partition_size_sectors_by_number(disk_path, idx)
 
-        offset_bytes = start_sector * gptutil.SECTOR_SIZE_512
-        size_bytes = size_sectors * gptutil.SECTOR_SIZE_512
-
         part_mount = mount_partition(
             disk_path,
             filesystem,
-            offset=offset_bytes,
-            size=size_bytes,
+            offset=start_sector * gptutil.SECTOR_SIZE_512,
+            size=size_sectors * gptutil.SECTOR_SIZE_512,
             read_only=read_only,
             allow_other=allow_other,
             fakeroot=fakeroot,
