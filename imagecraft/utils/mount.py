@@ -231,7 +231,62 @@ class VirtualOffsetDevice(BaseMount):
         self.part_file = None
 
 
-class ExtFuseMount(BaseMount):
+class BasePartitionMount(BaseMount):
+    """Abstract base class for FUSE partition mounts.
+
+    :param imagepath: Path to the disk image or partition image.
+    :param offset: Byte offset of the partition within the image (0 if standalone).
+    :param mountpoint: Optional host directory mount point.
+    :param read_only: If True, mount read-only.
+    :param allow_other: If True, allow other users to access the mount.
+    """
+
+    imagepath: Path
+    offset: int
+    read_only: bool
+    allow_other: bool
+
+    def __init__(
+        self,
+        imagepath: Path,
+        *,
+        offset: int = 0,
+        mountpoint: Path | None = None,
+        read_only: bool = False,
+        allow_other: bool = False,
+    ) -> None:
+        super().__init__(mountpoint=mountpoint)
+        self.imagepath = imagepath
+        self.offset = offset
+        self.read_only = read_only
+        self.allow_other = allow_other
+
+    def _build_options(self, *, rw_flag: str = "rw") -> list[str]:
+        """Build common FUSE mount options."""
+        options = ["ro"] if self.read_only else [rw_flag]
+        if self.allow_other:
+            options.append("allow_other")
+        return options
+
+    def unmount(self, *, lazy: bool = False) -> None:
+        """Unmount the partition."""
+        if not self.is_mounted or self.mountpoint is None:
+            return
+
+        mountpoint = self.mountpoint
+        emit.debug(f"Unmounting partition at {mountpoint}")
+        try:
+            _unmount_path(
+                mountpoint,
+                lazy=lazy,
+                retries=10,
+                err_msg=f"Failed to unmount partition at {mountpoint}",
+            )
+        finally:
+            self._cleanup()
+
+
+class ExtFuseMount(BasePartitionMount):
     """Mount an ext2/ext3/ext4 partition using fuse2fs.
 
     :param imagepath: Path to the disk image or partition image.
@@ -242,10 +297,6 @@ class ExtFuseMount(BaseMount):
     :param fakeroot: If True, pass fakeroot option to fuse2fs.
     """
 
-    imagepath: Path
-    offset: int
-    read_only: bool
-    allow_other: bool
     fakeroot: bool
 
     def __init__(
@@ -258,11 +309,13 @@ class ExtFuseMount(BaseMount):
         allow_other: bool = False,
         fakeroot: bool = False,
     ) -> None:
-        super().__init__(mountpoint=mountpoint)
-        self.imagepath = imagepath
-        self.offset = offset
-        self.read_only = read_only
-        self.allow_other = allow_other
+        super().__init__(
+            imagepath,
+            offset=offset,
+            mountpoint=mountpoint,
+            read_only=read_only,
+            allow_other=allow_other,
+        )
         self.fakeroot = fakeroot
 
     def mount(self) -> Path:
@@ -272,22 +325,19 @@ class ExtFuseMount(BaseMount):
 
         mountpoint = self._ensure_mountpoint("imagecraft-ext-mount-")
 
-        options: list[str] = []
+        options = self._build_options(rw_flag="rw")
         if self.offset > 0:
-            options.append(f"offset={self.offset}")
-        if self.read_only:
-            options.append("ro")
-        else:
-            options.append("rw")
-        if self.allow_other:
-            options.append("allow_other")
+            options.insert(0, f"offset={self.offset}")
         if self.fakeroot:
             options.append("fakeroot")
 
-        cmd: list[str] = ["fuse2fs"]
-        if options:
-            cmd.extend(["-o", ",".join(options)])
-        cmd.extend([str(self.imagepath.resolve()), str(mountpoint.resolve())])
+        cmd = [
+            "fuse2fs",
+            "-o",
+            ",".join(options),
+            str(self.imagepath.resolve()),
+            str(mountpoint.resolve()),
+        ]
 
         emit.debug(f"Mounting ext partition with: {cmd}")
         try:
@@ -302,25 +352,8 @@ class ExtFuseMount(BaseMount):
         self._is_mounted = True
         return mountpoint
 
-    def unmount(self, *, lazy: bool = False) -> None:
-        """Unmount the ext partition."""
-        if not self.is_mounted or self.mountpoint is None:
-            return
 
-        mountpoint = self.mountpoint
-        emit.debug(f"Unmounting ext partition at {mountpoint}")
-        try:
-            _unmount_path(
-                mountpoint,
-                lazy=lazy,
-                retries=10,
-                err_msg=f"Failed to unmount ext partition at {mountpoint}",
-            )
-        finally:
-            self._cleanup()
-
-
-class FatFuseMount(BaseMount):
+class FatFuseMount(BasePartitionMount):
     """Mount a FAT16/FAT32/VFAT partition using fusefat.
 
     :param imagepath: Path to the disk image or partition image.
@@ -331,11 +364,7 @@ class FatFuseMount(BaseMount):
     :param allow_other: If True, allow other users to access the mount.
     """
 
-    imagepath: Path
-    offset: int
     size: int | None
-    read_only: bool
-    allow_other: bool
     _vpart: VirtualOffsetDevice | None
 
     def __init__(
@@ -348,12 +377,14 @@ class FatFuseMount(BaseMount):
         read_only: bool = False,
         allow_other: bool = False,
     ) -> None:
-        super().__init__(mountpoint=mountpoint)
-        self.imagepath = imagepath
-        self.offset = offset
+        super().__init__(
+            imagepath,
+            offset=offset,
+            mountpoint=mountpoint,
+            read_only=read_only,
+            allow_other=allow_other,
+        )
         self.size = size
-        self.read_only = read_only
-        self.allow_other = allow_other
         self._vpart = None
 
     def mount(self) -> Path:
@@ -374,10 +405,7 @@ class FatFuseMount(BaseMount):
         else:
             target_file = self.imagepath
 
-        options = ["ro"] if self.read_only else ["rw+"]
-        if self.allow_other:
-            options.append("allow_other")
-
+        options = self._build_options(rw_flag="rw+")
         cmd = [
             "fusefat",
             "-o",
@@ -405,19 +433,9 @@ class FatFuseMount(BaseMount):
 
     def unmount(self, *, lazy: bool = False) -> None:
         """Unmount the FAT partition and its virtual offset device if used."""
-        if not self.is_mounted or self.mountpoint is None:
-            return
-
-        mountpoint = self.mountpoint
-        emit.debug(f"Unmounting FAT partition at {mountpoint}")
         err_mount: Exception | None = None
         try:
-            _unmount_path(
-                mountpoint,
-                lazy=lazy,
-                retries=10,
-                err_msg=f"Failed to unmount FAT partition at {mountpoint}",
-            )
+            super().unmount(lazy=lazy)
         except errors.MountError as err:
             err_mount = err
         finally:
@@ -429,7 +447,6 @@ class FatFuseMount(BaseMount):
                         err_mount = err_vpart
                 finally:
                     self._vpart = None
-            self._cleanup()
 
         if err_mount is not None:
             raise err_mount
