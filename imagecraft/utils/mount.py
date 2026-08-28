@@ -526,18 +526,15 @@ class CompositeMount(BaseMount):
             return self.mountpoint
 
         mountpoint = self._ensure_mountpoint("imagecraft-composite-mount-")
-
         sorted_entries = sorted(
             self._mount_entries,
-            key=lambda item: (
-                len(Path(item[0].strip("/")).parts) if item[0].strip("/") else 0
-            ),
+            key=lambda item: len(Path(item[0].strip("/")).parts),
         )
 
         try:
             for rel_path_str, mount_obj in sorted_entries:
                 rel_path = rel_path_str.strip("/")
-                target_dir = mountpoint if not rel_path else mountpoint / rel_path
+                target_dir = mountpoint / rel_path if rel_path else mountpoint
                 target_dir.mkdir(parents=True, exist_ok=True)
                 mount_obj.mountpoint = target_dir
                 mount_obj.mount()
@@ -554,21 +551,13 @@ class CompositeMount(BaseMount):
     def unmount(self, *, lazy: bool = False) -> None:
         """Unmount all sub-mounts in reverse topological order (leaf to root)."""
         errors_encountered: list[Exception] = []
-
         while self._mounted_stack:
-            mount_obj = self._mounted_stack.pop()
             try:
-                mount_obj.unmount(lazy=lazy)
-            except Exception as err:  # noqa: BLE001
+                self._mounted_stack.pop().unmount(lazy=lazy)
+            except Exception as err:  # noqa: BLE001, PERF203
                 errors_encountered.append(err)
 
-        self._is_mounted = False
-        if self._temp_dir is not None:
-            with contextlib.suppress(Exception):
-                self._temp_dir.cleanup()
-            self._temp_dir = None
-            self.mountpoint = None
-
+        self._cleanup()
         if errors_encountered:
             raise errors.MountError(
                 f"Errors occurred during composite unmount: {errors_encountered}"
