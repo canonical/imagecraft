@@ -195,7 +195,7 @@ def test_setup_grub_skip_conditions(mocker, new_dir, volume, arch, emitter, mess
     workdir = Path(new_dir, "workdir")
     workdir.mkdir()
     setup_efi = mocker.patch("imagecraft.pack.grubutil._setup_grub_efi")
-    setup_bios = mocker.patch("imagecraft.pack.grubutil._setup_grub_bios_chroot")
+    setup_bios = mocker.patch("imagecraft.pack.grubutil._setup_grub_bios")
 
     grubutil.setup_grub(
         image=image, workdir=workdir, arch=arch, filesystem_mount=filesystem_mount
@@ -279,15 +279,13 @@ def test_setup_grub_dispatches_to_bios(mocker, new_dir, arch):
     image = Image(volume=volume, disk_path=disk_path)
     workdir = Path(new_dir, "workdir")
     workdir.mkdir()
-    setup_bios = mocker.patch("imagecraft.pack.grubutil._setup_grub_bios_chroot")
+    setup_bios = mocker.patch("imagecraft.pack.grubutil._setup_grub_bios")
 
     grubutil.setup_grub(
         image=image, workdir=workdir, arch=arch, filesystem_mount=filesystem_mount
     )
 
-    # BIOS/MBR still installs GRUB through a chroot until it is converted
-    # to direct disk image manipulation.
-    setup_bios.assert_called_once_with(image, workdir, "i386-pc", filesystem_mount)
+    setup_bios.assert_called_once_with(image, filesystem_mount)
 
 
 @pytest.mark.usefixtures("new_dir")

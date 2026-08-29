@@ -32,9 +32,11 @@ from imagecraft import errors
 from imagecraft.models.volume import (
     GPTStructureItem,
     GPTVolume,
+    MBRStructureItem,
+    MBRVolume,
     PartitionSchema,
 )
-from imagecraft.pack import diskutil, gptutil, grubutil
+from imagecraft.pack import diskutil, gptutil, grubutil, mbrutil
 from imagecraft.pack.diskutil import DiskSize
 from imagecraft.pack.image import Image
 from imagecraft.utils.mount import mount_partition
@@ -121,10 +123,14 @@ def _build_and_inject_partition(
     )
 
 
-def _mount_ext_partition(disk_path: Path, name: str):
-    """Mount an ext partition by name through the FUSE utilities."""
-    offset = gptutil.get_partition_sector_offset(disk_path, name)
-    size = gptutil.get_partition_size_sectors(disk_path, name)
+def _mount_ext_partition(disk_path: Path, name: str, *, number: int | None = None):
+    """Mount an ext partition by name (GPT) or number (MBR) through FUSE."""
+    if number is not None:
+        offset = gptutil.get_partition_sector_offset_by_number(disk_path, number)
+        size = gptutil.get_partition_size_sectors_by_number(disk_path, number)
+    else:
+        offset = gptutil.get_partition_sector_offset(disk_path, name)
+        size = gptutil.get_partition_size_sectors(disk_path, name)
     return mount_partition(disk_path, "ext4", offset=offset * 512, size=size * 512)
 
 
@@ -530,3 +536,90 @@ def test_setup_grub_efi_separate_boot_partition(new_dir, fake_kernel_files):
     # The ESP stub has to chain to the config on the boot partition.
     assert f"search.fs_uuid {boot_uuid} root" in stub
     assert "set prefix=($root)'/grub'" in stub
+
+
+@pytest.mark.slow
+@pytest.mark.requires_root
+@pytest.mark.usefixtures("new_dir")
+def test_setup_grub_bios_mbr(new_dir, fake_kernel_files):
+    """Legacy BIOS/MBR: core.img is embedded and the boot sector patched by hand."""
+    from imagecraft.models.volume import (  # noqa: PLC0415
+        FileSystem,
+        MBRPartitionType,
+        Role,
+    )
+
+    tmp_path = Path(new_dir)
+    root_content = tmp_path / "root_content"
+    _copy_grub_target_files(
+        Path("/usr/lib/grub/i386-pc"), root_content / "usr/lib/grub/i386-pc"
+    )
+    _copy_grub_mkimage(root_content)
+    fake_kernel_files(root_content / "boot")
+
+    volume = MBRVolume(
+        schema=PartitionSchema.MBR,
+        structure=[
+            MBRStructureItem(
+                name="rootfs",
+                role=Role.SYSTEM_DATA,
+                size="256M",
+                filesystem=FileSystem.EXT4,
+                type=MBRPartitionType("83"),
+                filesystem_label="writable",
+            ),
+        ],
+    )
+    disk_path = tmp_path / "disk.img"
+    mbrutil.create_empty_mbr_image(imagepath=disk_path, sector_size=512, layout=volume)
+    _build_and_inject_partition(
+        disk_path=disk_path,
+        tmp_path=tmp_path,
+        fstype=volume.structure[0].filesystem,
+        content_dir=root_content,
+        label=volume.structure[0].filesystem_label,
+        partition_name="rootfs",
+        partition_number=1,
+    )
+    mbrutil.verify_partition_tables(disk_path)
+
+    image = Image(volume=volume, disk_path=disk_path)
+    filesystem_mount = FilesystemMount.unmarshal(
+        [{"mount": "/", "device": "(volume/pc/rootfs)"}]
+    )
+
+    grubutil.setup_grub(
+        image=image,
+        workdir=tmp_path / "work",
+        arch=DebianArchitecture.AMD64,
+        filesystem_mount=filesystem_mount,
+    )
+
+    with disk_path.open("rb") as f:
+        sector0 = f.read(512)
+    # Boot signature must be preserved.
+    assert sector0[0x1FE:0x200] == b"\x55\xaa"
+    kernel_sector = int.from_bytes(sector0[0x5C:0x64], "little")
+    assert kernel_sector == grubutil._BIOS_CORE_IMG_START_SECTOR
+
+    with disk_path.open("rb") as f:
+        f.seek(kernel_sector * 512)
+        core_start = f.read(512)
+    # core.img was embedded in the gap and isn't all zeros/empty.
+    assert any(core_start)
+    # core.img's own embedded blocklist must point past its first sector,
+    # or SeaBIOS hangs loading the rest of core.img from the wrong place.
+    blocklist_start = int.from_bytes(
+        core_start[
+            grubutil._BIOS_BLOCKLIST_START_OFFSET : grubutil._BIOS_BLOCKLIST_START_OFFSET
+            + 8
+        ],
+        "little",
+    )
+    assert blocklist_start == kernel_sector + 1
+
+    with _mount_ext_partition(disk_path, "rootfs", number=1) as rootfs:
+        assert (rootfs / "boot/grub/i386-pc/core.img").is_file()
+        assert (rootfs / "boot/grub/i386-pc/boot.img").is_file()
+        cfg = (rootfs / "boot/grub/grub.cfg").read_text()
+        assert "vmlinuz-6.8.0-generic" in cfg
