@@ -43,10 +43,10 @@ import shutil
 import subprocess
 import tempfile
 import uuid
+from collections.abc import Callable
 from typing import NamedTuple, cast
 
 from craft_cli import emit
-from craft_parts import filesystem_mounts
 from craft_platforms import DebianArchitecture
 
 from imagecraft import errors
@@ -65,6 +65,20 @@ _ARCH_TO_GRUB_EFI_TARGET: dict[str, str] = {
 
 _GRUB_BIOS_TARGET = "i386-pc"
 _GRUB_BIOS_ARCHS = {DebianArchitecture.AMD64, DebianArchitecture.I386}
+
+_ROLE_MOUNT_PAIRS: list[tuple[Callable[[volume.StructureItem], bool], str]] = [
+    (lambda s: s.role == volume.Role.SYSTEM_DATA, "/"),
+    (
+        lambda s: (
+            s.role == volume.Role.SYSTEM_BOOT
+            and not (
+                isinstance(s, volume.GPTStructureItem)
+                and s.structure_type == volume.GptType.EFI_SYSTEM
+            )
+        ),
+        "/boot",
+    ),
+]
 
 # GRUB target -> UEFI removable-media architecture token.
 #
@@ -153,14 +167,12 @@ def setup_grub(
     image: Image,
     workdir: pathlib.Path,
     arch: str,
-    filesystem_mount: filesystem_mounts.FilesystemMount,
 ) -> None:
     """Set up GRUB directly on the disk image.
 
     :param image: Image object handling the actual disk file
     :param workdir: working directory
     :param arch: architecture the image is built for
-    :param filesystem_mount: order in which partitions should be mounted
     """
     emit.progress("Setting up GRUB in the image")
 
@@ -179,7 +191,7 @@ def setup_grub(
         # Legacy BIOS/MBR images are still installed through a loop device
         # and a chroot. They move over to direct image manipulation in a
         # follow-up change, once the EFI path has settled.
-        _setup_grub_bios_chroot(image, workdir, _GRUB_BIOS_TARGET, filesystem_mount)
+        _setup_grub_bios_chroot(image, workdir, _GRUB_BIOS_TARGET)
         return
 
     # GPT or hybrid — EFI boot
@@ -195,7 +207,7 @@ def setup_grub(
     grub_target = _ARCH_TO_GRUB_EFI_TARGET[arch]
 
     try:
-        _setup_grub_efi(image, grub_target, filesystem_mount)
+        _setup_grub_efi(image, grub_target)
     except errors.ImageError as err:
         emit.progress(f"Cannot install GRUB on this rootfs: {err}", permanent=True)
 
@@ -273,46 +285,39 @@ def _efi_filenames(
     return f"grub{uefi_arch.lower()}.efi", f"BOOT{uefi_arch}.EFI", None
 
 
-def _partition_geometry(
+def _find_structure_item(
+    structure: volume.StructureList,
+    predicate: Callable[[volume.StructureItem], bool],
+) -> volume.StructureItem:
+    """Return the first structure item matching *predicate*."""
+    for item in structure:
+        if predicate(item):
+            return item
+    raise errors.ImageError(message="No matching partition found")
+
+
+def _partition_offset_size(
     disk_path: pathlib.Path,
     structure: volume.StructureList,
-    filesystem_mount: filesystem_mounts.FilesystemMount,
-    mount: str,
-) -> tuple[str, int, int]:
-    """Return (partition_name, offset_sectors, size_sectors) for the given mountpoint."""
-    # Locate the device string for this mount; "/" matches both "" and "/".
-    device = next(
-        (
-            e.device
-            for e in filesystem_mount
-            if e.mount.rstrip("/") == mount.rstrip("/")
-            or (mount == "/" and e.mount in ("", "/"))
-        ),
-        None,
-    )
-    if device is None:
-        raise errors.ImageError(message=f"No partition mounted at {mount!r}")
-    partition_name = _partition_name_from_device(device)
-    partnum = _part_num(partition_name, structure)
+    predicate: Callable[[volume.StructureItem], bool],
+) -> tuple[int, int]:
+    """Return (offset_sectors, size_sectors) for the first structure item matching *predicate*. Works for both GPT and MBR schemas."""
+    item = _find_structure_item(structure, predicate)
+    partnum = _part_num(item.name, structure)
     if partnum is None:
-        raise errors.ImageError(
-            message=f"Cannot find a partition named {partition_name}"
-        )
+        raise errors.ImageError(message=f"Cannot find a partition named {item.name}")
     if isinstance(structure[0], volume.MBRStructureItem):
-        # MBR partitions aren't named in sfdisk's output; look them up by
-        # their 1-based position instead.
         offset = gptutil.get_partition_sector_offset_by_number(disk_path, partnum)
         size = gptutil.get_partition_size_sectors_by_number(disk_path, partnum)
     else:
-        offset = gptutil.get_partition_sector_offset(disk_path, partition_name)
-        size = gptutil.get_partition_size_sectors(disk_path, partition_name)
-    return partition_name, offset, size
+        offset = gptutil.get_partition_sector_offset(disk_path, item.name)
+        size = gptutil.get_partition_size_sectors(disk_path, item.name)
+    return offset, size
 
 
 def _setup_grub_efi(
     image: Image,
     requested_grub_target: str,
-    filesystem_mount: filesystem_mounts.FilesystemMount,
 ) -> None:
     """Install GRUB for an EFI-capable (GPT/hybrid) image.
 
@@ -331,13 +336,30 @@ def _setup_grub_efi(
     disk_path = image.disk_path
     sector = gptutil.SECTOR_SIZE_512
 
-    _, root_offset, root_size = _partition_geometry(
-        disk_path, structure, filesystem_mount, "/"
+    root_offset, root_size = _partition_offset_size(
+        disk_path,
+        structure,
+        lambda s: s.role == volume.Role.SYSTEM_DATA,
     )
-    has_separate_boot = any(e.mount.rstrip("/") == "/boot" for e in filesystem_mount)
+    has_separate_boot = any(
+        s.role == volume.Role.SYSTEM_BOOT
+        and not (
+            isinstance(s, volume.GPTStructureItem)
+            and s.structure_type == volume.GptType.EFI_SYSTEM
+        )
+        for s in structure
+    )
     if has_separate_boot:
-        _, boot_offset, boot_size = _partition_geometry(
-            disk_path, structure, filesystem_mount, "/boot"
+        boot_offset, boot_size = _partition_offset_size(
+            disk_path,
+            structure,
+            lambda s: (
+                s.role == volume.Role.SYSTEM_BOOT
+                and not (
+                    isinstance(s, volume.GPTStructureItem)
+                    and s.structure_type == volume.GptType.EFI_SYSTEM
+                )
+            ),
         )
     else:
         boot_offset, boot_size = root_offset, root_size
@@ -348,10 +370,15 @@ def _setup_grub_efi(
         if has_separate_boot
         else pathlib.PurePosixPath("/boot")
     )
-    _, esp_offset_sectors, _ = _partition_geometry(
-        disk_path, structure, filesystem_mount, "/boot/efi"
+    esp_offset, _ = _partition_offset_size(
+        disk_path,
+        structure,
+        lambda s: (
+            isinstance(s, volume.GPTStructureItem)
+            and s.structure_type == volume.GptType.EFI_SYSTEM
+        ),
     )
-    esp_offset_bytes = esp_offset_sectors * sector
+    esp_offset_bytes = esp_offset * sector
 
     with tempfile.TemporaryDirectory(prefix="imagecraft-grub-") as tmp_str:
         tmp_dir = pathlib.Path(tmp_str)
@@ -904,7 +931,6 @@ def _setup_grub_bios_chroot(
     image: Image,
     workdir: pathlib.Path,
     grub_target: str,
-    filesystem_mount: filesystem_mounts.FilesystemMount,
 ) -> None:
     """Install GRUB for a legacy BIOS/MBR image via a loop device and chroot.
 
@@ -912,23 +938,48 @@ def _setup_grub_bios_chroot(
     for BIOS/MBR images until they are converted to direct disk image
     manipulation, at which point this and its helpers are removed.
     """
+    structure = image.volume.structure
     mount_dir = workdir / "mount"
     mount_dir.mkdir(exist_ok=True)
 
     with image.attach_loopdev() as loop_dev:
         image_mounts = []
-        for entry in filesystem_mount:
-            partition_name = _partition_name_from_device(entry.device)
-            partnum = _part_num(partition_name, image.volume.structure)
+        for predicate, mountpoint in _ROLE_MOUNT_PAIRS:
+            try:
+                item = _find_structure_item(structure, predicate)
+            except errors.ImageError:
+                continue
+            partnum = _part_num(item.name, structure)
             if partnum is None:
                 raise errors.ImageError(
-                    message=f"Cannot find a partition named {partition_name}"
+                    message=f"Cannot find a partition named {item.name}"
                 )
             image_mounts.append(
                 chroot.Mount(
                     fstype=None,
                     src=f"{loop_dev}p{partnum}",
-                    relative_mountpoint=entry.mount,
+                    relative_mountpoint=mountpoint,
+                )
+            )
+        # EFI system partition (GPT only) is mounted at /boot/efi.
+        if any(
+            isinstance(s, volume.GPTStructureItem)
+            and s.structure_type == volume.GptType.EFI_SYSTEM
+            for s in structure
+        ):
+            item = _find_structure_item(
+                structure,
+                lambda s: (
+                    isinstance(s, volume.GPTStructureItem)
+                    and s.structure_type == volume.GptType.EFI_SYSTEM
+                ),
+            )
+            partnum = _part_num(item.name, structure)
+            image_mounts.append(
+                chroot.Mount(
+                    fstype=None,
+                    src=f"{loop_dev}p{partnum}",
+                    relative_mountpoint="/boot/efi",
                 )
             )
         mounts: list[chroot.Mount] = [
@@ -983,14 +1034,3 @@ def _part_num(name: str, structure: volume.StructureList) -> int | None:
                 return pos + 1  # skip slot 4 (extended container)
             return pos
     return None
-
-
-def _partition_name_from_device(device: str) -> str:
-    """Extract the partition name from the device name.
-
-    Works under the assumption that the full device name references
-    the correct volume and the device name follows the
-    (volume/<volume_name>/<structure_name>) syntax.
-
-    """
-    return device.strip("()").split("/")[-1]

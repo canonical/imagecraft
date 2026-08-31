@@ -29,7 +29,6 @@ from typing import cast
 from unittest.mock import MagicMock
 
 import pytest
-from craft_parts.filesystem_mounts import FilesystemMount
 from craft_platforms import DebianArchitecture
 from imagecraft import errors
 from imagecraft.models.volume import (
@@ -186,20 +185,13 @@ def test_setup_grub_skip_conditions(mocker, new_dir, volume, arch, emitter, mess
     """setup_grub emits a permanent progress message and returns without acting."""
     disk_path = Path(new_dir, "pc.img")
     disk_path.touch(exist_ok=True)
-    filesystem_mount = FilesystemMount.unmarshal(
-        [
-            {"mount": "/", "device": "(volume/pc/rootfs)"},
-        ]
-    )
     image = Image(volume=volume, disk_path=disk_path)
     workdir = Path(new_dir, "workdir")
     workdir.mkdir()
     setup_efi = mocker.patch("imagecraft.pack.grubutil._setup_grub_efi")
     setup_bios = mocker.patch("imagecraft.pack.grubutil._setup_grub_bios_chroot")
 
-    grubutil.setup_grub(
-        image=image, workdir=workdir, arch=arch, filesystem_mount=filesystem_mount
-    )
+    grubutil.setup_grub(image=image, workdir=workdir, arch=arch)
 
     setup_efi.assert_not_called()
     setup_bios.assert_not_called()
@@ -233,12 +225,6 @@ def test_setup_grub_dispatches_to_efi(mocker, new_dir):
     )
     disk_path = Path(new_dir, "pc.img")
     disk_path.touch(exist_ok=True)
-    filesystem_mount = FilesystemMount.unmarshal(
-        [
-            {"mount": "/", "device": "(volume/pc/rootfs)"},
-            {"mount": "/boot/efi", "device": "(volume/pc/efi)"},
-        ]
-    )
     image = Image(volume=volume, disk_path=disk_path)
     workdir = Path(new_dir, "workdir")
     workdir.mkdir()
@@ -248,10 +234,9 @@ def test_setup_grub_dispatches_to_efi(mocker, new_dir):
         image=image,
         workdir=workdir,
         arch=DebianArchitecture.AMD64,
-        filesystem_mount=filesystem_mount,
     )
 
-    setup_efi.assert_called_once_with(image, "x86_64-efi", filesystem_mount)
+    setup_efi.assert_called_once_with(image, "x86_64-efi")
 
 
 @pytest.mark.parametrize("arch", [DebianArchitecture.AMD64, DebianArchitecture.I386])
@@ -273,21 +258,16 @@ def test_setup_grub_dispatches_to_bios(mocker, new_dir, arch):
     )
     disk_path = Path(new_dir, "pc.img")
     disk_path.touch(exist_ok=True)
-    filesystem_mount = FilesystemMount.unmarshal(
-        [{"mount": "/", "device": "(volume/pc/rootfs)"}]
-    )
     image = Image(volume=volume, disk_path=disk_path)
     workdir = Path(new_dir, "workdir")
     workdir.mkdir()
     setup_bios = mocker.patch("imagecraft.pack.grubutil._setup_grub_bios_chroot")
 
-    grubutil.setup_grub(
-        image=image, workdir=workdir, arch=arch, filesystem_mount=filesystem_mount
-    )
+    grubutil.setup_grub(image=image, workdir=workdir, arch=arch)
 
     # BIOS/MBR still installs GRUB through a chroot until it is converted
     # to direct disk image manipulation.
-    setup_bios.assert_called_once_with(image, workdir, "i386-pc", filesystem_mount)
+    setup_bios.assert_called_once_with(image, workdir, "i386-pc")
 
 
 @pytest.mark.usefixtures("new_dir")
@@ -319,12 +299,6 @@ def test_setup_grub_catches_image_error(mocker, new_dir, emitter):
     )
     disk_path = Path(new_dir, "pc.img")
     disk_path.touch(exist_ok=True)
-    filesystem_mount = FilesystemMount.unmarshal(
-        [
-            {"mount": "/", "device": "(volume/pc/rootfs)"},
-            {"mount": "/boot/efi", "device": "(volume/pc/efi)"},
-        ]
-    )
     image = Image(volume=volume, disk_path=disk_path)
     workdir = Path(new_dir, "workdir")
     workdir.mkdir()
@@ -337,7 +311,6 @@ def test_setup_grub_catches_image_error(mocker, new_dir, emitter):
         image=image,
         workdir=workdir,
         arch=DebianArchitecture.AMD64,
-        filesystem_mount=filesystem_mount,
     )
 
     emitter.assert_progress("Cannot install GRUB on this rootfs: boom", permanent=True)
@@ -411,10 +384,6 @@ def test_part_num_mbr(names, expected_part_nums):
     structure = cast(MBRStructureList, items)
     for name, expected in expected_part_nums.items():
         assert grubutil._part_num(name, structure) == expected
-
-
-def test_partition_name_from_device():
-    assert grubutil._partition_name_from_device("(volume/pc/rootfs)") == "rootfs"
 
 
 # ── Small pure-logic helpers ─────────────────────────────────────────────
