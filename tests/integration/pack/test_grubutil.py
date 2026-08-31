@@ -350,7 +350,6 @@ def test_setup_grub_efi_signed(
         image=image,
         workdir=tmp_path / "work",
         arch=_host_debian_arch(),
-        filesystem_mount=filesystem_mount,
     )
 
     grub_basename = grub_fname.removesuffix(".efi")
@@ -395,7 +394,6 @@ def test_setup_grub_efi_unsigned_requires_grub_mkimage_in_image(
             image=image,
             workdir=tmp_path / "work",
             arch=_host_debian_arch(),
-            filesystem_mount=filesystem_mount,
         )
 
 
@@ -413,12 +411,14 @@ def test_setup_grub_efi_skips_without_grub_modules(
         tmp_path, root_content, _make_esp_content_dir(tmp_path)
     )
 
-    grubutil.setup_grub(
-        image=image,
-        workdir=tmp_path / "work",
-        arch=_host_debian_arch(),
-        filesystem_mount=filesystem_mount,
-    )
+    with pytest.raises(
+        errors.ImageError, match="GRUB modules for.*are not installed in the image"
+    ):
+        grubutil.setup_grub(
+            image=image,
+            workdir=tmp_path / "work",
+            arch=_host_debian_arch(),
+        )
 
     emitter.assert_progress(
         f"Cannot install GRUB on this rootfs: GRUB modules for {grub_target} "
@@ -452,7 +452,6 @@ def test_setup_grub_efi_unsigned(new_dir, fake_kernel_files, grub_target, grub_f
         image=image,
         workdir=tmp_path / "work",
         arch=_host_debian_arch(),
-        filesystem_mount=filesystem_mount,
     )
 
     grub_basename = grub_fname.removesuffix(".efi")
@@ -496,7 +495,6 @@ def test_setup_grub_efi_separate_boot_partition(
         image=image,
         workdir=tmp_path / "work",
         arch=_host_debian_arch(),
-        filesystem_mount=filesystem_mount,
     )
 
     with _mount_ext_partition(image.disk_path, "boot") as bootfs:
