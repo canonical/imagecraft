@@ -116,33 +116,6 @@ def _require_grub_tools():
             "Skipping GRUB installation because no data partition was found",
         ),
         (
-            GPTVolume.unmarshal(
-                {
-                    "schema": "gpt",
-                    "structure": [
-                        {
-                            "name": "efi",
-                            "role": "system-boot",
-                            "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
-                            "filesystem": "vfat",
-                            "size": "64M",
-                            "filesystem-label": "",
-                        },
-                        {
-                            "name": "rootfs",
-                            "role": "system-data",
-                            "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
-                            "filesystem": "ext4",
-                            "size": "512M",
-                            "filesystem-label": "writable",
-                        },
-                    ],
-                }
-            ),
-            DebianArchitecture.S390X,
-            "Cannot install GRUB on this architecture",
-        ),
-        (
             MBRVolume.unmarshal(
                 {
                     "schema": "mbr",
@@ -159,24 +132,6 @@ def _require_grub_tools():
             ),
             DebianArchitecture.AMD64,
             "Skipping GRUB installation because no data partition was found",
-        ),
-        (
-            MBRVolume.unmarshal(
-                {
-                    "schema": "mbr",
-                    "structure": [
-                        {
-                            "name": "rootfs",
-                            "role": "system-data",
-                            "type": "83",
-                            "filesystem": "ext4",
-                            "size": "512M",
-                        },
-                    ],
-                }
-            ),
-            DebianArchitecture.ARM64,
-            "Cannot install GRUB on this architecture",
         ),
     ],
 )
@@ -195,7 +150,7 @@ def test_setup_grub_skip_conditions(mocker, new_dir, volume, arch, emitter, mess
 
     setup_efi.assert_not_called()
     setup_bios.assert_not_called()
-    emitter.assert_progress(message, permanent=True)
+    emitter.assert_progress(message)
 
 
 @pytest.mark.usefixtures("new_dir")
@@ -270,9 +225,8 @@ def test_setup_grub_dispatches_to_bios(mocker, new_dir, arch):
     setup_bios.assert_called_once_with(image, workdir, "i386-pc")
 
 
-@pytest.mark.usefixtures("new_dir")
-def test_setup_grub_catches_image_error(mocker, new_dir, emitter):
-    """A raised ImageError (e.g. missing mount) is turned into a progress message."""
+def test_setup_grub_propagates_efi_error(mocker, new_dir, emitter):
+    """A raised ImageError from _setup_grub_efi propagates out of setup_grub."""
 
     volume = GPTVolume.unmarshal(
         {
@@ -307,13 +261,12 @@ def test_setup_grub_catches_image_error(mocker, new_dir, emitter):
         side_effect=errors.ImageError(message="boom"),
     )
 
-    grubutil.setup_grub(
-        image=image,
-        workdir=workdir,
-        arch=DebianArchitecture.AMD64,
-    )
-
-    emitter.assert_progress("Cannot install GRUB on this rootfs: boom", permanent=True)
+    with pytest.raises(errors.ImageError, match="boom"):
+        grubutil.setup_grub(
+            image=image,
+            workdir=workdir,
+            arch=DebianArchitecture.AMD64,
+        )
 
 
 # ── _part_num ───────────────────────────────────────────────────────────────

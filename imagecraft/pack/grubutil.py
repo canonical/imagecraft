@@ -179,15 +179,10 @@ def setup_grub(
     if not image.has_data_partition:
         emit.progress(
             "Skipping GRUB installation because no data partition was found",
-            permanent=True,
         )
         return
 
-    schema = image.volume.volume_schema
-    if schema == volume.PartitionSchema.MBR:
-        if arch not in _GRUB_BIOS_ARCHS:
-            emit.progress("Cannot install GRUB on this architecture", permanent=True)
-            return
+    if image.volume.volume_schema == volume.PartitionSchema.MBR:
         # Legacy BIOS/MBR images are still installed through a loop device
         # and a chroot. They move over to direct image manipulation in a
         # follow-up change, once the EFI path has settled.
@@ -198,7 +193,6 @@ def setup_grub(
     if not image.has_boot_partition:
         emit.progress(
             "Skipping GRUB installation because no boot partition was found",
-            permanent=True,
         )
         return
     if arch not in _ARCH_TO_GRUB_EFI_TARGET:
@@ -206,10 +200,7 @@ def setup_grub(
         return
     grub_target = _ARCH_TO_GRUB_EFI_TARGET[arch]
 
-    try:
-        _setup_grub_efi(image, grub_target)
-    except errors.ImageError as err:
-        emit.progress(f"Cannot install GRUB on this rootfs: {err}", permanent=True)
+    _setup_grub_efi(image, grub_target)
 
 
 def _discover_grub_target(rootfs: pathlib.Path, build_for_target: str) -> str:
