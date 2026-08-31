@@ -37,29 +37,24 @@ which the chroot machinery is removed entirely.
 """
 
 import contextlib
+import pathlib
 import re
 import shutil
 import subprocess
 import tempfile
 import uuid
-from pathlib import Path, PurePosixPath
 from typing import NamedTuple, cast
 
 from craft_cli import emit
-from craft_parts.filesystem_mounts import FilesystemMount
+from craft_parts import filesystem_mounts
 from craft_platforms import DebianArchitecture
 
 from imagecraft import errors
-from imagecraft.models.volume import (
-    MBRStructureItem,
-    PartitionSchema,
-    StructureList,
-)
-from imagecraft.pack import gptutil, mbrutil
-from imagecraft.pack.chroot import Chroot, Mount
+from imagecraft.models import volume
+from imagecraft.pack import chroot, gptutil, mbrutil
 from imagecraft.pack.image import Image
 from imagecraft.subprocesses import run
-from imagecraft.utils.mount import mount_partition
+from imagecraft.utils import mount as fusemount
 
 _ARCH_TO_GRUB_EFI_TARGET: dict[str, str] = {
     DebianArchitecture.AMD64: "x86_64-efi",
@@ -121,7 +116,7 @@ _EFI_CORE_MODULES = [
 # Signed shim/grub filename suffixes, in preference order.
 _SIGNED_SHIM_SUFFIXES = (".efi.signed.latest", ".efi.signed", ".efi.dualsigned")
 
-_DEFAULT_GRUB_PATH = PurePosixPath("/etc/default/grub")
+_DEFAULT_GRUB_PATH = pathlib.PurePosixPath("/etc/default/grub")
 
 # Split a filename into digit and non-digit runs, so versions compare
 # numerically rather than lexicographically.
@@ -156,9 +151,9 @@ _STOCK_GRUB_DEFAULTS = GrubDefaults()
 
 def setup_grub(
     image: Image,
-    workdir: Path,
+    workdir: pathlib.Path,
     arch: str,
-    filesystem_mount: FilesystemMount,
+    filesystem_mount: filesystem_mounts.FilesystemMount,
 ) -> None:
     """Set up GRUB directly on the disk image.
 
@@ -177,7 +172,7 @@ def setup_grub(
         return
 
     schema = image.volume.volume_schema
-    if schema == PartitionSchema.MBR:
+    if schema == volume.PartitionSchema.MBR:
         if arch not in _GRUB_BIOS_ARCHS:
             emit.progress("Cannot install GRUB on this architecture", permanent=True)
             return
@@ -205,7 +200,7 @@ def setup_grub(
         emit.progress(f"Cannot install GRUB on this rootfs: {err}", permanent=True)
 
 
-def _discover_grub_target(rootfs: Path, build_for_target: str) -> str:
+def _discover_grub_target(rootfs: pathlib.Path, build_for_target: str) -> str:
     """Return the GRUB EFI target directory actually installed in the rootfs.
 
     Normally the rootfs carries exactly one ``/usr/lib/grub/*-efi`` directory,
@@ -261,7 +256,7 @@ def _unsigned_shim_name(signed_name: str) -> str:
 
 
 def _efi_filenames(
-    grub_target: str, signed: dict[str, Path] | None
+    grub_target: str, signed: dict[str, pathlib.Path] | None
 ) -> tuple[str, str, str | None]:
     """Return (grub_fname, fallback_fname, shim_fname) for the ESP.
 
@@ -279,9 +274,9 @@ def _efi_filenames(
 
 
 def _partition_geometry(
-    disk_path: Path,
-    structure: StructureList,
-    filesystem_mount: FilesystemMount,
+    disk_path: pathlib.Path,
+    structure: volume.StructureList,
+    filesystem_mount: filesystem_mounts.FilesystemMount,
     mount: str,
 ) -> tuple[str, int, int]:
     """Return (partition_name, offset_sectors, size_sectors) for the given mountpoint."""
@@ -303,7 +298,7 @@ def _partition_geometry(
         raise errors.ImageError(
             message=f"Cannot find a partition named {partition_name}"
         )
-    if isinstance(structure[0], MBRStructureItem):
+    if isinstance(structure[0], volume.MBRStructureItem):
         # MBR partitions aren't named in sfdisk's output; look them up by
         # their 1-based position instead.
         offset = gptutil.get_partition_sector_offset_by_number(disk_path, partnum)
@@ -315,7 +310,9 @@ def _partition_geometry(
 
 
 def _setup_grub_efi(
-    image: Image, requested_grub_target: str, filesystem_mount: FilesystemMount
+    image: Image,
+    requested_grub_target: str,
+    filesystem_mount: filesystem_mounts.FilesystemMount,
 ) -> None:
     """Install GRUB for an EFI-capable (GPT/hybrid) image.
 
@@ -346,14 +343,18 @@ def _setup_grub_efi(
         boot_offset, boot_size = root_offset, root_size
     # When /boot lives on its own partition, that partition's root directory
     # *is* /boot, so paths written to it must not be prefixed with "/boot".
-    boot_prefix = PurePosixPath("") if has_separate_boot else PurePosixPath("/boot")
+    boot_prefix = (
+        pathlib.PurePosixPath("")
+        if has_separate_boot
+        else pathlib.PurePosixPath("/boot")
+    )
     _, esp_offset_sectors, _ = _partition_geometry(
         disk_path, structure, filesystem_mount, "/boot/efi"
     )
     esp_offset_bytes = esp_offset_sectors * sector
 
     with tempfile.TemporaryDirectory(prefix="imagecraft-grub-") as tmp_str:
-        tmp_dir = Path(tmp_str)
+        tmp_dir = pathlib.Path(tmp_str)
 
         # Each partition gets its own FUSE mount. They deliberately stay
         # flat: stacking a FAT-over-fusefile mount inside the fuse2fs
@@ -361,7 +362,7 @@ def _setup_grub_efi(
         # separate handles rather than a nested tree.
         with contextlib.ExitStack() as stack:
             rootfs = stack.enter_context(
-                mount_partition(
+                fusemount.mount_partition(
                     disk_path,
                     "ext4",
                     offset=root_offset * sector,
@@ -370,7 +371,7 @@ def _setup_grub_efi(
             )
             if has_separate_boot:
                 bootfs = stack.enter_context(
-                    mount_partition(
+                    fusemount.mount_partition(
                         disk_path,
                         "ext4",
                         offset=boot_offset * sector,
@@ -437,7 +438,9 @@ def _setup_grub_efi(
     emit.progress("GRUB installation complete")
 
 
-def _build_grub_image(rootfs: Path, grub_target: str, grub_fname: str) -> Path:
+def _build_grub_image(
+    rootfs: pathlib.Path, grub_target: str, grub_fname: str
+) -> pathlib.Path:
     """Build a standalone GRUB EFI binary using the image's own grub-mkimage.
 
     Running ``grub-mkimage`` inside a chroot of the mounted rootfs guarantees
@@ -462,7 +465,7 @@ def _build_grub_image(rootfs: Path, grub_target: str, grub_fname: str) -> Path:
     modules = _resolve_core_modules(modules_dir)
 
     # A fixed location inside the image's own /tmp — not a host temp file.
-    output_rel = Path("/tmp") / f"imagecraft-{grub_fname}"  # noqa: S108
+    output_rel = pathlib.Path("/tmp") / f"imagecraft-{grub_fname}"  # noqa: S108
     output_host = rootfs / output_rel.relative_to("/")
     output_host.parent.mkdir(parents=True, exist_ok=True)
 
@@ -496,7 +499,7 @@ def _build_grub_image(rootfs: Path, grub_target: str, grub_fname: str) -> Path:
     return output_host
 
 
-def _resolve_core_modules(modules_dir: Path) -> list[str]:
+def _resolve_core_modules(modules_dir: pathlib.Path) -> list[str]:
     """Close the embedded-core seed set over the image's own moddep.lst.
 
     grub-mkimage embeds only the modules passed to it; reading the dependency
@@ -541,9 +544,9 @@ def _fat_mkdir_p(spec: str, target_dir: str) -> None:
 
 
 def _write_esp_file(
-    disk_path: Path,
+    disk_path: pathlib.Path,
     esp_offset_bytes: int,
-    tmp_dir: Path,
+    tmp_dir: pathlib.Path,
     data: bytes,
     target_path: str,
 ) -> None:
@@ -555,7 +558,7 @@ def _write_esp_file(
     spec = f"{disk_path}@@{esp_offset_bytes}"
     local = tmp_dir / "esp-payload"
     local.write_bytes(data)
-    _fat_mkdir_p(spec, str(PurePosixPath(target_path).parent))
+    _fat_mkdir_p(spec, str(pathlib.PurePosixPath(target_path).parent))
     try:
         run("mcopy", "-n", "-o", "-i", spec, str(local), f"::{target_path}")
     except (subprocess.CalledProcessError, FileNotFoundError) as err:
@@ -564,7 +567,9 @@ def _write_esp_file(
         ) from err
 
 
-def _write_ext_file(rootfs: Path, data: bytes, target_path: PurePosixPath) -> None:
+def _write_ext_file(
+    rootfs: pathlib.Path, data: bytes, target_path: pathlib.PurePosixPath
+) -> None:
     """Write raw bytes into a mounted ext partition at target_path.
 
     ``target_path`` must be absolute (it is interpreted relative to rootfs's
@@ -583,7 +588,7 @@ def _write_ext_file(rootfs: Path, data: bytes, target_path: PurePosixPath) -> No
 _EXT_UUID_BYTES = 16  # Length of an ext filesystem UUID (s_uuid field).
 
 
-def _read_ext_uuid(disk_path: Path, partition_offset_bytes: int) -> str:
+def _read_ext_uuid(disk_path: pathlib.Path, partition_offset_bytes: int) -> str:
     """Return the filesystem UUID of the ext partition at the given offset.
 
     The ext2/3/4 superblock starts 1024 bytes into the filesystem, and its
@@ -602,14 +607,14 @@ def _read_ext_uuid(disk_path: Path, partition_offset_bytes: int) -> str:
 
 
 def _deploy_efi_binary(
-    disk_path: Path,
+    disk_path: pathlib.Path,
     esp_offset_bytes: int,
-    tmp_dir: Path,
-    local_binary: Path,
+    tmp_dir: pathlib.Path,
+    local_binary: pathlib.Path,
     grub_fname: str,
     fallback_fname: str,
     *,
-    signed_shim: Path | None,
+    signed_shim: pathlib.Path | None,
     shim_fname: str | None,
 ) -> None:
     """Deploy the GRUB EFI binary to both the vendor and fallback ESP paths."""
@@ -631,8 +636,8 @@ def _deploy_efi_binary(
 
 
 def _dump_signed_efi_binaries(
-    rootfs: Path, grub_target: str, dest_dir: Path
-) -> dict[str, Path] | None:
+    rootfs: pathlib.Path, grub_target: str, dest_dir: pathlib.Path
+) -> dict[str, pathlib.Path] | None:
     """Dump Ubuntu's pre-signed shim+GRUB from rootfs, if both are present.
 
     The binaries are discovered by name pattern rather than a per-architecture
@@ -688,7 +693,9 @@ def _version_sort_key(name: str) -> tuple[object, ...]:
     )
 
 
-def _find_kernels(bootfs: Path, boot_prefix: PurePosixPath) -> list[tuple[str, str]]:
+def _find_kernels(
+    bootfs: pathlib.Path, boot_prefix: pathlib.PurePosixPath
+) -> list[tuple[str, str]]:
     """Return (vmlinuz, initrd) filename pairs found under boot_prefix on bootfs.
 
     Newest kernel first, so the generated ``default=0`` entry boots it — the
@@ -714,7 +721,7 @@ def _find_kernels(bootfs: Path, boot_prefix: PurePosixPath) -> list[tuple[str, s
     ]
 
 
-def _read_grub_defaults(rootfs: Path) -> GrubDefaults:
+def _read_grub_defaults(rootfs: pathlib.Path) -> GrubDefaults:
     """Read the settings configured in ``/etc/default/grub``.
 
     ``update-grub`` is not run any more, so the settings that would have fed
@@ -769,7 +776,7 @@ def _generate_grub_cfg(
     :param boot_uuid: UUID of the partition holding ``/boot``, which GRUB
         needs to select before it can load a kernel from it. Equal to
         ``root_uuid`` unless ``/boot`` has a partition of its own.
-    :param boot_prefix: Path prefix of ``/boot`` on the boot partition.
+    :param boot_prefix: pathlib.Path prefix of ``/boot`` on the boot partition.
     :param defaults: Settings read from ``/etc/default/grub``.
     :param include_fw_setup: Add a "UEFI Firmware Settings" menu entry that
         reboots into the firmware setup UI via GRUB's ``fwsetup`` command
@@ -887,9 +894,9 @@ def _grub_install(grub_target: str, loop_dev: str) -> None:
 
 def _setup_grub_bios_chroot(
     image: Image,
-    workdir: Path,
+    workdir: pathlib.Path,
     grub_target: str,
-    filesystem_mount: FilesystemMount,
+    filesystem_mount: filesystem_mounts.FilesystemMount,
 ) -> None:
     """Install GRUB for a legacy BIOS/MBR image via a loop device and chroot.
 
@@ -910,35 +917,35 @@ def _setup_grub_bios_chroot(
                     message=f"Cannot find a partition named {partition_name}"
                 )
             image_mounts.append(
-                Mount(
+                chroot.Mount(
                     fstype=None,
                     src=f"{loop_dev}p{partnum}",
                     relative_mountpoint=entry.mount,
                 )
             )
-        mounts: list[Mount] = [
+        mounts: list[chroot.Mount] = [
             *image_mounts,
-            Mount(
+            chroot.Mount(
                 fstype="devtmpfs",
                 src="devtmpfs-build",
                 relative_mountpoint="/dev",
             ),
-            Mount(
+            chroot.Mount(
                 fstype="devpts",
                 src="devpts-build",
                 relative_mountpoint="/dev/pts",
                 options=["-o", "nodev,nosuid"],
             ),
-            Mount(fstype="proc", src="proc-build", relative_mountpoint="proc"),
-            Mount(fstype="sysfs", src="sysfs-build", relative_mountpoint="/sys"),
-            Mount(
+            chroot.Mount(fstype="proc", src="proc-build", relative_mountpoint="proc"),
+            chroot.Mount(fstype="sysfs", src="sysfs-build", relative_mountpoint="/sys"),
+            chroot.Mount(
                 fstype=None, src="/run", relative_mountpoint="/run", options=["--bind"]
             ),
         ]
-        chroot = Chroot(path=mount_dir, mounts=mounts)
+        chroot_obj = chroot.Chroot(path=mount_dir, mounts=mounts)
 
         try:
-            chroot.execute(
+            chroot_obj.execute(
                 target=_grub_install,
                 grub_target=grub_target,
                 loop_dev=loop_dev,
@@ -949,14 +956,14 @@ def _setup_grub_bios_chroot(
             emit.progress(f"Cannot install GRUB on this rootfs: {err}", permanent=True)
 
 
-def _part_num(name: str, structure: StructureList) -> int | None:
+def _part_num(name: str, structure: volume.StructureList) -> int | None:
     """Get the partition number for a given name based on its position.
 
     For MBR volumes with extended partitions (>4 entries), logical partitions
     start at 5 because slot 4 is reserved for the synthesised extended container.
     """
     needs_extended = len(structure) > mbrutil.MAX_PRIMARY_SLOTS and isinstance(
-        structure[0], MBRStructureItem
+        structure[0], volume.MBRStructureItem
     )
     for i, structure_item in enumerate(structure):
         if structure_item.name == name:
