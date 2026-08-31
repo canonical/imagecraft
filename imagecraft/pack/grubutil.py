@@ -68,16 +68,7 @@ _GRUB_BIOS_ARCHS = {DebianArchitecture.AMD64, DebianArchitecture.I386}
 
 _ROLE_MOUNT_PAIRS: list[tuple[Callable[[volume.StructureItem], bool], str]] = [
     (lambda s: s.role == volume.Role.SYSTEM_DATA, "/"),
-    (
-        lambda s: (
-            s.role == volume.Role.SYSTEM_BOOT
-            and not (
-                isinstance(s, volume.GPTStructureItem)
-                and s.structure_type == volume.GptType.EFI_SYSTEM
-            )
-        ),
-        "/boot",
-    ),
+    (lambda s: s.role == volume.Role.SYSTEM_BOOT and not _is_efi_partition(s), "/boot"),
 ]
 
 # GRUB target -> UEFI removable-media architecture token.
@@ -262,6 +253,14 @@ def _efi_filenames(
     return f"grub{uefi_arch.lower()}.efi", f"BOOT{uefi_arch}.EFI", None
 
 
+def _is_efi_partition(item: volume.StructureItem) -> bool:
+    """Return True for the EFI system partition (GPT only)."""
+    return (
+        isinstance(item, volume.GPTStructureItem)
+        and item.structure_type == volume.GptType.EFI_SYSTEM
+    )
+
+
 def _find_structure_item(
     structure: volume.StructureList,
     predicate: Callable[[volume.StructureItem], bool],
@@ -319,24 +318,14 @@ def _setup_grub_efi(
         lambda s: s.role == volume.Role.SYSTEM_DATA,
     )
     has_separate_boot = any(
-        s.role == volume.Role.SYSTEM_BOOT
-        and not (
-            isinstance(s, volume.GPTStructureItem)
-            and s.structure_type == volume.GptType.EFI_SYSTEM
-        )
+        s.role == volume.Role.SYSTEM_BOOT and not _is_efi_partition(s)
         for s in structure
     )
     if has_separate_boot:
         boot_offset, boot_size = _partition_offset_size(
             disk_path,
             structure,
-            lambda s: (
-                s.role == volume.Role.SYSTEM_BOOT
-                and not (
-                    isinstance(s, volume.GPTStructureItem)
-                    and s.structure_type == volume.GptType.EFI_SYSTEM
-                )
-            ),
+            lambda s: s.role == volume.Role.SYSTEM_BOOT and not _is_efi_partition(s),
         )
     else:
         boot_offset, boot_size = root_offset, root_size
@@ -350,10 +339,7 @@ def _setup_grub_efi(
     esp_offset, _ = _partition_offset_size(
         disk_path,
         structure,
-        lambda s: (
-            isinstance(s, volume.GPTStructureItem)
-            and s.structure_type == volume.GptType.EFI_SYSTEM
-        ),
+        _is_efi_partition,
     )
     esp_offset_bytes = esp_offset * sector
 
@@ -939,18 +925,8 @@ def _setup_grub_bios_chroot(
                 )
             )
         # EFI system partition (GPT only) is mounted at /boot/efi.
-        if any(
-            isinstance(s, volume.GPTStructureItem)
-            and s.structure_type == volume.GptType.EFI_SYSTEM
-            for s in structure
-        ):
-            item = _find_structure_item(
-                structure,
-                lambda s: (
-                    isinstance(s, volume.GPTStructureItem)
-                    and s.structure_type == volume.GptType.EFI_SYSTEM
-                ),
-            )
+        if any(_is_efi_partition(s) for s in structure):
+            item = _find_structure_item(structure, _is_efi_partition)
             partnum = _part_num(item.name, structure)
             image_mounts.append(
                 chroot.Mount(
