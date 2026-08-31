@@ -37,6 +37,7 @@ which the chroot machinery is removed entirely.
 """
 
 import contextlib
+import os
 import pathlib
 import re
 import shutil
@@ -44,7 +45,7 @@ import subprocess
 import tempfile
 import uuid
 from collections.abc import Callable
-from typing import NamedTuple, cast
+from typing import cast
 
 from craft_cli import emit
 from craft_platforms import DebianArchitecture
@@ -121,37 +122,9 @@ _EFI_CORE_MODULES = [
 # Signed shim/grub filename suffixes, in preference order.
 _SIGNED_SHIM_SUFFIXES = (".efi.signed.latest", ".efi.signed", ".efi.dualsigned")
 
-_DEFAULT_GRUB_PATH = pathlib.PurePosixPath("/etc/default/grub")
-
 # Split a filename into digit and non-digit runs, so versions compare
 # numerically rather than lexicographically.
 _VERSION_PART_RE = re.compile(r"(\d+)")
-
-# Match the shell assignments in /etc/default/grub that carry kernel
-# arguments, with an optionally quoted value. Commented-out lines are skipped.
-_GRUB_CMDLINE_RE = re.compile(
-    r"^[ \t]*(?:export[ \t]+)?"
-    r"(?P<key>GRUB_CMDLINE_LINUX(?:_DEFAULT)?|GRUB_TIMEOUT)="
-    r"""(?:"(?P<dq>[^"]*)"|'(?P<sq>[^']*)'|(?P<bare>[^\s#]*))""",
-    re.MULTILINE,
-)
-# A reference to one of the keys above, which shell would have expanded when
-# it sourced the file: `GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX foo"`.
-_GRUB_VAR_REF_RE = re.compile(r"\$\{?(GRUB_CMDLINE_LINUX(?:_DEFAULT)?|GRUB_TIMEOUT)\}?")
-# A shell line continuation, which joins the next line onto this one.
-_LINE_CONTINUATION_RE = re.compile(r"\\\n")
-
-_DEFAULT_GRUB_TIMEOUT = 5
-
-
-class GrubDefaults(NamedTuple):
-    """The subset of ``/etc/default/grub`` that the generated config honours."""
-
-    cmdline: str = ""
-    timeout: int = _DEFAULT_GRUB_TIMEOUT
-
-
-_STOCK_GRUB_DEFAULTS = GrubDefaults()
 
 
 def setup_grub(
@@ -329,13 +302,6 @@ def _setup_grub_efi(
         )
     else:
         boot_offset, boot_size = root_offset, root_size
-    # When /boot lives on its own partition, that partition's root directory
-    # *is* /boot, so paths written to it must not be prefixed with "/boot".
-    boot_prefix = (
-        pathlib.PurePosixPath("")
-        if has_separate_boot
-        else pathlib.PurePosixPath("/boot")
-    )
     esp_offset, _ = _partition_offset_size(
         disk_path,
         structure,
@@ -360,7 +326,7 @@ def _setup_grub_efi(
                 )
             )
             if has_separate_boot:
-                bootfs = stack.enter_context(
+                stack.enter_context(
                     fusemount.mount_partition(
                         disk_path,
                         "ext4",
@@ -368,8 +334,6 @@ def _setup_grub_efi(
                         size=boot_size * sector,
                     )
                 )
-            else:
-                bootfs = rootfs
             # The rootfs itself declares which GRUB modules it carries; the
             # build-for target is only a tiebreak if it carries several.
             grub_target = _discover_grub_target(rootfs, requested_grub_target)
@@ -399,33 +363,58 @@ def _setup_grub_efi(
                 # it doesn't ship in the final image.
                 local_binary.unlink(missing_ok=True)
 
-            # GRUB has to find its config and the kernels on whichever
-            # partition holds /boot, which isn't necessarily the root one.
+            # update-grub finds kernels and generates grub.cfg and the
+            # ESP stubs inside the chroot. The grub-probe stub answers
+            # its device queries from precomputed UUIDs since the
+            # FUSE mount has no block device.
             boot_uuid = _read_ext_uuid(disk_path, boot_offset * sector)
             root_uuid = _read_ext_uuid(disk_path, root_offset * sector)
-            kernels = _find_kernels(bootfs, boot_prefix)
-            emit.progress("Generating grub configuration file")
-            emit.progress("Adding boot menu entry for UEFI Firmware Settings")
-            cfg = _generate_grub_cfg(
-                kernels,
-                root_uuid,
-                boot_uuid,
-                str(boot_prefix),
-                _read_grub_defaults(rootfs),
-                include_fw_setup=True,
-            )
-            _write_ext_file(
-                bootfs,
-                cfg.encode(),
-                boot_prefix / "grub/grub.cfg",
-            )
-            stub_cfg = _efi_stub_grub_cfg(boot_uuid, str(boot_prefix)).encode()
-            for stub_path in ("/EFI/ubuntu/grub.cfg", "/EFI/BOOT/grub.cfg"):
-                _write_esp_file(
-                    disk_path, esp_offset_bytes, tmp_dir, stub_cfg, stub_path
-                )
+            _run_update_grub(rootfs, boot_uuid=boot_uuid, root_uuid=root_uuid)
 
     emit.progress("GRUB installation complete")
+
+
+_STUB_GRUB_PROBE_PATH = (
+    pathlib.Path(__file__).resolve().parents[2] / "shell" / "grub-probe-stub.sh"
+)
+
+
+def _run_update_grub(
+    rootfs: pathlib.Path,
+    *,
+    boot_uuid: str,
+    root_uuid: str,
+) -> None:
+    """Run ``update-grub`` in the image, behind a stub for ``grub-probe``.
+
+    The stub answers ``grub-probe`` queries from the pre-computed UUIDs,
+    because the mounted chroot lacks a real block device and the real
+    probe simply fails. The original ``grub-probe`` binary is saved
+    and restored after ``update-grub`` completes.
+    """
+    stub_path = rootfs / "usr/sbin/grub-probe"
+    original = stub_path.with_suffix(".grub-probe.orig")
+    if original.is_file():
+        original.unlink()
+    shutil.move(str(stub_path), str(original))
+    stub_path.write_text(_STUB_GRUB_PROBE_PATH.read_text(), encoding="utf-8")
+    stub_path.chmod(0o755)
+    env = {
+        **os.environ,
+        "IMAGECRAFT_ROOT_UUID": root_uuid,
+        "IMAGECRAFT_BOOT_UUID": boot_uuid,
+    }
+    try:
+        run("chroot", str(rootfs), "update-grub", env=env)
+    except FileNotFoundError as err:
+        raise errors.GRUBInstallError(
+            "Cannot run update-grub: chroot unavailable"
+        ) from err
+    except subprocess.CalledProcessError as err:
+        raise errors.GRUBInstallError(f"update-grub failed: {err}") from err
+    finally:
+        stub_path.unlink()
+        shutil.move(str(original), str(stub_path))
 
 
 def _build_grub_image(
@@ -680,152 +669,6 @@ def _version_sort_key(name: str) -> tuple[object, ...]:
         (1, int(part)) if part.isdigit() else (0, part)
         for part in _VERSION_PART_RE.split(name)
         if part
-    )
-
-
-def _find_kernels(
-    bootfs: pathlib.Path, boot_prefix: pathlib.PurePosixPath
-) -> list[tuple[str, str]]:
-    """Return (vmlinuz, initrd) filename pairs found under boot_prefix on bootfs.
-
-    Newest kernel first, so the generated ``default=0`` entry boots it — the
-    same ordering ``update-grub`` produces.
-    """
-    search_dir = bootfs / boot_prefix.relative_to("/")
-    if not search_dir.is_dir():
-        return []
-    names = {entry.name for entry in search_dir.iterdir()}
-    vmlinuzes = sorted(
-        (n for n in names if n.startswith("vmlinuz-")),
-        key=_version_sort_key,
-        reverse=True,
-    )
-    return [
-        (
-            v,
-            initrd
-            if (initrd := f"initrd.img-{v.removeprefix('vmlinuz-')}") in names
-            else "",
-        )
-        for v in vmlinuzes
-    ]
-
-
-def _read_grub_defaults(rootfs: pathlib.Path) -> GrubDefaults:
-    """Read the settings configured in ``/etc/default/grub``.
-
-    ``update-grub`` is not run any more, so the settings that would have fed
-    the generated menu entries have to be honoured here instead. Mirrors
-    stock ``/etc/grub.d/10_linux``, which appends ``GRUB_CMDLINE_LINUX``
-    followed by ``GRUB_CMDLINE_LINUX_DEFAULT`` to the default entry.
-    """
-    defaults_file = rootfs / _DEFAULT_GRUB_PATH.relative_to("/")
-    if not defaults_file.is_file():
-        return GrubDefaults()
-    content = defaults_file.read_text(encoding="utf-8", errors="replace")
-
-    values: dict[str, str] = {}
-    # Shell joins continuation lines before assigning, and collapsing the
-    # result keeps a value that spanned lines from breaking the generated
-    # config, whose `linux` directive has to stay on one line.
-    for match in _GRUB_CMDLINE_RE.finditer(_LINE_CONTINUATION_RE.sub(" ", content)):
-        raw = match.group("dq") or match.group("sq") or match.group("bare") or ""
-        if match.group("sq") is None:
-            # Single quotes suppress expansion; anything else expands, and an
-            # undefined variable expands to nothing, as it would in shell.
-            raw = _GRUB_VAR_REF_RE.sub(lambda m: values.get(m.group(1), ""), raw)
-        values[match.group("key")] = " ".join(raw.split())
-
-    cmdline = " ".join(
-        filter(
-            None,
-            [
-                values.get("GRUB_CMDLINE_LINUX"),
-                values.get("GRUB_CMDLINE_LINUX_DEFAULT"),
-            ],
-        )
-    )
-    timeout = _DEFAULT_GRUB_TIMEOUT
-    with contextlib.suppress(ValueError, KeyError):
-        timeout = int(values["GRUB_TIMEOUT"])
-    return GrubDefaults(cmdline=cmdline, timeout=timeout)
-
-
-def _generate_grub_cfg(
-    kernels: list[tuple[str, str]],
-    root_uuid: str,
-    boot_uuid: str,
-    boot_prefix: str,
-    defaults: GrubDefaults = _STOCK_GRUB_DEFAULTS,
-    *,
-    include_fw_setup: bool = False,
-) -> str:
-    """Hand-generate a minimal grub.cfg with a menu entry per kernel found.
-
-    ``grub-mkconfig`` is unusable here, so the config is produced in Python:
-    ``/etc/grub.d/*`` scripts call ``grub-probe``, which requires a real block
-    device that the FUSE mounts in use cannot provide, and ``update-grub`` is
-    only a wrapper. Strings like ``root=UUID=...`` and the ``search --fs-uuid``
-    prefix selection come straight from the image bytes (``_read_ext_uuid``),
-    so the result matches what ``update-grub`` would produce without needing
-    any loop devices in the build environment.
-
-    :param root_uuid: UUID of the partition to boot as ``/``.
-    :param boot_uuid: UUID of the partition holding ``/boot``, which GRUB
-        needs to select before it can load a kernel from it. Equal to
-        ``root_uuid`` unless ``/boot`` has a partition of its own.
-    :param boot_prefix: pathlib.Path prefix of ``/boot`` on the boot partition.
-    :param defaults: Settings read from ``/etc/default/grub``.
-    :param include_fw_setup: Add a "UEFI Firmware Settings" menu entry that
-        reboots into the firmware setup UI via GRUB's ``fwsetup`` command
-        (mirrors what stock Ubuntu's ``/etc/grub.d/30_uefi-firmware`` script
-        generates). Only meaningful/available on EFI-booted systems.
-    """
-    lines = [
-        "set default=0",
-        f"set timeout={defaults.timeout}",
-        "insmod part_gpt",
-        "insmod part_msdos",
-        "insmod ext2",
-        f"search --no-floppy --fs-uuid --set=root {boot_uuid}",
-        "",
-    ]
-    extra = f" {defaults.cmdline}" if defaults.cmdline else ""
-    for vmlinuz, initrd in kernels:
-        lines.extend(
-            [
-                f'menuentry "{vmlinuz}" {{',
-                f"\tlinux {boot_prefix}/{vmlinuz} root=UUID={root_uuid} ro{extra}",
-                *([f"\tinitrd {boot_prefix}/{initrd}"] if initrd else []),
-                "}",
-            ]
-        )
-    if include_fw_setup:
-        lines.extend(
-            [
-                'if [ "${grub_platform}" = "efi" ]; then',
-                "\tmenuentry 'UEFI Firmware Settings' {",
-                "\t\tfwsetup",
-                "\t}",
-                "fi",
-            ]
-        )
-    return "\n".join(lines) + "\n"
-
-
-def _efi_stub_grub_cfg(boot_uuid: str, boot_prefix: str) -> str:
-    """Build the tiny loader config placed on the ESP that chains to the real config."""
-    return (
-        "\n".join(
-            [
-                "insmod part_gpt",
-                "insmod ext2",
-                f"search.fs_uuid {boot_uuid} root",
-                f"set prefix=($root)'{boot_prefix}/grub'",
-                "configfile $prefix/grub.cfg",
-            ]
-        )
-        + "\n"
     )
 
 
