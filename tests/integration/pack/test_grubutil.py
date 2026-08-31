@@ -57,16 +57,19 @@ def _require_fuse_tools():
 _ARCH_TO_EFI: dict[str, tuple[str, str, str]] = {
     "x86_64": ("x86_64-efi", "grubx64.efi", "shimx64.efi"),
     "aarch64": ("arm64-efi", "grubaa64.efi", "shimaa64.efi"),
+    "riscv64": ("riscv64-efi", "grubriscv64.efi", "shimriscv64.efi"),
 }
 # Architecture mapping: host arch -> DebianArchitecture for setup_grub
 _ARCH_TO_DEBIAN: dict[str, str] = {
     "x86_64": "amd64",
     "aarch64": "arm64",
+    "riscv64": "riscv64",
 }
 # Grub target -> ESP fallback binary filename (8.3 format).
 _EFI_FALLBACK_FILENAMES: dict[str, str] = {
     "x86_64-efi": "BOOTX64.EFI",
     "arm64-efi": "BOOTAA64.EFI",
+    "riscv64-efi": "BOOTRISCV64.EFI",
 }
 
 

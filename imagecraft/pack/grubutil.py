@@ -65,6 +65,7 @@ _ARCH_TO_GRUB_EFI_TARGET: dict[str, str] = {
     DebianArchitecture.AMD64: "x86_64-efi",
     DebianArchitecture.ARM64: "arm64-efi",
     DebianArchitecture.ARMHF: "arm-efi",
+    DebianArchitecture.RISCV64: "riscv64-efi",
 }
 
 _GRUB_BIOS_TARGET = "i386-pc"
@@ -84,11 +85,16 @@ _GRUB_TARGET_TO_UEFI_ARCH: dict[str, str] = {
     "x86_64-efi": "X64",
     "arm64-efi": "AA64",
     "arm-efi": "ARM",
+    "riscv64-efi": "RISCV64",
 }
 
-# Core modules embedded into the standalone GRUB EFI image so it can find
-# and load the rest of GRUB (partition tables, filesystems, search-by-UUID).
+# Seed modules embedded into the standalone GRUB EFI image. ``grub-mkimage``
+# only embeds the names passed to it, so every module the generated grub.cfg
+# references (plus graphics/compression support the stock scripts rely on)
+# must be seeded here; the full set is then computed as the transitive
+# closure over the image's own moddep.lst — not a brittle hardcoded list.
 _EFI_CORE_MODULES = [
+    # Referenced by the generated grub.cfg / ESP stub.
     "part_gpt",
     "part_msdos",
     "fat",
@@ -104,11 +110,11 @@ _EFI_CORE_MODULES = [
     "echo",
     "loadenv",
     "test",
-    "efi_gop",
     "gfxterm",
     "font",
-    # Ubuntu's 10_linux always emits "insmod gzio"; compressed kernels and
-    # initrds are unreadable without it.
+    "efi_gop",
+    # Compressed kernels and initrds are unreadable without gzio, even though
+    # no script here emits it (in stock Ubuntu, /etc/grub.d/10_linux does).
     "gzio",
 ]
 
@@ -447,6 +453,11 @@ def _build_grub_image(rootfs: Path, grub_target: str, grub_fname: str) -> Path:
             message=f"GRUB modules for {grub_target} are not installed in the image"
         )
 
+    # Compute the full embedded-module set as the closure over the image's
+    # own dependency manifest rather than relying on a fixed list that would
+    # have to be maintained per GRUB version.
+    modules = _resolve_core_modules(modules_dir)
+
     # A fixed location inside the image's own /tmp — not a host temp file.
     output_rel = Path("/tmp") / f"imagecraft-{grub_fname}"  # noqa: S108
     output_host = rootfs / output_rel.relative_to("/")
@@ -467,7 +478,7 @@ def _build_grub_image(rootfs: Path, grub_target: str, grub_fname: str) -> Path:
             grub_target,
             "-p",
             "/EFI/ubuntu",
-            *_EFI_CORE_MODULES,
+            *modules,
             stderr=subprocess.STDOUT,
         )
     except FileNotFoundError as err:
@@ -480,6 +491,35 @@ def _build_grub_image(rootfs: Path, grub_target: str, grub_fname: str) -> Path:
         ) from err
 
     return output_host
+
+
+def _resolve_core_modules(modules_dir: Path) -> list[str]:
+    """Close the embedded-core seed set over the image's own moddep.lst.
+
+    grub-mkimage embeds only the modules passed to it; reading the dependency
+    manifest shipped with the image guarantees the complete transitive set is
+    embedded no matter which GRUB version the image carries. If moddep.lst is
+    unavailable (only happens on hand-rolled trees), fall back to the seeds.
+    """
+    moddep_path = modules_dir / "moddep.lst"
+    deps: dict[str, list[str]] = {}
+    if moddep_path.is_file():
+        for line in moddep_path.read_text(encoding="utf-8").splitlines():
+            name, sep, rest = line.partition(":")
+            if sep:
+                deps[name.strip()] = rest.split()
+
+    seen: set[str] = set()
+    stack = list(_EFI_CORE_MODULES)
+    while stack:
+        mod = stack.pop()
+        if mod in seen:
+            continue
+        seen.add(mod)
+        stack.extend(deps.get(mod, []))
+
+    # Deterministic order keeps the resulting image byte-for-byte stable.
+    return sorted(seen)
 
 
 def _fat_mkdir_p(spec: str, target_dir: str) -> None:

@@ -748,6 +748,7 @@ def test_discover_grub_target_ignores_signed_dirs(tmp_path):
         ("x86_64-efi", "X64"),
         ("arm64-efi", "AA64"),
         ("arm-efi", "ARM"),
+        ("riscv64-efi", "RISCV64"),
     ],
 )
 def test_uefi_arch_token(target, expected):
@@ -755,8 +756,8 @@ def test_uefi_arch_token(target, expected):
 
 
 def test_uefi_arch_token_unknown():
-    with pytest.raises(errors.GRUBInstallError, match="riscv64-efi"):
-        grubutil._uefi_arch_token("riscv64-efi")
+    with pytest.raises(errors.GRUBInstallError, match="ppc64el-efi"):
+        grubutil._uefi_arch_token("ppc64el-efi")
 
 
 @pytest.mark.parametrize(
@@ -771,3 +772,36 @@ def test_uefi_arch_token_unknown():
 )
 def test_unsigned_shim_name(signed_name, expected):
     assert grubutil._unsigned_shim_name(signed_name) == expected
+
+
+def test_resolve_core_modules_closure(tmp_path):
+    """moddep.lst drives the transitive closure and the result is deterministic."""
+    modules_dir = tmp_path / "modules"
+    modules_dir.mkdir(parents=True)
+    (modules_dir / "moddep.lst").write_text(
+        "boot: video\n"
+        "linux: boot relocator mmap\n"
+        "search_fs_uuid:\n"
+        "gfxterm: video font\n"
+    )
+
+    modules = grubutil._resolve_core_modules(modules_dir)
+
+    assert modules == sorted(modules)
+    assert set(modules) == {
+        *grubutil._EFI_CORE_MODULES,
+        # Resolved from moddep.lst:
+        "video",
+        "relocator",
+        "mmap",
+    }
+
+
+def test_resolve_core_modules_without_moddep(tmp_path):
+    """Missing moddep.lst (hand-rolled tree) falls back to the seed modules."""
+    modules_dir = tmp_path / "modules"
+    modules_dir.mkdir(parents=True)
+
+    assert grubutil._resolve_core_modules(modules_dir) == sorted(
+        grubutil._EFI_CORE_MODULES
+    )
