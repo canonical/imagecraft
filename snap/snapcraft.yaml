@@ -91,9 +91,9 @@ parts:
       "usr/bin/mtools": "libexec/imagecraft/mtools"
       "usr/bin/dd": "libexec/imagecraft/dd"
       "usr/bin/truncate": "libexec/imagecraft/truncate"
-      "usr/sbin/fuse2fs": "libexec/imagecraft/fuse2fs"
+      "usr/bin/fuse2fs": "libexec/imagecraft/fuse2fs"
       "usr/sbin/fusefile": "libexec/imagecraft/fusefile"
-      "usr/bin/fusermount3": "libexec/imagecraft/fusermount3"
+      "bin/fusermount3": "libexec/imagecraft/fusermount3"
       "usr/sbin/mkfs*": "libexec/imagecraft/"
       "usr/bin/grub-mkimage": "libexec/imagecraft/grub-mkimage"
   # Build fusefat 0.4 from source because the archive only provides it on amd64 in Noble.

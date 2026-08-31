@@ -27,7 +27,6 @@ from pathlib import Path
 
 import pytest
 from craft_parts.filesystem_mounts import FilesystemMount
-from craft_platforms import DebianArchitecture
 from imagecraft import errors
 from imagecraft.models.volume import (
     GPTStructureItem,
@@ -52,6 +51,77 @@ def _require_fuse_tools():
             "Missing required tool(s) for grubutil integration tests: "
             f"{', '.join(missing)}"
         )
+
+
+# Architecture mapping: host arch -> (grub_target, grub_fname, shim_fname)
+_ARCH_TO_EFI: dict[str, tuple[str, str, str]] = {
+    "x86_64": ("x86_64-efi", "grubx64.efi", "shimx64.efi"),
+    "aarch64": ("arm64-efi", "grubaa64.efi", "shimaa64.efi"),
+}
+# Architecture mapping: host arch -> DebianArchitecture for setup_grub
+_ARCH_TO_DEBIAN: dict[str, str] = {
+    "x86_64": "amd64",
+    "aarch64": "arm64",
+}
+# Grub target -> ESP fallback binary filename (8.3 format).
+_EFI_FALLBACK_FILENAMES: dict[str, str] = {
+    "x86_64-efi": "BOOTX64.EFI",
+    "arm64-efi": "BOOTAA64.EFI",
+}
+
+
+def _host_arch() -> str:
+    return subprocess.run(
+        ["uname", "-m"], capture_output=True, text=True, check=True
+    ).stdout.strip()
+
+
+def _host_grub_target() -> str:
+    return _ARCH_TO_EFI[_host_arch()][0]
+
+
+def _host_grub_fname() -> str:
+    return _ARCH_TO_EFI[_host_arch()][1]
+
+
+def _host_shim_fname() -> str:
+    return _ARCH_TO_EFI[_host_arch()][2]
+
+
+def _host_debian_arch() -> str:
+    return _ARCH_TO_DEBIAN[_host_arch()]
+
+
+@pytest.fixture
+def grub_target() -> str:
+    """Skip if host grub modules are not installed for this architecture."""
+    target = _host_grub_target()
+    if not Path(f"/usr/lib/grub/{target}").is_dir():
+        pytest.skip(f"Host grub modules not installed: /usr/lib/grub/{target}")
+    return target
+
+
+@pytest.fixture
+def grub_fname() -> str:
+    return _host_grub_fname()
+
+
+@pytest.fixture
+def signed_shim_path() -> Path:
+    """Skip if signed shim is not installed for the host architecture."""
+    path = Path(f"/usr/lib/shim/{_host_shim_fname()}.signed.latest")
+    if not path.is_file():
+        pytest.skip(f"Signed shim not installed: {path}")
+    return path
+
+
+@pytest.fixture
+def signed_grub_path(grub_target: str) -> Path:
+    """Skip if signed grub is not installed for the host architecture."""
+    path = Path(f"/usr/lib/grub/{grub_target}-signed/{_host_grub_fname()}.signed")
+    if not path.is_file():
+        pytest.skip(f"Signed grub not installed: {path}")
+    return path
 
 
 def _copy_grub_target_files(src_dir: Path, dest_dir: Path) -> None:
@@ -243,23 +313,23 @@ def _make_standard_gpt_image(
 @pytest.mark.slow
 @pytest.mark.requires_root
 @pytest.mark.usefixtures("new_dir")
-def test_setup_grub_efi_signed(new_dir, fake_kernel_files):
+def test_setup_grub_efi_signed(
+    new_dir, fake_kernel_files, grub_target, grub_fname, signed_shim_path, signed_grub_path
+):
     """Signed shim+GRUB, when present in the rootfs, are deployed as-is."""
     tmp_path = Path(new_dir)
     root_content = tmp_path / "root_content"
     _copy_grub_target_files(
-        Path("/usr/lib/grub/x86_64-efi"), root_content / "usr/lib/grub/x86_64-efi"
+        Path(f"/usr/lib/grub/{grub_target}"),
+        root_content / f"usr/lib/grub/{grub_target}",
     )
-    signed_grub = Path("/usr/lib/grub/x86_64-efi-signed/grubx64.efi.signed")
-    signed_shim = Path("/usr/lib/shim/shimx64.efi.signed.latest")
-    if not (signed_grub.is_file() and signed_shim.is_file()):
-        pytest.skip("signed shim/grub not installed on this system")
-    (root_content / "usr/lib/grub/x86_64-efi-signed").mkdir(parents=True)
+    (root_content / f"usr/lib/grub/{grub_target}-signed").mkdir(parents=True)
     shutil.copy2(
-        signed_grub, root_content / "usr/lib/grub/x86_64-efi-signed/grubx64.efi.signed"
+        signed_grub_path,
+        root_content / f"usr/lib/grub/{grub_target}-signed/{grub_fname}.signed",
     )
     (root_content / "usr/lib/shim").mkdir(parents=True)
-    shutil.copy2(signed_shim, root_content / "usr/lib/shim/shimx64.efi.signed.latest")
+    shutil.copy2(signed_shim_path, root_content / f"usr/lib/shim/{signed_shim_path.name}")
     fake_kernel_files(root_content / "boot")
 
     image, filesystem_mount = _make_standard_gpt_image(
@@ -269,18 +339,22 @@ def test_setup_grub_efi_signed(new_dir, fake_kernel_files):
     grubutil.setup_grub(
         image=image,
         workdir=tmp_path / "work",
-        arch=DebianArchitecture.AMD64,
+        arch=_host_debian_arch(),
         filesystem_mount=filesystem_mount,
     )
 
+    grub_basename = grub_fname.removesuffix(".efi")
+    shim_basename = signed_shim_path.name.removesuffix(".efi.signed.latest")
+    fallback = _EFI_FALLBACK_FILENAMES[grub_target]
+
     ubuntu = _esp_mdir(image.disk_path, "/EFI/ubuntu")
-    assert "grubx64" in ubuntu
-    assert "shimx64" in ubuntu
+    assert grub_basename in ubuntu
+    assert shim_basename in ubuntu
     boot = _esp_mdir(image.disk_path, "/EFI/BOOT")
     # Shim chainloads grub from beside itself, so the removable path
     # needs its own copy for the fallback boot to work.
-    assert "BOOTX64" in boot
-    assert "grubx64" in boot
+    assert fallback.removesuffix(".EFI") in boot
+    assert grub_basename in boot
 
     with _mount_ext_partition(image.disk_path, "rootfs") as rootfs:
         cfg = (rootfs / "boot/grub/grub.cfg").read_text()
@@ -292,13 +366,14 @@ def test_setup_grub_efi_signed(new_dir, fake_kernel_files):
 @pytest.mark.requires_root
 @pytest.mark.usefixtures("new_dir")
 def test_setup_grub_efi_unsigned_requires_grub_mkimage_in_image(
-    new_dir, fake_kernel_files
+    new_dir, fake_kernel_files, grub_target
 ):
     """The in-image grub-mkimage is required; modules alone do not suffice."""
     tmp_path = Path(new_dir)
     root_content = tmp_path / "root_content"
     _copy_grub_target_files(
-        Path("/usr/lib/grub/x86_64-efi"), root_content / "usr/lib/grub/x86_64-efi"
+        Path(f"/usr/lib/grub/{grub_target}"),
+        root_content / f"usr/lib/grub/{grub_target}",
     )
     fake_kernel_files(root_content / "boot")
     image, filesystem_mount = _make_standard_gpt_image(
@@ -309,7 +384,7 @@ def test_setup_grub_efi_unsigned_requires_grub_mkimage_in_image(
         grubutil.setup_grub(
             image=image,
             workdir=tmp_path / "work",
-            arch=DebianArchitecture.AMD64,
+            arch=_host_debian_arch(),
             filesystem_mount=filesystem_mount,
         )
 
@@ -317,7 +392,9 @@ def test_setup_grub_efi_unsigned_requires_grub_mkimage_in_image(
 @pytest.mark.slow
 @pytest.mark.requires_root
 @pytest.mark.usefixtures("new_dir")
-def test_setup_grub_efi_skips_without_grub_modules(new_dir, fake_kernel_files, emitter):
+def test_setup_grub_efi_skips_without_grub_modules(
+    new_dir, fake_kernel_files, emitter, grub_target
+):
     """A rootfs with no GRUB package installed gets no bootloader, not an error."""
     tmp_path = Path(new_dir)
     root_content = tmp_path / "root_content"
@@ -329,12 +406,12 @@ def test_setup_grub_efi_skips_without_grub_modules(new_dir, fake_kernel_files, e
     grubutil.setup_grub(
         image=image,
         workdir=tmp_path / "work",
-        arch=DebianArchitecture.AMD64,
+        arch=_host_debian_arch(),
         filesystem_mount=filesystem_mount,
     )
 
     emitter.assert_progress(
-        "Cannot install GRUB on this rootfs: GRUB modules for x86_64-efi "
+        f"Cannot install GRUB on this rootfs: GRUB modules for {grub_target} "
         "are not installed in the image",
         permanent=True,
     )
@@ -343,12 +420,13 @@ def test_setup_grub_efi_skips_without_grub_modules(new_dir, fake_kernel_files, e
 @pytest.mark.slow
 @pytest.mark.requires_root
 @pytest.mark.usefixtures("new_dir")
-def test_setup_grub_efi_unsigned(new_dir, fake_kernel_files):
+def test_setup_grub_efi_unsigned(new_dir, fake_kernel_files, grub_target, grub_fname):
     """Without signed shim/GRUB, an unsigned standalone image is built."""
     tmp_path = Path(new_dir)
     root_content = tmp_path / "root_content"
     _copy_grub_target_files(
-        Path("/usr/lib/grub/x86_64-efi"), root_content / "usr/lib/grub/x86_64-efi"
+        Path(f"/usr/lib/grub/{grub_target}"),
+        root_content / f"usr/lib/grub/{grub_target}",
     )
     _copy_grub_mkimage(root_content)
     fake_kernel_files(root_content / "boot")
@@ -363,31 +441,35 @@ def test_setup_grub_efi_unsigned(new_dir, fake_kernel_files):
     grubutil.setup_grub(
         image=image,
         workdir=tmp_path / "work",
-        arch=DebianArchitecture.AMD64,
+        arch=_host_debian_arch(),
         filesystem_mount=filesystem_mount,
     )
 
+    grub_basename = grub_fname.removesuffix(".efi")
     ubuntu = _esp_mdir(image.disk_path, "/EFI/ubuntu")
-    assert "grubx64" in ubuntu
+    assert grub_basename in ubuntu
     # No signed shim was available, so no shim binary should be deployed.
-    assert "shimx64" not in ubuntu
+    assert "shim" not in ubuntu
 
     with _mount_ext_partition(image.disk_path, "rootfs") as rootfs:
         cfg = (rootfs / "boot/grub/grub.cfg").read_text()
         assert "console=ttyS0,115200n8" in cfg
         # The temporary in-image build output must not ship in the final image.
-        assert not (rootfs / "tmp/imagecraft-grubx64.efi").exists()
+        assert not (rootfs / f"tmp/imagecraft-{grub_fname}").exists()
 
 
 @pytest.mark.slow
 @pytest.mark.requires_root
 @pytest.mark.usefixtures("new_dir")
-def test_setup_grub_efi_separate_boot_partition(new_dir, fake_kernel_files):
+def test_setup_grub_efi_separate_boot_partition(
+    new_dir, fake_kernel_files, grub_target
+):
     """With a dedicated /boot partition, its root (not /boot/...) holds GRUB/kernels."""
     tmp_path = Path(new_dir)
     root_content = tmp_path / "root_content"
     _copy_grub_target_files(
-        Path("/usr/lib/grub/x86_64-efi"), root_content / "usr/lib/grub/x86_64-efi"
+        Path(f"/usr/lib/grub/{grub_target}"),
+        root_content / f"usr/lib/grub/{grub_target}",
     )
     _copy_grub_mkimage(root_content)
     boot_content = tmp_path / "boot_content"
@@ -403,7 +485,7 @@ def test_setup_grub_efi_separate_boot_partition(new_dir, fake_kernel_files):
     grubutil.setup_grub(
         image=image,
         workdir=tmp_path / "work",
-        arch=DebianArchitecture.AMD64,
+        arch=_host_debian_arch(),
         filesystem_mount=filesystem_mount,
     )
 
