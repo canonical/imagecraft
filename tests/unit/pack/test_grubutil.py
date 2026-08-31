@@ -24,7 +24,7 @@ by ``tests/integration/pack/test_grubutil.py``.
 """
 
 import shutil
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import cast
 from unittest.mock import MagicMock
 
@@ -655,7 +655,7 @@ def test_find_kernels_orders_newest_first(tmp_path):
     ):
         (boot_dir / name).write_bytes(b"k")
 
-    kernels = grubutil._find_kernels(tmp_path, "/boot")
+    kernels = grubutil._find_kernels(tmp_path, PurePosixPath("/boot"))
 
     assert kernels == [
         ("vmlinuz-6.11.0-1-generic", ""),

@@ -121,7 +121,7 @@ _EFI_CORE_MODULES = [
 # Signed shim/grub filename suffixes, in preference order.
 _SIGNED_SHIM_SUFFIXES = (".efi.signed.latest", ".efi.signed", ".efi.dualsigned")
 
-_DEFAULT_GRUB_PATH = "/etc/default/grub"
+_DEFAULT_GRUB_PATH = PurePosixPath("/etc/default/grub")
 
 # Split a filename into digit and non-digit runs, so versions compare
 # numerically rather than lexicographically.
@@ -346,7 +346,7 @@ def _setup_grub_efi(
         boot_offset, boot_size = root_offset, root_size
     # When /boot lives on its own partition, that partition's root directory
     # *is* /boot, so paths written to it must not be prefixed with "/boot".
-    boot_prefix = "" if has_separate_boot else "/boot"
+    boot_prefix = PurePosixPath("") if has_separate_boot else PurePosixPath("/boot")
     _, esp_offset_sectors, _ = _partition_geometry(
         disk_path, structure, filesystem_mount, "/boot/efi"
     )
@@ -419,13 +419,16 @@ def _setup_grub_efi(
                 kernels,
                 root_uuid,
                 boot_uuid,
-                boot_prefix,
+                str(boot_prefix),
                 _read_grub_defaults(rootfs),
                 include_fw_setup=True,
             )
-            _write_ext_file(bootfs, cfg.encode(), f"{boot_prefix}/grub/grub.cfg")
-
-            stub_cfg = _efi_stub_grub_cfg(boot_uuid, boot_prefix).encode()
+            _write_ext_file(
+                bootfs,
+                cfg.encode(),
+                boot_prefix / "grub/grub.cfg",
+            )
+            stub_cfg = _efi_stub_grub_cfg(boot_uuid, str(boot_prefix)).encode()
             for stub_path in ("/EFI/ubuntu/grub.cfg", "/EFI/BOOT/grub.cfg"):
                 _write_esp_file(
                     disk_path, esp_offset_bytes, tmp_dir, stub_cfg, stub_path
@@ -561,9 +564,13 @@ def _write_esp_file(
         ) from err
 
 
-def _write_ext_file(rootfs: Path, data: bytes, target_path: str) -> None:
-    """Write raw bytes into a mounted ext partition at target_path."""
-    dest = rootfs / target_path.lstrip("/")
+def _write_ext_file(rootfs: Path, data: bytes, target_path: PurePosixPath) -> None:
+    """Write raw bytes into a mounted ext partition at target_path.
+
+    ``target_path`` must be absolute (it is interpreted relative to rootfs's
+    own root), matching how the ESP helpers treat their target strings.
+    """
+    dest = rootfs / target_path.relative_to("/")
     try:
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_bytes(data)
@@ -681,13 +688,13 @@ def _version_sort_key(name: str) -> tuple[object, ...]:
     )
 
 
-def _find_kernels(bootfs: Path, boot_prefix: str) -> list[tuple[str, str]]:
+def _find_kernels(bootfs: Path, boot_prefix: PurePosixPath) -> list[tuple[str, str]]:
     """Return (vmlinuz, initrd) filename pairs found under boot_prefix on bootfs.
 
     Newest kernel first, so the generated ``default=0`` entry boots it — the
     same ordering ``update-grub`` produces.
     """
-    search_dir = bootfs / boot_prefix.lstrip("/")
+    search_dir = bootfs / boot_prefix.relative_to("/")
     if not search_dir.is_dir():
         return []
     names = {entry.name for entry in search_dir.iterdir()}
@@ -715,7 +722,7 @@ def _read_grub_defaults(rootfs: Path) -> GrubDefaults:
     stock ``/etc/grub.d/10_linux``, which appends ``GRUB_CMDLINE_LINUX``
     followed by ``GRUB_CMDLINE_LINUX_DEFAULT`` to the default entry.
     """
-    defaults_file = rootfs / _DEFAULT_GRUB_PATH.lstrip("/")
+    defaults_file = rootfs / _DEFAULT_GRUB_PATH.relative_to("/")
     if not defaults_file.is_file():
         return GrubDefaults()
     content = defaults_file.read_text(encoding="utf-8", errors="replace")
