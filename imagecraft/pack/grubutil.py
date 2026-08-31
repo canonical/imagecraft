@@ -772,6 +772,14 @@ def _generate_grub_cfg(
 ) -> str:
     """Hand-generate a minimal grub.cfg with a menu entry per kernel found.
 
+    ``grub-mkconfig`` is unusable here, so the config is produced in Python:
+    ``/etc/grub.d/*`` scripts call ``grub-probe``, which requires a real block
+    device that the FUSE mounts in use cannot provide, and ``update-grub`` is
+    only a wrapper. Strings like ``root=UUID=...`` and the ``search --fs-uuid``
+    prefix selection come straight from the image bytes (``_read_ext_uuid``),
+    so the result matches what ``update-grub`` would produce without needing
+    any loop devices in the build environment.
+
     :param root_uuid: UUID of the partition to boot as ``/``.
     :param boot_uuid: UUID of the partition holding ``/boot``, which GRUB
         needs to select before it can load a kernel from it. Equal to
