@@ -379,6 +379,26 @@ _STUB_GRUB_PROBE_PATH = (
 )
 
 
+@contextlib.contextmanager
+def _substitute_grub_probe(rootfs: pathlib.Path) -> None:
+    """Replace ``/usr/sbin/grub-probe`` with the stub for the duration.
+
+    The original binary is saved at ``<stub>.imagecraft.bak`` and restored
+    afterward, even if an exception is raised.
+    """
+    stub_path = rootfs / "usr/sbin/grub-probe"
+    original = stub_path.with_suffix(".imagecraft.bak")
+    original.unlink(missing_ok=True)
+    shutil.move(str(stub_path), str(original))
+    stub_path.write_text(_STUB_GRUB_PROBE_PATH.read_text(), encoding="utf-8")
+    stub_path.chmod(0o755)
+    try:
+        yield
+    finally:
+        stub_path.unlink()
+        shutil.move(str(original), str(stub_path))
+
+
 def _run_update_grub(
     rootfs: pathlib.Path,
     *,
@@ -389,32 +409,22 @@ def _run_update_grub(
 
     The stub answers ``grub-probe`` queries from the pre-computed UUIDs,
     because the mounted chroot lacks a real block device and the real
-    probe simply fails. The original ``grub-probe`` binary is saved
-    and restored after ``update-grub`` completes.
+    probe simply fails.
     """
-    stub_path = rootfs / "usr/sbin/grub-probe"
-    original = stub_path.with_suffix(".grub-probe.orig")
-    if original.is_file():
-        original.unlink()
-    shutil.move(str(stub_path), str(original))
-    stub_path.write_text(_STUB_GRUB_PROBE_PATH.read_text(), encoding="utf-8")
-    stub_path.chmod(0o755)
     env = {
         **os.environ,
         "IMAGECRAFT_ROOT_UUID": root_uuid,
         "IMAGECRAFT_BOOT_UUID": boot_uuid,
     }
     try:
-        run("chroot", str(rootfs), "update-grub", env=env)
+        with _substitute_grub_probe(rootfs):
+            run("chroot", str(rootfs), "update-grub", env=env)
     except FileNotFoundError as err:
         raise errors.GRUBInstallError(
             "Cannot run update-grub: chroot unavailable"
         ) from err
     except subprocess.CalledProcessError as err:
         raise errors.GRUBInstallError(f"update-grub failed: {err}") from err
-    finally:
-        stub_path.unlink()
-        shutil.move(str(original), str(stub_path))
 
 
 def _build_grub_image(
