@@ -236,20 +236,6 @@ def _discover_grub_target(rootfs: pathlib.Path, build_for_target: str) -> str:
     )
 
 
-def _uefi_arch_token(grub_target: str) -> str:
-    """Return the UEFI removable-media arch token for a GRUB target.
-
-    :raises errors.GRUBInstallError: If the target has no known token.
-    """
-    try:
-        return _GRUB_TARGET_TO_UEFI_ARCH[grub_target]
-    except KeyError:
-        raise errors.GRUBInstallError(
-            f"Cannot name the EFI fallback binary for {grub_target}: "
-            "no UEFI arch token is known for it"
-        ) from None
-
-
 def _unsigned_shim_name(signed_name: str) -> str:
     """Strip the signing suffix from a shim filename (``shimx64.efi.signed`` -> ``shimx64.efi``)."""
     for suffix in _SIGNED_SHIM_SUFFIXES:
@@ -272,7 +258,7 @@ def _efi_filenames(
         shim_fname = _unsigned_shim_name(signed["shim"].name)
         uefi_arch = shim_fname.removeprefix("shim").removesuffix(".efi")
         return grub_fname, f"BOOT{uefi_arch.upper()}.EFI", shim_fname
-    uefi_arch = _uefi_arch_token(grub_target)
+    uefi_arch = _GRUB_TARGET_TO_UEFI_ARCH[grub_target]
     return f"grub{uefi_arch.lower()}.efi", f"BOOT{uefi_arch}.EFI", None
 
 

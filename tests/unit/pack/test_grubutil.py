@@ -665,24 +665,6 @@ def test_discover_grub_target_ignores_signed_dirs(tmp_path):
 
 
 @pytest.mark.parametrize(
-    ("target", "expected"),
-    [
-        ("x86_64-efi", "X64"),
-        ("arm64-efi", "AA64"),
-        ("arm-efi", "ARM"),
-        ("riscv64-efi", "RISCV64"),
-    ],
-)
-def test_uefi_arch_token(target, expected):
-    assert grubutil._uefi_arch_token(target) == expected
-
-
-def test_uefi_arch_token_unknown():
-    with pytest.raises(errors.GRUBInstallError, match="ppc64el-efi"):
-        grubutil._uefi_arch_token("ppc64el-efi")
-
-
-@pytest.mark.parametrize(
     ("signed_name", "expected"),
     [
         ("shimx64.efi.signed.latest", "shimx64.efi"),
