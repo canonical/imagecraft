@@ -314,7 +314,12 @@ def _make_standard_gpt_image(
 @pytest.mark.requires_root
 @pytest.mark.usefixtures("new_dir")
 def test_setup_grub_efi_signed(
-    new_dir, fake_kernel_files, grub_target, grub_fname, signed_shim_path, signed_grub_path
+    new_dir,
+    fake_kernel_files,
+    grub_target,
+    grub_fname,
+    signed_shim_path,
+    signed_grub_path,
 ):
     """Signed shim+GRUB, when present in the rootfs, are deployed as-is."""
     tmp_path = Path(new_dir)
@@ -329,7 +334,9 @@ def test_setup_grub_efi_signed(
         root_content / f"usr/lib/grub/{grub_target}-signed/{grub_fname}.signed",
     )
     (root_content / "usr/lib/shim").mkdir(parents=True)
-    shutil.copy2(signed_shim_path, root_content / f"usr/lib/shim/{signed_shim_path.name}")
+    shutil.copy2(
+        signed_shim_path, root_content / f"usr/lib/shim/{signed_shim_path.name}"
+    )
     fake_kernel_files(root_content / "boot")
 
     image, filesystem_mount = _make_standard_gpt_image(

@@ -676,3 +676,98 @@ def test_efi_stub_grub_cfg(boot_uuid, boot_prefix, expected_prefix):
     assert f"search.fs_uuid {boot_uuid} root" in cfg
     assert expected_prefix in cfg
     assert "configfile $prefix/grub.cfg" in cfg
+
+
+# ── Target & name discovery ──────────────────────────────────────────────
+
+
+@pytest.mark.parametrize(
+    ("installed_dirs", "build_for", "expected"),
+    [
+        pytest.param(["x86_64-efi"], "x86_64-efi", "x86_64-efi", id="single-match"),
+        pytest.param(
+            ["arm64-efi"],
+            "x86_64-efi",
+            "arm64-efi",
+            id="single-foreign-target-wins",
+        ),
+        pytest.param(
+            ["x86_64-efi", "arm64-efi"],
+            "x86_64-efi",
+            "x86_64-efi",
+            id="multi-build-for-tiebreak",
+        ),
+    ],
+)
+def test_discover_grub_target(tmp_path, installed_dirs, build_for, expected):
+    rootfs = tmp_path / "rootfs"
+    for d in installed_dirs:
+        (rootfs / "usr/lib/grub" / d).mkdir(parents=True)
+
+    assert grubutil._discover_grub_target(rootfs, build_for) == expected
+
+
+@pytest.mark.parametrize(
+    ("installed_dirs", "build_for", "match"),
+    [
+        pytest.param(
+            [],
+            "x86_64-efi",
+            "GRUB modules for x86_64-efi are not installed",
+            id="none-installed",
+        ),
+        pytest.param(
+            ["x86_64-efi", "arm64-efi"],
+            "riscv64-efi",
+            "Multiple GRUB EFI module sets present.*none matches",
+            id="multi-no-match",
+        ),
+    ],
+)
+def test_discover_grub_target_errors(tmp_path, installed_dirs, build_for, match):
+    rootfs = tmp_path / "rootfs"
+    for d in installed_dirs:
+        (rootfs / "usr/lib/grub" / d).mkdir(parents=True)
+
+    with pytest.raises(errors.ImageError, match=match):
+        grubutil._discover_grub_target(rootfs, build_for)
+
+
+def test_discover_grub_target_ignores_signed_dirs(tmp_path):
+    """The ``*-efi-signed`` staging dirs are not module dirs."""
+    rootfs = tmp_path / "rootfs"
+    (rootfs / "usr/lib/grub/x86_64-efi").mkdir(parents=True)
+    (rootfs / "usr/lib/grub/x86_64-efi-signed").mkdir(parents=True)
+
+    assert grubutil._discover_grub_target(rootfs, "x86_64-efi") == "x86_64-efi"
+
+
+@pytest.mark.parametrize(
+    ("target", "expected"),
+    [
+        ("x86_64-efi", "X64"),
+        ("arm64-efi", "AA64"),
+        ("arm-efi", "ARM"),
+    ],
+)
+def test_uefi_arch_token(target, expected):
+    assert grubutil._uefi_arch_token(target) == expected
+
+
+def test_uefi_arch_token_unknown():
+    with pytest.raises(errors.GRUBInstallError, match="riscv64-efi"):
+        grubutil._uefi_arch_token("riscv64-efi")
+
+
+@pytest.mark.parametrize(
+    ("signed_name", "expected"),
+    [
+        ("shimx64.efi.signed.latest", "shimx64.efi"),
+        ("shimx64.efi.signed", "shimx64.efi"),
+        ("shimx64.efi.dualsigned", "shimx64.efi"),
+        ("shimaa64.efi.signed.latest", "shimaa64.efi"),
+        ("mmx64.efi", "mmx64.efi"),  # already unsigned — returned as-is
+    ],
+)
+def test_unsigned_shim_name(signed_name, expected):
+    assert grubutil._unsigned_shim_name(signed_name) == expected

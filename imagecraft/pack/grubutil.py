@@ -70,11 +70,20 @@ _ARCH_TO_GRUB_EFI_TARGET: dict[str, str] = {
 _GRUB_BIOS_TARGET = "i386-pc"
 _GRUB_BIOS_ARCHS = {DebianArchitecture.AMD64, DebianArchitecture.I386}
 
-# Maps grub EFI target -> (grub binary filename, UEFI fallback filename, shim filename).
-_EFI_TARGET_INFO: dict[str, tuple[str, str, str]] = {
-    "x86_64-efi": ("grubx64.efi", "BOOTX64.EFI", "shimx64.efi"),
-    "arm64-efi": ("grubaa64.efi", "BOOTAA64.EFI", "shimaa64.efi"),
-    "arm-efi": ("grubarm.efi", "BOOTARM.EFI", "shimarm.efi"),
+# GRUB target -> UEFI removable-media architecture token.
+#
+# These tokens are the architecture identifiers mandated by the UEFI
+# specification for the fallback boot path (\EFI\BOOT\BOOT<token>.EFI) and
+# appear nowhere in the image itself — grub-install computes them the same
+# way (grub-core/osdep/linux/platform.c). Only the unsigned standalone path
+# needs this table; the signed path derives every filename from the shim and
+# GRUB binaries actually shipped in the rootfs.
+# See UEFI Specification 2.10, section 3.5.1.1 "Removable Media Boot Behavior":
+# https://uefi.org/specs/UEFI/2.10/03_Boot_Manager.html#removable-media-boot-behavior
+_GRUB_TARGET_TO_UEFI_ARCH: dict[str, str] = {
+    "x86_64-efi": "X64",
+    "arm64-efi": "AA64",
+    "arm-efi": "ARM",
 }
 
 # Core modules embedded into the standalone GRUB EFI image so it can find
@@ -190,6 +199,79 @@ def setup_grub(
         emit.progress(f"Cannot install GRUB on this rootfs: {err}", permanent=True)
 
 
+def _discover_grub_target(rootfs: Path, build_for_target: str) -> str:
+    """Return the GRUB EFI target directory actually installed in the rootfs.
+
+    Normally the rootfs carries exactly one ``/usr/lib/grub/*-efi`` directory,
+    so no lookup table is needed at all. When several are present (a foreign
+    architecture's modules were installed alongside), the project's
+    ``build-for`` architecture (already resolved to a GRUB target by
+    ``setup_grub``) selects the right one.
+
+    :raises errors.ImageError: If no GRUB EFI modules are installed.
+    """
+    grub_dir = rootfs / "usr/lib/grub"
+    candidates = (
+        sorted(
+            d.name for d in grub_dir.iterdir() if d.is_dir() and d.name.endswith("-efi")
+        )
+        if grub_dir.is_dir()
+        else []
+    )
+    if build_for_target in candidates:
+        return build_for_target
+    if len(candidates) == 1:
+        return candidates[0]
+    if not candidates:
+        raise errors.ImageError(
+            message=f"GRUB modules for {build_for_target} are not installed in the image"
+        )
+    raise errors.ImageError(
+        message=f"Multiple GRUB EFI module sets present ({', '.join(candidates)}) "
+        f"but none matches the build architecture ({build_for_target})"
+    )
+
+
+def _uefi_arch_token(grub_target: str) -> str:
+    """Return the UEFI removable-media arch token for a GRUB target.
+
+    :raises errors.GRUBInstallError: If the target has no known token.
+    """
+    try:
+        return _GRUB_TARGET_TO_UEFI_ARCH[grub_target]
+    except KeyError:
+        raise errors.GRUBInstallError(
+            f"Cannot name the EFI fallback binary for {grub_target}: "
+            "no UEFI arch token is known for it"
+        ) from None
+
+
+def _unsigned_shim_name(signed_name: str) -> str:
+    """Strip the signing suffix from a shim filename (``shimx64.efi.signed`` -> ``shimx64.efi``)."""
+    for suffix in _SIGNED_SHIM_SUFFIXES:
+        if signed_name.endswith(suffix):
+            return signed_name.removesuffix(suffix) + ".efi"
+    return signed_name
+
+
+def _efi_filenames(
+    grub_target: str, signed: dict[str, Path] | None
+) -> tuple[str, str, str | None]:
+    """Return (grub_fname, fallback_fname, shim_fname) for the ESP.
+
+    With signed binaries present, every name derives from the files Ubuntu
+    ships in the image — no per-architecture table is needed. Without them,
+    the names follow the UEFI spec's arch-token convention.
+    """
+    if signed:
+        grub_fname = signed["grub"].name.removesuffix(".signed")
+        shim_fname = _unsigned_shim_name(signed["shim"].name)
+        uefi_arch = shim_fname.removeprefix("shim").removesuffix(".efi")
+        return grub_fname, f"BOOT{uefi_arch.upper()}.EFI", shim_fname
+    uefi_arch = _uefi_arch_token(grub_target)
+    return f"grub{uefi_arch.lower()}.efi", f"BOOT{uefi_arch}.EFI", None
+
+
 def _partition_geometry(
     disk_path: Path,
     structure: StructureList,
@@ -227,7 +309,7 @@ def _partition_geometry(
 
 
 def _setup_grub_efi(
-    image: Image, grub_target: str, filesystem_mount: FilesystemMount
+    image: Image, requested_grub_target: str, filesystem_mount: FilesystemMount
 ) -> None:
     """Install GRUB for an EFI-capable (GPT/hybrid) image.
 
@@ -237,6 +319,10 @@ def _setup_grub_efi(
     builder matches the modules it consumes. ESP files are written in place
     with mtools, and all grub.cfg content is generated here because
     ``grub-mkconfig`` needs a real block device that FUSE cannot provide.
+
+    ``requested_grub_target`` is the GRUB target implied by the project's
+    ``build-for`` architecture; it is used as a tiebreak when the rootfs
+    carries GRUB modules for more than one target.
     """
     structure = image.volume.structure
     disk_path = image.disk_path
@@ -259,8 +345,6 @@ def _setup_grub_efi(
         disk_path, structure, filesystem_mount, "/boot/efi"
     )
     esp_offset_bytes = esp_offset_sectors * sector
-
-    grub_fname, fallback_fname, shim_fname = _EFI_TARGET_INFO[grub_target]
 
     with tempfile.TemporaryDirectory(prefix="imagecraft-grub-") as tmp_str:
         tmp_dir = Path(tmp_str)
@@ -289,7 +373,11 @@ def _setup_grub_efi(
                 )
             else:
                 bootfs = rootfs
+            # The rootfs itself declares which GRUB modules it carries; the
+            # build-for target is only a tiebreak if it carries several.
+            grub_target = _discover_grub_target(rootfs, requested_grub_target)
             signed = _dump_signed_efi_binaries(rootfs, grub_target, tmp_dir)
+            grub_fname, fallback_fname, shim_fname = _efi_filenames(grub_target, signed)
 
             if signed:
                 emit.progress(f"Deploying signed GRUB ({grub_target})")
@@ -500,30 +588,41 @@ def _dump_signed_efi_binaries(
 ) -> dict[str, Path] | None:
     """Dump Ubuntu's pre-signed shim+GRUB from rootfs, if both are present.
 
+    The binaries are discovered by name pattern rather than a per-architecture
+    table, so the returned names are exactly what Ubuntu ships. The caller
+    derives the canonical deployment names by stripping the signing suffix.
+
     Returns a dict with "shim" and "grub" local paths, or None if either
     piece isn't installed (in which case an unsigned image should be built
     with grub-mkimage instead).
     """
-    grub_fname, _, shim_fname = _EFI_TARGET_INFO[grub_target]
-
-    shim_base = shim_fname.removesuffix(".efi")
     shim_src = next(
         (
             candidate
             for suffix in _SIGNED_SHIM_SUFFIXES
-            if (
-                candidate := rootfs / f"usr/lib/shim/{shim_base}{suffix}".lstrip("/")
-            ).is_file()
+            for candidate in sorted((rootfs / "usr/lib/shim").glob(f"shim*{suffix}"))
+            if candidate.is_file()
         ),
         None,
     )
-    grub_src = rootfs / f"usr/lib/grub/{grub_target}-signed/{grub_fname}.signed"
-    if shim_src is None or not grub_src.is_file():
+    grub_src = next(
+        (
+            candidate
+            for candidate in sorted(
+                (rootfs / "usr/lib/grub" / f"{grub_target}-signed").glob(
+                    "grub*.efi.signed"
+                )
+            )
+            if candidate.is_file()
+        ),
+        None,
+    )
+    if shim_src is None or grub_src is None:
         return None
 
     dest_dir.mkdir(parents=True, exist_ok=True)
-    shim_dest = dest_dir / shim_fname
-    grub_dest = dest_dir / f"{grub_fname}.signed"
+    shim_dest = dest_dir / shim_src.name
+    grub_dest = dest_dir / grub_src.name
     shutil.copy2(shim_src, shim_dest)
     shutil.copy2(grub_src, grub_dest)
     return {"shim": shim_dest, "grub": grub_dest}
