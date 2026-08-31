@@ -45,7 +45,6 @@ import subprocess
 import tempfile
 import uuid
 from collections.abc import Callable
-from contextlib import contextmanager
 from typing import cast
 
 from craft_cli import emit
@@ -380,52 +379,41 @@ _STUB_GRUB_PROBE_PATH = (
 )
 
 
-@contextmanager
-def _substitute_grub_probe(rootfs: pathlib.Path) -> None:
-    """Replace ``/usr/sbin/grub-probe`` with the stub for the duration.
-
-    The original binary is saved at ``<stub>.imagecraft.bak`` and restored
-    afterward, even if an exception is raised.
-    """
-    stub_path = rootfs / "usr/sbin/grub-probe"
-    original = stub_path.with_suffix(".imagecraft.bak")
-    original.unlink(missing_ok=True)
-    shutil.move(str(stub_path), str(original))
-    stub_path.write_text(_STUB_GRUB_PROBE_PATH.read_text(), encoding="utf-8")
-    stub_path.chmod(0o755)
-    try:
-        yield
-    finally:
-        stub_path.unlink()
-        shutil.move(str(original), str(stub_path))
-
-
 def _run_update_grub(
     rootfs: pathlib.Path,
     *,
     boot_uuid: str,
     root_uuid: str,
 ) -> None:
-    """Run ``update-grub`` in the image, behind a stub for ``grub-probe``.
+    """Run ``update-grub`` in the image with a stub ``grub-probe`` on PATH.
 
-    The stub answers ``grub-probe`` queries from the pre-computed UUIDs,
-    because the mounted chroot lacks a real block device and the real
-    probe simply fails.
+    That answers device queries from precomputed UUIDs.
+
+    The stub is installed in a temporary directory inside rootfs, that
+    directory is prepended to PATH for the chroot invocation, and the
+    directory is removed afterward.
     """
+    stub_dir = rootfs / "imagecraft-libexec"
+    stub_dir.mkdir(parents=True, exist_ok=True)
+    stub_path = stub_dir / "grub-probe"
+    stub_path.write_text(_STUB_GRUB_PROBE_PATH.read_text(), encoding="utf-8")
+    stub_path.chmod(0o755)
     env = {
         **os.environ,
         "IMAGECRAFT_ROOT_UUID": root_uuid,
         "IMAGECRAFT_BOOT_UUID": boot_uuid,
+        "PATH": f"{stub_dir}:{os.environ.get('PATH', '')}",
     }
     try:
-        with _substitute_grub_probe(rootfs):
-            run("chroot", str(rootfs), "update-grub", env=env)
+        run("chroot", str(rootfs), "update-grub", env=env)
     except FileNotFoundError as err:
         raise errors.GRUBInstallError(
             "Cannot run update-grub: chroot unavailable"
         ) from err
     except subprocess.CalledProcessError as err:
         raise errors.GRUBInstallError(f"update-grub failed: {err}") from err
+    finally:
+        shutil.rmtree(str(stub_dir))
 
 
 def _build_grub_image(
