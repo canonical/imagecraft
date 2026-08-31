@@ -45,6 +45,7 @@ import subprocess
 import tempfile
 import uuid
 from collections.abc import Callable
+from contextlib import contextmanager
 from typing import cast
 
 from craft_cli import emit
@@ -379,7 +380,7 @@ _STUB_GRUB_PROBE_PATH = (
 )
 
 
-@contextlib.contextmanager
+@contextmanager
 def _substitute_grub_probe(rootfs: pathlib.Path) -> None:
     """Replace ``/usr/sbin/grub-probe`` with the stub for the duration.
 
