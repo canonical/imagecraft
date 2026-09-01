@@ -29,8 +29,6 @@ from craft_cli import emit
 from imagecraft import errors
 from imagecraft.models import (
     FileSystem,
-    GPTVolume,
-    PartitionSchema,
     Role,
     Volume,
 )
@@ -455,8 +453,7 @@ def mount_partition(
     imagepath: Path,
     filesystem: FileSystem | str,
     *,
-    offset: int = 0,
-    size: int | None = None,
+    partition: int | None = None,
     mountpoint: Path | None = None,
     read_only: bool = False,
     allow_other: bool = False,
@@ -466,14 +463,33 @@ def mount_partition(
 
     :param imagepath: Path to the disk image or partition image.
     :param filesystem: Filesystem type (e.g. ext4, fat32, vfat).
-    :param offset: Byte offset within the disk image.
-    :param size: Byte size of the partition (required for FAT when offset > 0).
+    :param partition: 1-based partition number within the image's partition
+        table. When set, the partition's offset and size are looked up with
+        sfdisk. When unset, the image is treated as a standalone partition
+        image (offset 0, whole file).
     :param mountpoint: Optional host mountpoint path.
     :param read_only: If True, mount read-only.
     :param allow_other: If True, pass allow_other option to FUSE.
     :param fakeroot: If True, pass fakeroot option to FUSE (ext only).
     :raises errors.MountError: If the filesystem type is unsupported.
     """
+    if partition is not None:
+        # Imported here to avoid a circular import: imagecraft.pack imports
+        # this module's consumers (grubutil), while gptutil lives in that package.
+        from imagecraft.pack import gptutil  # noqa: PLC0415
+
+        offset = (
+            gptutil.get_partition_sector_offset_by_number(imagepath, partition)
+            * gptutil.SECTOR_SIZE_512
+        )
+        size = (
+            gptutil.get_partition_size_sectors_by_number(imagepath, partition)
+            * gptutil.SECTOR_SIZE_512
+        )
+    else:
+        offset = 0
+        size = None
+
     fs_str = (
         filesystem.value.lower()
         if isinstance(filesystem, FileSystem)
@@ -593,41 +609,29 @@ def mount_volume(
     :param fakeroot: If True, pass fakeroot option to ext mounts.
     :returns: A CompositeMount managing all partition mounts.
     """
-    # Imported here to avoid a circular import: imagecraft.pack imports
-    # this module's consumers (grubutil), while gptutil lives in that package.
-    from imagecraft.pack import gptutil  # noqa: PLC0415
-
     mountpoint_overrides = mountpoint_overrides or {}
     mount_entries: list[tuple[str, BaseMount]] = []
 
-    is_gpt = (
-        isinstance(volume, GPTVolume)
-        or getattr(volume, "volume_schema", None) == PartitionSchema.GPT
-    )
-
-    for idx, item in enumerate(volume.structure, start=1):
+    for item in volume.structure:
         filesystem = getattr(item, "filesystem", None)
         if not filesystem:
             continue
+
+        part_num = volume.structure.get_number(item.name)
+        if part_num is None:
+            raise errors.MountError(
+                f"Cannot determine partition number for {item.name}"
+            )
 
         rel_path = mountpoint_overrides.get(
             item.name,
             _DEFAULT_ROLE_MOUNTS.get(item.role, f"mnt/{item.name}"),
         )
 
-        # Calculate byte offset and size
-        if is_gpt:
-            start_sector = gptutil.get_partition_sector_offset(disk_path, item.name)
-            size_sectors = gptutil.get_partition_size_sectors(disk_path, item.name)
-        else:
-            start_sector = gptutil.get_partition_sector_offset_by_number(disk_path, idx)
-            size_sectors = gptutil.get_partition_size_sectors_by_number(disk_path, idx)
-
         part_mount = mount_partition(
             disk_path,
             filesystem,
-            offset=start_sector * gptutil.SECTOR_SIZE_512,
-            size=size_sectors * gptutil.SECTOR_SIZE_512,
+            partition=part_num,
             read_only=read_only,
             allow_other=allow_other,
             fakeroot=fakeroot,

@@ -42,7 +42,6 @@ _dump_signed_efi_binaries = efi.dump_signed_efi_binaries
 _efi_filenames = efi.efi_filenames
 _find_structure_item = efi.find_structure_item
 _is_efi_partition = efi.is_efi_partition
-_partition_offset_size = efi.partition_offset_size
 _read_ext_uuid = efi.read_ext_uuid
 _resolve_core_modules = efi.resolve_core_modules
 _run_update_grub = efi.run_update_grub
@@ -58,7 +57,6 @@ __all__ = [
     "_efi_filenames",
     "_find_structure_item",
     "_is_efi_partition",
-    "_partition_offset_size",
     "_read_ext_uuid",
     "_resolve_core_modules",
     "_run_update_grub",

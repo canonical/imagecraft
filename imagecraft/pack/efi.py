@@ -129,23 +129,31 @@ def find_structure_item(
     raise errors.ImageError(message="No matching partition found")
 
 
-def partition_offset_size(
+def _structure_part_num(
+    structure: volume.StructureListType,
+    predicate: Callable[[volume.StructureItem], bool],
+) -> int:
+    """Return the 1-based partition number of the first item matching *predicate*.
+
+    :raises errors.ImageError: If no item matches, or its number can't be resolved.
+    """
+    item = find_structure_item(structure, predicate)
+    part_num = structure.get_number(item.name)
+    if part_num is None:
+        raise errors.ImageError(
+            message=f"Cannot determine partition number for {item.name}"
+        )
+    return part_num
+
+
+def _structure_partition_offset(
     disk_path: pathlib.Path,
     structure: volume.StructureListType,
     predicate: Callable[[volume.StructureItem], bool],
-) -> tuple[int, int]:
-    """Return (offset_sectors, size_sectors) for the first structure item matching *predicate*."""
-    item = find_structure_item(structure, predicate)
-    p_num = structure.get_number(item.name)
-    if p_num is None:
-        raise errors.ImageError(message=f"Cannot find a partition named {item.name}")
-    if isinstance(structure[0], volume.MBRStructureItem):
-        offset = gptutil.get_partition_sector_offset_by_number(disk_path, p_num)
-        size = gptutil.get_partition_size_sectors_by_number(disk_path, p_num)
-    else:
-        offset = gptutil.get_partition_sector_offset(disk_path, item.name)
-        size = gptutil.get_partition_size_sectors(disk_path, item.name)
-    return offset, size
+) -> int:
+    """Return the start sector of the first structure item matching *predicate*."""
+    part_num = _structure_part_num(structure, predicate)
+    return gptutil.get_partition_sector_offset_by_number(disk_path, part_num)
 
 
 def discover_grub_target(rootfs: pathlib.Path, build_for_target: str) -> str:
@@ -489,27 +497,28 @@ def setup_grub_efi(
     disk_path = image.disk_path
     sector = gptutil.SECTOR_SIZE_512
 
-    root_offset, root_size = partition_offset_size(
-        disk_path,
-        structure,
-        lambda s: s.role == volume.Role.SYSTEM_DATA,
+    root_part_num = _structure_part_num(
+        structure, lambda s: s.role == volume.Role.SYSTEM_DATA
     )
     has_separate_boot = any(
         s.role == volume.Role.SYSTEM_BOOT and not is_efi_partition(s) for s in structure
     )
+    boot_part_num = root_part_num
     if has_separate_boot:
-        boot_offset, boot_size = partition_offset_size(
-            disk_path,
+        boot_part_num = _structure_part_num(
             structure,
             lambda s: s.role == volume.Role.SYSTEM_BOOT and not is_efi_partition(s),
         )
-    else:
-        boot_offset, boot_size = root_offset, root_size
-    esp_offset, _ = partition_offset_size(
-        disk_path,
-        structure,
-        is_efi_partition,
+
+    root_offset = gptutil.get_partition_sector_offset_by_number(
+        disk_path, root_part_num
     )
+    boot_offset = root_offset
+    if has_separate_boot:
+        boot_offset = gptutil.get_partition_sector_offset_by_number(
+            disk_path, boot_part_num
+        )
+    esp_offset = _structure_partition_offset(disk_path, structure, is_efi_partition)
     esp_offset_bytes = esp_offset * sector
 
     with tempfile.TemporaryDirectory(prefix="imagecraft-grub-") as tmp_str:
@@ -524,8 +533,7 @@ def setup_grub_efi(
                 fusemount.mount_partition(
                     disk_path,
                     "ext4",
-                    offset=root_offset * sector,
-                    size=root_size * sector,
+                    partition=root_part_num,
                     fakeroot=True,
                 )
             )
@@ -534,8 +542,7 @@ def setup_grub_efi(
                     fusemount.mount_partition(
                         disk_path,
                         "ext4",
-                        offset=boot_offset * sector,
-                        size=boot_size * sector,
+                        partition=boot_part_num,
                         mountpoint=rootfs / "boot",
                         fakeroot=True,
                     )

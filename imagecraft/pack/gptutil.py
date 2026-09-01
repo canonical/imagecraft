@@ -261,6 +261,22 @@ def get_partition_size_sectors(imagepath: Path, partname: str) -> int:
     return cast(int, _get_partition_info(imagepath, partname)["size"])
 
 
+def get_partition_number(imagepath: Path, partname: str) -> int:
+    """Return the partition number for the GPT partition indicated by partname.
+
+    Only GPT partitions are named in sfdisk's output.
+
+    :raises CalledProcessError: If sfdisk fails.
+    :raises CraftError: If no partition with that name exists.
+    """
+    table = _get_partition_table(imagepath)
+    partition = _get_partition_info(imagepath, partname)
+    partnum = _partition_node_number(table, partition)
+    if partnum is None:
+        raise CraftError(f"Cannot determine partition number for {partname}")
+    return partnum
+
+
 def get_partition_sector_offset_by_number(imagepath: Path, partnum: int) -> int:
     """Return the start sector (offset) for partition number partnum (1-based).
 

@@ -308,18 +308,27 @@ def test_fat_fuse_mount_failure_cleans_up_vdev(mock_run, tmp_path: Path):
     assert mock_run.call_args_list[2][0][0] == "fusermount"
 
 
-def test_mount_partition_factory(tmp_path: Path):
+def test_mount_partition_factory(mocker, tmp_path: Path):
     img_path = tmp_path / "test.img"
+    img_path.touch()
 
-    ext_mount = mount_partition(img_path, "ext4", offset=100, fakeroot=True)
+    ext_mount = mount_partition(img_path, "ext4", fakeroot=True)
     assert isinstance(ext_mount, ExtFuseMount)
-    assert ext_mount.offset == 100
+    assert ext_mount.offset == 0
     assert ext_mount.fakeroot is True
 
-    fat_mount = mount_partition(img_path, "vfat", offset=200, size=300)
+    mocker.patch(
+        "imagecraft.pack.gptutil.get_partition_sector_offset_by_number",
+        return_value=2048,
+    )
+    mocker.patch(
+        "imagecraft.pack.gptutil.get_partition_size_sectors_by_number",
+        return_value=65536,
+    )
+    fat_mount = mount_partition(img_path, "vfat", partition=2)
     assert isinstance(fat_mount, FatFuseMount)
-    assert fat_mount.offset == 200
-    assert fat_mount.size == 300
+    assert fat_mount.offset == 2048 * 512
+    assert fat_mount.size == 65536 * 512
 
     with pytest.raises(errors.MountError, match="Unsupported filesystem"):
         mount_partition(img_path, "ntfs")
@@ -381,12 +390,12 @@ def test_mount_volume_gpt(mocker, gpt_volume, tmp_path: Path):
     disk_path.touch()
 
     mocker.patch(
-        "imagecraft.pack.gptutil.get_partition_sector_offset",
-        side_effect=lambda _, name: 2048 if name == "efi" else 526336,
+        "imagecraft.pack.gptutil.get_partition_sector_offset_by_number",
+        side_effect=lambda _, num: 2048 if num == 1 else 526336,
     )
     mocker.patch(
-        "imagecraft.pack.gptutil.get_partition_size_sectors",
-        side_effect=lambda _, name: 524288 if name == "efi" else 8388608,
+        "imagecraft.pack.gptutil.get_partition_size_sectors_by_number",
+        side_effect=lambda _, num: 524288 if num == 1 else 8388608,
     )
 
     vol_mount = mount_volume(gpt_volume, disk_path, fakeroot=True)
@@ -427,3 +436,40 @@ def test_mount_volume_mbr(mocker, mbr_volume, tmp_path: Path):
         "seed": FatFuseMount,
         "": ExtFuseMount,
     }
+
+
+def test_mount_volume_mbr_extended_partition_numbering(mocker, tmp_path: Path):
+    """Logical partitions (5+) must resolve their on-disk numbers, not positions."""
+    volume = MBRVolume.unmarshal(
+        {
+            "schema": "mbr",
+            "structure": [
+                {
+                    "name": name,
+                    "role": "system-data",
+                    "type": "83",
+                    "filesystem": "ext4",
+                    "size": "1G",
+                }
+                for name in ["p1", "p2", "p3", "p4", "p5"]
+            ],
+        }
+    )
+    disk_path = tmp_path / "disk.img"
+    disk_path.touch()
+
+    offset_mock = mocker.patch(
+        "imagecraft.pack.gptutil.get_partition_sector_offset_by_number",
+        return_value=2048,
+    )
+    mocker.patch(
+        "imagecraft.pack.gptutil.get_partition_size_sectors_by_number",
+        return_value=2097152,
+    )
+
+    vol_mount = mount_volume(volume, disk_path)
+
+    # The 4th and 5th structure items are logical partitions 5 and 6: slot 4
+    # is reserved for the extended container.
+    assert [c.args[1] for c in offset_mock.call_args_list] == [1, 2, 3, 5, 6]
+    assert len(vol_mount._mount_entries) == 5

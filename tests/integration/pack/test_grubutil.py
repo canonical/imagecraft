@@ -195,9 +195,8 @@ def _build_and_inject_partition(
 
 def _mount_ext_partition(disk_path: Path, name: str):
     """Mount an ext partition by name through the FUSE utilities."""
-    offset = gptutil.get_partition_sector_offset(disk_path, name)
-    size = gptutil.get_partition_size_sectors(disk_path, name)
-    return mount_partition(disk_path, "ext4", offset=offset * 512, size=size * 512)
+    part_num = gptutil.get_partition_number(disk_path, name)
+    return mount_partition(disk_path, "ext4", partition=part_num)
 
 
 def _esp_offset(disk_path: Path) -> int:
