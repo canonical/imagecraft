@@ -246,7 +246,7 @@ class ImageService(AppService):
         """Return a mapping of partition name to disk partition number for a volume.
 
         For GPT and plain MBR (≤4 partitions), numbers are 1-based positions,
-        respecting any explicit number on the structure item.
+        respecting any explicit partition number on the structure item.
         For MBR with extended partitions (>4), the first 3 are primaries (1-3),
         slot 4 is the synthesised extended container, and logical partitions
         start at 5.
