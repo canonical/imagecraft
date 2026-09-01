@@ -470,9 +470,8 @@ def test_structure_list_errors(structures: list[dict], error_message):
         TypeAdapter(StructureList).validate_python(structures)
 
 
-@pytest.mark.parametrize("deprecated_key", ["partition_number", "partition-number"])
-def test_deprecated_partition_number_alias(deprecated_key):
-    with pytest.warns(DeprecationWarning, match=f"{deprecated_key}.*number"):
+def test_deprecated_partition_number_alias():
+    with pytest.warns(DeprecationWarning, match="partition-number.*number"):
         structure = GPTStructureItem.model_validate(
             {
                 "name": "rootfs",
@@ -480,7 +479,7 @@ def test_deprecated_partition_number_alias(deprecated_key):
                 "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
                 "filesystem": "ext4",
                 "size": "0",
-                deprecated_key: 1,
+                "partition-number": 1,
             }
         )
 
@@ -505,7 +504,7 @@ def test_partition_number_alias_conflicts_with_number():
                 "filesystem": "ext4",
                 "size": "0",
                 "number": 1,
-                "partition_number": 2,
+                "partition-number": 2,
             }
         )
 
