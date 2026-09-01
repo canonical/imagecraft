@@ -349,9 +349,7 @@ class GPTStructureItem(StructureItem):
                     raise ValueError(
                         f"'number' and '{deprecated_key}' cannot be used together."
                     )
-                emit.warning(
-                    f"'{deprecated_key}' is deprecated; use 'number' instead."
-                )
+                emit.warning(f"'{deprecated_key}' is deprecated; use 'number' instead.")
                 value = value.copy()
                 value["number"] = value.pop(deprecated_key)
         return value

@@ -451,8 +451,8 @@ def test_image_mounts_errors(
         pytest.param(
             "rootfs",
             [
-                {"name": "efi", "partition_number": None},
-                {"name": "rootfs", "partition_number": None},
+                {"name": "efi", "number": None},
+                {"name": "rootfs", "number": None},
             ],
             2,
             id="gpt-position-based",
@@ -460,15 +460,15 @@ def test_image_mounts_errors(
         pytest.param(
             "rootfs",
             [
-                {"name": "efi", "partition_number": None},
-                {"name": "rootfs", "partition_number": 5},
+                {"name": "efi", "number": None},
+                {"name": "rootfs", "number": 5},
             ],
             5,
             id="gpt-explicit-number",
         ),
         pytest.param(
             "missing",
-            [{"name": "efi", "partition_number": None}],
+            [{"name": "efi", "number": None}],
             None,
             id="not-found",
         ),
@@ -479,7 +479,7 @@ def test_part_num_gpt(name, structure_spec, expected):
     for spec in structure_spec:
         item = MagicMock(spec=GPTStructureItem)
         item.name = spec["name"]
-        item.partition_number = spec["partition_number"]
+        item.number = spec["number"]
         items.append(item)
     structure = cast(GPTStructureList, items)
 
