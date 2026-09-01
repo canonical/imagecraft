@@ -326,7 +326,7 @@ def test_setup_grub_efi_signed(
     signed_grub_path,
 ):
     """Signed shim+GRUB, when present in the rootfs, are deployed as-is."""
-    mocker.patch("imagecraft.pack.efi._run_update_grub")
+    mocker.patch("imagecraft.pack.efi.run_update_grub")
     tmp_path = Path(new_dir)
     root_content = tmp_path / "root_content"
     _copy_grub_target_files(
@@ -431,7 +431,7 @@ def test_setup_grub_efi_unsigned(
     new_dir, mocker, fake_kernel_files, grub_target, grub_fname
 ):
     """Without signed shim/GRUB, an unsigned standalone image is built."""
-    mocker.patch("imagecraft.pack.efi._run_update_grub")
+    mocker.patch("imagecraft.pack.efi.run_update_grub")
     tmp_path = Path(new_dir)
     root_content = tmp_path / "root_content"
     _copy_grub_target_files(
@@ -471,7 +471,7 @@ def test_setup_grub_efi_separate_boot_partition(
     new_dir, mocker, fake_kernel_files, grub_target
 ):
     """With a dedicated /boot partition, its root (not /boot/...) holds GRUB/kernels."""
-    mocker.patch("imagecraft.pack.efi._run_update_grub")
+    mocker.patch("imagecraft.pack.efi.run_update_grub")
     tmp_path = Path(new_dir)
     root_content = tmp_path / "root_content"
     _copy_grub_target_files(

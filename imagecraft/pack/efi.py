@@ -575,7 +575,7 @@ def setup_grub_efi(
             # FUSE mount has no block device.
             boot_uuid = read_ext_uuid(disk_path, boot_offset * sector)
             root_uuid = read_ext_uuid(disk_path, root_offset * sector)
-            _run_update_grub(rootfs, boot_uuid=boot_uuid, root_uuid=root_uuid)
+            run_update_grub(rootfs, boot_uuid=boot_uuid, root_uuid=root_uuid)
             write_esp_file(
                 disk_path,
                 esp_offset_bytes,
@@ -589,21 +589,3 @@ def setup_grub_efi(
             )
 
     emit.progress("GRUB installation complete")
-
-
-# Backward-compatibility aliases
-_is_efi_partition = is_efi_partition
-_find_structure_item = find_structure_item
-_partition_offset_size = partition_offset_size
-_discover_grub_target = discover_grub_target
-_unsigned_shim_name = unsigned_shim_name
-_efi_filenames = efi_filenames
-_dump_signed_efi_binaries = dump_signed_efi_binaries
-_build_grub_image = build_grub_image
-_resolve_core_modules = resolve_core_modules
-_fat_mkdir_p = fat_mkdir_p
-_write_esp_file = write_esp_file
-_read_ext_uuid = read_ext_uuid
-_deploy_efi_binary = deploy_efi_binary
-_run_update_grub = run_update_grub
-_setup_grub_efi = setup_grub_efi

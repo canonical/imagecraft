@@ -28,25 +28,26 @@ from craft_platforms import DebianArchitecture
 
 from imagecraft import errors
 from imagecraft.models import volume
-from imagecraft.pack import chroot
+from imagecraft.pack import chroot, efi
 from imagecraft.pack.efi import (
     _ARCH_TO_GRUB_EFI_TARGET,
     _EFI_CORE_MODULES,
     _SIGNED_SHIM_SUFFIXES,
-    _discover_grub_target,
-    _dump_signed_efi_binaries,
-    _efi_filenames,
-    _find_structure_item,
-    _is_efi_partition,
-    _partition_offset_size,
-    _read_ext_uuid,
-    _resolve_core_modules,
-    _run_update_grub,
-    _setup_grub_efi,
-    _unsigned_shim_name,
 )
 from imagecraft.pack.image import Image
 from imagecraft.subprocesses import run
+
+_discover_grub_target = efi.discover_grub_target
+_dump_signed_efi_binaries = efi.dump_signed_efi_binaries
+_efi_filenames = efi.efi_filenames
+_find_structure_item = efi.find_structure_item
+_is_efi_partition = efi.is_efi_partition
+_partition_offset_size = efi.partition_offset_size
+_read_ext_uuid = efi.read_ext_uuid
+_resolve_core_modules = efi.resolve_core_modules
+_run_update_grub = efi.run_update_grub
+_setup_grub_efi = efi.setup_grub_efi
+_unsigned_shim_name = efi.unsigned_shim_name
 
 __all__ = [
     "_ARCH_TO_GRUB_EFI_TARGET",
