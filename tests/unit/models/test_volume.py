@@ -470,20 +470,23 @@ def test_structure_list_errors(structures: list[dict], error_message):
         TypeAdapter(StructureList).validate_python(structures)
 
 
-def test_deprecated_partition_number_alias():
-    with pytest.warns(DeprecationWarning, match="partition-number.*number"):
-        structure = GPTStructureItem.model_validate(
-            {
-                "name": "rootfs",
-                "role": "system-data",
-                "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
-                "filesystem": "ext4",
-                "size": "0",
-                "partition-number": 1,
-            }
-        )
+def test_deprecated_partition_number_alias(mocker):
+    mock_warning = mocker.patch("imagecraft.models.volume.emit.warning")
+    structure = GPTStructureItem.model_validate(
+        {
+            "name": "rootfs",
+            "role": "system-data",
+            "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+            "filesystem": "ext4",
+            "size": "0",
+            "partition-number": 1,
+        }
+    )
 
     assert structure.number == 1
+    mock_warning.assert_called_once_with(
+        "'partition-number' is deprecated; use 'number' instead."
+    )
 
 
 def test_partition_number_is_not_in_gpt_structure_schema():

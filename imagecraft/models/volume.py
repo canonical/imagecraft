@@ -21,7 +21,6 @@ import enum
 import re
 import typing
 import uuid
-import warnings
 from collections.abc import Collection
 from typing import Annotated, Literal, Self
 
@@ -32,6 +31,7 @@ from craft_application.models.constraints import (
     get_validator_by_regex,
 )
 from craft_application.util import humanize_list
+from craft_cli import emit
 from craft_parts.utils.partition_utils import VALID_PARTITION_REGEX
 from pydantic import (
     AfterValidator,
@@ -349,10 +349,8 @@ class GPTStructureItem(StructureItem):
                     raise ValueError(
                         f"'number' and '{deprecated_key}' cannot be used together."
                     )
-                warnings.warn(
-                    f"'{deprecated_key}' is deprecated; use 'number' instead.",
-                    DeprecationWarning,
-                    stacklevel=2,
+                emit.warning(
+                    f"'{deprecated_key}' is deprecated; use 'number' instead."
                 )
                 value = value.copy()
                 value["number"] = value.pop(deprecated_key)
