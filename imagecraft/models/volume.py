@@ -372,19 +372,19 @@ class PartitionSchema(str, enum.Enum):
     """A hybrid MBR/GPT schema, providing both partition tables simultaneously."""
 
 
-def _validate_structure_item_numbers(
+def _validate_structure_items_partition_numbers(
     structures: Collection[GPTStructureItem],
 ) -> Collection[GPTStructureItem]:
-    numbers = {structure.number for structure in structures}
+    partition_numbers = {structure.number for structure in structures}
 
     # This could be loosened, but it would require us to generate these partition
     # numbers ourselves in a deterministic manner. This is complex since it would mean
     # that adding a numbered partition could change the partition numbers of other
     # partitions.
-    if None in numbers:
+    if None in partition_numbers:
         # After deduplication, this means we at least have one implicit partition number (None)
         # and one explicit (anything else)
-        if len(numbers) > 1:
+        if len(partition_numbers) > 1:
             unnumbered_partitions = humanize_list(
                 [
                     structure.name
@@ -399,16 +399,16 @@ def _validate_structure_item_numbers(
             )
         return structures
 
-    if len(numbers) < len(structures):
+    if len(partition_numbers) < len(structures):
         number_map: dict[int | None, list[str]] = {}
         for structure in structures:
             number_map.setdefault(structure.number, []).append(structure.name)
-        duplicate_numbers = {
+        duplicate_partition_numbers = {
             number: names for number, names in number_map.items() if len(names) > 1
         }
         duplicate_messages = [
-            f"number {number} shared by {humanize_list(names, 'and', sort=False)}"
-            for number, names in duplicate_numbers.items()
+            f"partition-number {number} shared by {humanize_list(names, 'and', sort=False)}"
+            for number, names in duplicate_partition_numbers.items()
         ]
         raise ValueError(
             f"duplicate partition numbers ({', '.join(duplicate_messages)})"
@@ -419,7 +419,7 @@ def _validate_structure_item_numbers(
 
 GPTStructureList = Annotated[
     list[GPTStructureItem],
-    AfterValidator(_validate_structure_item_numbers),
+    AfterValidator(_validate_structure_items_partition_numbers),
 ]
 
 
