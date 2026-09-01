@@ -436,7 +436,7 @@ def test_structure_list_success(structures: list[dict]):
                 },
             ],
             re.escape(
-                "Value error, duplicate partition numbers (partition-number 64 shared by 'mary-kate' and 'ashley')"
+                "Value error, duplicate partition numbers (number 64 shared by 'mary-kate' and 'ashley')"
             ),
             id="duplicate-partition-numbers",
         ),
@@ -498,7 +498,7 @@ def test_partition_number_is_not_in_gpt_structure_schema():
 
 
 def test_partition_number_alias_conflicts_with_number():
-    with pytest.raises(ValueError, match="cannot be used together"):
+    with pytest.raises(ValidationError, match="cannot be used together"):
         GPTStructureItem.model_validate(
             {
                 "name": "rootfs",

@@ -51,7 +51,7 @@ def _create_sfdisk_lines(
         stdin_lines.append(f"{key}: {value}")
 
     for entry in partitions:
-        partition_number = entry.pop("partition-number", None)
+        partition_number = entry.pop("number", None)
         prefix = f"{partition_number} : " if partition_number is not None else ""
         fields: list[str] = []
         for key, value in entry.items():
@@ -106,7 +106,7 @@ def _create_gpt_layout(
         if hasattr(structure_item, "id") and structure_item.id is not None:
             partition["uuid"] = str(structure_item.id)
         if (number := getattr(structure_item, "number", None)) is not None:
-            partition["partition-number"] = str(number)
+            partition["number"] = str(number)
         partitions.append(partition)
         start += sectors
     stdin_lines: str = "\n".join(_create_sfdisk_lines(header, partitions))
