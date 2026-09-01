@@ -68,8 +68,8 @@ image:
           chmod +x /usr/local/bin/my-script.sh
 
 This technique is not limited to custom scripts and can be used for key components of
-the image. For example, to install a custom kernel from a set of ``.deb`` files, copy
-the packages into the overlay and install them:
+the image. The following parts, for example, install a custom kernel from a set of
+local Debian files:
 
 .. code-block:: yaml
     :caption: imagecraft.yaml
