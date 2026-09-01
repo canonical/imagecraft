@@ -436,7 +436,7 @@ def test_structure_list_success(structures: list[dict]):
                 },
             ],
             re.escape(
-                "Value error, duplicate partition numbers (partition-number 64 shared by 'mary-kate' and 'ashley')"
+                "Value error, duplicate partition numbers (number 64 shared by 'mary-kate' and 'ashley')"
             ),
             id="duplicate-partition-numbers",
         ),

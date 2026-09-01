@@ -407,7 +407,7 @@ def _validate_structure_item_numbers(
             number: names for number, names in number_map.items() if len(names) > 1
         }
         duplicate_messages = [
-            f"partition-number {number} shared by {humanize_list(names, 'and', sort=False)}"
+            f"number {number} shared by {humanize_list(names, 'and', sort=False)}"
             for number, names in duplicate_numbers.items()
         ]
         raise ValueError(
