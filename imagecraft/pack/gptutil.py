@@ -105,11 +105,8 @@ def _create_gpt_layout(
             partition["bootable"] = None
         if hasattr(structure_item, "id") and structure_item.id is not None:
             partition["uuid"] = str(structure_item.id)
-        if (
-            hasattr(structure_item, "partition_number")
-            and structure_item.partition_number is not None
-        ):
-            partition["partition-number"] = str(structure_item.partition_number)
+        if structure_item.number is not None:
+            partition["partition-number"] = str(structure_item.number)
         partitions.append(partition)
         start += sectors
     stdin_lines: str = "\n".join(_create_sfdisk_lines(header, partitions))

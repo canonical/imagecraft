@@ -43,8 +43,8 @@ def mock_project():
     vol = MagicMock(spec=Volume)
     vol.volume_schema = PartitionSchema.GPT
     vol.structure = [
-        MagicMock(spec=GPTStructureItem, name="efi", partition_number=None),
-        MagicMock(spec=GPTStructureItem, name="rootfs", partition_number=2),
+        MagicMock(spec=GPTStructureItem, name="efi", number=None),
+        MagicMock(spec=GPTStructureItem, name="rootfs", number=2),
     ]
     vol.structure[0].name = "efi"
     vol.structure[1].name = "rootfs"
