@@ -355,7 +355,7 @@ class GPTStructureItem(StructureItem):
                         stacklevel=2,
                     )
                     value = value.copy()
-                    value.setdefault("number", value.pop(deprecated_key))
+                    value["number"] = value.pop(deprecated_key)
         return value
 
 
