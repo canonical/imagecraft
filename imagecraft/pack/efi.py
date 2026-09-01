@@ -28,14 +28,14 @@ import subprocess
 import tempfile
 import uuid
 from collections.abc import Callable
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 from craft_cli import emit
 from craft_platforms import DebianArchitecture
 
 from imagecraft import errors
 from imagecraft.models import volume
-from imagecraft.pack import gptutil, mbrutil
+from imagecraft.pack import gptutil
 from imagecraft.subprocesses import run
 from imagecraft.utils import mount as fusemount
 
@@ -119,7 +119,7 @@ def is_efi_partition(item: volume.StructureItem) -> bool:
 
 
 def find_structure_item(
-    structure: volume.StructureList,
+    structure: volume.StructureListType,
     predicate: Callable[[volume.StructureItem], bool],
 ) -> volume.StructureItem:
     """Return the first structure item matching *predicate*."""
@@ -129,35 +129,14 @@ def find_structure_item(
     raise errors.ImageError(message="No matching partition found")
 
 
-def part_num(name: str, structure: volume.StructureList) -> int | None:
-    """Get the partition number for a given name based on its position.
-
-    For MBR volumes with extended partitions (>4 entries), logical partitions
-    start at 5 because slot 4 is reserved for the synthesised extended container.
-    """
-    needs_extended = len(structure) > mbrutil.MAX_PRIMARY_SLOTS and isinstance(
-        structure[0], volume.MBRStructureItem
-    )
-    for i, structure_item in enumerate(structure):
-        if structure_item.name == name:
-            explicit = getattr(structure_item, "partition_number", None)
-            if explicit is not None:
-                return cast(int, explicit)
-            pos = i + 1  # 1-based
-            if needs_extended and pos > mbrutil.PRIMARY_SLOTS_WITH_EXTENDED:
-                return pos + 1  # skip slot 4 (extended container)
-            return pos
-    return None
-
-
 def partition_offset_size(
     disk_path: pathlib.Path,
-    structure: volume.StructureList,
+    structure: volume.StructureListType,
     predicate: Callable[[volume.StructureItem], bool],
 ) -> tuple[int, int]:
     """Return (offset_sectors, size_sectors) for the first structure item matching *predicate*."""
     item = find_structure_item(structure, predicate)
-    p_num = part_num(item.name, structure)
+    p_num = structure.get_number(item.name)
     if p_num is None:
         raise errors.ImageError(message=f"Cannot find a partition named {item.name}")
     if isinstance(structure[0], volume.MBRStructureItem):
@@ -615,7 +594,6 @@ def setup_grub_efi(
 # Backward-compatibility aliases
 _is_efi_partition = is_efi_partition
 _find_structure_item = find_structure_item
-_part_num = part_num
 _partition_offset_size = partition_offset_size
 _discover_grub_target = discover_grub_target
 _unsigned_shim_name = unsigned_shim_name

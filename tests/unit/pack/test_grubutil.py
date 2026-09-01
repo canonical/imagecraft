@@ -15,7 +15,7 @@
 """Tests for imagecraft.pack.grubutil.
 
 This module covers the pure-logic parts of ``setup_grub``: skip/dispatch
-conditions and small helpers like ``_part_num`` and ``_dump_signed_efi_binaries``
+conditions and small helpers like ``_dump_signed_efi_binaries``
 against plain directory trees.
 
 The full end-to-end flow (real disk images, FUSE mounts, chroot) is covered
@@ -24,19 +24,13 @@ by ``tests/integration/pack/test_grubutil.py``.
 
 import shutil
 from pathlib import Path
-from typing import cast
-from unittest.mock import MagicMock
 
 import pytest
 from craft_platforms import DebianArchitecture
 from imagecraft import errors
 from imagecraft.models.volume import (
-    GPTStructureItem,
-    GPTStructureList,
     GPTVolume,
     HybridStructureItem,
-    MBRStructureItem,
-    MBRStructureList,
     MBRVolume,
 )
 from imagecraft.pack import grubutil
@@ -299,76 +293,6 @@ def test_setup_grub_skips_unsupported_bios_architecture(mocker, new_dir, emitter
 
     setup_bios.assert_not_called()
     emitter.assert_progress("Cannot install GRUB on this architecture", permanent=True)
-
-
-# ── _part_num ───────────────────────────────────────────────────────────────
-
-
-@pytest.mark.parametrize(
-    ("name", "structure_spec", "expected"),
-    [
-        pytest.param(
-            "rootfs",
-            [
-                {"name": "efi", "partition_number": None},
-                {"name": "rootfs", "partition_number": None},
-            ],
-            2,
-            id="gpt-position-based",
-        ),
-        pytest.param(
-            "rootfs",
-            [
-                {"name": "efi", "partition_number": None},
-                {"name": "rootfs", "partition_number": 5},
-            ],
-            5,
-            id="gpt-explicit-number",
-        ),
-        pytest.param(
-            "missing",
-            [{"name": "efi", "partition_number": None}],
-            None,
-            id="not-found",
-        ),
-    ],
-)
-def test_part_num_gpt(name, structure_spec, expected):
-    items = []
-    for spec in structure_spec:
-        item = MagicMock(spec=GPTStructureItem)
-        item.name = spec["name"]
-        item.partition_number = spec["partition_number"]
-        items.append(item)
-    structure = cast(GPTStructureList, items)
-
-    assert grubutil._part_num(name, structure) == expected
-
-
-@pytest.mark.parametrize(
-    ("names", "expected_part_nums"),
-    [
-        pytest.param(
-            ["boot", "data", "rootfs"],
-            {"boot": 1, "data": 2, "rootfs": 3},
-            id="plain-primary",
-        ),
-        pytest.param(
-            ["boot", "p2", "p3", "logical1", "logical2"],
-            {"boot": 1, "p2": 2, "p3": 3, "logical1": 5, "logical2": 6},
-            id="extended-container-skips-slot-4",
-        ),
-    ],
-)
-def test_part_num_mbr(names, expected_part_nums):
-    items = []
-    for name in names:
-        item = MagicMock(spec=MBRStructureItem, partition_number=None)
-        item.name = name
-        items.append(item)
-    structure = cast(MBRStructureList, items)
-    for name, expected in expected_part_nums.items():
-        assert grubutil._part_num(name, structure) == expected
 
 
 # ── Target & name discovery ──────────────────────────────────────────────

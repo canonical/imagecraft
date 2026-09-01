@@ -38,7 +38,6 @@ from imagecraft.pack.efi import (
     _efi_filenames,
     _find_structure_item,
     _is_efi_partition,
-    _part_num,
     _partition_offset_size,
     _read_ext_uuid,
     _resolve_core_modules,
@@ -58,7 +57,6 @@ __all__ = [
     "_efi_filenames",
     "_find_structure_item",
     "_is_efi_partition",
-    "_part_num",
     "_partition_offset_size",
     "_read_ext_uuid",
     "_resolve_core_modules",
@@ -146,7 +144,7 @@ def _setup_grub_bios_chroot(
                 item = _find_structure_item(structure, predicate)
             except errors.ImageError:
                 continue
-            partnum = _part_num(item.name, structure)
+            partnum = structure.get_number(item.name)
             if partnum is None:
                 raise errors.ImageError(
                     message=f"Cannot find a partition named {item.name}"
@@ -161,7 +159,7 @@ def _setup_grub_bios_chroot(
         # EFI system partition (GPT only) is mounted at /boot/efi.
         if any(_is_efi_partition(s) for s in structure):
             item = _find_structure_item(structure, _is_efi_partition)
-            partnum = _part_num(item.name, structure)
+            partnum = structure.get_number(item.name)
             image_mounts.append(
                 chroot.Mount(
                     fstype=None,
