@@ -345,6 +345,10 @@ class GPTStructureItem(StructureItem):
         if isinstance(value, dict):
             for deprecated_key in ("partition_number", "partition-number"):
                 if deprecated_key in value:
+                    if "number" in value:
+                        raise ValueError(
+                            f"'number' and '{deprecated_key}' cannot be used together."
+                        )
                     warnings.warn(
                         f"'{deprecated_key}' is deprecated; use 'number' instead.",
                         DeprecationWarning,

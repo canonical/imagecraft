@@ -470,8 +470,9 @@ def test_structure_list_errors(structures: list[dict], error_message):
         TypeAdapter(StructureList).validate_python(structures)
 
 
-def test_deprecated_partition_number_alias():
-    with pytest.warns(DeprecationWarning, match="partition_number.*number"):
+@pytest.mark.parametrize("deprecated_key", ["partition_number", "partition-number"])
+def test_deprecated_partition_number_alias(deprecated_key):
+    with pytest.warns(DeprecationWarning, match=f"{deprecated_key}.*number"):
         structure = GPTStructureItem.model_validate(
             {
                 "name": "rootfs",
@@ -479,7 +480,7 @@ def test_deprecated_partition_number_alias():
                 "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
                 "filesystem": "ext4",
                 "size": "0",
-                "partition_number": 1,
+                deprecated_key: 1,
             }
         )
 
@@ -492,6 +493,21 @@ def test_partition_number_is_not_in_gpt_structure_schema():
     assert "number" in properties
     assert "partition_number" not in properties
     assert "partition-number" not in properties
+
+
+def test_partition_number_alias_conflicts_with_number():
+    with pytest.raises(ValueError, match="cannot be used together"):
+        GPTStructureItem.model_validate(
+            {
+                "name": "rootfs",
+                "role": "system-data",
+                "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+                "filesystem": "ext4",
+                "size": "0",
+                "number": 1,
+                "partition_number": 2,
+            }
+        )
 
 
 # ---------------------------------------------------------------------------
