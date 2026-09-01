@@ -27,6 +27,10 @@ class ImageError(ImagecraftError):
     """Raised when an error occurs when dealing with the Image class."""
 
 
+class MountError(ImagecraftError):
+    """Raised when an error occurs mounting or unmounting an image or partition."""
+
+
 class GRUBInstallError(ImagecraftError):
     """Raised when an error occurs when installing grub."""
 

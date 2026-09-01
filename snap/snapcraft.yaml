@@ -75,6 +75,8 @@ parts:
       - fdisk
       - coreutils
       - util-linux
+      - fusefile
+      - fuse3
     stage:
       - "-usr/lib/x86_64-linux-gnu/libicuio.so.*"
       - "-usr/lib/x86_64-linux-gnu/libicutest.so.*"
@@ -87,7 +89,33 @@ parts:
       "usr/bin/mtools": "libexec/imagecraft/mtools"
       "usr/bin/dd": "libexec/imagecraft/dd"
       "usr/bin/truncate": "libexec/imagecraft/truncate"
+      "usr/sbin/fuse2fs": "libexec/imagecraft/fuse2fs"
+      "usr/sbin/fusefile": "libexec/imagecraft/fusefile"
+      "usr/bin/fusermount3": "libexec/imagecraft/fusermount3"
       "usr/sbin/mkfs*": "libexec/imagecraft/"
+  # Build fusefat 0.4 from source because the archive only provides it on amd64 in Noble.
+  # TODO: Remove when upgrading base to core26.
+  fusefat:
+    source: https://github.com/virtualsquare/fusefatfs.git
+    source-commit: 9d612e83909f2719f004b8aad843ad9d320fece1 # 0.4
+    plugin: cmake
+    build-attributes:
+      - enable-patchelf
+    build-packages:
+      - libfuse3-dev
+      - pkgconf
+    stage-packages:
+      - libfuse3-3
+    override-build: |
+      craftctl default
+      for bindir in "${CRAFT_PART_INSTALL}/usr/local/bin" "${CRAFT_PART_INSTALL}/usr/bin"; do
+        if [ -f "${bindir}/fusefatfs" ] && [ ! -f "${bindir}/fusefat" ]; then
+          ln -sf fusefatfs "${bindir}/fusefat"
+        fi
+      done
+    organize:
+      "usr/local/bin/fusefat*": "libexec/imagecraft/"
+      "usr/bin/fusefat*": "libexec/imagecraft/"
   # Build our own version of fuse-overlayfs due to https://github.com/containers/fuse-overlayfs/issues/429
   # The apt and Launchpad repositories as of 23/07/25 do not have a sufficiently new version to get this patch
   fuse-overlayfs:
@@ -120,7 +148,7 @@ parts:
     prime:
       - -*
   imagecraft:
-    after: [imagecraft-libs, rustc]
+    after: [imagecraft-libs, rustc, fusefat]
     source: .
     plugin: uv
     build-attributes:
