@@ -31,7 +31,6 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from craft_cli import emit
-from craft_platforms import DebianArchitecture
 
 from imagecraft import errors
 from imagecraft.models import volume
@@ -41,13 +40,6 @@ from imagecraft.utils import mount as fusemount
 
 if TYPE_CHECKING:
     from imagecraft.pack.image import Image
-
-_ARCH_TO_GRUB_EFI_TARGET: dict[str, str] = {
-    DebianArchitecture.AMD64: "x86_64-efi",
-    DebianArchitecture.ARM64: "arm64-efi",
-    DebianArchitecture.ARMHF: "arm-efi",
-    DebianArchitecture.RISCV64: "riscv64-efi",
-}
 
 # GRUB target -> UEFI removable-media architecture token.
 #

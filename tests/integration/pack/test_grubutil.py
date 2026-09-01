@@ -33,7 +33,7 @@ from imagecraft.models.volume import (
     GPTVolume,
     PartitionSchema,
 )
-from imagecraft.pack import diskutil, gptutil, grubutil
+from imagecraft.pack import diskutil, efi, gptutil, grubutil
 from imagecraft.pack.diskutil import DiskSize
 from imagecraft.pack.image import Image
 from imagecraft.utils.mount import mount_partition
@@ -495,7 +495,7 @@ def test_setup_grub_efi_separate_boot_partition(
     )
 
     stub = _esp_type(image.disk_path, "/EFI/ubuntu/grub.cfg")
-    boot_uuid = grubutil._read_ext_uuid(
+    boot_uuid = efi.read_ext_uuid(
         image.disk_path,
         gptutil.get_partition_sector_offset(image.disk_path, "boot") * 512,
     )

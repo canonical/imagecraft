@@ -33,7 +33,7 @@ from imagecraft.models.volume import (
     HybridStructureItem,
     MBRVolume,
 )
-from imagecraft.pack import grubutil
+from imagecraft.pack import efi, grubutil
 from imagecraft.pack.image import Image
 
 # Real tools this module's implementation shells out to. If any of these is
@@ -137,7 +137,7 @@ def test_setup_grub_skip_conditions(mocker, new_dir, volume, arch, emitter, mess
     image = Image(volume=volume, disk_path=disk_path)
     workdir = Path(new_dir, "workdir")
     workdir.mkdir()
-    setup_efi = mocker.patch("imagecraft.pack.grubutil._setup_grub_efi")
+    setup_efi = mocker.patch("imagecraft.pack.efi.setup_grub_efi")
     setup_bios = mocker.patch("imagecraft.pack.grubutil._setup_grub_bios_chroot")
 
     grubutil.setup_grub(image=image, workdir=workdir, arch=arch)
@@ -177,7 +177,7 @@ def test_setup_grub_dispatches_to_efi(mocker, new_dir):
     image = Image(volume=volume, disk_path=disk_path)
     workdir = Path(new_dir, "workdir")
     workdir.mkdir()
-    setup_efi = mocker.patch("imagecraft.pack.grubutil._setup_grub_efi")
+    setup_efi = mocker.patch("imagecraft.pack.efi.setup_grub_efi")
 
     grubutil.setup_grub(
         image=image,
@@ -251,7 +251,7 @@ def test_setup_grub_skips_efi_error(mocker, new_dir, emitter):
     workdir = Path(new_dir, "workdir")
     workdir.mkdir()
     mocker.patch(
-        "imagecraft.pack.grubutil._setup_grub_efi",
+        "imagecraft.pack.efi.setup_grub_efi",
         side_effect=errors.ImageError(message="boom"),
     )
 
@@ -321,7 +321,7 @@ def test_discover_grub_target(tmp_path, installed_dirs, build_for, expected):
     for d in installed_dirs:
         (rootfs / "usr/lib/grub" / d).mkdir(parents=True)
 
-    assert grubutil._discover_grub_target(rootfs, build_for) == expected
+    assert efi.discover_grub_target(rootfs, build_for) == expected
 
 
 @pytest.mark.parametrize(
@@ -347,7 +347,7 @@ def test_discover_grub_target_errors(tmp_path, installed_dirs, build_for, match)
         (rootfs / "usr/lib/grub" / d).mkdir(parents=True)
 
     with pytest.raises(errors.ImageError, match=match):
-        grubutil._discover_grub_target(rootfs, build_for)
+        efi.discover_grub_target(rootfs, build_for)
 
 
 def test_discover_grub_target_ignores_signed_dirs(tmp_path):
@@ -356,7 +356,7 @@ def test_discover_grub_target_ignores_signed_dirs(tmp_path):
     (rootfs / "usr/lib/grub/x86_64-efi").mkdir(parents=True)
     (rootfs / "usr/lib/grub/x86_64-efi-signed").mkdir(parents=True)
 
-    assert grubutil._discover_grub_target(rootfs, "x86_64-efi") == "x86_64-efi"
+    assert efi.discover_grub_target(rootfs, "x86_64-efi") == "x86_64-efi"
 
 
 def test_is_efi_partition_recognizes_hybrid_gpt_component():
@@ -370,7 +370,7 @@ def test_is_efi_partition_recognizes_hybrid_gpt_component():
         }
     )
 
-    assert grubutil._is_efi_partition(item)
+    assert efi.is_efi_partition(item)
 
 
 @pytest.mark.parametrize(
@@ -384,7 +384,7 @@ def test_is_efi_partition_recognizes_hybrid_gpt_component():
     ],
 )
 def test_unsigned_shim_name(signed_name, expected):
-    assert grubutil._unsigned_shim_name(signed_name) == expected
+    assert efi.unsigned_shim_name(signed_name) == expected
 
 
 def test_resolve_core_modules_closure(tmp_path):
@@ -398,11 +398,11 @@ def test_resolve_core_modules_closure(tmp_path):
         "gfxterm: video font\n"
     )
 
-    modules = grubutil._resolve_core_modules(modules_dir)
+    modules = efi.resolve_core_modules(modules_dir)
 
     assert modules == sorted(modules)
     assert set(modules) == {
-        *grubutil._EFI_CORE_MODULES,
+        *efi._EFI_CORE_MODULES,
         # Resolved from moddep.lst:
         "video",
         "relocator",
@@ -415,9 +415,7 @@ def test_resolve_core_modules_without_moddep(tmp_path):
     modules_dir = tmp_path / "modules"
     modules_dir.mkdir(parents=True)
 
-    assert grubutil._resolve_core_modules(modules_dir) == sorted(
-        grubutil._EFI_CORE_MODULES
-    )
+    assert efi.resolve_core_modules(modules_dir) == sorted(efi._EFI_CORE_MODULES)
 
 
 def test_resolve_core_modules_includes_efi_firmware_setup_when_available(tmp_path):
@@ -425,4 +423,4 @@ def test_resolve_core_modules_includes_efi_firmware_setup_when_available(tmp_pat
     modules_dir.mkdir(parents=True)
     (modules_dir / "efifwsetup.mod").touch()
 
-    assert "efifwsetup" in grubutil._resolve_core_modules(modules_dir)
+    assert "efifwsetup" in efi.resolve_core_modules(modules_dir)

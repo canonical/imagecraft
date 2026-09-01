@@ -29,49 +29,29 @@ from craft_platforms import DebianArchitecture
 from imagecraft import errors
 from imagecraft.models import volume
 from imagecraft.pack import chroot, efi
-from imagecraft.pack.efi import (
-    _ARCH_TO_GRUB_EFI_TARGET,
-    _EFI_CORE_MODULES,
-    _SIGNED_SHIM_SUFFIXES,
-)
 from imagecraft.pack.image import Image
 from imagecraft.subprocesses import run
 
-_discover_grub_target = efi.discover_grub_target
-_dump_signed_efi_binaries = efi.dump_signed_efi_binaries
-_efi_filenames = efi.efi_filenames
-_find_structure_item = efi.find_structure_item
-_is_efi_partition = efi.is_efi_partition
-_read_ext_uuid = efi.read_ext_uuid
-_resolve_core_modules = efi.resolve_core_modules
-_run_update_grub = efi.run_update_grub
-_setup_grub_efi = efi.setup_grub_efi
-_unsigned_shim_name = efi.unsigned_shim_name
-
 __all__ = [
-    "_ARCH_TO_GRUB_EFI_TARGET",
-    "_EFI_CORE_MODULES",
-    "_SIGNED_SHIM_SUFFIXES",
-    "_discover_grub_target",
-    "_dump_signed_efi_binaries",
-    "_efi_filenames",
-    "_find_structure_item",
-    "_is_efi_partition",
-    "_read_ext_uuid",
-    "_resolve_core_modules",
-    "_run_update_grub",
-    "_setup_grub_bios_chroot",
-    "_setup_grub_efi",
-    "_unsigned_shim_name",
     "setup_grub",
 ]
 
 _GRUB_BIOS_TARGET = "i386-pc"
 _GRUB_BIOS_ARCHS = {DebianArchitecture.AMD64, DebianArchitecture.I386}
 
+_ARCH_TO_GRUB_EFI_TARGET: dict[str, str] = {
+    DebianArchitecture.AMD64: "x86_64-efi",
+    DebianArchitecture.ARM64: "arm64-efi",
+    DebianArchitecture.ARMHF: "arm-efi",
+    DebianArchitecture.RISCV64: "riscv64-efi",
+}
+
 _ROLE_MOUNT_PAIRS: list[tuple[Callable[[volume.StructureItem], bool], str]] = [
     (lambda s: s.role == volume.Role.SYSTEM_DATA, "/"),
-    (lambda s: s.role == volume.Role.SYSTEM_BOOT and not _is_efi_partition(s), "/boot"),
+    (
+        lambda s: s.role == volume.Role.SYSTEM_BOOT and not efi.is_efi_partition(s),
+        "/boot",
+    ),
 ]
 
 
@@ -116,7 +96,7 @@ def setup_grub(
     grub_target = _ARCH_TO_GRUB_EFI_TARGET[arch]
 
     try:
-        _setup_grub_efi(image, grub_target)
+        efi.setup_grub_efi(image, grub_target)
     except errors.ImageError as err:
         emit.progress(f"Cannot install GRUB on this rootfs: {err}", permanent=True)
 
@@ -140,7 +120,7 @@ def _setup_grub_bios_chroot(
         image_mounts = []
         for predicate, mountpoint in _ROLE_MOUNT_PAIRS:
             try:
-                item = _find_structure_item(structure, predicate)
+                item = efi.find_structure_item(structure, predicate)
             except errors.ImageError:
                 continue
             partnum = structure.get_number(item.name)
@@ -156,8 +136,8 @@ def _setup_grub_bios_chroot(
                 )
             )
         # EFI system partition (GPT only) is mounted at /boot/efi.
-        if any(_is_efi_partition(s) for s in structure):
-            item = _find_structure_item(structure, _is_efi_partition)
+        if any(efi.is_efi_partition(s) for s in structure):
+            item = efi.find_structure_item(structure, efi.is_efi_partition)
             partnum = structure.get_number(item.name)
             image_mounts.append(
                 chroot.Mount(
