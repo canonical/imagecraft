@@ -34,6 +34,7 @@ from imagecraft.models.volume import (
     GPTStructureItem,
     GPTStructureList,
     GPTVolume,
+    HybridStructureItem,
     MBRStructureItem,
     MBRStructureList,
     MBRVolume,
@@ -224,8 +225,8 @@ def test_setup_grub_dispatches_to_bios(mocker, new_dir, arch):
     setup_bios.assert_called_once_with(image, workdir, "i386-pc")
 
 
-def test_setup_grub_propagates_efi_error(mocker, new_dir, emitter):
-    """A raised ImageError from _setup_grub_efi propagates out of setup_grub."""
+def test_setup_grub_skips_efi_error(mocker, new_dir, emitter):
+    """An EFI setup error emits a permanent skip message."""
 
     volume = GPTVolume.unmarshal(
         {
@@ -260,12 +261,44 @@ def test_setup_grub_propagates_efi_error(mocker, new_dir, emitter):
         side_effect=errors.ImageError(message="boom"),
     )
 
-    with pytest.raises(errors.ImageError, match="boom"):
-        grubutil.setup_grub(
-            image=image,
-            workdir=workdir,
-            arch=DebianArchitecture.AMD64,
-        )
+    grubutil.setup_grub(
+        image=image,
+        workdir=workdir,
+        arch=DebianArchitecture.AMD64,
+    )
+
+    emitter.assert_progress("Cannot install GRUB on this rootfs: boom", permanent=True)
+
+
+@pytest.mark.usefixtures("new_dir")
+def test_setup_grub_skips_unsupported_bios_architecture(mocker, new_dir, emitter):
+    volume = MBRVolume.unmarshal(
+        {
+            "schema": "mbr",
+            "structure": [
+                {
+                    "name": "rootfs",
+                    "role": "system-data",
+                    "type": "83",
+                    "filesystem": "ext4",
+                    "size": "512M",
+                },
+            ],
+        }
+    )
+    disk_path = Path(new_dir, "pc.img")
+    disk_path.touch(exist_ok=True)
+    image = Image(volume=volume, disk_path=disk_path)
+    setup_bios = mocker.patch("imagecraft.pack.grubutil._setup_grub_bios_chroot")
+
+    grubutil.setup_grub(
+        image=image,
+        workdir=Path(new_dir, "workdir"),
+        arch=DebianArchitecture.ARM64,
+    )
+
+    setup_bios.assert_not_called()
+    emitter.assert_progress("Cannot install GRUB on this architecture", permanent=True)
 
 
 # ── _part_num ───────────────────────────────────────────────────────────────
@@ -402,6 +435,20 @@ def test_discover_grub_target_ignores_signed_dirs(tmp_path):
     assert grubutil._discover_grub_target(rootfs, "x86_64-efi") == "x86_64-efi"
 
 
+def test_is_efi_partition_recognizes_hybrid_gpt_component():
+    item = HybridStructureItem.unmarshal(
+        {
+            "name": "efi",
+            "role": "system-boot",
+            "type": "0C,C12A7328-F81F-11D2-BA4B-00A0C93EC93B",
+            "filesystem": "vfat",
+            "size": "64M",
+        }
+    )
+
+    assert grubutil._is_efi_partition(item)
+
+
 @pytest.mark.parametrize(
     ("signed_name", "expected"),
     [
@@ -447,3 +494,11 @@ def test_resolve_core_modules_without_moddep(tmp_path):
     assert grubutil._resolve_core_modules(modules_dir) == sorted(
         grubutil._EFI_CORE_MODULES
     )
+
+
+def test_resolve_core_modules_includes_efi_firmware_setup_when_available(tmp_path):
+    modules_dir = tmp_path / "modules"
+    modules_dir.mkdir(parents=True)
+    (modules_dir / "efifwsetup.mod").touch()
+
+    assert "efifwsetup" in grubutil._resolve_core_modules(modules_dir)

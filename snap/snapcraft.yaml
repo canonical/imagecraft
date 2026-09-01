@@ -88,6 +88,7 @@ parts:
       "usr/lib/python3/dist-packages/apt*": "lib/python3.12/site-packages/"
       "usr/sbin/sfdisk": "libexec/imagecraft/sfdisk"
       "usr/bin/mcopy": "libexec/imagecraft/mcopy"
+      "usr/bin/mmd": "libexec/imagecraft/mmd"
       "usr/bin/mtools": "libexec/imagecraft/mtools"
       "usr/bin/dd": "libexec/imagecraft/dd"
       "usr/bin/truncate": "libexec/imagecraft/truncate"

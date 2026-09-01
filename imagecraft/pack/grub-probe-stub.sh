@@ -25,7 +25,7 @@ case "$device" in
 esac
 case "$target" in
     fs_uuid) echo "$uuid";;
-    fs) echo "ext4";;
+    fs) echo "ext2";;
     partmap) echo "gpt";;
     abstraction) ;;
     hints_string) ;;

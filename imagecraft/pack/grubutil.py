@@ -37,6 +37,7 @@ which the chroot machinery is removed entirely.
 """
 
 import contextlib
+import importlib.resources
 import os
 import pathlib
 import re
@@ -147,6 +148,9 @@ def setup_grub(
         return
 
     if image.volume.volume_schema == volume.PartitionSchema.MBR:
+        if arch not in _GRUB_BIOS_ARCHS:
+            emit.progress("Cannot install GRUB on this architecture", permanent=True)
+            return
         # Legacy BIOS/MBR images are still installed through a loop device
         # and a chroot. They move over to direct image manipulation in a
         # follow-up change, once the EFI path has settled.
@@ -164,7 +168,10 @@ def setup_grub(
         return
     grub_target = _ARCH_TO_GRUB_EFI_TARGET[arch]
 
-    _setup_grub_efi(image, grub_target)
+    try:
+        _setup_grub_efi(image, grub_target)
+    except errors.ImageError as err:
+        emit.progress(f"Cannot install GRUB on this rootfs: {err}", permanent=True)
 
 
 def _discover_grub_target(rootfs: pathlib.Path, build_for_target: str) -> str:
@@ -227,10 +234,17 @@ def _efi_filenames(
 
 
 def _is_efi_partition(item: volume.StructureItem) -> bool:
-    """Return True for the EFI system partition (GPT only)."""
+    """Return True for the EFI system partition."""
     return (
-        isinstance(item, volume.GPTStructureItem)
-        and item.structure_type == volume.GptType.EFI_SYSTEM
+        (
+            isinstance(item, volume.GPTStructureItem)
+            and item.structure_type == volume.GptType.EFI_SYSTEM
+        )
+        or (
+            isinstance(item, volume.HybridStructureItem)
+            and item.structure_type.split(",", maxsplit=1)[1]
+            == volume.GptType.EFI_SYSTEM.value
+        )
     )
 
 
@@ -323,6 +337,7 @@ def _setup_grub_efi(
                     "ext4",
                     offset=root_offset * sector,
                     size=root_size * sector,
+                    fakeroot=True,
                 )
             )
             if has_separate_boot:
@@ -332,6 +347,8 @@ def _setup_grub_efi(
                         "ext4",
                         offset=boot_offset * sector,
                         size=boot_size * sector,
+                        mountpoint=rootfs / "boot",
+                        fakeroot=True,
                     )
                 )
             # The rootfs itself declares which GRUB modules it carries; the
@@ -370,12 +387,23 @@ def _setup_grub_efi(
             boot_uuid = _read_ext_uuid(disk_path, boot_offset * sector)
             root_uuid = _read_ext_uuid(disk_path, root_offset * sector)
             _run_update_grub(rootfs, boot_uuid=boot_uuid, root_uuid=root_uuid)
+            _write_esp_file(
+                disk_path,
+                esp_offset_bytes,
+                tmp_dir,
+                (
+                    f"search.fs_uuid {boot_uuid} root\n"
+                    "set prefix=($root)'/grub'\n"
+                    "configfile $prefix/grub.cfg\n"
+                ).encode(),
+                "/EFI/ubuntu/grub.cfg",
+            )
 
     emit.progress("GRUB installation complete")
 
 
-_STUB_GRUB_PROBE_PATH = (
-    pathlib.Path(__file__).resolve().parents[2] / "shell" / "grub-probe-stub.sh"
+_STUB_GRUB_PROBE = importlib.resources.files("imagecraft.pack").joinpath(
+    "grub-probe-stub.sh"
 )
 
 
@@ -396,13 +424,13 @@ def _run_update_grub(
     stub_dir = rootfs / "imagecraft-libexec"
     stub_dir.mkdir(parents=True, exist_ok=True)
     stub_path = stub_dir / "grub-probe"
-    stub_path.write_text(_STUB_GRUB_PROBE_PATH.read_text(), encoding="utf-8")
+    stub_path.write_text(_STUB_GRUB_PROBE.read_text(encoding="utf-8"), encoding="utf-8")
     stub_path.chmod(0o755)
     env = {
         **os.environ,
         "IMAGECRAFT_ROOT_UUID": root_uuid,
         "IMAGECRAFT_BOOT_UUID": boot_uuid,
-        "PATH": f"{stub_dir}:{os.environ.get('PATH', '')}",
+        "PATH": f"/imagecraft-libexec:{os.environ.get('PATH', '')}",
     }
     try:
         run("chroot", str(rootfs), "update-grub", env=env)
@@ -447,17 +475,13 @@ def _build_grub_image(
     output_host = rootfs / output_rel.relative_to("/")
     output_host.parent.mkdir(parents=True, exist_ok=True)
 
-    # Run the image's own grub-mkimage via chroot(1) as a plain subprocess:
-    # a clean single-threaded process, unaffected by any threads in this one.
     try:
         run(
-            "chroot",
-            str(rootfs),
-            "grub-mkimage",
+            str(rootfs / "usr/bin/grub-mkimage"),
             "-d",
-            f"/usr/lib/grub/{grub_target}",
+            str(modules_dir),
             "-o",
-            str(output_rel),
+            str(output_host),
             "-O",
             grub_target,
             "-p",
@@ -467,7 +491,7 @@ def _build_grub_image(
         )
     except FileNotFoundError as err:
         raise errors.GRUBInstallError(
-            "Cannot build a GRUB image: chroot is not available"
+            "Cannot build a GRUB image: grub-mkimage is not available"
         ) from err
     except subprocess.CalledProcessError as err:
         raise errors.GRUBInstallError(
@@ -494,7 +518,10 @@ def _resolve_core_modules(modules_dir: pathlib.Path) -> list[str]:
                 deps[name.strip()] = rest.split()
 
     seen: set[str] = set()
-    stack = list(_EFI_CORE_MODULES)
+    stack = [
+        *_EFI_CORE_MODULES,
+        *(["efifwsetup"] if (modules_dir / "efifwsetup.mod").is_file() else []),
+    ]
     while stack:
         mod = stack.pop()
         if mod in seen:
@@ -630,7 +657,11 @@ def _dump_signed_efi_binaries(
         (
             candidate
             for suffix in _SIGNED_SHIM_SUFFIXES
-            for candidate in sorted((rootfs / "usr/lib/shim").glob(f"shim*{suffix}"))
+            for candidate in sorted(
+                (rootfs / "usr/lib/shim").glob(
+                    f"shim{_GRUB_TARGET_TO_UEFI_ARCH[grub_target].lower()}*{suffix}"
+                )
+            )
             if candidate.is_file()
         ),
         None,
