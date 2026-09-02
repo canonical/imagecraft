@@ -20,6 +20,7 @@ import pytest
 from imagecraft.models import FileSystem, GPTVolume, MBRVolume
 from imagecraft.pack import diskutil, gptutil, mbrutil
 from imagecraft.utils.mount import (
+    ImageDevDir,
     mount_partition,
     mount_volume,
 )
@@ -100,6 +101,29 @@ def volume_definition(request: pytest.FixtureRequest) -> GPTVolume | MBRVolume:
 @pytest.fixture(params=[pytest.param(fs, id=fs.value) for fs in FileSystem])
 def fstype(request: pytest.FixtureRequest) -> FileSystem:
     return request.param
+
+
+def test_mount_dev_dir(tmp_path: Path, volume_definition: GPTVolume | MBRVolume):
+    image_path = tmp_path / "disk.img"
+    if isinstance(volume_definition, GPTVolume):
+        gptutil.create_empty_gpt_image(
+            image_path, gptutil.SECTOR_SIZE_512, volume_definition
+        )
+    else:
+        mbrutil.create_empty_mbr_image(
+            image_path, mbrutil.SECTOR_SIZE_512, volume_definition
+        )
+
+    dev_path = tmp_path / "dev"
+    dev_path.mkdir()
+
+    dev_dir = ImageDevDir(image_path=image_path, dev_dir=dev_path)
+    with dev_dir as part_mounts:
+        for part_path in part_mounts.values():
+            assert part_path.exists()
+            assert part_path.is_relative_to(dev_path)
+    for part_path in part_mounts.values():
+        assert not part_path.exists(), part_mounts
 
 
 def test_mount_partition_standalone(

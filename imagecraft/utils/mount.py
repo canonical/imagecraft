@@ -23,10 +23,12 @@ import time
 from collections.abc import Sequence
 from pathlib import Path
 from types import TracebackType
+from typing import Any
 
 from craft_cli import emit
 
 from imagecraft import errors
+from imagecraft.errors import MountError
 from imagecraft.models import (
     FileSystem,
     GPTVolume,
@@ -47,8 +49,11 @@ def _try_fuse_command(command: Sequence[str], *, err_msg: str) -> None:
     """
     try:
         run(*command)
-    except (subprocess.CalledProcessError, FileNotFoundError) as err:
-        raise errors.MountError(f"{err_msg}: {err}") from err
+    except subprocess.CalledProcessError as err:
+        raise errors.MountError(
+            f"{err_msg}: {err.stderr}",
+            details=err.stderr,
+        ) from err
 
 
 def _unmount_path(
@@ -229,6 +234,209 @@ class VirtualOffsetDevice(BaseMount):
     def _cleanup(self) -> None:
         super()._cleanup()
         self.part_file = None
+
+
+class ImageDevDir:
+    """Expose all partitions from a disk image as files via fusefile.
+
+    Creates and mounts device files that represent the partitions of a disk image
+    in the given ``dev_dir``, replicating how the block devices would look in ``/dev``
+    if they were on a real block device.
+    """
+
+    image_path: Path
+
+    def __init__(self, *, image_path: Path, dev_dir: Path) -> None:
+        self.image_path = image_path
+        self.dev_dir = dev_dir
+        self._is_mounted = False
+        self.partition_table: dict[str, Any] | None = None
+        self._remove_on_unmount: set[Path] = set()
+        self._devices: dict[int | str | None, Path] | None = None
+
+    @property
+    def is_mounted(self) -> bool:
+        """Check if the device directory is currently mounted."""
+        return self._is_mounted
+
+    def _reset_mount_state(self) -> None:
+        """Reset internal mount bookkeeping without interacting with the system."""
+        self._devices = None
+        self.partition_table = None
+        self._is_mounted = False
+        self._remove_on_unmount.clear()
+
+    def _create_device_file(self, path: Path) -> None:
+        """Create an empty placeholder for a device file and track it for cleanup.
+
+        :param path: The device file to create.
+        :raises errors.MountError: If the path exists but is not a regular file,
+            or if the file cannot be created.
+        """
+        if path.exists():
+            if path.is_dir():
+                raise errors.MountError(
+                    f"Error creating device file {path}: path is a directory"
+                )
+            return
+        try:
+            path.touch()
+        except OSError as err:
+            raise errors.MountError(
+                f"Error creating device file {path}: {err}"
+            ) from err
+        self._remove_on_unmount.add(path)
+
+    def _unmount_device_file(self, path: Path) -> None:
+        """Unmount a device file and remove it if we created it.
+
+        Errors during unmount are suppressed; the caller decides whether to
+        report accumulated failures.
+
+        :param path: The device path to unmount.
+        """
+        with contextlib.suppress(errors.MountError):
+            _unmount_path(path)
+        if path in self._remove_on_unmount:
+            with contextlib.suppress(OSError):
+                path.unlink()
+            self._remove_on_unmount.discard(path)
+
+    def mount(self) -> dict[int | str | None, Path]:
+        """Create and mount the files for the disk's partitions, including itself.
+
+        :returns: A dictionary that maps the partition numbers and names to the
+            device paths. The key ``None`` also maps to a bind-mounted form of the
+            full image.
+        :raises errors.MountError: If mounting has already happened or if any
+            step of the mount process fails.
+        """
+        if self._devices is not None:
+            raise MountError(f"{self.image_path} already mounted")
+        self.partition_table = gptutil.get_partition_table(self.image_path)
+        device_name: str = Path(self.partition_table["device"]).name
+        sector_size = int(self.partition_table["sectorsize"])
+
+        device_path = self.dev_dir / device_name
+        self._create_device_file(device_path)
+        try:
+            _try_fuse_command(
+                ["mount", "--bind", str(self.image_path), str(device_path)],
+                err_msg=f"Error bind-mounting {self.image_path}",
+            )
+        except errors.MountError:
+            self._cleanup_created_files()
+            self._reset_mount_state()
+            raise
+        self._devices = {None: device_path}
+
+        try:
+            for part_num, partition in enumerate(
+                self.partition_table["partitions"], start=1
+            ):
+                part_path = self.dev_dir / Path(partition["node"]).name
+                self._create_device_file(part_path)
+                part_start_bytes = partition["start"] * sector_size
+                part_length_bytes = partition["size"] * sector_size
+                fragment_str = (
+                    f"{self.image_path}/{part_start_bytes}+{part_length_bytes}"
+                )
+                try:
+                    _try_fuse_command(
+                        ["fusefile", str(part_path), fragment_str],
+                        err_msg=f"Error mounting partition {part_num} of {self.image_path}",
+                    )
+                except errors.MountError:
+                    self._cleanup_created_files()
+                    self._reset_mount_state()
+                    raise
+                self._devices[part_num] = self._devices[part_path.name] = part_path
+        except errors.MountError:
+            raise
+        except Exception as err:
+            self._cleanup_created_files()
+            self._reset_mount_state()
+            raise errors.MountError(
+                f"Unexpected error while mounting {self.image_path}: {err}"
+            ) from err
+
+        self._is_mounted = True
+        return self._devices
+
+    def _cleanup_created_files(self) -> None:
+        """Unmount and remove all tracked device files that still exist."""
+        for path in list(self._remove_on_unmount):
+            self._unmount_device_file(path)
+
+    def unmount(self) -> None:
+        """Unmount the fake dev directory.
+
+        Any errors raised while unmounting individual devices are collected
+        and re-raised after attempting to clean up everything else.
+
+        :raises errors.MountError: If the directory is not mounted or if any
+            unmount operation fails.
+        """
+        if self._devices is None:
+            raise MountError(f"Not mounted: {self.image_path}")
+        errors_encountered: list[errors.MountError] = []
+
+        for idx, part_path in self._devices.items():
+            # Partitions are keyed by both number and name; unmount each only once.
+            if not isinstance(idx, int):
+                continue
+            try:
+                _unmount_path(part_path)
+            except errors.MountError as err:
+                errors_encountered.append(err)
+            if part_path in self._remove_on_unmount:
+                try:
+                    part_path.unlink()
+                except OSError as err:
+                    errors_encountered.append(
+                        errors.MountError(
+                            f"Failed to remove device file {part_path}: {err}"
+                        )
+                    )
+                self._remove_on_unmount.discard(part_path)
+
+        image_dev_path = self._devices[None]
+        try:
+            _unmount_path(image_dev_path)
+        except errors.MountError as err:
+            errors_encountered.append(err)
+
+        for path in list(self._remove_on_unmount):
+            try:
+                _unmount_path(path)
+            except errors.MountError as err:
+                errors_encountered.append(err)
+            try:
+                path.unlink()
+            except OSError as err:
+                errors_encountered.append(
+                    errors.MountError(f"Failed to remove device file {path}: {err}")
+                )
+            self._remove_on_unmount.discard(path)
+
+        self._reset_mount_state()
+        if errors_encountered:
+            raise errors.MountError(
+                f"Errors occurred while unmounting {self.image_path}: {errors_encountered}"
+            )
+
+    def __enter__(self) -> dict[int | str | None, Path]:
+        """Enter context manager."""
+        return self.mount()
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        """Exit context manager."""
+        self.unmount()
 
 
 class BasePartitionMount(BaseMount):
