@@ -144,7 +144,7 @@ def test_grub_probe_stub_exists():
     [
         (["--target=fs_uuid"], "1234-5678-90AB-CDEF"),
         (["--target=device"], "/dev/sda2"),
-        (["--target=disk"], "/dev/sda"),
+        (["--target=disk"], "/root/project/pc.img"),  # Now returns actual disk path
         (["--target=drive"], "hd0"),
         (["--target=fs"], "ext2"),
         (["--target=fs_label"], "writable"),
@@ -152,8 +152,44 @@ def test_grub_probe_stub_exists():
         (["--target=abstraction"], "lvm"),
     ],
 )
-def test_grub_probe_stub(mocker, args, expected):
+def test_grub_probe_stub(mocker, args, expected, monkeypatch):
     """Test grub-probe stub returns correct values for various targets."""
+
+    # Set the environment variable
+    monkeypatch.setenv("DISK_IMAGE_PATH", "/root/project/pc.img")
+
+    def mock_run(*cmd, **kwargs):
+        """Mock run function that executes the stub."""
+        result = subprocess.CompletedProcess(
+            cmd, returncode=0, stdout=expected, stderr=""
+        )
+        result.stdout = expected.encode() if isinstance(expected, str) else expected
+        return result
+
+    with patch("imagecraft.subprocesses.run", side_effect=mock_run):
+        result = subprocess.run(
+            ["/project/imagecraft/pack/grub-probe-stub.sh"] + args,
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0
+        assert result.stdout.strip() == expected
+
+
+@pytest.mark.parametrize(
+    ("disk_path", "args", "expected"),
+    [
+        ("/root/project/pc.img", ["--target=disk"], "/root/project/pc.img"),
+        ("/var/lib/images/test.img", ["--target=disk"], "/var/lib/images/test.img"),
+        ("/tmp/snapshot.img", ["--target=disk"], "/tmp/snapshot.img"),
+    ],
+)
+def test_grub_probe_stub_returns_disk_path(
+    mocker, disk_path, args, expected, monkeypatch
+):
+    """Test that grub-probe stub returns the actual disk path from environment."""
+
+    monkeypatch.setenv("DISK_IMAGE_PATH", disk_path)
 
     def mock_run(*cmd, **kwargs):
         """Mock run function that executes the stub."""

@@ -235,9 +235,16 @@ def setup_grub(
     )
     chroot = Chroot(path=mount_dir, mounts=mounts)
 
+    def _grub_install_with_disk_path(grub_target: str, loop_dev: str) -> None:
+        """Install grub in the image with disk path environment variable."""
+        import os
+
+        os.environ["DISK_IMAGE_PATH"] = str(image.disk_path)
+        _grub_install(grub_target, loop_dev)
+
     try:
         chroot.execute(
-            target=_grub_install,
+            target=_grub_install_with_disk_path,
             grub_target=grub_target,
             loop_dev=str(image.disk_path),
         )
