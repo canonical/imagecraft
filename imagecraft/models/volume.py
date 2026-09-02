@@ -22,7 +22,14 @@ import re
 import typing
 import uuid
 from collections.abc import Collection
-from typing import Annotated, Literal, Self
+from typing import (
+    Annotated,
+    Generic,
+    Literal,
+    Self,
+    TypeVar,
+    get_args,
+)
 
 from craft_application.models import (
     CraftBaseModel,
@@ -37,12 +44,13 @@ from pydantic import (
     BeforeValidator,
     ByteSize,
     Field,
+    GetCoreSchemaHandler,
     StringConstraints,
     ValidationInfo,
     field_validator,
     model_validator,
 )
-from pydantic_core import PydanticCustomError
+from pydantic_core import PydanticCustomError, core_schema
 
 MIB = 1 << 20  # 1 MiB (2^20)
 GIB = 1 << 30  # 1 GiB (2^30)
@@ -60,6 +68,8 @@ _UUID_PATTERN = (
     r"[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}"
 )
 _MBR_TYPE_PATTERN = r"(?:0[Cc]|83)"
+MAX_PRIMARY_SLOTS = 4
+PRIMARY_SLOTS_WITH_EXTENDED = 3
 HYBRID_PARTITION_TYPE_REGEX = re.compile(rf"^{_MBR_TYPE_PATTERN},{_UUID_PATTERN}$")
 
 GPT_NAME_MAX_LENGTH = 36
@@ -397,13 +407,54 @@ def _validate_structure_items_partition_numbers(
     return structures
 
 
+T = TypeVar("T", bound="StructureItem")
+
+
+class StructureList(list[T], Generic[T]):
+    """A list of volume structure items with partition lookup utilities."""
+
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls, source_type: type, handler: GetCoreSchemaHandler
+    ) -> core_schema.CoreSchema:
+        args = get_args(source_type)
+        item_type = args[0] if args else StructureItem
+        list_schema = handler.generate_schema(list[item_type])  # type: ignore[valid-type]
+        return core_schema.chain_schema(
+            [
+                list_schema,
+                core_schema.no_info_plain_validator_function(cls),
+            ]
+        )
+
+    def get_number(self, name: str) -> int | None:
+        """Get the 1-based partition number for a given structure name.
+
+        For MBR volumes with extended partitions (>4 entries), logical partitions
+        start at 5 because slot 4 is reserved for the synthesized extended container.
+        """
+        needs_extended = len(self) > MAX_PRIMARY_SLOTS and isinstance(
+            self[0], MBRStructureItem
+        )
+        for i, structure_item in enumerate(self):
+            if structure_item.name == name:
+                explicit = getattr(structure_item, "partition_number", None)
+                if explicit is not None:
+                    return int(explicit)
+                pos = i + 1  # 1-based position
+                if needs_extended and pos > PRIMARY_SLOTS_WITH_EXTENDED:
+                    return pos + 1  # Skip slot 4 (extended container)
+                return pos
+        return None
+
+
 GPTStructureList = Annotated[
-    list[GPTStructureItem],
+    StructureList[GPTStructureItem],
     AfterValidator(_validate_structure_items_partition_numbers),
 ]
 
 
-MBRStructureList = Annotated[list[MBRStructureItem], Field(min_length=1)]
+MBRStructureList = Annotated[StructureList[MBRStructureItem], Field(min_length=1)]
 
 
 HybridPartitionType = Annotated[
@@ -438,10 +489,10 @@ class HybridStructureItem(StructureItem):
     """
 
 
-HybridStructureList = Annotated[list[HybridStructureItem], Field(min_length=1)]
+HybridStructureList = Annotated[StructureList[HybridStructureItem], Field(min_length=1)]
 
 
-StructureList = GPTStructureList | MBRStructureList | HybridStructureList
+StructureListType = GPTStructureList | MBRStructureList | HybridStructureList
 
 
 class BaseVolume(CraftBaseModel):

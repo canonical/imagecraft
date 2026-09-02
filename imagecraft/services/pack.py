@@ -73,9 +73,6 @@ class ImagecraftPackService(PackageService):
 
         images = image_service.finalize_images(dest)
 
-        filesystem_mount = self._services.get(
-            "lifecycle"
-        ).project_info.default_filesystem_mount
         arch = self._services.get("lifecycle").project_info.target_arch
         for volume_name, path in images.items():
             volume = project.volumes[volume_name]
@@ -84,7 +81,6 @@ class ImagecraftPackService(PackageService):
                 image=image,
                 workdir=project_dirs.work_dir,
                 arch=arch,
-                filesystem_mount=filesystem_mount,
             )
 
         return list(images.values())

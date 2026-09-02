@@ -12,110 +12,60 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import contextlib
+"""Tests for imagecraft.pack.grubutil.
+
+This module covers the pure-logic parts of ``setup_grub``: skip/dispatch
+conditions and small helpers like ``_dump_signed_efi_binaries``
+against plain directory trees.
+
+The full end-to-end flow (real disk images, FUSE mounts, chroot) is covered
+by ``tests/integration/pack/test_grubutil.py``.
+"""
+
+import shutil
 from pathlib import Path
-from typing import cast
-from unittest.mock import MagicMock
 
 import pytest
-from craft_parts.filesystem_mounts import FilesystemMount
 from craft_platforms import DebianArchitecture
-from imagecraft.errors import ImageError
-from imagecraft.models import Volume
+from imagecraft import errors
 from imagecraft.models.volume import (
-    GPTStructureItem,
-    GPTStructureList,
     GPTVolume,
-    MBRStructureItem,
-    MBRStructureList,
+    HybridStructureItem,
     MBRVolume,
 )
-from imagecraft.pack.chroot import Mount
-from imagecraft.pack.grubutil import _image_mounts, _part_num, setup_grub
+from imagecraft.pack import efi, grubutil
 from imagecraft.pack.image import Image
 
-
-@pytest.fixture
-def volume():
-    return GPTVolume.unmarshal(
-        {
-            "schema": "gpt",
-            "structure": [
-                {
-                    "name": "efi",
-                    "role": "system-boot",
-                    "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
-                    "filesystem": "vfat",
-                    "size": "3G",
-                    "filesystem-label": "",
-                },
-                {
-                    "name": "boot",
-                    "role": "system-boot",
-                    "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
-                    "filesystem": "fat16",
-                    "size": "6G",
-                },
-                {
-                    "name": "rootfs",
-                    "role": "system-data",
-                    "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
-                    "filesystem": "ext4",
-                    "size": "0",
-                    "filesystem-label": "writable",
-                },
-            ],
-        }
-    )
-
-
-@contextlib.contextmanager
-def fake_loopdev_handler():
-    yield "loop99"
-
-
-@pytest.mark.parametrize(
-    ("filesystem_mount"),
-    [
-        FilesystemMount.unmarshal(
-            [
-                {"mount": "/", "device": "(volume/pc/rootfs)"},
-                {"mount": "/boot", "device": "(volume/pc/boot)"},
-                {"mount": "/boot/efi", "device": "(volume/pc/efi)"},
-            ]
-        ),
-        FilesystemMount.unmarshal(
-            [
-                {"mount": "/", "device": "(volume/pc/rootfs)"},
-                {"mount": "/boot/efi", "device": "(volume/pc/efi)"},
-            ]
-        ),
-    ],
+# Real tools this module's implementation shells out to. If any of these is
+# missing, the tests below fail (rather than silently skip) with a message
+# pointing at `make setup`, since these are declared dependencies of the
+# project (see snap/snapcraft.yaml and Makefile's APT_PACKAGES).
+_REQUIRED_TOOLS = (
+    "sfdisk",
+    "mke2fs",
+    "mkfs.vfat",
+    "dd",
 )
-@pytest.mark.usefixtures("new_dir")
-def test_setup_grub(mocker, new_dir, volume, filesystem_mount):
-    disk_path = Path(new_dir, "pc.img")
-    disk_path.touch(exist_ok=True)
-    image = Image(
-        volume=volume,
-        disk_path=disk_path,
-    )
-    workdir = Path(new_dir, "workdir")
-    workdir.mkdir()
-    mock_chroot = mocker.patch("imagecraft.pack.grubutil.Chroot")
-    mocker.patch.object(image, "attach_loopdev", side_effect=fake_loopdev_handler)
 
-    setup_grub(
-        image=image,
-        workdir=workdir,
-        arch=DebianArchitecture.AMD64,
-        filesystem_mount=filesystem_mount,
-    )
 
-    assert mock_chroot.return_value.execute.called
-    assert (
-        mock_chroot.return_value.execute.call_args.kwargs["grub_target"] == "x86_64-efi"
-    )
+@pytest.fixture(autouse=True, scope="session")
+def _require_grub_tools():
+    """Fail loudly if a real tool used by grubutil/imgfs is missing.
+
+    These aren't optional test-only dependencies: they're the actual tools
+    imagecraft's GRUB installation code shells out to, so a developer
+    machine missing them needs `make setup` regardless of these tests.
+    """
+    missing = [tool for tool in _REQUIRED_TOOLS if shutil.which(tool) is None]
+    if missing:
+        pytest.fail(
+            "Missing required tool(s) for grubutil tests: "
+            f"{', '.join(missing)}. Run `make setup` to install them.",
+            pytrace=False,
+        )
+
+
+# ── setup_grub: skip conditions and dispatch (mocked, no real tools) ──────
 
 
 @pytest.mark.parametrize(
@@ -131,7 +81,7 @@ def test_setup_grub(mocker, new_dir, volume, filesystem_mount):
                             "role": "system-data",
                             "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
                             "filesystem": "ext4",
-                            "size": "0",
+                            "size": "512M",
                             "filesystem-label": "writable",
                         },
                     ],
@@ -150,53 +100,8 @@ def test_setup_grub(mocker, new_dir, volume, filesystem_mount):
                             "role": "system-boot",
                             "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
                             "filesystem": "vfat",
-                            "size": "3G",
+                            "size": "64M",
                             "filesystem-label": "",
-                        },
-                    ],
-                }
-            ),
-            DebianArchitecture.AMD64,
-            "Skipping GRUB installation because no data partition was found",
-        ),
-        (
-            GPTVolume.unmarshal(
-                {
-                    "schema": "gpt",
-                    "structure": [
-                        {
-                            "name": "efi",
-                            "role": "system-boot",
-                            "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
-                            "filesystem": "vfat",
-                            "size": "3G",
-                            "filesystem-label": "",
-                        },
-                        {
-                            "name": "rootfs",
-                            "role": "system-data",
-                            "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
-                            "filesystem": "ext4",
-                            "size": "0",
-                            "filesystem-label": "writable",
-                        },
-                    ],
-                }
-            ),
-            DebianArchitecture.S390X,
-            "Cannot install GRUB on this architecture",
-        ),
-        (
-            MBRVolume.unmarshal(
-                {
-                    "schema": "mbr",
-                    "structure": [
-                        {
-                            "name": "boot",
-                            "role": "system-boot",
-                            "type": "83",
-                            "filesystem": "ext4",
-                            "size": "512M",
                         },
                     ],
                 }
@@ -216,300 +121,306 @@ def test_setup_grub(mocker, new_dir, volume, filesystem_mount):
                             "filesystem": "ext4",
                             "size": "512M",
                         },
-                        {
-                            "name": "rootfs",
-                            "role": "system-data",
-                            "type": "83",
-                            "filesystem": "ext4",
-                            "size": "5G",
-                        },
                     ],
                 }
             ),
-            DebianArchitecture.ARM64,
-            "Cannot install GRUB on this architecture",
+            DebianArchitecture.AMD64,
+            "Skipping GRUB installation because no data partition was found",
         ),
     ],
 )
 @pytest.mark.usefixtures("new_dir")
-def test_setup_grub_partitions(mocker, new_dir, volume, arch, emitter, message):
+def test_setup_grub_skip_conditions(mocker, new_dir, volume, arch, emitter, message):
+    """setup_grub emits a permanent progress message and returns without acting."""
     disk_path = Path(new_dir, "pc.img")
     disk_path.touch(exist_ok=True)
-    filesystem_mount = FilesystemMount.unmarshal(
-        [
-            {"mount": "/", "device": "(volume/pc/rootfs)"},
-        ]
-    )
-    image = Image(
-        volume=volume,
-        disk_path=disk_path,
-    )
+    image = Image(volume=volume, disk_path=disk_path)
     workdir = Path(new_dir, "workdir")
     workdir.mkdir()
-    mock_chroot = mocker.patch("imagecraft.pack.grubutil.Chroot")
-    mocker.patch.object(image, "attach_loopdev", side_effect=fake_loopdev_handler)
+    setup_efi = mocker.patch("imagecraft.pack.efi.setup_grub_efi")
+    setup_bios = mocker.patch("imagecraft.pack.grubutil._setup_grub_bios_chroot")
 
-    setup_grub(
-        image=image, workdir=workdir, arch=arch, filesystem_mount=filesystem_mount
+    grubutil.setup_grub(image=image, workdir=workdir, arch=arch)
+
+    setup_efi.assert_not_called()
+    setup_bios.assert_not_called()
+    emitter.assert_progress(message)
+
+
+@pytest.mark.usefixtures("new_dir")
+def test_setup_grub_dispatches_to_efi(mocker, new_dir):
+    volume = GPTVolume.unmarshal(
+        {
+            "schema": "gpt",
+            "structure": [
+                {
+                    "name": "efi",
+                    "role": "system-boot",
+                    "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+                    "filesystem": "vfat",
+                    "size": "64M",
+                    "filesystem-label": "",
+                },
+                {
+                    "name": "rootfs",
+                    "role": "system-data",
+                    "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+                    "filesystem": "ext4",
+                    "size": "512M",
+                    "filesystem-label": "writable",
+                },
+            ],
+        }
+    )
+    disk_path = Path(new_dir, "pc.img")
+    disk_path.touch(exist_ok=True)
+    image = Image(volume=volume, disk_path=disk_path)
+    workdir = Path(new_dir, "workdir")
+    workdir.mkdir()
+    setup_efi = mocker.patch("imagecraft.pack.efi.setup_grub_efi")
+
+    grubutil.setup_grub(
+        image=image,
+        workdir=workdir,
+        arch=DebianArchitecture.AMD64,
     )
 
-    mock_chroot.return_value.execute.assert_not_called()
-
-    emitter.assert_progress(message, permanent=True)
+    setup_efi.assert_called_once_with(image, "x86_64-efi")
 
 
-_MBR_VOLUME_WITH_BOOT = MBRVolume.unmarshal(
-    {
-        "schema": "mbr",
-        "structure": [
-            {
-                "name": "boot",
-                "role": "system-boot",
-                "type": "83",
-                "filesystem": "ext4",
-                "size": "512M",
-            },
-            {
-                "name": "rootfs",
-                "role": "system-data",
-                "type": "83",
-                "filesystem": "ext4",
-                "size": "5G",
-            },
-        ],
+@pytest.mark.parametrize("arch", [DebianArchitecture.AMD64, DebianArchitecture.I386])
+@pytest.mark.usefixtures("new_dir")
+def test_setup_grub_dispatches_to_bios(mocker, new_dir, arch):
+    volume = MBRVolume.unmarshal(
+        {
+            "schema": "mbr",
+            "structure": [
+                {
+                    "name": "rootfs",
+                    "role": "system-data",
+                    "type": "83",
+                    "filesystem": "ext4",
+                    "size": "512M",
+                },
+            ],
+        }
+    )
+    disk_path = Path(new_dir, "pc.img")
+    disk_path.touch(exist_ok=True)
+    image = Image(volume=volume, disk_path=disk_path)
+    workdir = Path(new_dir, "workdir")
+    workdir.mkdir()
+    setup_bios = mocker.patch("imagecraft.pack.grubutil._setup_grub_bios_chroot")
+
+    grubutil.setup_grub(image=image, workdir=workdir, arch=arch)
+
+    # BIOS/MBR still installs GRUB through a chroot until it is converted
+    # to direct disk image manipulation.
+    setup_bios.assert_called_once_with(image, workdir, "i386-pc")
+
+
+def test_setup_grub_skips_efi_error(mocker, new_dir, emitter):
+    """An EFI setup error emits a permanent skip message."""
+
+    volume = GPTVolume.unmarshal(
+        {
+            "schema": "gpt",
+            "structure": [
+                {
+                    "name": "efi",
+                    "role": "system-boot",
+                    "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+                    "filesystem": "vfat",
+                    "size": "64M",
+                    "filesystem-label": "",
+                },
+                {
+                    "name": "rootfs",
+                    "role": "system-data",
+                    "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+                    "filesystem": "ext4",
+                    "size": "512M",
+                    "filesystem-label": "writable",
+                },
+            ],
+        }
+    )
+    disk_path = Path(new_dir, "pc.img")
+    disk_path.touch(exist_ok=True)
+    image = Image(volume=volume, disk_path=disk_path)
+    workdir = Path(new_dir, "workdir")
+    workdir.mkdir()
+    mocker.patch(
+        "imagecraft.pack.efi.setup_grub_efi",
+        side_effect=errors.ImageError(message="boom"),
+    )
+
+    grubutil.setup_grub(
+        image=image,
+        workdir=workdir,
+        arch=DebianArchitecture.AMD64,
+    )
+
+    emitter.assert_progress("Cannot install GRUB on this rootfs: boom", permanent=True)
+
+
+@pytest.mark.usefixtures("new_dir")
+def test_setup_grub_skips_unsupported_bios_architecture(mocker, new_dir, emitter):
+    volume = MBRVolume.unmarshal(
+        {
+            "schema": "mbr",
+            "structure": [
+                {
+                    "name": "rootfs",
+                    "role": "system-data",
+                    "type": "83",
+                    "filesystem": "ext4",
+                    "size": "512M",
+                },
+            ],
+        }
+    )
+    disk_path = Path(new_dir, "pc.img")
+    disk_path.touch(exist_ok=True)
+    image = Image(volume=volume, disk_path=disk_path)
+    setup_bios = mocker.patch("imagecraft.pack.grubutil._setup_grub_bios_chroot")
+
+    grubutil.setup_grub(
+        image=image,
+        workdir=Path(new_dir, "workdir"),
+        arch=DebianArchitecture.ARM64,
+    )
+
+    setup_bios.assert_not_called()
+    emitter.assert_progress("Cannot install GRUB on this architecture", permanent=True)
+
+
+# ── Target & name discovery ──────────────────────────────────────────────
+
+
+@pytest.mark.parametrize(
+    ("installed_dirs", "build_for", "expected"),
+    [
+        pytest.param(["x86_64-efi"], "x86_64-efi", "x86_64-efi", id="single-match"),
+        pytest.param(
+            ["arm64-efi"],
+            "x86_64-efi",
+            "arm64-efi",
+            id="single-foreign-target-wins",
+        ),
+        pytest.param(
+            ["x86_64-efi", "arm64-efi"],
+            "x86_64-efi",
+            "x86_64-efi",
+            id="multi-build-for-tiebreak",
+        ),
+    ],
+)
+def test_discover_grub_target(tmp_path, installed_dirs, build_for, expected):
+    rootfs = tmp_path / "rootfs"
+    for d in installed_dirs:
+        (rootfs / "usr/lib/grub" / d).mkdir(parents=True)
+
+    assert efi.discover_grub_target(rootfs, build_for) == expected
+
+
+@pytest.mark.parametrize(
+    ("installed_dirs", "build_for", "match"),
+    [
+        pytest.param(
+            [],
+            "x86_64-efi",
+            "GRUB modules for x86_64-efi are not installed",
+            id="none-installed",
+        ),
+        pytest.param(
+            ["x86_64-efi", "arm64-efi"],
+            "riscv64-efi",
+            "Multiple GRUB EFI module sets present.*none matches",
+            id="multi-no-match",
+        ),
+    ],
+)
+def test_discover_grub_target_errors(tmp_path, installed_dirs, build_for, match):
+    rootfs = tmp_path / "rootfs"
+    for d in installed_dirs:
+        (rootfs / "usr/lib/grub" / d).mkdir(parents=True)
+
+    with pytest.raises(errors.ImageError, match=match):
+        efi.discover_grub_target(rootfs, build_for)
+
+
+def test_discover_grub_target_ignores_signed_dirs(tmp_path):
+    """The ``*-efi-signed`` staging dirs are not module dirs."""
+    rootfs = tmp_path / "rootfs"
+    (rootfs / "usr/lib/grub/x86_64-efi").mkdir(parents=True)
+    (rootfs / "usr/lib/grub/x86_64-efi-signed").mkdir(parents=True)
+
+    assert efi.discover_grub_target(rootfs, "x86_64-efi") == "x86_64-efi"
+
+
+def test_is_efi_partition_recognizes_hybrid_gpt_component():
+    item = HybridStructureItem.unmarshal(
+        {
+            "name": "efi",
+            "role": "system-boot",
+            "type": "0C,C12A7328-F81F-11D2-BA4B-00A0C93EC93B",
+            "filesystem": "vfat",
+            "size": "64M",
+        }
+    )
+
+    assert efi.is_efi_partition(item)
+
+
+@pytest.mark.parametrize(
+    ("signed_name", "expected"),
+    [
+        ("shimx64.efi.signed.latest", "shimx64.efi"),
+        ("shimx64.efi.signed", "shimx64.efi"),
+        ("shimx64.efi.dualsigned", "shimx64.efi"),
+        ("shimaa64.efi.signed.latest", "shimaa64.efi"),
+        ("mmx64.efi", "mmx64.efi"),  # already unsigned — returned as-is
+    ],
+)
+def test_unsigned_shim_name(signed_name, expected):
+    assert efi.unsigned_shim_name(signed_name) == expected
+
+
+def test_resolve_core_modules_closure(tmp_path):
+    """moddep.lst drives the transitive closure and the result is deterministic."""
+    modules_dir = tmp_path / "modules"
+    modules_dir.mkdir(parents=True)
+    (modules_dir / "moddep.lst").write_text(
+        "boot: video\n"
+        "linux: boot relocator mmap\n"
+        "search_fs_uuid:\n"
+        "gfxterm: video font\n"
+    )
+
+    modules = efi.resolve_core_modules(modules_dir)
+
+    assert modules == sorted(modules)
+    assert set(modules) == {
+        *efi._EFI_CORE_MODULES,
+        # Resolved from moddep.lst:
+        "video",
+        "relocator",
+        "mmap",
     }
-)
 
 
-@pytest.mark.parametrize(
-    "arch",
-    [DebianArchitecture.AMD64, DebianArchitecture.I386],
-)
-@pytest.mark.usefixtures("new_dir")
-def test_setup_grub_mbr_bios(mocker, new_dir, arch):
-    disk_path = Path(new_dir, "pc.img")
-    disk_path.touch(exist_ok=True)
-    image = Image(volume=_MBR_VOLUME_WITH_BOOT, disk_path=disk_path)
-    workdir = Path(new_dir, "workdir")
-    workdir.mkdir()
-    mock_chroot = mocker.patch("imagecraft.pack.grubutil.Chroot")
-    mocker.patch.object(image, "attach_loopdev", side_effect=fake_loopdev_handler)
-    filesystem_mount = FilesystemMount.unmarshal(
-        [
-            {"mount": "/", "device": "(volume/pc/rootfs)"},
-            {"mount": "/boot", "device": "(volume/pc/boot)"},
-        ]
-    )
+def test_resolve_core_modules_without_moddep(tmp_path):
+    """Missing moddep.lst (hand-rolled tree) falls back to the seed modules."""
+    modules_dir = tmp_path / "modules"
+    modules_dir.mkdir(parents=True)
 
-    setup_grub(
-        image=image, workdir=workdir, arch=arch, filesystem_mount=filesystem_mount
-    )
-
-    assert mock_chroot.return_value.execute.called
-    assert mock_chroot.return_value.execute.call_args.kwargs["grub_target"] == "i386-pc"
+    assert efi.resolve_core_modules(modules_dir) == sorted(efi._EFI_CORE_MODULES)
 
 
-@pytest.mark.parametrize(
-    ("loop_dev", "volume", "filesystem_mount", "mounts"),
-    [
-        (
-            "/dev/loop99",
-            GPTVolume.unmarshal(
-                {
-                    "schema": "gpt",
-                    "structure": [
-                        {
-                            "name": "efi",
-                            "role": "system-boot",
-                            "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
-                            "filesystem": "vfat",
-                            "size": "3G",
-                            "filesystem-label": "",
-                        },
-                        {
-                            "name": "rootfs",
-                            "role": "system-data",
-                            "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
-                            "filesystem": "ext4",
-                            "size": "0",
-                            "filesystem-label": "writable",
-                        },
-                    ],
-                }
-            ),
-            FilesystemMount.unmarshal(
-                [
-                    {"mount": "/", "device": "(volume/pc/rootfs)"},
-                    {"mount": "/boot/efi", "device": "(volume/pc/efi)"},
-                ]
-            ),
-            [
-                Mount(
-                    fstype=None,
-                    src="/dev/loop99p2",
-                    relative_mountpoint="/",
-                ),
-                Mount(
-                    fstype=None,
-                    src="/dev/loop99p1",
-                    relative_mountpoint="/boot/efi",
-                ),
-            ],
-        ),
-        (
-            "/dev/loop99",
-            GPTVolume.unmarshal(
-                {
-                    "schema": "gpt",
-                    "structure": [
-                        {
-                            "name": "efi",
-                            "role": "system-boot",
-                            "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
-                            "filesystem": "vfat",
-                            "size": "3G",
-                            "filesystem-label": "",
-                        },
-                        {
-                            "name": "rootfs",
-                            "role": "system-data",
-                            "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
-                            "filesystem": "ext4",
-                            "size": "0",
-                            "filesystem-label": "writable",
-                        },
-                    ],
-                }
-            ),
-            FilesystemMount.unmarshal(
-                [
-                    {"mount": "/", "device": "(volume/pc/rootfs)"},
-                ]
-            ),
-            [
-                Mount(
-                    fstype=None,
-                    src="/dev/loop99p2",
-                    relative_mountpoint="/",
-                ),
-            ],
-        ),
-    ],
-)
-def test_image_mounts(
-    loop_dev: str,
-    volume: Volume,
-    filesystem_mount: FilesystemMount,
-    mounts: list[Mount],
-):
-    assert _image_mounts(loop_dev, volume.structure, filesystem_mount) == mounts
+def test_resolve_core_modules_includes_efi_firmware_setup_when_available(tmp_path):
+    modules_dir = tmp_path / "modules"
+    modules_dir.mkdir(parents=True)
+    (modules_dir / "efifwsetup.mod").touch()
 
-
-@pytest.mark.parametrize(
-    ("loop_dev", "volume", "filesystem_mount"),
-    [
-        (
-            "/dev/loop99",
-            GPTVolume.unmarshal(
-                {
-                    "schema": "gpt",
-                    "structure": [
-                        {
-                            "name": "rootfs",
-                            "role": "system-data",
-                            "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
-                            "filesystem": "ext4",
-                            "size": "0",
-                            "filesystem-label": "writable",
-                        },
-                    ],
-                }
-            ),
-            FilesystemMount.unmarshal(
-                [
-                    {"mount": "/", "device": "(volume/pc/not-matching)"},
-                ]
-            ),
-        ),
-    ],
-)
-def test_image_mounts_errors(
-    loop_dev: str,
-    volume: Volume,
-    filesystem_mount: FilesystemMount,
-):
-    with pytest.raises(ImageError, match="Cannot find a partition named"):
-        _image_mounts(loop_dev, volume.structure, filesystem_mount)
-
-
-# ── _part_num ─────────────────────────────────────────────────────────────────
-
-
-@pytest.mark.parametrize(
-    ("name", "structure_spec", "expected"),
-    [
-        pytest.param(
-            "rootfs",
-            [
-                {"name": "efi", "partition_number": None},
-                {"name": "rootfs", "partition_number": None},
-            ],
-            2,
-            id="gpt-position-based",
-        ),
-        pytest.param(
-            "rootfs",
-            [
-                {"name": "efi", "partition_number": None},
-                {"name": "rootfs", "partition_number": 5},
-            ],
-            5,
-            id="gpt-explicit-number",
-        ),
-        pytest.param(
-            "missing",
-            [{"name": "efi", "partition_number": None}],
-            None,
-            id="not-found",
-        ),
-    ],
-)
-def test_part_num_gpt(name, structure_spec, expected):
-    items = []
-    for spec in structure_spec:
-        item = MagicMock(spec=GPTStructureItem)
-        item.name = spec["name"]
-        item.partition_number = spec["partition_number"]
-        items.append(item)
-    structure = cast(GPTStructureList, items)
-
-    assert _part_num(name, structure) == expected
-
-
-def test_part_num_mbr_plain():
-    structure = cast(
-        MBRStructureList,
-        [MagicMock(spec=MBRStructureItem, partition_number=None) for _ in range(3)],
-    )
-    for i, name in enumerate(["boot", "data", "rootfs"]):
-        structure[i].name = name
-
-    assert _part_num("boot", structure) == 1
-    assert _part_num("data", structure) == 2
-    assert _part_num("rootfs", structure) == 3
-
-
-def test_part_num_mbr_extended():
-    structure = cast(
-        MBRStructureList,
-        [MagicMock(spec=MBRStructureItem, partition_number=None) for _ in range(5)],
-    )
-    for i, name in enumerate(["boot", "p2", "p3", "logical1", "logical2"]):
-        structure[i].name = name
-
-    assert _part_num("boot", structure) == 1
-    assert _part_num("p2", structure) == 2
-    assert _part_num("p3", structure) == 3
-    # slot 4 is the synthesised extended container — logical partitions start at 5
-    assert _part_num("logical1", structure) == 5
-    assert _part_num("logical2", structure) == 6
+    assert "efifwsetup" in efi.resolve_core_modules(modules_dir)

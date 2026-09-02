@@ -162,17 +162,32 @@ def test_mount_partition_offset(
                 f"{fstype.value} offset mounts via fusefile require root permissions"
             )
 
+    volume = GPTVolume.unmarshal(
+        {
+            "schema": "gpt",
+            "structure": [
+                {
+                    "name": "test",
+                    "role": "system-data",
+                    "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+                    "filesystem": fstype.value,
+                    "size": "32M",
+                },
+            ],
+        }
+    )
     disk_path = tmp_path / f"disk_{fstype.value}.raw"
-    disk_size = 64 * 1024 * 1024
-    offset_bytes = 1048576  # 1 MiB
-    part_size_bytes = 32 * 1024 * 1024  # 32 MiB
+    gptutil.create_empty_gpt_image(
+        imagepath=disk_path,
+        sector_size=gptutil.SECTOR_SIZE_512,
+        layout=volume,
+    )
 
-    with disk_path.open("wb") as f:
-        f.truncate(disk_size)
-
+    # Populate the partition's filesystem in a standalone image, then inject
+    # it into the partitioned disk.
     part_tmp = tmp_path / f"part_{fstype.value}.img"
     with part_tmp.open("wb") as f:
-        f.truncate(part_size_bytes)
+        f.truncate(32 * 1024 * 1024)
     content_dir = tmp_path / "empty_content"
     content_dir.mkdir(exist_ok=True)
     diskutil.format_populate_partition(
@@ -180,20 +195,18 @@ def test_mount_partition_offset(
         content_dir=content_dir,
         partitionpath=part_tmp,
     )
-
-    with part_tmp.open("rb") as src, disk_path.open("r+b") as dst:
-        dst.seek(offset_bytes)
-        dst.write(src.read())
-
+    diskutil.inject_partition_into_image(
+        partition=part_tmp,
+        imagepath=disk_path,
+        sector_offset=gptutil.get_partition_sector_offset(disk_path, "test"),
+        disk_size=diskutil.DiskSize(
+            bytesize=32 * 1024 * 1024, sector_size=gptutil.SECTOR_SIZE_512
+        ),
+    )
     part_tmp.unlink()
 
-    mount = mount_partition(
-        disk_path,
-        fstype,
-        offset=offset_bytes,
-        size=part_size_bytes,
-        fakeroot=fakeroot,
-    )
+    # mount_partition locates the partition from the table on its own.
+    mount = mount_partition(disk_path, fstype, partition=1, fakeroot=fakeroot)
 
     with mount as root:
         (root / "config.txt").write_text(f"offset {fstype.value} config\n")

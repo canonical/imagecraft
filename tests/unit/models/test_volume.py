@@ -19,6 +19,7 @@ import re
 import pytest
 from imagecraft.models import Role, Volume
 from imagecraft.models.volume import (
+    GPTStructureList,
     GPTVolume,
     HybridVolume,
     MBRVolume,
@@ -141,7 +142,7 @@ def test_volume_valid():
             },
         ),
         (
-            "1 validation error for Volume\ngpt.structure\n  List should have at least 1 item after validation, not 0",
+            "1 validation error for Volume\ngpt.structure\n  Value should have at least 1 item after validation, not 0",
             ValidationError,
             {
                 "schema": "gpt",
@@ -409,7 +410,7 @@ def test_volume_invalid(
     ],
 )
 def test_structure_list_success(structures: list[dict]):
-    TypeAdapter(StructureList).validate_python(structures)
+    TypeAdapter(GPTStructureList).validate_python(structures)
 
 
 @pytest.mark.parametrize(
@@ -466,7 +467,7 @@ def test_structure_list_success(structures: list[dict]):
 )
 def test_structure_list_errors(structures: list[dict], error_message):
     with pytest.raises(ValidationError, match=error_message):
-        TypeAdapter(StructureList).validate_python(structures)
+        TypeAdapter(GPTStructureList).validate_python(structures)
 
 
 # ---------------------------------------------------------------------------
@@ -729,3 +730,106 @@ def test_hybrid_volume_duplicate_filesystem_labels():
                 ],
             }
         )
+
+
+# ---------------------------------------------------------------------------
+# StructureList.get_number Tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("structures", "target_name", "expected_part_num"),
+    [
+        # GPT standard sequential 1-based indexing
+        (
+            [
+                {
+                    "name": "efi",
+                    "role": "system-boot",
+                    "type": "C12A7328-F81F-11D2-BA4B-00A0C93EC93B",
+                    "filesystem": "vfat",
+                    "size": "64M",
+                },
+                {
+                    "name": "rootfs",
+                    "role": "system-data",
+                    "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+                    "filesystem": "ext4",
+                    "size": "512M",
+                },
+            ],
+            "rootfs",
+            2,
+        ),
+        # GPT explicit partition_number
+        (
+            [
+                {
+                    "name": "efi",
+                    "role": "system-boot",
+                    "type": "C12A7328-F81F-11D2-BA4B-00A0C93EC93B",
+                    "filesystem": "vfat",
+                    "size": "64M",
+                    "partition-number": 1,
+                },
+                {
+                    "name": "rootfs",
+                    "role": "system-data",
+                    "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+                    "filesystem": "ext4",
+                    "size": "512M",
+                    "partition-number": 5,
+                },
+            ],
+            "rootfs",
+            5,
+        ),
+        # Non-existent partition name returns None
+        (
+            [
+                {
+                    "name": "efi",
+                    "role": "system-boot",
+                    "type": "C12A7328-F81F-11D2-BA4B-00A0C93EC93B",
+                    "filesystem": "vfat",
+                    "size": "64M",
+                },
+            ],
+            "nonexistent",
+            None,
+        ),
+    ],
+)
+def test_structure_list_get_number_gpt(structures, target_name, expected_part_num):
+    volume = GPTVolume.unmarshal({"schema": "gpt", "structure": structures})
+    assert isinstance(volume.structure, StructureList)
+    assert volume.structure.get_number(target_name) == expected_part_num
+
+
+@pytest.mark.parametrize(
+    ("names", "expected_mapping"),
+    [
+        # Standard primary MBR (<= 4 partitions)
+        (["boot", "data", "rootfs"], {"boot": 1, "data": 2, "rootfs": 3}),
+        # MBR with extended container (> 4 partitions, slot 4 skipped for logical partitions)
+        (
+            ["boot", "p2", "p3", "logical1", "logical2"],
+            {"boot": 1, "p2": 2, "p3": 3, "logical1": 5, "logical2": 6},
+        ),
+    ],
+)
+def test_structure_list_get_number_mbr(names, expected_mapping):
+    structure_items = [
+        {
+            "name": name,
+            "role": "system-data",
+            "type": "83",
+            "filesystem": "ext4",
+            "size": "100M",
+        }
+        for name in names
+    ]
+    volume = MBRVolume.unmarshal({"schema": "mbr", "structure": structure_items})
+    assert isinstance(volume.structure, StructureList)
+    for name, expected in expected_mapping.items():
+        assert volume.structure.get_number(name) == expected

@@ -72,11 +72,13 @@ parts:
       - mtools
       - dosfstools
       - e2fsprogs
+      - fuse2fs
       - fdisk
       - coreutils
       - util-linux
       - fusefile
       - fuse3
+      - grub-common
     stage:
       - "-usr/lib/x86_64-linux-gnu/libicuio.so.*"
       - "-usr/lib/x86_64-linux-gnu/libicutest.so.*"
@@ -86,13 +88,15 @@ parts:
       "usr/lib/python3/dist-packages/apt*": "lib/python3.12/site-packages/"
       "usr/sbin/sfdisk": "libexec/imagecraft/sfdisk"
       "usr/bin/mcopy": "libexec/imagecraft/mcopy"
+      "usr/bin/mmd": "libexec/imagecraft/mmd"
       "usr/bin/mtools": "libexec/imagecraft/mtools"
       "usr/bin/dd": "libexec/imagecraft/dd"
       "usr/bin/truncate": "libexec/imagecraft/truncate"
-      "usr/sbin/fuse2fs": "libexec/imagecraft/fuse2fs"
+      "usr/bin/fuse2fs": "libexec/imagecraft/fuse2fs"
       "usr/sbin/fusefile": "libexec/imagecraft/fusefile"
-      "usr/bin/fusermount3": "libexec/imagecraft/fusermount3"
+      "bin/fusermount3": "libexec/imagecraft/fusermount3"
       "usr/sbin/mkfs*": "libexec/imagecraft/"
+      "usr/bin/grub-mkimage": "libexec/imagecraft/grub-mkimage"
   # Build fusefat 0.4 from source because the archive only provides it on amd64 in Noble.
   # TODO: Remove when upgrading base to core26.
   fusefat:
