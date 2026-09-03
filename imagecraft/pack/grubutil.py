@@ -390,7 +390,9 @@ def setup_grub(
 
         with ImageDevDir(image_path=image.disk_path, dev_dir=dev_dir) as devices:
             loop_dev_in_chroot = f"/dev/{devices[None].name}"
-            root_uuid = _root_uuid(image.volume.structure, filesystem_mount, devices)
+            root_uuid = _root_uuid(
+                image.disk_path, image.volume.structure, filesystem_mount
+            )
             part_mounts = _partition_mounts(
                 image.disk_path, image.volume.structure, filesystem_mount
             )
@@ -531,16 +533,19 @@ def _part_num(name: str, structure: StructureList) -> int | None:
 
 
 def _root_uuid(
+    image_path: Path,
     structure: StructureList,
     filesystem_mount: FilesystemMount,
-    devices: dict[int | str | None, Path],
 ) -> str | None:
     """Return the UUID of the partition mounted at ``/``.
 
+    This probes the raw disk image at the root partition offset with ``blkid``
+    rather than relying on the fake ``/dev`` devices, which are not block
+    devices and may not be recognised by all disk tools.
+
+    :param image_path: path to the disk image file.
     :param structure: volume structure describing the partitions.
     :param filesystem_mount: mount configuration for the image.
-    :param devices: mapping from ImageDevDir of partition numbers and names to
-        host-side device paths.
     :returns: UUID as a string, or ``None`` if it cannot be determined.
     """
     root_entry = next((entry for entry in filesystem_mount if entry.mount == "/"), None)
@@ -550,11 +555,28 @@ def _root_uuid(
     part_num = _part_num(part_name, structure)
     if part_num is None:
         return None
-    root_device = devices.get(part_num)
-    if root_device is None:
-        return None
+
+    is_gpt = not structure or not isinstance(structure[0], MBRStructureItem)
+    if is_gpt:
+        start_sector = gptutil.get_partition_sector_offset(image_path, part_name)
+    else:
+        start_sector = gptutil.get_partition_sector_offset_by_number(
+            image_path, part_num
+        )
+    offset_bytes = start_sector * gptutil.SECTOR_SIZE_512
+
     try:
-        result = run("blkid", "-s", "UUID", "-o", "value", str(root_device))
+        result = run(
+            "blkid",
+            "-p",
+            "-s",
+            "UUID",
+            "-o",
+            "value",
+            "-O",
+            str(offset_bytes),
+            str(image_path),
+        )
     except (subprocess.CalledProcessError, FileNotFoundError):
         return None
     return result.stdout.strip() or None

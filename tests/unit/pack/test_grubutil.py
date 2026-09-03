@@ -94,6 +94,10 @@ def mock_grub_mounts(mocker, new_dir):
     composite_cls.return_value.mount.return_value = Path(new_dir, "workdir", "mount")
 
     mocker.patch("imagecraft.pack.grubutil._partition_mounts", return_value=[])
+    mocker.patch(
+        "imagecraft.pack.grubutil._root_uuid",
+        return_value="12345678-1234-1234-1234-123456789abc",
+    )
 
     os_utils_mock = mocker.patch("imagecraft.pack.grubutil.os_utils")
 
@@ -149,6 +153,10 @@ def test_setup_grub(mocker, new_dir, volume, filesystem_mount, mock_grub_mounts)
     )
     assert (
         mock_chroot.return_value.execute.call_args.kwargs["loop_dev"] == "/dev/pc.img"
+    )
+    assert (
+        mock_chroot.return_value.execute.call_args.kwargs["root_uuid"]
+        == "12345678-1234-1234-1234-123456789abc"
     )
 
     chroot_mounts = mock_chroot.call_args.kwargs["mounts"]
