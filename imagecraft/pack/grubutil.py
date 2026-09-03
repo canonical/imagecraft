@@ -47,8 +47,13 @@ _ARCH_TO_GRUB_EFI_TARGET: dict[str, str] = {
 _GRUB_BIOS_TARGET = "i386-pc"
 _GRUB_BIOS_ARCHS = {DebianArchitecture.AMD64, DebianArchitecture.I386}
 
-# Modules embedded in the removable EFI image.  This mirrors the default set
-# that Ubuntu's grub-install --uefi-secure-boot builds into BOOTX64.EFI.
+# Modules embedded in the removable EFI image.
+#
+# GRUB images are built from a kernel plus an arbitrary list of modules; see
+# https://www.gnu.org/software/grub/manual/grub/html_node/Images.html and
+# https://man.archlinux.org/man/grub-mkimage.1.en.  The concrete list below
+# mirrors the modules that ``grub-install --uefi-secure-boot`` embeds on
+# Ubuntu build hosts.
 _GRUB_EFI_MODULES = (
     "all_video boot btrfs cat chain configfile echo efinet ext2 fat font "
     "fshelp gettext gfxmenu gfxterm gfxterm_background gzio halt hfsplus "
