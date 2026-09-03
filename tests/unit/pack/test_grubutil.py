@@ -12,7 +12,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import contextlib
 from pathlib import Path
 from typing import cast
 from unittest.mock import MagicMock
@@ -30,8 +29,11 @@ from imagecraft.models.volume import (
     MBRStructureList,
     MBRVolume,
 )
-from imagecraft.pack.chroot import Mount
-from imagecraft.pack.grubutil import _image_mounts, _part_num, setup_grub
+from imagecraft.pack.grubutil import (
+    _part_num,
+    _partition_mounts,
+    setup_grub,
+)
 from imagecraft.pack.image import Image
 
 
@@ -69,9 +71,39 @@ def volume():
     )
 
 
-@contextlib.contextmanager
-def fake_loopdev_handler():
-    yield "loop99"
+@pytest.fixture
+def mock_grub_mounts(mocker, new_dir):
+    """Provide a standard set of mocks for the FUSE/ImageDevDir mounts in setup_grub."""
+    dev_dir = Path(new_dir, "workdir", "dev")
+    dev_dir.mkdir(parents=True)
+
+    devices = {
+        None: dev_dir / "pc.img",
+        1: dev_dir / "pc.img1",
+        2: dev_dir / "pc.img2",
+        3: dev_dir / "pc.img3",
+        "pc.img1": dev_dir / "pc.img1",
+        "pc.img2": dev_dir / "pc.img2",
+        "pc.img3": dev_dir / "pc.img3",
+    }
+    image_dev_dir = mocker.MagicMock()
+    image_dev_dir.return_value.__enter__.return_value = devices
+    mocker.patch("imagecraft.utils.mount.ImageDevDir", image_dev_dir)
+
+    composite_cls = mocker.patch("imagecraft.utils.mount.CompositeMount")
+    composite_cls.return_value.mount.return_value = Path(new_dir, "workdir", "mount")
+
+    mocker.patch("imagecraft.pack.grubutil._partition_mounts", return_value=[])
+
+    os_utils_mock = mocker.patch("imagecraft.pack.grubutil.os_utils")
+
+    return mocker.MagicMock(
+        image_dev_dir=image_dev_dir,
+        composite_cls=composite_cls,
+        os_utils=os_utils_mock,
+        dev_dir=dev_dir,
+        devices=devices,
+    )
 
 
 @pytest.mark.parametrize(
@@ -93,7 +125,7 @@ def fake_loopdev_handler():
     ],
 )
 @pytest.mark.usefixtures("new_dir")
-def test_setup_grub(mocker, new_dir, volume, filesystem_mount):
+def test_setup_grub(mocker, new_dir, volume, filesystem_mount, mock_grub_mounts):
     disk_path = Path(new_dir, "pc.img")
     disk_path.touch(exist_ok=True)
     image = Image(
@@ -101,9 +133,8 @@ def test_setup_grub(mocker, new_dir, volume, filesystem_mount):
         disk_path=disk_path,
     )
     workdir = Path(new_dir, "workdir")
-    workdir.mkdir()
+    workdir.mkdir(exist_ok=True)
     mock_chroot = mocker.patch("imagecraft.pack.grubutil.Chroot")
-    mocker.patch.object(image, "attach_loopdev", side_effect=fake_loopdev_handler)
 
     setup_grub(
         image=image,
@@ -116,6 +147,17 @@ def test_setup_grub(mocker, new_dir, volume, filesystem_mount):
     assert (
         mock_chroot.return_value.execute.call_args.kwargs["grub_target"] == "x86_64-efi"
     )
+    assert (
+        mock_chroot.return_value.execute.call_args.kwargs["loop_dev"] == "/dev/pc.img"
+    )
+
+    chroot_mounts = mock_chroot.call_args.kwargs["mounts"]
+    dev_bind_mount = next(
+        (m for m in chroot_mounts if m._relative_mountpoint == "/dev"), None
+    )
+    assert dev_bind_mount is not None
+    assert dev_bind_mount._fstype is None
+    assert dev_bind_mount._src == str(mock_grub_mounts.dev_dir)
 
 
 @pytest.mark.parametrize(
@@ -232,7 +274,9 @@ def test_setup_grub(mocker, new_dir, volume, filesystem_mount):
     ],
 )
 @pytest.mark.usefixtures("new_dir")
-def test_setup_grub_partitions(mocker, new_dir, volume, arch, emitter, message):
+def test_setup_grub_partitions(
+    mocker, new_dir, volume, arch, emitter, message, mock_grub_mounts
+):
     disk_path = Path(new_dir, "pc.img")
     disk_path.touch(exist_ok=True)
     filesystem_mount = FilesystemMount.unmarshal(
@@ -245,9 +289,8 @@ def test_setup_grub_partitions(mocker, new_dir, volume, arch, emitter, message):
         disk_path=disk_path,
     )
     workdir = Path(new_dir, "workdir")
-    workdir.mkdir()
+    workdir.mkdir(exist_ok=True)
     mock_chroot = mocker.patch("imagecraft.pack.grubutil.Chroot")
-    mocker.patch.object(image, "attach_loopdev", side_effect=fake_loopdev_handler)
 
     setup_grub(
         image=image, workdir=workdir, arch=arch, filesystem_mount=filesystem_mount
@@ -286,14 +329,13 @@ _MBR_VOLUME_WITH_BOOT = MBRVolume.unmarshal(
     [DebianArchitecture.AMD64, DebianArchitecture.I386],
 )
 @pytest.mark.usefixtures("new_dir")
-def test_setup_grub_mbr_bios(mocker, new_dir, arch):
+def test_setup_grub_mbr_bios(mocker, new_dir, arch, mock_grub_mounts):
     disk_path = Path(new_dir, "pc.img")
     disk_path.touch(exist_ok=True)
     image = Image(volume=_MBR_VOLUME_WITH_BOOT, disk_path=disk_path)
     workdir = Path(new_dir, "workdir")
-    workdir.mkdir()
+    workdir.mkdir(exist_ok=True)
     mock_chroot = mocker.patch("imagecraft.pack.grubutil.Chroot")
-    mocker.patch.object(image, "attach_loopdev", side_effect=fake_loopdev_handler)
     filesystem_mount = FilesystemMount.unmarshal(
         [
             {"mount": "/", "device": "(volume/pc/rootfs)"},
@@ -307,13 +349,15 @@ def test_setup_grub_mbr_bios(mocker, new_dir, arch):
 
     assert mock_chroot.return_value.execute.called
     assert mock_chroot.return_value.execute.call_args.kwargs["grub_target"] == "i386-pc"
+    assert (
+        mock_chroot.return_value.execute.call_args.kwargs["loop_dev"] == "/dev/pc.img"
+    )
 
 
 @pytest.mark.parametrize(
-    ("loop_dev", "volume", "filesystem_mount", "mounts"),
+    ("volume", "filesystem_mount", "expected_entries"),
     [
         (
-            "/dev/loop99",
             GPTVolume.unmarshal(
                 {
                     "schema": "gpt",
@@ -344,20 +388,11 @@ def test_setup_grub_mbr_bios(mocker, new_dir, arch):
                 ]
             ),
             [
-                Mount(
-                    fstype=None,
-                    src="/dev/loop99p2",
-                    relative_mountpoint="/",
-                ),
-                Mount(
-                    fstype=None,
-                    src="/dev/loop99p1",
-                    relative_mountpoint="/boot/efi",
-                ),
+                ("/", "ext4"),
+                ("/boot/efi", "vfat"),
             ],
         ),
         (
-            "/dev/loop99",
             GPTVolume.unmarshal(
                 {
                     "schema": "gpt",
@@ -387,29 +422,49 @@ def test_setup_grub_mbr_bios(mocker, new_dir, arch):
                 ]
             ),
             [
-                Mount(
-                    fstype=None,
-                    src="/dev/loop99p2",
-                    relative_mountpoint="/",
-                ),
+                ("/", "ext4"),
             ],
         ),
     ],
 )
-def test_image_mounts(
-    loop_dev: str,
+@pytest.mark.usefixtures("new_dir")
+def test_partition_mounts(
+    mocker,
+    new_dir,
     volume: Volume,
     filesystem_mount: FilesystemMount,
-    mounts: list[Mount],
+    expected_entries: list[tuple[str, str]],
 ):
-    assert _image_mounts(loop_dev, volume.structure, filesystem_mount) == mounts
+    mocker.patch("imagecraft.pack.grubutil.gptutil.get_partition_sector_offset")
+    mocker.patch(
+        "imagecraft.pack.grubutil.gptutil.get_partition_size_sectors",
+        return_value=12345,
+    )
+    mount_partition_mock = mocker.patch(
+        "imagecraft.utils.mount.mount_partition",
+        side_effect=lambda *args, **kwargs: MagicMock(),
+    )
+    disk_path = Path(new_dir, "pc.img")
+    disk_path.touch()
+
+    part_mounts = _partition_mounts(disk_path, volume.structure, filesystem_mount)
+
+    assert len(part_mounts) == len(expected_entries)
+    actual_mountpoints = [mp for mp, _ in part_mounts]
+    expected_mountpoints = [mp for mp, _ in expected_entries]
+    assert actual_mountpoints == expected_mountpoints
+    assert mount_partition_mock.call_count == len(expected_entries)
+
+    for (_, filesystem), call in zip(
+        expected_entries, mount_partition_mock.call_args_list
+    ):
+        assert str(call.args[1].value).lower() == filesystem
 
 
 @pytest.mark.parametrize(
-    ("loop_dev", "volume", "filesystem_mount"),
+    ("volume", "filesystem_mount"),
     [
         (
-            "/dev/loop99",
             GPTVolume.unmarshal(
                 {
                     "schema": "gpt",
@@ -433,13 +488,17 @@ def test_image_mounts(
         ),
     ],
 )
-def test_image_mounts_errors(
-    loop_dev: str,
+@pytest.mark.usefixtures("new_dir")
+def test_partition_mounts_errors(
+    new_dir,
     volume: Volume,
     filesystem_mount: FilesystemMount,
 ):
+    disk_path = Path(new_dir, "pc.img")
+    disk_path.touch()
+
     with pytest.raises(ImageError, match="Cannot find a partition named"):
-        _image_mounts(loop_dev, volume.structure, filesystem_mount)
+        _partition_mounts(disk_path, volume.structure, filesystem_mount)
 
 
 # ── _part_num ─────────────────────────────────────────────────────────────────
