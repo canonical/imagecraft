@@ -49,11 +49,8 @@ _GRUB_BIOS_ARCHS = {DebianArchitecture.AMD64, DebianArchitecture.I386}
 
 # Modules embedded in the removable EFI image.
 #
-# GRUB images are built from a kernel plus an arbitrary list of modules; see
-# https://www.gnu.org/software/grub/manual/grub/html_node/Images.html and
-# https://man.archlinux.org/man/grub-mkimage.1.en.  The concrete list below
-# mirrors the modules that ``grub-install --uefi-secure-boot`` embeds on
-# Ubuntu build hosts.
+# Based on the module lists Ubuntu uses when building GRUB EFI images:
+# https://git.launchpad.net/~ubuntu-core-dev/grub/+git/ubuntu/tree/debian/build-efi-images
 _GRUB_EFI_MODULES = (
     "all_video boot btrfs cat chain configfile echo efinet ext2 fat font "
     "fshelp gettext gfxmenu gfxterm gfxterm_background gzio halt hfsplus "
