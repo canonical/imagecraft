@@ -219,8 +219,9 @@ def _update_grub(loop_dev: str) -> None:
 def _grub_probe_stub_script(loop_dev: str, *, schema: PartitionSchema) -> str:
     """Return a shell script that answers grub-probe for the fake device.
 
-    The real grub-probe cannot resolve the loop-device-free virtual devices, so
-    the stub returns the values that ``update-grub`` needs.
+    The template lives in ``grub_probe_stub.sh.in`` so it can be edited and
+    formatted with shell tooling; this function only substitutes the dynamic
+    values.
 
     :param loop_dev: fake device name (e.g. ``/dev/pc.img``).
     :param schema: partition schema of the image.
@@ -231,48 +232,13 @@ def _grub_probe_stub_script(loop_dev: str, *, schema: PartitionSchema) -> str:
     )
     drive = "(hd0)"
 
-    # Inside the chroot /dev directory, the real /dev entries are visible and
-    # /proc/self/mountinfo may list the actual root filesystem.  If we get a
-    # --target=fs_uuid for the fake device, try to read the real filesystem's
-    # UUID with tune2fs before falling back to empty output.
-    return f"""#!/bin/sh
-TARGET=""
-DEVICE=""
-MODE=""
-for arg in "$@"; do
-    case "$arg" in
-        --target=*) TARGET="${{arg#--target=}}" ;;
-        --device=*) DEVICE="${{arg#--device=}}" ;;
-        --device) ;;
-        -*) ;;
-        *) MODE="$arg" ;;
-    esac
-done
-
-if [ "$TARGET" = "device" ]; then
-    echo "{loop_dev}"
-    exit 0
-fi
-
-if [ "$DEVICE" != "{loop_dev}" ]; then
-    exit 1
-fi
-
-case "$TARGET" in
-    drive) echo "{drive}" ;;
-    fs) echo "ext2" ;;
-    fs_uuid)
-        UUID=$(tune2fs -l "{loop_dev}" 2>/dev/null | sed -n 's/^Filesystem UUID: *//p')
-        if [ -n "$UUID" ]; then
-            echo "$UUID"
-        fi
-        ;;
-    partuuid) ;;
-    partmap) echo "{partmap}" ;;
-    abstraction) ;;
-esac
-exit 0
-"""
+    template_path = Path(__file__).with_name("grub_probe_stub.sh.in")
+    return (
+        template_path.read_text()
+        .replace("__IMAGECRAFT_LOOP_DEV__", loop_dev)
+        .replace("__IMAGECRAFT_DRIVE__", drive)
+        .replace("__IMAGECRAFT_PARTMAP__", partmap)
+    )
 
 
 def setup_grub(
