@@ -15,6 +15,7 @@
 """GRUB utils."""
 
 import subprocess
+from typing import Any
 from pathlib import Path
 
 from craft_cli import emit
@@ -23,13 +24,19 @@ from craft_platforms import DebianArchitecture
 
 from imagecraft import errors
 from imagecraft.models.volume import (
+    GPTStructureItem,
+    HybridStructureItem,
     MBRStructureItem,
     PartitionSchema,
     StructureList,
+    StructureItem,
 )
 from imagecraft.pack import mbrutil
+from imagecraft.pack.gptutil import get_partition_size_sectors
 from imagecraft.pack.chroot import Chroot, Mount
+from imagecraft.pack.gptutil import get_partition_sector_offset
 from imagecraft.pack.image import Image
+from imagecraft.utils.mount import ExtFuseMount, FatFuseMount
 from imagecraft.subprocesses import run
 
 _ARCH_TO_GRUB_EFI_TARGET: dict[str, str] = {
@@ -40,6 +47,16 @@ _ARCH_TO_GRUB_EFI_TARGET: dict[str, str] = {
 
 _GRUB_BIOS_TARGET = "i386-pc"
 _GRUB_BIOS_ARCHS = {DebianArchitecture.AMD64, DebianArchitecture.I386}
+
+SECTOR_SIZE = 512
+
+
+def _partition_role_is_fat(role: str) -> bool:
+    """Check if partition role is FAT/VFAT.
+
+    :param role: partition role string
+    """
+    return role in {"system-boot", "system-seed"}
 
 
 def _grub_install(grub_target: str, loop_dev: str) -> None:
@@ -158,9 +175,46 @@ def setup_grub(
     mount_dir = workdir / "mount"
     mount_dir.mkdir(exist_ok=True)
 
-    with image.attach_loopdev() as loop_dev:
-        mounts: list[Mount] = [
-            *_image_mounts(loop_dev, image.volume.structure, filesystem_mount),
+    mounts: list[Mount] = []
+    for partition_mount in filesystem_mount:
+        partition: Any = _partition_by_name(
+            image.volume.structure, partition_mount.device
+        )
+        if partition is not None:
+            # Create FUSE mount for this partition
+            partition_name = partition.name
+            partition_offset = get_partition_sector_offset(
+                image.disk_path, partition_name
+            )
+            partition_size = get_partition_size_sectors(image.disk_path, partition_name)
+
+            if partition_role_is_fat(partition.role):
+                # FAT/VFAT partition - use FatFuseMount
+                fuse_mount = FatFuseMount(
+                    imagepath=image.disk_path,
+                    offset=partition_offset * SECTOR_SIZE,
+                    read_only=False,
+                )
+            else:
+                # EXT2/3/4 partition - use ExtFuseMount
+                fuse_mount = ExtFuseMount(
+                    imagepath=image.disk_path,
+                    offset=partition_offset * SECTOR_SIZE,
+                    read_only=False,
+                )
+
+            fuse_mount_path = fuse_mount.mount()
+            if fuse_mount_path is not None:
+                mounts.append(
+                    Mount(
+                        fstype=None,
+                        src=str(fuse_mount_path),
+                        relative_mountpoint=partition_mount.mount,
+                    )
+                )
+
+    mounts.extend(
+        [
             Mount(
                 fstype="devtmpfs",
                 src="devtmpfs-build",
@@ -178,18 +232,36 @@ def setup_grub(
                 fstype=None, src="/run", relative_mountpoint="/run", options=["--bind"]
             ),
         ]
-        chroot = Chroot(path=mount_dir, mounts=mounts)
+    )
+    chroot = Chroot(path=mount_dir, mounts=mounts)
 
-        try:
-            chroot.execute(
-                target=_grub_install,
-                grub_target=grub_target,
-                loop_dev=loop_dev,
-            )
-        except errors.ChrootMountError as err:
-            # Ignore mounting errors indicating the rootfs does not have
-            # the needed structure to install grub.
-            emit.progress(f"Cannot install GRUB on this rootfs: {err}", permanent=True)
+    def _grub_install_with_disk_path(grub_target: str, loop_dev: str) -> None:
+        """Install grub in the image with disk path environment variable."""
+        import os
+
+        os.environ["DISK_IMAGE_PATH"] = str(image.disk_path)
+        _grub_install(grub_target, loop_dev)
+
+    try:
+        chroot.execute(
+            target=_grub_install_with_disk_path,
+            grub_target=grub_target,
+            loop_dev=str(image.disk_path),
+        )
+    except errors.ChrootMountError as err:
+        # Ignore mounting errors indicating the rootfs does not have
+        # the needed structure to install grub.
+        emit.progress(f"Cannot install GRUB on this rootfs: {err}", permanent=True)
+
+
+def _partition_by_name(structure: StructureList, device_name: str) -> Any:
+    partition_name = _partition_name_from_device(device_name)
+    if partition_name is None:
+        return None
+    for item in structure:
+        if item.name == partition_name:
+            return item
+    return None
 
 
 def _image_mounts(
