@@ -381,43 +381,30 @@ class ImageDevDir:
             raise MountError(f"Not mounted: {self.image_path}")
         errors_encountered: list[errors.MountError] = []
 
-        for idx, part_path in self._devices.items():
-            # Partitions are keyed by both number and name; unmount each only once.
-            if not isinstance(idx, int):
-                continue
-            try:
-                _unmount_path(part_path)
-            except errors.MountError as err:
-                errors_encountered.append(err)
-            if part_path in self._remove_on_unmount:
-                try:
-                    part_path.unlink()
-                except OSError as err:
-                    errors_encountered.append(
-                        errors.MountError(
-                            f"Failed to remove device file {part_path}: {err}"
-                        )
-                    )
-                self._remove_on_unmount.discard(part_path)
+        # Build a deterministic, de-duplicated list of paths to unmount:
+        # partitions first, then the full-image bind mount.
+        paths_to_unmount: list[Path] = []
+        partition_paths = {
+            part_path
+            for idx, part_path in self._devices.items()
+            if isinstance(idx, int)
+        }
+        paths_to_unmount.extend(sorted(partition_paths))
+        paths_to_unmount.append(self._devices[None])
 
-        image_dev_path = self._devices[None]
-        try:
-            _unmount_path(image_dev_path)
-        except errors.MountError as err:
-            errors_encountered.append(err)
-
-        for path in list(self._remove_on_unmount):
+        for path in paths_to_unmount:
             try:
                 _unmount_path(path)
             except errors.MountError as err:
                 errors_encountered.append(err)
-            try:
-                path.unlink()
-            except OSError as err:
-                errors_encountered.append(
-                    errors.MountError(f"Failed to remove device file {path}: {err}")
-                )
-            self._remove_on_unmount.discard(path)
+            if path in self._remove_on_unmount:
+                try:
+                    path.unlink()
+                except OSError as err:
+                    errors_encountered.append(
+                        errors.MountError(f"Failed to remove device file {path}: {err}")
+                    )
+                self._remove_on_unmount.discard(path)
 
         self._reset_mount_state()
         if errors_encountered:

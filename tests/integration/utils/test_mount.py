@@ -103,6 +103,7 @@ def fstype(request: pytest.FixtureRequest) -> FileSystem:
     return request.param
 
 
+@pytest.mark.requires_root
 def test_mount_dev_dir(tmp_path: Path, volume_definition: GPTVolume | MBRVolume):
     image_path = tmp_path / "disk.img"
     if isinstance(volume_definition, GPTVolume):
@@ -126,6 +127,7 @@ def test_mount_dev_dir(tmp_path: Path, volume_definition: GPTVolume | MBRVolume)
         assert not part_path.exists(), part_mounts
 
 
+@pytest.mark.requires_root
 def test_mount_partition_standalone(
     tmp_path: Path,
     fstype: FileSystem,
@@ -167,6 +169,7 @@ def test_mount_partition_standalone(
         assert (root / "dir" / "subdir" / "data.bin").read_bytes() == b"PAYLOAD_DATA"
 
 
+@pytest.mark.requires_root
 def test_mount_partition_offset(
     tmp_path: Path,
     fstype: FileSystem,
