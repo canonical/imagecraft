@@ -51,15 +51,64 @@ _GRUB_BIOS_ARCHS = {DebianArchitecture.AMD64, DebianArchitecture.I386}
 #
 # Based on the module lists Ubuntu uses when building GRUB EFI images:
 # https://git.launchpad.net/~ubuntu-core-dev/grub/+git/ubuntu/tree/debian/build-efi-images
-_GRUB_EFI_MODULES = (
-    "all_video boot btrfs cat chain configfile echo efinet ext2 fat font "
-    "fshelp gettext gfxmenu gfxterm gfxterm_background gzio halt hfsplus "
-    "iso9660 jpeg loadenv loopback linux lvm mdraid09 mdraid1x memdisk "
-    "minicmd normal ntfs ntfscomp part_apple part_gpt part_msdos "
-    "password_pbkdf2 png probe reboot regexp search search_fs_uuid "
-    "search_fs_file search_label serial sleep squash4 test true video "
-    "video_bochs video_cirrus video_fb xfs zfs efi_gop"
-).split()
+_GRUB_EFI_MODULES = [
+    "all_video",
+    "boot",
+    "btrfs",
+    "cat",
+    "chain",
+    "configfile",
+    "echo",
+    "efinet",
+    "ext2",
+    "fat",
+    "font",
+    "fshelp",
+    "gettext",
+    "gfxmenu",
+    "gfxterm",
+    "gfxterm_background",
+    "gzio",
+    "halt",
+    "hfsplus",
+    "iso9660",
+    "jpeg",
+    "loadenv",
+    "loopback",
+    "linux",
+    "lvm",
+    "mdraid09",
+    "mdraid1x",
+    "memdisk",
+    "minicmd",
+    "normal",
+    "ntfs",
+    "ntfscomp",
+    "part_apple",
+    "part_gpt",
+    "part_msdos",
+    "password_pbkdf2",
+    "png",
+    "probe",
+    "reboot",
+    "regexp",
+    "search",
+    "search_fs_uuid",
+    "search_fs_file",
+    "search_label",
+    "serial",
+    "sleep",
+    "squash4",
+    "test",
+    "true",
+    "video",
+    "video_bochs",
+    "video_cirrus",
+    "video_fb",
+    "xfs",
+    "zfs",
+    "efi_gop",
+]
 
 
 def _grub_install(grub_target: str, loop_dev: str, *, schema: PartitionSchema) -> None:
