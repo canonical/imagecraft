@@ -320,7 +320,13 @@ class ImageDevDir:
             self.partition_table = gptutil.get_partition_table(self.image_path)
             device_name: str = Path(self.partition_table["device"]).name
             sector_size = int(self.partition_table["sectorsize"])
-        except (subprocess.CalledProcessError, OSError, ValueError, KeyError) as err:
+        except (
+            subprocess.CalledProcessError,
+            OSError,
+            ValueError,
+            KeyError,
+            TypeError,
+        ) as err:
             self._reset_mount_state()
             raise errors.MountError(
                 f"Failed to read partition table from {self.image_path}: {err}"

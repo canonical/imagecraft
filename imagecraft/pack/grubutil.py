@@ -196,14 +196,17 @@ def _update_grub(loop_dev: str) -> None:
     original_grub_probe = Path("/tmp/grub-probe.real")
 
     grub_probe_existed = grub_probe_path.exists()
-    if grub_probe_existed:
-        shutil.copy2(str(grub_probe_path), str(original_grub_probe))
+    original_grub_probe_created = False
     try:
-        shutil.copy2(str(grub_probe_stub), str(grub_probe_path))
-    except FileNotFoundError as err:
-        raise errors.GRUBInstallError("Missing grub-probe stub") from err
-
-    try:
+        if grub_probe_existed:
+            shutil.copy2(str(grub_probe_path), str(original_grub_probe))
+            original_grub_probe_created = True
+        try:
+            shutil.copy2(str(grub_probe_stub), str(grub_probe_path))
+        except FileNotFoundError as err:
+            raise errors.GRUBInstallError("Missing grub-probe stub") from err
+        except OSError as err:
+            raise errors.GRUBInstallError("Failed to install grub-probe stub") from err
         for cmd in [
             ["dpkg-divert", *divert_common_args],
             update_grub_command,
@@ -216,12 +219,17 @@ def _update_grub(loop_dev: str) -> None:
         raise errors.GRUBInstallError("Failed to generate GRUB configuration") from err
     except FileNotFoundError as err:
         raise errors.GRUBInstallError("Missing tool to configure GRUB") from err
+    except OSError as err:
+        raise errors.GRUBInstallError("Failed to prepare grub-probe") from err
     finally:
-        if grub_probe_existed:
-            shutil.copy2(str(original_grub_probe), str(grub_probe_path))
-            original_grub_probe.unlink(missing_ok=True)
-        else:
-            grub_probe_path.unlink(missing_ok=True)
+        try:
+            if original_grub_probe_created:
+                shutil.copy2(str(original_grub_probe), str(grub_probe_path))
+                original_grub_probe.unlink(missing_ok=True)
+            else:
+                grub_probe_path.unlink(missing_ok=True)
+        except OSError as err:
+            raise errors.GRUBInstallError("Failed to restore grub-probe") from err
 
 
 def _grub_probe_stub_script(loop_dev: str, *, schema: PartitionSchema) -> str:
