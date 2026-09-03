@@ -5,7 +5,7 @@ execute: |
 
   test -f disk.img
 
-  expected_partitions=$(yq -P .volumes.disk.structure[].partition-number imagecraft.yaml | sed 's/^/disk.img/' | sort)
+  expected_partitions=$(yq -P .volumes.disk.structure[].number imagecraft.yaml | sed 's/^/disk.img/' | sort)
   actual_partitions=$(sfdisk --json disk.img | jq -r .partitiontable.partitions[].node | sort)
 
   if [[ "${expected_partitions}" != "${actual_partitions}" ]] ; then

@@ -231,7 +231,7 @@ def _part_num(name: str, structure: StructureList) -> int | None:
     )
     for i, structure_item in enumerate(structure):
         if structure_item.name == name:
-            explicit = getattr(structure_item, "partition_number", None)
+            explicit = getattr(structure_item, "number", None)
             if explicit is not None:
                 return explicit
             pos = i + 1  # 1-based

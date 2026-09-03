@@ -176,7 +176,7 @@ The following keys can be declared for each partition listed in the volume's
 .. kitbash-field:: GPTStructureItem filesystem_label
     :prepend-name: volumes.<volume-name>.structure.<partition>
 
-.. kitbash-field:: GPTStructureItem partition_number
+.. kitbash-field:: GPTStructureItem number
     :prepend-name: volumes.<volume-name>.structure.<partition>
     :override-description:
     :skip-examples:
@@ -193,7 +193,7 @@ The following keys can be declared for each partition listed in the volume's
 
     .. code-block:: yaml
 
-        partition_number: 1
+        number: 1
 
 
 Filesystem keys

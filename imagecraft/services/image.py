@@ -246,7 +246,7 @@ class ImageService(AppService):
         """Return a mapping of partition name to disk partition number for a volume.
 
         For GPT and plain MBR (≤4 partitions), numbers are 1-based positions,
-        respecting any explicit partition_number on the structure item.
+        respecting any explicit partition number on the structure item.
         For MBR with extended partitions (>4), the first 3 are primaries (1-3),
         slot 4 is the synthesised extended container, and logical partitions
         start at 5.
@@ -262,7 +262,7 @@ class ImageService(AppService):
                 # Skip slot 4 (extended container) — logicals start at 5
                 part_num = i + 1
             else:
-                part_num = getattr(item, "partition_number", None) or i
+                part_num = getattr(item, "number", None) or i
             result[item.name] = part_num
         return result
 
