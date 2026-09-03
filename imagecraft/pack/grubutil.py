@@ -111,15 +111,22 @@ _GRUB_EFI_MODULES = [
 ]
 
 
-def _grub_install(grub_target: str, loop_dev: str, *, schema: PartitionSchema) -> None:
+def _grub_install(
+    grub_target: str,
+    loop_dev: str,
+    *,
+    schema: PartitionSchema,
+    root_uuid: str | None = None,
+) -> None:
     """Install grub in the image.
 
     :param grub_target: target platform to install grub for.
     :param loop_dev: loop device to install grub on
     :param schema: partition schema of the image
+    :param root_uuid: UUID of the root filesystem, required for EFI boot.
     """
     if grub_target.endswith("-efi"):
-        _install_grub_efi(grub_target, loop_dev, schema=schema)
+        _install_grub_efi(grub_target, loop_dev, schema=schema, root_uuid=root_uuid)
     else:
         _install_grub_bios(grub_target, loop_dev)
 
@@ -161,7 +168,11 @@ def _install_grub_bios(grub_target: str, loop_dev: str) -> None:
 
 
 def _install_grub_efi(
-    grub_target: str, loop_dev: str, *, schema: PartitionSchema
+    grub_target: str,
+    loop_dev: str,
+    *,
+    schema: PartitionSchema,
+    root_uuid: str | None,
 ) -> None:
     """Install a removable EFI GRUB image without requiring a block device.
 
@@ -170,14 +181,23 @@ def _install_grub_efi(
     with ``grub-mkimage`` and place it at the removable UEFI fallback path
     ``/boot/efi/EFI/BOOT/BOOTX64.EFI``.
 
+    The EFI image embeds an early configuration that searches for the root
+    filesystem by UUID and then loads ``/boot/grub/grub.cfg`` from it.
+
     :param grub_target: target EFI platform (e.g. ``x86_64-efi``).
     :param loop_dev: fake device name used as the GRUB install device.
     :param schema: partition schema of the image.
+    :param root_uuid: UUID of the root filesystem, required to locate grub.cfg.
     """
     check_grub_mkimage = ["grub-mkimage", "-V"]
     efi_part = "/boot/efi"
     efi_boot_dir = Path(efi_part) / "EFI" / "BOOT"
     efi_boot_dir.mkdir(parents=True, exist_ok=True)
+
+    if not root_uuid:
+        raise errors.GRUBInstallError(
+            "Cannot build EFI GRUB image without a root filesystem UUID"
+        )
 
     # Mapping from Debian architecture targets to the removable EFI file name.
     efi_filenames: dict[str, str] = {
@@ -186,6 +206,11 @@ def _install_grub_efi(
         "arm-efi": "BOOTARM.EFI",
     }
     efi_file = efi_boot_dir / efi_filenames.get(grub_target, "BOOTX64.EFI")
+
+    early_config = Path("/tmp/imagecraft-grub-early.cfg")
+    early_config.write_text(
+        f"search --fs-uuid --set=root {root_uuid}\nconfigfile /boot/grub/grub.cfg\n"
+    )
 
     try:
         run(*check_grub_mkimage)
@@ -201,6 +226,7 @@ def _install_grub_efi(
         f"--output={efi_file}",
         f"--format={grub_target}",
         "--prefix=/EFI/BOOT",
+        f"--config={early_config}",
         *_GRUB_EFI_MODULES,
     ]
 
@@ -364,6 +390,7 @@ def setup_grub(
 
         with ImageDevDir(image_path=image.disk_path, dev_dir=dev_dir) as devices:
             loop_dev_in_chroot = f"/dev/{devices[None].name}"
+            root_uuid = _root_uuid(image.volume.structure, filesystem_mount, devices)
             part_mounts = _partition_mounts(
                 image.disk_path, image.volume.structure, filesystem_mount
             )
@@ -411,6 +438,7 @@ def setup_grub(
                         grub_target=grub_target,
                         loop_dev=loop_dev_in_chroot,
                         schema=schema,
+                        root_uuid=root_uuid,
                     )
                 except errors.ChrootMountError as err:
                     # Ignore mounting errors indicating the rootfs does not have
@@ -500,6 +528,36 @@ def _part_num(name: str, structure: StructureList) -> int | None:
                 return pos + 1  # skip slot 4 (extended container)
             return pos
     return None
+
+
+def _root_uuid(
+    structure: StructureList,
+    filesystem_mount: FilesystemMount,
+    devices: dict[int | str | None, Path],
+) -> str | None:
+    """Return the UUID of the partition mounted at ``/``.
+
+    :param structure: volume structure describing the partitions.
+    :param filesystem_mount: mount configuration for the image.
+    :param devices: mapping from ImageDevDir of partition numbers and names to
+        host-side device paths.
+    :returns: UUID as a string, or ``None`` if it cannot be determined.
+    """
+    root_entry = next((entry for entry in filesystem_mount if entry.mount == "/"), None)
+    if root_entry is None:
+        return None
+    part_name = _partition_name_from_device(root_entry.device)
+    part_num = _part_num(part_name, structure)
+    if part_num is None:
+        return None
+    root_device = devices.get(part_num)
+    if root_device is None:
+        return None
+    try:
+        result = run("blkid", "-s", "UUID", "-o", "value", str(root_device))
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return None
+    return result.stdout.strip() or None
 
 
 def _partition_name_from_device(device: str) -> str:

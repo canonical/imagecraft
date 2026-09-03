@@ -279,6 +279,30 @@ def test_setup_grub_installs_grub_efi(rootfs_with_grub: Path, tmp_path: Path, em
 
         boot_efi = esp_mountpoint / "EFI" / "BOOT" / "BOOTX64.EFI"
         assert boot_efi.exists(), "EFI bootloader was not installed"
+
+        root_uuid = subprocess.run(
+            [
+                "blkid",
+                "-p",
+                "-s",
+                "UUID",
+                "-o",
+                "value",
+                "-O",
+                str(
+                    gptutil.get_partition_sector_offset_by_number(image_path, 2)
+                    * sector_size
+                ),
+                str(image_path),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        assert root_uuid, "Could not determine root filesystem UUID"
+        assert root_uuid.encode() in boot_efi.read_bytes(), (
+            "EFI image does not contain early-config root filesystem UUID"
+        )
     finally:
         esp_mount.unmount(lazy=True)
         root_mount.unmount(lazy=True)
