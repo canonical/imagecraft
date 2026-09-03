@@ -209,7 +209,7 @@ def _get_partition_info(imagepath: Path, partname: str) -> dict[str, Any]:
     raise CraftError(f"No partition named {partname} in {imagepath}")
 
 
-def _partition_node_number(
+def partition_node_number(
     table: dict[str, Any], partition: dict[str, Any]
 ) -> int | None:
     """Return the partition number sfdisk reported for a partition entry.
@@ -237,7 +237,7 @@ def _get_partition_info_by_number(imagepath: Path, partnum: int) -> dict[str, An
     """
     table = get_partition_table(imagepath)
     for partition in table.get("partitions", []):
-        if _partition_node_number(table, partition) == partnum:
+        if partition_node_number(table, partition) == partnum:
             return cast(dict[str, Any], partition)
     raise CraftError(f"No partition number {partnum} in {imagepath}")
 

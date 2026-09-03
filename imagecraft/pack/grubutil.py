@@ -195,9 +195,13 @@ def _update_grub(loop_dev: str) -> None:
     grub_probe_path = Path("/usr/sbin/grub-probe")
     original_grub_probe = Path("/tmp/grub-probe.real")
 
-    if grub_probe_path.exists():
+    grub_probe_existed = grub_probe_path.exists()
+    if grub_probe_existed:
         shutil.copy2(str(grub_probe_path), str(original_grub_probe))
-    shutil.copy2(str(grub_probe_stub), str(grub_probe_path))
+    try:
+        shutil.copy2(str(grub_probe_stub), str(grub_probe_path))
+    except FileNotFoundError as err:
+        raise errors.GRUBInstallError("Missing grub-probe stub") from err
 
     try:
         for cmd in [
@@ -210,10 +214,14 @@ def _update_grub(loop_dev: str) -> None:
                 emit.debug(res.stdout)
     except subprocess.CalledProcessError as err:
         raise errors.GRUBInstallError("Failed to generate GRUB configuration") from err
+    except FileNotFoundError as err:
+        raise errors.GRUBInstallError("Missing tool to configure GRUB") from err
     finally:
-        if original_grub_probe.exists():
+        if grub_probe_existed:
             shutil.copy2(str(original_grub_probe), str(grub_probe_path))
-            original_grub_probe.unlink()
+            original_grub_probe.unlink(missing_ok=True)
+        else:
+            grub_probe_path.unlink(missing_ok=True)
 
 
 def _grub_probe_stub_script(loop_dev: str, *, schema: PartitionSchema) -> str:

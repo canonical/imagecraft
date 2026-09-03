@@ -50,10 +50,13 @@ def _try_fuse_command(command: Sequence[str], *, err_msg: str) -> None:
     try:
         run(*command)
     except subprocess.CalledProcessError as err:
+        details = err.stderr or err.stdout or str(err)
         raise errors.MountError(
-            f"{err_msg}: {err.stderr}",
-            details=err.stderr,
+            f"{err_msg}: {details}",
+            details=details,
         ) from err
+    except FileNotFoundError as err:
+        raise errors.MountError(f"{err_msg}: {err}") from err
 
 
 def _unmount_path(
@@ -313,9 +316,15 @@ class ImageDevDir:
         """
         if self._devices is not None:
             raise MountError(f"{self.image_path} already mounted")
-        self.partition_table = gptutil.get_partition_table(self.image_path)
-        device_name: str = Path(self.partition_table["device"]).name
-        sector_size = int(self.partition_table["sectorsize"])
+        try:
+            self.partition_table = gptutil.get_partition_table(self.image_path)
+            device_name: str = Path(self.partition_table["device"]).name
+            sector_size = int(self.partition_table["sectorsize"])
+        except (subprocess.CalledProcessError, OSError, ValueError, KeyError) as err:
+            self._reset_mount_state()
+            raise errors.MountError(
+                f"Failed to read partition table from {self.image_path}: {err}"
+            ) from err
 
         device_path = self.dev_dir / device_name
         self._create_device_file(device_path)
@@ -331,9 +340,12 @@ class ImageDevDir:
         self._devices = {None: device_path}
 
         try:
-            for part_num, partition in enumerate(
-                self.partition_table["partitions"], start=1
-            ):
+            for partition in self.partition_table["partitions"]:
+                part_num = gptutil.partition_node_number(
+                    self.partition_table, partition
+                )
+                if part_num is None:
+                    continue
                 part_path = self.dev_dir / Path(partition["node"]).name
                 self._create_device_file(part_path)
                 part_start_bytes = partition["start"] * sector_size
