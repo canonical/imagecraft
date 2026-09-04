@@ -184,6 +184,9 @@ git_describe_command = [
 include = ["*craft*"]
 namespaces = false
 
+[tool.setuptools.package-data]
+imagecraft = ["pack/*.sh.in"]
+
 [tool.codespell]
 ignore-words-list = "buildd,crate,keyserver,comandos,ro,dedent,dedented"
 skip = ".git,build,.*_cache,__pycache__,*.tar,*.snap,*.png,./node_modules,./docs/_build,.direnv,.venv,venv,.vscode"
