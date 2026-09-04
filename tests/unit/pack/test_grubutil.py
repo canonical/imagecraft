@@ -19,7 +19,7 @@ from unittest.mock import MagicMock
 import pytest
 from craft_parts.filesystem_mounts import FilesystemMount
 from craft_platforms import DebianArchitecture
-from imagecraft.errors import ImageError
+from imagecraft.errors import GRUBInstallError, ImageError
 from imagecraft.models import Volume
 from imagecraft.models.volume import (
     GPTStructureItem,
@@ -30,6 +30,7 @@ from imagecraft.models.volume import (
     MBRVolume,
 )
 from imagecraft.pack.grubutil import (
+    _install_grub_efi,
     _part_num,
     _partition_mounts,
     setup_grub,
@@ -580,3 +581,67 @@ def test_part_num_mbr_extended():
     # slot 4 is the synthesised extended container — logical partitions start at 5
     assert _part_num("logical1", structure) == 5
     assert _part_num("logical2", structure) == 6
+
+
+@pytest.mark.usefixtures("new_dir")
+def test_install_grub_efi_copies_signed_binaries(new_dir):
+    """_install_grub_efi copies the signed Ubuntu binaries to the ESP paths."""
+    root_dir = Path(new_dir)
+    shim_dir = root_dir / "usr" / "lib" / "shim"
+    grub_dir = root_dir / "usr" / "lib" / "grub" / "x86_64-efi-signed"
+    efi_boot_dir = root_dir / "boot" / "efi" / "EFI" / "BOOT"
+    efi_vendor_dir = root_dir / "boot" / "efi" / "EFI" / "ubuntu"
+
+    for directory in (shim_dir, grub_dir, efi_boot_dir.parent, efi_vendor_dir.parent):
+        directory.mkdir(parents=True, exist_ok=True)
+
+    (shim_dir / "shimx64.efi.signed").write_bytes(b"fake shim")
+    (grub_dir / "grubx64.efi.signed").write_bytes(b"fake signed grub")
+    (shim_dir / "mmx64.efi").write_bytes(b"fake mm")
+    (shim_dir / "fbx64.efi").write_bytes(b"fake fb")
+
+    root_uuid = "12345678-1234-1234-1234-123456789abc"
+
+    _install_grub_efi(
+        grub_target="x86_64-efi",
+        root_uuid=root_uuid,
+        base_path=root_dir,
+    )
+
+    assert (efi_boot_dir / "BOOTX64.EFI").read_bytes() == b"fake shim"
+    assert (efi_vendor_dir / "grubx64.efi").read_bytes() == b"fake signed grub"
+    assert (efi_vendor_dir / "mmx64.efi").read_bytes() == b"fake mm"
+    assert (efi_vendor_dir / "fbx64.efi").read_bytes() == b"fake fb"
+
+    chain_cfg = (efi_vendor_dir / "grub.cfg").read_text()
+    assert f"search.fs_uuid {root_uuid}" in chain_cfg
+    assert "configfile ($root)/boot/grub/grub.cfg" in chain_cfg
+
+
+@pytest.mark.usefixtures("new_dir")
+def test_install_grub_efi_fails_when_unsigned_binaries_only(new_dir):
+    """Unsigned GRUB binaries are not supported; report a clear error."""
+    root_dir = Path(new_dir)
+    grub_dir = root_dir / "usr" / "lib" / "grub" / "x86_64-efi-signed"
+    grub_dir.mkdir(parents=True)
+
+    (grub_dir / "grubx64.efi.signed").write_bytes(b"fake signed grub")
+
+    with pytest.raises(GRUBInstallError, match="signed shim"):
+        _install_grub_efi(
+            grub_target="x86_64-efi",
+            root_uuid="12345678-1234-1234-1234-123456789abc",
+            base_path=root_dir,
+        )
+
+    shim_dir = root_dir / "usr" / "lib" / "shim"
+    shim_dir.mkdir(parents=True)
+    (shim_dir / "shimx64.efi.signed").write_bytes(b"fake shim")
+    (grub_dir / "grubx64.efi.signed").unlink()
+
+    with pytest.raises(GRUBInstallError, match="signed GRUB"):
+        _install_grub_efi(
+            grub_target="x86_64-efi",
+            root_uuid="12345678-1234-1234-1234-123456789abc",
+            base_path=root_dir,
+        )

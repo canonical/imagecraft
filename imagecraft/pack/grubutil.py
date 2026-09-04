@@ -14,6 +14,7 @@
 
 """GRUB utils."""
 
+import errno
 import shutil
 import subprocess
 from pathlib import Path
@@ -35,6 +36,22 @@ from imagecraft.pack.chroot import Chroot, Mount
 from imagecraft.pack.image import Image
 from imagecraft.subprocesses import run
 
+
+def _copy_executable(src: Path, dst: Path) -> None:
+    """Copy an executable without relying on extended filesystem metadata.
+
+    FUSE-backed filesystems such as ``fusefat`` reject ``chmod`` and the
+    extended metadata calls used by ``shutil.copy2``. Open the files directly
+    and ignore mode changes the destination filesystem does not support.
+    """
+    dst.write_bytes(src.read_bytes())
+    try:
+        dst.chmod(src.stat().st_mode & 0o7777)
+    except OSError as err:
+        if err.errno != errno.ENOSYS:
+            raise
+
+
 if TYPE_CHECKING:
     from imagecraft.utils.mount import BaseMount
 
@@ -49,102 +66,64 @@ _GRUB_BIOS_ARCHS = {DebianArchitecture.AMD64, DebianArchitecture.I386}
 
 # Modules embedded in the removable EFI image.
 #
-# Based on the module lists Ubuntu uses when building GRUB EFI images:
-# https://git.launchpad.net/~ubuntu-core-dev/grub/+git/ubuntu/tree/debian/build-efi-images
-_GRUB_EFI_MODULES = [
-    "all_video",
-    "boot",
-    "btrfs",
-    "cat",
-    "chain",
-    "configfile",
-    "echo",
-    "efinet",
-    "ext2",
-    "fat",
-    "font",
-    "fshelp",
-    "gettext",
-    "gfxmenu",
-    "gfxterm",
-    "gfxterm_background",
-    "gzio",
-    "halt",
-    "hfsplus",
-    "iso9660",
-    "jpeg",
-    "loadenv",
-    "loopback",
-    "linux",
-    "lvm",
-    "mdraid09",
-    "mdraid1x",
-    "memdisk",
-    "minicmd",
-    "normal",
-    "ntfs",
-    "ntfscomp",
-    "part_apple",
-    "part_gpt",
-    "part_msdos",
-    "password_pbkdf2",
-    "png",
-    "probe",
-    "reboot",
-    "regexp",
-    "search",
-    "search_fs_uuid",
-    "search_fs_file",
-    "search_label",
-    "serial",
-    "sleep",
-    "squash4",
-    "test",
-    "true",
-    "video",
-    "video_bochs",
-    "video_cirrus",
-    "video_fb",
-    "xfs",
-    "zfs",
-    "efi_gop",
-]
+# Mapping from GRUB EFI targets to the corresponding signed shim/GRUB binary
+# names and directory layout used by Ubuntu for Secure Boot.
+_SIGNED_EFI_FILES: dict[str, dict[str, str]] = {
+    "x86_64-efi": {
+        "fallback_name": "BOOTX64.EFI",
+        "grub_name": "grubx64.efi",
+        "grub_signed_name": "grubx64.efi.signed",
+        "shim_name": "shimx64.efi.signed",
+        "mm_name": "mmx64.efi",
+        "fb_name": "fbx64.efi",
+        "shim_dir": "/usr/lib/shim",
+        "grub_dir": "/usr/lib/grub/x86_64-efi-signed",
+    },
+    "arm64-efi": {
+        "fallback_name": "BOOTAA64.EFI",
+        "grub_name": "grubaa64.efi",
+        "grub_signed_name": "grubaa64.efi.signed",
+        "shim_name": "shimaa64.efi.signed",
+        "mm_name": "mmaa64.efi",
+        "fb_name": "fbaa64.efi",
+        "shim_dir": "/usr/lib/shim",
+        "grub_dir": "/usr/lib/grub/arm64-efi-signed",
+    },
+}
 
 
 def _grub_install(
     grub_target: str,
     loop_dev: str,
     *,
-    schema: PartitionSchema,
     root_uuid: str | None = None,
 ) -> None:
     """Install grub in the image.
 
     :param grub_target: target platform to install grub for.
     :param loop_dev: loop device to install grub on
-    :param schema: partition schema of the image
     :param root_uuid: UUID of the root filesystem, required for EFI boot.
     """
     if grub_target.endswith("-efi"):
-        _install_grub_efi(grub_target, loop_dev, schema=schema, root_uuid=root_uuid)
+        _install_grub_efi(grub_target, root_uuid=root_uuid)
     else:
         _install_grub_bios(grub_target, loop_dev)
 
-    _update_grub(loop_dev=loop_dev)
+    _update_grub(loop_dev)
 
 
-def _install_grub_bios(grub_target: str, loop_dev: str) -> None:
+def _install_grub_bios(grub_target: str, _loop_dev: str) -> None:
     """Install BIOS GRUB using grub-install.
 
     :param grub_target: target platform to install grub for.
-    :param loop_dev: loop device to install grub on
+    :param _loop_dev: loop device to install grub on
     """
     check_grub_install = ["grub-install", "-V"]
     grub_install_command = [
         "grub-install",
         "--boot-directory=/boot",
         f"--target={grub_target}",
-        loop_dev,
+        _loop_dev,
     ]
 
     # Check if grub-install is available, otherwise skip the installation without error
@@ -169,84 +148,127 @@ def _install_grub_bios(grub_target: str, loop_dev: str) -> None:
 
 def _install_grub_efi(
     grub_target: str,
-    loop_dev: str,
     *,
-    schema: PartitionSchema,
     root_uuid: str | None,
+    base_path: Path = Path("/"),
 ) -> None:
-    """Install a removable EFI GRUB image without requiring a block device.
+    """Install the signed Ubuntu shim and GRUB binaries for UEFI Secure Boot.
 
-    ``grub-install`` does its own device resolution and requires a real block
-    device.  For the loop-device-free flow we build the EFI executable directly
-    with ``grub-mkimage`` and place it at the removable UEFI fallback path
-    ``/boot/efi/EFI/BOOT/BOOTX64.EFI``.
-
-    The EFI image embeds an early configuration that searches for the root
-    filesystem by UUID and then loads ``/boot/grub/grub.cfg`` from it.
+    This assumes the chroot contains the distro-signed binaries.  The signed
+    GRUB expects its configuration at ``/EFI/ubuntu/grub.cfg`` on the ESP, so a
+    small chain-loading config is written there to locate the real
+    ``/boot/grub/grub.cfg`` on the root filesystem.
 
     :param grub_target: target EFI platform (e.g. ``x86_64-efi``).
-    :param loop_dev: fake device name used as the GRUB install device.
-    :param schema: partition schema of the image.
     :param root_uuid: UUID of the root filesystem, required to locate grub.cfg.
+    :param base_path: base directory for the target rootfs (used mainly for
+        testing); defaults to the real root.
     """
-    check_grub_mkimage = ["grub-mkimage", "-V"]
-    efi_part = "/boot/efi"
-    efi_boot_dir = Path(efi_part) / "EFI" / "BOOT"
-    efi_boot_dir.mkdir(parents=True, exist_ok=True)
-
     if not root_uuid:
         raise errors.GRUBInstallError(
-            "Cannot build EFI GRUB image without a root filesystem UUID"
+            "Cannot install EFI GRUB without a root filesystem UUID"
         )
 
-    # Mapping from Debian architecture targets to the removable EFI file name.
-    efi_filenames: dict[str, str] = {
-        "x86_64-efi": "BOOTX64.EFI",
-        "arm64-efi": "BOOTAA64.EFI",
-        "arm-efi": "BOOTARM.EFI",
-    }
-    efi_file = efi_boot_dir / efi_filenames.get(grub_target, "BOOTX64.EFI")
+    signed_files = _SIGNED_EFI_FILES.get(grub_target)
+    if signed_files is None:
+        raise errors.GRUBInstallError(
+            f"No signed EFI configuration for target {grub_target}"
+        )
 
-    early_config = Path("/tmp/imagecraft-grub-early.cfg")
-    early_config.write_text(
-        f"search --fs-uuid --set=root {root_uuid}\nconfigfile /boot/grub/grub.cfg\n"
+    efi_boot_dir = base_path / "boot/efi" / "EFI" / "BOOT"
+    efi_vendor_dir = base_path / "boot/efi" / "EFI" / "ubuntu"
+    efi_boot_dir.mkdir(parents=True, exist_ok=True)
+    efi_vendor_dir.mkdir(parents=True, exist_ok=True)
+
+    shim_src = (
+        base_path / signed_files["shim_dir"].lstrip("/") / signed_files["shim_name"]
+    )
+    grub_src = (
+        base_path
+        / signed_files["grub_dir"].lstrip("/")
+        / signed_files["grub_signed_name"]
+    )
+    if not shim_src.exists() or not grub_src.exists():
+        missing: list[str] = []
+        if not shim_src.exists():
+            missing.append("signed shim")
+        if not grub_src.exists():
+            missing.append("signed GRUB")
+        raise errors.GRUBInstallError(
+            f"Missing {', '.join(missing)} for {grub_target}. "
+            "Install grub-efi-*-signed and shim-signed (or the platform-equivalent "
+            "signed packages) for UEFI Secure Boot support."
+        )
+
+    _copy_executable(shim_src, efi_boot_dir / signed_files["fallback_name"])
+    _copy_executable(grub_src, efi_vendor_dir / signed_files["grub_name"])
+    (efi_vendor_dir / "grub.cfg").write_text(
+        f"search.fs_uuid {root_uuid} root\nconfigfile ($root)/boot/grub/grub.cfg\n"
     )
 
-    try:
-        run(*check_grub_mkimage)
-    except FileNotFoundError:
-        emit.progress(
-            "Skipping GRUB installation because grub-mkimage is not available",
-            permanent=True,
+    for helper in ("mm_name", "fb_name"):
+        helper_src = (
+            base_path / signed_files["shim_dir"].lstrip("/") / signed_files[helper]
         )
-        return
+        if helper_src.exists():
+            _copy_executable(helper_src, efi_vendor_dir / signed_files[helper])
 
-    grub_mkimage_command = [
-        "grub-mkimage",
-        f"--output={efi_file}",
-        f"--format={grub_target}",
-        "--prefix=/EFI/BOOT",
-        f"--config={early_config}",
-        *_GRUB_EFI_MODULES,
-    ]
 
+def _restore_grub_probe(
+    original_grub_probe: Path,
+    grub_probe_path: Path,
+    *,
+    original_was_created: bool,
+) -> None:
+    """Restore the original grub-probe after running update-grub."""
     try:
-        res = run(*grub_mkimage_command, stderr=subprocess.STDOUT)
+        if original_was_created:
+            shutil.copy2(str(original_grub_probe), str(grub_probe_path))
+            original_grub_probe.unlink(missing_ok=True)
+        else:
+            grub_probe_path.unlink(missing_ok=True)
+    except OSError as err:
+        raise errors.GRUBInstallError("Failed to restore grub-probe") from err
+
+
+def _run_update_grub_commands(
+    grub_probe_stub: Path,
+    grub_probe_path: Path,
+    update_grub_command: list[str],
+    divert_common_args: list[str],
+) -> None:
+    """Install the grub-probe stub and run update-grub."""
+    try:
+        shutil.copy2(str(grub_probe_stub), str(grub_probe_path))
+    except FileNotFoundError as err:
+        raise errors.GRUBInstallError("Missing grub-probe stub") from err
+    except OSError as err:
+        raise errors.GRUBInstallError("Failed to install grub-probe stub") from err
+
+    for cmd in [
+        ["dpkg-divert", *divert_common_args],
+        update_grub_command,
+        ["dpkg-divert", "--remove", *divert_common_args],
+    ]:
+        try:
+            res = run(*cmd, stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError as err:
+            raise errors.GRUBInstallError(
+                "Failed to generate GRUB configuration"
+            ) from err
+        except FileNotFoundError as err:
+            raise errors.GRUBInstallError("Missing tool to configure GRUB") from err
         if res.stdout:
             emit.debug(res.stdout)
-    except subprocess.CalledProcessError as err:
-        raise errors.GRUBInstallError("Failed to build EFI GRUB image") from err
-    except FileNotFoundError as err:
-        raise errors.GRUBInstallError("Missing tool to build EFI GRUB image") from err
 
 
-def _update_grub(loop_dev: str) -> None:
+def _update_grub(_loop_dev: str) -> None:
     """Run update-grub, stubbing grub-probe so it works without a block device.
 
     The caller must place a ``grub-probe`` stub at ``/tmp/imagecraft-grub-probe-stub``
     inside the chroot before invoking this function.
 
-    :param loop_dev: fake device name used as the GRUB root device.
+    :param _loop_dev: fake device name used as the GRUB root device.
     """
     os_prober = "/etc/grub.d/30_os-prober"
     check_update_grub = ["update-grub", "-V"]
@@ -270,45 +292,26 @@ def _update_grub(loop_dev: str) -> None:
         )
         return
 
-    grub_probe_stub = Path("/tmp/imagecraft-grub-probe-stub")
+    grub_probe_stub = Path("/tmp/imagecraft-grub-probe-stub")  # noqa: S108
     grub_probe_path = Path("/usr/sbin/grub-probe")
-    original_grub_probe = Path("/tmp/grub-probe.real")
+    original_grub_probe = Path("/tmp/grub-probe.real")  # noqa: S108
 
-    grub_probe_existed = grub_probe_path.exists()
-    original_grub_probe_created = False
+    original_created = False
     try:
-        if grub_probe_existed:
+        if grub_probe_path.exists():
             shutil.copy2(str(grub_probe_path), str(original_grub_probe))
-            original_grub_probe_created = True
-        try:
-            shutil.copy2(str(grub_probe_stub), str(grub_probe_path))
-        except FileNotFoundError as err:
-            raise errors.GRUBInstallError("Missing grub-probe stub") from err
-        except OSError as err:
-            raise errors.GRUBInstallError("Failed to install grub-probe stub") from err
-        for cmd in [
-            ["dpkg-divert", *divert_common_args],
-            update_grub_command,
-            ["dpkg-divert", "--remove", *divert_common_args],
-        ]:
-            res = run(*cmd, stderr=subprocess.STDOUT)
-            if res.stdout:
-                emit.debug(res.stdout)
-    except subprocess.CalledProcessError as err:
-        raise errors.GRUBInstallError("Failed to generate GRUB configuration") from err
+            original_created = True
+        _run_update_grub_commands(
+            grub_probe_stub, grub_probe_path, update_grub_command, divert_common_args
+        )
     except FileNotFoundError as err:
         raise errors.GRUBInstallError("Missing tool to configure GRUB") from err
     except OSError as err:
         raise errors.GRUBInstallError("Failed to prepare grub-probe") from err
     finally:
-        try:
-            if original_grub_probe_created:
-                shutil.copy2(str(original_grub_probe), str(grub_probe_path))
-                original_grub_probe.unlink(missing_ok=True)
-            else:
-                grub_probe_path.unlink(missing_ok=True)
-        except OSError as err:
-            raise errors.GRUBInstallError("Failed to restore grub-probe") from err
+        _restore_grub_probe(
+            original_grub_probe, grub_probe_path, original_was_created=original_created
+        )
 
 
 def _grub_probe_stub_script(loop_dev: str, *, schema: PartitionSchema) -> str:
@@ -439,7 +442,6 @@ def setup_grub(
                         target=_grub_install,
                         grub_target=grub_target,
                         loop_dev=loop_dev_in_chroot,
-                        schema=schema,
                         root_uuid=root_uuid,
                     )
                 except errors.ChrootMountError as err:

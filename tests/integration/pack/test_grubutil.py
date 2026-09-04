@@ -33,9 +33,9 @@ def rootfs_with_grub(tmp_path: Path) -> Path:
     """Build a minimal Ubuntu 26.04 rootfs containing GRUB and a Linux kernel.
 
     The fixture uses ``chisel`` to cut a minimal root file system, then uses
-    ``apt`` inside a chroot to install ``grub-efi-amd64-bin`` and
-    ``linux-image-generic``.  It skips the test when ``chisel`` is not
-    available.
+    ``apt`` inside a chroot to install the signed shim and GRUB binaries
+    needed for UEFI Secure Boot, a Linux kernel, and their dependencies.  It
+    skips the test when ``chisel`` is not available.
     """
     if shutil.which("chisel") is None:
         pytest.skip("chisel is required to build the test rootfs")
@@ -110,6 +110,10 @@ def rootfs_with_grub(tmp_path: Path) -> Path:
                 "--no-install-recommends",
                 "debconf",
                 "perl-base",
+                # Maintainer scripts for the GRUB/shim packages need these.
+                "grep",
+                "mawk",
+                "util-linux",
             ],
             check=True,
             env=env,
@@ -123,15 +127,14 @@ def rootfs_with_grub(tmp_path: Path) -> Path:
                 "-y",
                 "--no-install-recommends",
                 "grub-efi-amd64-bin",
+                "grub-efi-amd64-signed",
+                "shim-signed",
                 "linux-image-generic",
                 "libc-bin",
                 "zstd",
                 "kmod",
-                "grep",
-                "mawk",
                 "findutils",
                 "debianutils",
-                "util-linux",
                 "hostname",
             ],
             check=True,
@@ -279,6 +282,10 @@ def test_setup_grub_installs_grub_efi(rootfs_with_grub: Path, tmp_path: Path, em
 
         boot_efi = esp_mountpoint / "EFI" / "BOOT" / "BOOTX64.EFI"
         assert boot_efi.exists(), "EFI bootloader was not installed"
+        signed_grub = esp_mountpoint / "EFI" / "ubuntu" / "grubx64.efi"
+        assert signed_grub.exists(), "Signed GRUB binary was not installed"
+        chain_cfg = esp_mountpoint / "EFI" / "ubuntu" / "grub.cfg"
+        assert chain_cfg.exists(), "Chain-loading grub.cfg was not installed"
 
         root_uuid = subprocess.run(
             [
@@ -300,8 +307,12 @@ def test_setup_grub_installs_grub_efi(rootfs_with_grub: Path, tmp_path: Path, em
             text=True,
         ).stdout.strip()
         assert root_uuid, "Could not determine root filesystem UUID"
-        assert root_uuid.encode() in boot_efi.read_bytes(), (
-            "EFI image does not contain early-config root filesystem UUID"
+        cfg_text = chain_cfg.read_text()
+        assert f"search.fs_uuid {root_uuid}" in cfg_text, (
+            "Chain-loading grub.cfg does not reference the root filesystem UUID"
+        )
+        assert "configfile ($root)/boot/grub/grub.cfg" in cfg_text, (
+            "Chain-loading grub.cfg does not load the root grub.cfg"
         )
     finally:
         esp_mount.unmount(lazy=True)
