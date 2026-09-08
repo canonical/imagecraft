@@ -71,8 +71,8 @@ platforms, volumes, partitions, and parts.
 GPT and MBR partition layouts
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Imagecraft supports GUID Partition Table (GPT) and Master Boot Record (MBR) volume
-schemas. Partition definitions can specify filesystems, labels, sizes, roles, identifiers,
+Imagecraft supports GUID Partition Table (GPT) and :vale-ignore:`Master Boot Record` (MBR) volume schemas.
+Partition definitions can specify filesystems, labels, sizes, roles, identifiers,
 and explicit GPT partition numbers.
 
 
