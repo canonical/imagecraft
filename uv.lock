@@ -889,7 +889,7 @@ docs = [
     { name = "canonical-sphinx", specifier = ">=0.5.1" },
     { name = "myst-parser", specifier = "~=4.0" },
     { name = "packaging", specifier = ">=25.0" },
-    { name = "pydantic-kitbash", specifier = "~=1.0" },
+    { name = "pydantic-kitbash", specifier = ">=1.0.1,<2.0" },
     { name = "rst2html", specifier = ">=2020.7.4" },
     { name = "setuptools", specifier = "<82.0" },
     { name = "sphinx-autobuild", specifier = ">=2025.8.25" },
