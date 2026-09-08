@@ -21,8 +21,10 @@ Imagecraft 1.0
 - :ref:`Imagecraft 1.0 release notes <release-notes-imagecraft-1-0>`
 
 
-Past releases
--------------
+.. Not needed yet:
+
+    Past releases
+    -------------
 
 
 No past releases are available.
@@ -33,7 +35,7 @@ No past releases are available.
 Release policy and schedule
 ---------------------------
 
-Canonical is committed to supporting Imagecraft 1.0.
+Canonical is committed to supporting the latest major release of Imagecraft.
 
 Imagecraft is released when it achieves development milestones in its product
 lifecycle. It doesn't follow a predefined release cadence.
