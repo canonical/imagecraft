@@ -116,7 +116,13 @@ class BootloaderInstaller:
             )
             return BootMethod.NONE
 
-        spec = get_arch_spec(self.arch)
+        try:
+            spec = get_arch_spec(self.arch)
+        except ValueError:
+            emit.progress(
+                "Cannot install a bootloader for this architecture", permanent=True
+            )
+            return BootMethod.NONE
 
         if find_esp_structure_item(self.volume) is not None:
             return BootMethod.EFI

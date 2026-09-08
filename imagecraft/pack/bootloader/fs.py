@@ -77,10 +77,10 @@ def safe_copytree(
 
 
 def find_kernel_and_initrd(boot_dir: Path) -> tuple[str, str]:
-    """Find the newest vmlinuz kernel and initrd image in a /boot directory.
+    """Find the vmlinuz kernel and initrd image in a /boot directory.
 
-    Excludes ``.old`` backup files. Falls back to ``vmlinuz``/``initrd.img``
-    if no versioned files are found.
+    Prefers the unversioned filenames when present, otherwise selects the most
+    recently modified versioned files. Excludes ``.old`` backup files.
 
     :param boot_dir: Path to the /boot directory to search.
     :return: Tuple of (vmlinuz_filename, initrd_filename).
@@ -88,16 +88,30 @@ def find_kernel_and_initrd(boot_dir: Path) -> tuple[str, str]:
     if not boot_dir.is_dir():
         return ("vmlinuz", "initrd.img")
 
-    vmlinuz_candidates = sorted(
-        (p.name for p in boot_dir.glob("vmlinuz-*") if not p.name.endswith(".old")),
-        reverse=True,
-    )
-    vmlinuz = vmlinuz_candidates[0] if vmlinuz_candidates else "vmlinuz"
+    vmlinuz_path = boot_dir / "vmlinuz"
+    if vmlinuz_path.exists():
+        vmlinuz = vmlinuz_path.name
+    else:
+        vmlinuz_candidates = [
+            p for p in boot_dir.glob("vmlinuz-*") if not p.name.endswith(".old")
+        ]
+        vmlinuz = (
+            max(vmlinuz_candidates, key=lambda path: path.stat().st_mtime).name
+            if vmlinuz_candidates
+            else "vmlinuz"
+        )
 
-    initrd_candidates = sorted(
-        (p.name for p in boot_dir.glob("initrd.img-*") if not p.name.endswith(".old")),
-        reverse=True,
-    )
-    initrd = initrd_candidates[0] if initrd_candidates else "initrd.img"
+    initrd_path = boot_dir / "initrd.img"
+    if initrd_path.exists():
+        initrd = initrd_path.name
+    else:
+        initrd_candidates = [
+            p for p in boot_dir.glob("initrd.img-*") if not p.name.endswith(".old")
+        ]
+        initrd = (
+            max(initrd_candidates, key=lambda path: path.stat().st_mtime).name
+            if initrd_candidates
+            else "initrd.img"
+        )
 
     return (vmlinuz, initrd)
