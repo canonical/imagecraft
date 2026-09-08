@@ -42,6 +42,39 @@ from imagecraft.pack.bootloader.models import NonEfiInstallResult
 _GRUB_BIOS_FORMAT = "i386-pc"
 
 
+def _bios_mod_dir(root_dir: Path) -> Path:
+    """Return the path to the rootfs's installed i386-pc GRUB module directory."""
+    return root_dir / "usr" / "lib" / "grub" / _GRUB_BIOS_FORMAT
+
+
+def stage_non_efi_modules(root_dir: Path, boot_dir: Path | None = None) -> Path:
+    """Stage BIOS GRUB runtime modules into the ``/boot`` prime directory.
+
+    Must be called *before* the partitions are formatted (unlike the rest of
+    this module, which patches the raw image file after formatting), since it
+    writes into a prime directory that ``diskutil.format_device`` will later
+    embed via ``mke2fs -d``.
+
+    :param root_dir: Prime directory of the root filesystem partition (used
+        to locate the rootfs's installed GRUB modules).
+    :param boot_dir: Prime directory that corresponds to ``/boot``. Defaults
+        to ``root_dir / "boot"`` when ``/boot`` isn't a dedicated partition.
+    :return: The directory the modules were copied into.
+    :raises errors.BootloaderToolsMissingError: If the GRUB BIOS modules
+        directory isn't present in the staged rootfs.
+    """
+    mod_dir = _bios_mod_dir(root_dir)
+    if not mod_dir.is_dir():
+        raise errors.BootloaderToolsMissingError(
+            f"GRUB BIOS modules directory not found: {mod_dir}"
+        )
+
+    effective_boot_dir = boot_dir if boot_dir is not None else root_dir / "boot"
+    target_mod_dir = effective_boot_dir / "grub" / _GRUB_BIOS_FORMAT
+    safe_copytree(mod_dir, target_mod_dir)
+    return target_mod_dir
+
+
 def determine_bios_target_sector(
     image_path: Path,
     volume: GPTVolume | MBRVolume | HybridVolume,
@@ -216,15 +249,23 @@ class NonEfiInstaller:
     def install(self) -> NonEfiInstallResult:
         """Assemble, patch, and embed the BIOS bootloader into the disk image.
 
-        :raises FileNotFoundError: If GRUB modules or boot.img aren't present
-            in the staged rootfs.
+        Assumes :func:`stage_non_efi_modules` has already been called during
+        the pre-format staging phase to place GRUB modules into the boot
+        partition's prime directory.
+
+        :raises errors.BootloaderToolsMissingError: If GRUB modules or
+            boot.img aren't present in the staged rootfs.
         """
-        mod_dir = self.root_dir / "usr" / "lib" / "grub" / _GRUB_BIOS_FORMAT
+        mod_dir = _bios_mod_dir(self.root_dir)
         if not mod_dir.is_dir():
-            raise FileNotFoundError(f"GRUB BIOS modules directory not found: {mod_dir}")
+            raise errors.BootloaderToolsMissingError(
+                f"GRUB BIOS modules directory not found: {mod_dir}"
+            )
         boot_img_file = mod_dir / "boot.img"
         if not boot_img_file.is_file():
-            raise FileNotFoundError(f"GRUB stage 1 boot.img not found: {boot_img_file}")
+            raise errors.BootloaderToolsMissingError(
+                f"GRUB stage 1 boot.img not found: {boot_img_file}"
+            )
 
         with tempfile.TemporaryDirectory(prefix="imagecraft-grub-bios-") as tmpdir:
             early_cfg = Path(tmpdir) / "early.cfg"
@@ -250,9 +291,6 @@ class NonEfiInstaller:
 
         patched_core = patch_core_img(core_bytes, target_sector)
         embed_core_img(self.image_path, patched_core, target_sector)
-
-        target_mod_dir = self.root_dir / "boot" / "grub" / _GRUB_BIOS_FORMAT
-        safe_copytree(mod_dir, target_mod_dir)
 
         return NonEfiInstallResult(
             format=_GRUB_BIOS_FORMAT,

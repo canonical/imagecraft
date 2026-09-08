@@ -73,6 +73,7 @@ def configure_grub_cfg(
     root_uuid: UUID | str,
     arch: DebianArchitecture,
     *,
+    boot_dir: Path | None = None,
     console: str | None = None,
     timeout: int = 3,
     default: str = "0",
@@ -82,15 +83,18 @@ def configure_grub_cfg(
     :param root_dir: Prime directory of the root filesystem partition.
     :param root_uuid: UUID that will be assigned to the root filesystem.
     :param arch: Target architecture.
+    :param boot_dir: Prime directory that corresponds to ``/boot``. Defaults
+        to ``root_dir / "boot"`` when ``/boot`` isn't a dedicated partition.
     :param console: Optional custom kernel console string.
     :param timeout: GRUB boot menu timeout in seconds.
     :param default: Default menu entry index or title.
     :return: Tuple of (target_cfg_path, rendered, vmlinuz_name, initrd_name).
     """
-    target_cfg = root_dir / "boot" / "grub" / "grub.cfg"
+    effective_boot_dir = boot_dir if boot_dir is not None else root_dir / "boot"
+    target_cfg = effective_boot_dir / "grub" / "grub.cfg"
     target_cfg.parent.mkdir(parents=True, exist_ok=True)
 
-    vmlinuz, initrd = find_kernel_and_initrd(root_dir / "boot")
+    vmlinuz, initrd = find_kernel_and_initrd(effective_boot_dir)
 
     content = render_grub_cfg(
         arch=arch.value,
@@ -110,6 +114,7 @@ def configure_rootfs(
     root_uuid: UUID | str,
     arch: DebianArchitecture,
     *,
+    boot_dir: Path | None = None,
     console: str | None = None,
     timeout: int = 3,
     default: str = "0",
@@ -119,6 +124,8 @@ def configure_rootfs(
     :param root_dir: Prime directory of the root filesystem partition.
     :param root_uuid: UUID that will be assigned to the root filesystem.
     :param arch: Target architecture.
+    :param boot_dir: Prime directory that corresponds to ``/boot``. Defaults
+        to ``root_dir / "boot"`` when ``/boot`` isn't a dedicated partition.
     :param console: Optional custom kernel console string.
     :param timeout: GRUB boot menu timeout in seconds.
     :param default: Default menu entry index or title.
@@ -127,6 +134,7 @@ def configure_rootfs(
         root_dir,
         root_uuid,
         arch,
+        boot_dir=boot_dir,
         console=console,
         timeout=timeout,
         default=default,

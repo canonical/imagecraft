@@ -22,6 +22,7 @@ mounts or loop devices are needed to install GRUB.
 
 from imagecraft.pack.bootloader.installer import (
     BootloaderInstaller,
+    find_boot_structure_item,
     find_esp_structure_item,
     find_root_structure_item,
 )
@@ -42,6 +43,7 @@ __all__ = [
     "EfiTier",
     "NonEfiInstallResult",
     "RootfsConfigResult",
+    "find_boot_structure_item",
     "find_esp_structure_item",
     "find_root_structure_item",
 ]

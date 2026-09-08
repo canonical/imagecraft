@@ -26,6 +26,7 @@ from imagecraft.models import Project, get_partition_name
 from imagecraft.pack import diskutil
 from imagecraft.pack.bootloader import (
     BootloaderInstaller,
+    find_boot_structure_item,
     find_esp_structure_item,
     find_root_structure_item,
 )
@@ -67,6 +68,7 @@ class ImagecraftPackService(PackageService):
         root_uuid = uuid.uuid4()
         root_item = find_root_structure_item(volume)
         esp_item = find_esp_structure_item(volume)
+        boot_item = find_boot_structure_item(volume)
         root_prime_dir = None
         if root_item is not None:
             root_prime_dir = project_dirs.get_prime_dir(
@@ -79,8 +81,18 @@ class ImagecraftPackService(PackageService):
                 if esp_item is not None
                 else None
             )
+            boot_prime_dir = (
+                project_dirs.get_prime_dir(
+                    partition=get_partition_name(volume_name, boot_item)
+                )
+                if boot_item is not None
+                else None
+            )
             bootloader.prepare_rootfs(
-                root_dir=root_prime_dir, esp_dir=esp_prime_dir, root_uuid=root_uuid
+                root_dir=root_prime_dir,
+                esp_dir=esp_prime_dir,
+                root_uuid=root_uuid,
+                boot_dir=boot_prime_dir,
             )
 
         try:

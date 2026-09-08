@@ -35,7 +35,8 @@ class GrubMkimage:
         :param root_dir: Optional guest rootfs directory, used as a fallback
             module directory when a target's modules aren't found in the host's
             own GRUB installation.
-        :raises errors.BootloaderError: If grub-mkimage cannot be located.
+        :raises errors.BootloaderToolsMissingError: If grub-mkimage cannot be
+            located.
         """
         self.root_dir = root_dir.resolve() if root_dir is not None else None
         self.binary_path = self._locate_binary(root_dir=self.root_dir)
@@ -52,7 +53,7 @@ class GrubMkimage:
             if guest_bin.is_file() and os.access(guest_bin, os.X_OK):
                 return guest_bin.resolve()
 
-        raise errors.BootloaderError(
+        raise errors.BootloaderToolsMissingError(
             f"{_GRUB_MKIMAGE_BIN} not found on host PATH or in guest rootfs "
             "(usr/bin/grub-mkimage)",
             resolution="Install the grub-common package on the build host.",

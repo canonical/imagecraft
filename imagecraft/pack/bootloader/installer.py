@@ -34,6 +34,7 @@ from uuid import UUID
 from craft_cli import emit
 from craft_platforms import DebianArchitecture
 
+from imagecraft import errors
 from imagecraft.models.volume import (
     GptType,
     GPTVolume,
@@ -43,7 +44,7 @@ from imagecraft.models.volume import (
     Role,
     StructureItem,
 )
-from imagecraft.pack.bootloader.bios import install_non_efi
+from imagecraft.pack.bootloader.bios import install_non_efi, stage_non_efi_modules
 from imagecraft.pack.bootloader.const import get_arch_spec
 from imagecraft.pack.bootloader.efi import install_efi
 from imagecraft.pack.bootloader.models import (
@@ -70,6 +71,26 @@ def find_esp_structure_item(volume: AnyVolume) -> StructureItem | None:
             item
             for item in volume.structure
             if getattr(item, "structure_type", None) == GptType.EFI_SYSTEM
+        ),
+        None,
+    )
+
+
+def find_boot_structure_item(volume: AnyVolume) -> StructureItem | None:
+    """Return a dedicated ``/boot`` partition structure item, if any.
+
+    A "dedicated boot partition" is a ``system-boot``-role item that is
+    *not* the EFI System Partition -- e.g. an MBR volume with a separate
+    ``/boot`` partition, or a GPT volume with distinct ESP and ``/boot``
+    partitions. Returns ``None`` when there's no such partition (including
+    the common case where the only ``system-boot``-role item *is* the ESP).
+    """
+    esp_item = find_esp_structure_item(volume)
+    return next(
+        (
+            item
+            for item in volume.structure
+            if item.role == Role.SYSTEM_BOOT and item is not esp_item
         ),
         None,
     )
@@ -141,7 +162,12 @@ class BootloaderInstaller:
         return BootMethod.NONE
 
     def prepare_rootfs(
-        self, *, root_dir: Path, esp_dir: Path | None, root_uuid: UUID
+        self,
+        *,
+        root_dir: Path,
+        esp_dir: Path | None,
+        root_uuid: UUID,
+        boot_dir: Path | None = None,
     ) -> BootloaderResult:
         """Stage bootloader files into prime directories before formatting.
 
@@ -149,6 +175,9 @@ class BootloaderInstaller:
         :param esp_dir: Prime directory of the EFI System Partition, if any.
         :param root_uuid: UUID that will be assigned to the root filesystem
             when it's formatted.
+        :param boot_dir: Prime directory of a dedicated ``/boot`` partition,
+            if any. Defaults to ``root_dir / "boot"`` when ``/boot`` isn't a
+            separate partition.
         """
         boot_method = self.resolve_boot_method()
         if boot_method == BootMethod.NONE:
@@ -158,7 +187,9 @@ class BootloaderInstaller:
         assert self.arch is not None  # noqa: S101
 
         emit.progress("Preparing bootloader files")
-        rootfs_result = configure_rootfs(root_dir, root_uuid, self.arch)
+        rootfs_result = configure_rootfs(
+            root_dir, root_uuid, self.arch, boot_dir=boot_dir
+        )
 
         efi_result = None
         if boot_method == BootMethod.EFI:
@@ -171,12 +202,31 @@ class BootloaderInstaller:
                 return BootloaderResult(
                     boot_method=BootMethod.NONE, rootfs_result=rootfs_result
                 )
-            efi_result = install_efi(
-                root_dir=root_dir,
-                esp_dir=esp_dir,
-                root_uuid=root_uuid,
-                arch=self.arch,
-            )
+            try:
+                efi_result = install_efi(
+                    root_dir=root_dir,
+                    esp_dir=esp_dir,
+                    root_uuid=root_uuid,
+                    arch=self.arch,
+                    boot_dir=boot_dir,
+                )
+            except errors.BootloaderToolsMissingError as err:
+                emit.progress(
+                    f"Skipping EFI bootloader installation: {err}", permanent=True
+                )
+                return BootloaderResult(
+                    boot_method=BootMethod.NONE, rootfs_result=rootfs_result
+                )
+        elif boot_method == BootMethod.BIOS:
+            try:
+                stage_non_efi_modules(root_dir, boot_dir)
+            except errors.BootloaderToolsMissingError as err:
+                emit.progress(
+                    f"Skipping BIOS bootloader installation: {err}", permanent=True
+                )
+                return BootloaderResult(
+                    boot_method=BootMethod.NONE, rootfs_result=rootfs_result
+                )
 
         return BootloaderResult(
             boot_method=boot_method, rootfs_result=rootfs_result, efi_result=efi_result
@@ -200,9 +250,15 @@ class BootloaderInstaller:
             return None
 
         emit.progress("Installing BIOS bootloader into the image")
-        return install_non_efi(
-            image_path=image_path,
-            root_dir=root_dir,
-            root_uuid=root_uuid,
-            volume=self.volume,
-        )
+        try:
+            return install_non_efi(
+                image_path=image_path,
+                root_dir=root_dir,
+                root_uuid=root_uuid,
+                volume=self.volume,
+            )
+        except errors.BootloaderToolsMissingError as err:
+            emit.progress(
+                f"Skipping BIOS bootloader installation: {err}", permanent=True
+            )
+            return None

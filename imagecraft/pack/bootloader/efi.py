@@ -28,6 +28,7 @@ from uuid import UUID
 from craft_cli import emit
 from craft_platforms import DebianArchitecture
 
+from imagecraft import errors
 from imagecraft.pack.bootloader.config import render_early_cfg
 from imagecraft.pack.bootloader.const import CORE_EFI_MODULES, ArchSpec, get_arch_spec
 from imagecraft.pack.bootloader.fs import resilient_copy, safe_copytree
@@ -68,6 +69,7 @@ class EfiInstaller:
         esp_dir: Path,
         root_uuid: UUID | str,
         arch: DebianArchitecture,
+        boot_dir: Path | None = None,
         mkimage: GrubMkimage | None = None,
     ) -> None:
         """Initialize the EFI installer.
@@ -76,12 +78,16 @@ class EfiInstaller:
         :param esp_dir: Prime directory of the EFI System Partition.
         :param root_uuid: UUID that will be assigned to the root filesystem.
         :param arch: Target architecture.
+        :param boot_dir: Prime directory that corresponds to ``/boot``.
+            Defaults to ``root_dir / "boot"`` when ``/boot`` isn't a
+            dedicated partition.
         :param mkimage: Optional GrubMkimage instance (mainly for tests).
         """
         self.root_dir = root_dir
         self.esp_dir = esp_dir
         self.root_uuid = str(root_uuid)
         self.arch = arch
+        self.boot_dir = boot_dir if boot_dir is not None else root_dir / "boot"
         self.spec: ArchSpec = get_arch_spec(arch)
         self._mkimage = mkimage
 
@@ -191,7 +197,7 @@ class EfiInstaller:
 
         modules_copied = False
         if modules_dir := self._find_dir(f"usr/lib/grub/{mod_dir_name}"):
-            safe_copytree(modules_dir, self.root_dir / "boot" / "grub" / mod_dir_name)
+            safe_copytree(modules_dir, self.boot_dir / "grub" / mod_dir_name)
             modules_copied = True
 
         installed.extend(self.deploy_early_stubs())
@@ -206,8 +212,9 @@ class EfiInstaller:
     def install_fallback_build(self) -> EfiInstallResult:
         """Attempt Tier 3: build a standalone EFI binary using grub-mkimage.
 
-        :raises FileNotFoundError: If the GRUB modules directory for this
-            architecture isn't present in the staged rootfs.
+        :raises errors.BootloaderToolsMissingError: If the GRUB modules
+            directory for this architecture isn't present in the staged
+            rootfs.
         """
         bin_suf = self.spec.bin_suffix
         efi_suf = self.spec.efi_suffix
@@ -216,7 +223,7 @@ class EfiInstaller:
 
         modules_dir = self._find_dir(f"usr/lib/grub/{mod_dir_name}")
         if not modules_dir:
-            raise FileNotFoundError(
+            raise errors.BootloaderToolsMissingError(
                 f"GRUB modules directory not found in rootfs: usr/lib/grub/{mod_dir_name}"
             )
 
@@ -243,7 +250,7 @@ class EfiInstaller:
         installed: list[Path] = [primary_boot]
         installed.append(resilient_copy(primary_boot, u_dir / f"grub{bin_suf}.efi"))
 
-        safe_copytree(modules_dir, self.root_dir / "boot" / "grub" / mod_dir_name)
+        safe_copytree(modules_dir, self.boot_dir / "grub" / mod_dir_name)
 
         installed.extend(self.deploy_early_stubs())
 
@@ -274,6 +281,7 @@ def install_efi(
     esp_dir: Path,
     root_uuid: UUID | str,
     arch: DebianArchitecture,
+    boot_dir: Path | None = None,
     mkimage: GrubMkimage | None = None,
 ) -> EfiInstallResult:
     """Install the EFI bootloader into esp_dir/root_dir prime directories.
@@ -282,6 +290,8 @@ def install_efi(
     :param esp_dir: Prime directory of the EFI System Partition.
     :param root_uuid: UUID that will be assigned to the root filesystem.
     :param arch: Target architecture.
+    :param boot_dir: Prime directory that corresponds to ``/boot``. Defaults
+        to ``root_dir / "boot"`` when ``/boot`` isn't a dedicated partition.
     :param mkimage: Optional GrubMkimage instance (mainly for tests).
     :return: EfiInstallResult detailing the installed tier and files.
     """
@@ -290,6 +300,7 @@ def install_efi(
         esp_dir=esp_dir,
         root_uuid=root_uuid,
         arch=arch,
+        boot_dir=boot_dir,
         mkimage=mkimage,
     )
     return installer.install()

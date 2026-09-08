@@ -35,6 +35,16 @@ class BootloaderError(ImagecraftError):
     """Raised when an error occurs when installing the bootloader."""
 
 
+class BootloaderToolsMissingError(BootloaderError):
+    """Raised when GRUB tools or module files aren't present in the build environment.
+
+    Distinct from other :class:`BootloaderError` failures (e.g. insufficient
+    space to embed core.img) so callers can gracefully skip bootloader
+    installation instead of failing the whole ``pack`` operation, matching
+    the historical behaviour of the loop-device/chroot based installer.
+    """
+
+
 class PartitionError(ImagecraftError):
     """Raised when an error occurs with a partition table."""
 
