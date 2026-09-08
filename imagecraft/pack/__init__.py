@@ -29,7 +29,6 @@ from imagecraft.pack.gptutil import (
 )
 from imagecraft.pack.mbrutil import create_empty_mbr_image
 
-from imagecraft.pack.grubutil import setup_grub
 from imagecraft.pack.image import Image
 
 __all__ = [
@@ -42,5 +41,4 @@ __all__ = [
     "format_populate_partition",
     "get_partition_sector_offset",
     "inject_partition_into_image",
-    "setup_grub",
 ]

@@ -103,6 +103,7 @@ def _format_populate_ext_partition(
     content_dir: Path | None,
     partitionpath: Path,
     label: str | None = None,
+    uuid: str | None = None,
 ) -> None:
     """Format a partition/device as EXT3/4 and embed content.
 
@@ -110,9 +111,13 @@ def _format_populate_ext_partition(
     :param content_dir: Directory containing contents for partition, or None.
     :param partitionpath: Path to partition file or block device.
     :param label: Ext Filesystem label, empty if not supplied.
+    :param uuid: Filesystem UUID to assign, or None to let mke2fs generate one.
     :raises CalledProcessError: If mke2fs fails.
     """
     mke2fs_args: list[str | Path] = ["-t", fstype]
+
+    if uuid is not None:
+        mke2fs_args.extend(["-U", uuid])
 
     if content_dir is not None:
         mke2fs_args.extend(["-d", content_dir])
@@ -175,6 +180,7 @@ def format_device(
     fstype: FileSystem,
     label: str | None = None,
     content_dir: Path | None = None,
+    uuid: str | None = None,
 ) -> None:
     """Format and populate an existing block device or image file.
 
@@ -186,6 +192,7 @@ def format_device(
     :param label: Optional filesystem label.
     :param content_dir: Optional directory whose contents are copied into the
         filesystem after formatting.
+    :param uuid: Optional filesystem UUID to assign (Ext filesystems only).
     :raises CraftError: If the device does not exist or the filesystem is unsupported.
     """
     if not device_path.exists():
@@ -197,6 +204,7 @@ def format_device(
             content_dir=content_dir,
             partitionpath=device_path,
             label=label,
+            uuid=uuid,
         )
         return
 

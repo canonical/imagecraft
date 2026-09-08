@@ -1,0 +1,20 @@
+set default="{{ default | default('0') }}"
+set timeout={{ timeout | default(3) }}
+
+serial --unit=0 --speed=115200
+terminal_input console serial
+terminal_output gfxterm console serial
+
+if [ -f /boot/grub/unicode.pf2 ]; then
+  loadfont /boot/grub/unicode.pf2
+fi
+
+menuentry 'Ubuntu ({{ arch }})' --class ubuntu --class gnu-linux --class os {
+    insmod gzio
+    insmod part_gpt
+    insmod part_msdos
+    insmod ext2
+    search --no-floppy --fs-uuid --set=root {{ root_uuid }}
+    linux /boot/{{ vmlinuz }} root=UUID={{ root_uuid }} ro {% if console %}{{ console }} {% endif %}quiet splash
+    initrd /boot/{{ initrd }}
+}

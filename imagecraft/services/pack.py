@@ -1,4 +1,4 @@
-# Copyright 2023-2025 Canonical Ltd.
+# Copyright 2023-2026 Canonical Ltd.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 3 as
@@ -14,6 +14,7 @@
 
 """Imagecraft Package service."""
 
+import uuid
 from pathlib import Path
 from typing import cast
 
@@ -22,7 +23,12 @@ from craft_cli import emit
 from typing_extensions import override
 
 from imagecraft.models import Project, get_partition_name
-from imagecraft.pack import Image, diskutil, grubutil
+from imagecraft.pack import diskutil
+from imagecraft.pack.bootloader import (
+    BootloaderInstaller,
+    find_esp_structure_item,
+    find_root_structure_item,
+)
 from imagecraft.services.image import ImageService
 
 
@@ -51,6 +57,32 @@ class ImagecraftPackService(PackageService):
         project_dirs = self._services.get("lifecycle").project_info.dirs
         loop_paths = image_service.get_loop_paths()
 
+        arch = self._services.get("lifecycle").project_info.target_arch
+        bootloader = BootloaderInstaller(volume=volume, arch=arch)
+
+        # Pre-format staging: write bootloader files (fstab, grub.cfg, EFI
+        # binaries) into the root/ESP prime directories *before* formatting,
+        # so mke2fs/mkfs.vfat embed them directly. This requires no mounts
+        # or loop-device chroots.
+        root_uuid = uuid.uuid4()
+        root_item = find_root_structure_item(volume)
+        esp_item = find_esp_structure_item(volume)
+        root_prime_dir = None
+        if root_item is not None:
+            root_prime_dir = project_dirs.get_prime_dir(
+                partition=get_partition_name(volume_name, root_item)
+            )
+            esp_prime_dir = (
+                project_dirs.get_prime_dir(
+                    partition=get_partition_name(volume_name, esp_item)
+                )
+                if esp_item is not None
+                else None
+            )
+            bootloader.prepare_rootfs(
+                root_dir=root_prime_dir, esp_dir=esp_prime_dir, root_uuid=root_uuid
+            )
+
         try:
             for structure_item in volume.structure:
                 partition_name = get_partition_name(volume_name, structure_item)
@@ -60,11 +92,17 @@ class ImagecraftPackService(PackageService):
                 )
                 loop_path = Path(loop_paths[f"{volume_name}/{structure_item.name}"])
 
+                partition_uuid = (
+                    str(root_uuid)
+                    if root_item is not None and structure_item.name == root_item.name
+                    else None
+                )
                 diskutil.format_device(
                     device_path=loop_path,
                     fstype=structure_item.filesystem,
                     label=structure_item.filesystem_label,
                     content_dir=partition_prime_dir,
+                    uuid=partition_uuid,
                 )
 
             image_service.verify_images()
@@ -73,19 +111,14 @@ class ImagecraftPackService(PackageService):
 
         images = image_service.finalize_images(dest)
 
-        filesystem_mount = self._services.get(
-            "lifecycle"
-        ).project_info.default_filesystem_mount
-        arch = self._services.get("lifecycle").project_info.target_arch
-        for volume_name, path in images.items():
-            volume = project.volumes[volume_name]
-            image = Image(volume=volume, disk_path=path)
-            grubutil.setup_grub(
-                image=image,
-                workdir=project_dirs.work_dir,
-                arch=arch,
-                filesystem_mount=filesystem_mount,
-            )
+        # Post-format patching: for BIOS targets, patch Sector 0 and embed
+        # core.img directly into the raw disk image bytes. No-op for
+        # EFI/unsupported targets.
+        if root_prime_dir is not None:
+            for path in images.values():
+                bootloader.install_image_boot_code(
+                    image_path=path, root_dir=root_prime_dir, root_uuid=root_uuid
+                )
 
         return list(images.values())
 

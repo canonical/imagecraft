@@ -132,8 +132,7 @@ def test_imagecraft_pack(
     """Test imagecraft."""
     monkeypatch.setenv("CRAFT_DEBUG", "1")
 
-    mocker.patch("imagecraft.services.pack.Image")
-    mocker.patch("imagecraft.services.pack.grubutil.setup_grub")
+    mocker.patch("imagecraft.services.pack.BootloaderInstaller")
     project_file = project_path / "imagecraft.yaml"
     project_file.write_text(IMAGECRAFT_YAML)
 
