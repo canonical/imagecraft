@@ -309,6 +309,9 @@ and detail how they're built.
 .. kitbash-field:: PartSpec overlay_script
     :prepend-name: parts.<part-name>
 
+.. kitbash-field:: PartSpec override_overlay
+    :prepend-name: parts.<part-name>
+
 .. Build step keys
 
 .. kitbash-field:: PartSpec build_environment
