@@ -255,7 +255,6 @@ class BootloaderInstaller:
                 image_path=image_path,
                 root_dir=root_dir,
                 root_uuid=root_uuid,
-                volume=self.volume,
             )
         except errors.BootloaderToolsMissingError as err:
             emit.progress(
