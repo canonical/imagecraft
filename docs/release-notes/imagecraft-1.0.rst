@@ -6,7 +6,7 @@
 Imagecraft 1.0 release notes
 ============================
 
-08 September 2026
+8 September 2026
 
 Learn about the new features, changes, and fixes introduced in Imagecraft 1.0.
 For information about the Imagecraft release policy, see the
@@ -40,8 +40,8 @@ Imagecraft is distributed as a classic snap. Install the Imagecraft snap with:
 
     snap install imagecraft --classic
 
-Imagecraft uses Multipass as its default build provider. The user running Imagecraft must
-have access to Multipass. Install Multipass separately:
+Imagecraft uses Multipass as its default build provider. Ensure you have access to
+Multipass before running Imagecraft. Install Multipass separately:
 
 .. code-block:: bash
 

@@ -1,5 +1,5 @@
 .. meta::
-    :description: The index of release documentation for Imagecraft. These release notes summarize the new features, bug fixes, and backwards-incompatible changes in each version.
+    :description: Review new features, changes, and fixes introduced in each Imagecraft release.
 
 .. _release-notes:
 
