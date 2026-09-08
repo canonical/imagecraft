@@ -1,3 +1,6 @@
+.. meta::
+    :description: The index of release documentation for Imagecraft. These release notes summarize the new features, bug fixes, and backwards-incompatible changes in each version.
+
 .. _release-notes:
 
 Release notes
@@ -12,36 +15,17 @@ Current releases
 ----------------
 
 
-<Latest release>
-~~~~~~~~~~~~~~~~
+Imagecraft 1.0
+~~~~~~~~~~~~~~
 
-- <link to latest release, update, such as 8.2.0>
-- <link to latest release, update, such as 8.1.0>
-- <link to latest release, initial, such as 8.0.0>
-
-
-<Parallel release>
-~~~~~~~~~~~~~~~~~~
-
-<If necessary, add guidance and caveats about these older releases, such as
-"Snapcraft 7 is available for building core18 snaps. When building for a newer
-base, use Snapcraft 8.">
-
-- <link to parallel release, update, such as 7.2.0>
-- <link to parallel release, update, such as 7.1.0>
-- <link to parallel release, initial, such as 7.0.0>
+- :ref:`Imagecraft 1.0 release notes <release-notes-imagecraft-1-0>`
 
 
 Past releases
 -------------
 
 
-<Past release>
-~~~~~~~~~~~~~~
-
-- <link to past release, update, such as 6.2.0>
-- <link to past release, update, such as 6.1.0>
-- <link to past release, initial, such as 6.0.0>
+No past releases are available.
 
 
 .. _release_policy_and_schedule:
@@ -49,9 +33,7 @@ Past releases
 Release policy and schedule
 ---------------------------
 
-Canonical is committed to supporting the <"latest major release" or "last two
-major releases"> of Imagecraft. <Optional: "We forward-port changes in older
-releases to the latest release, if they're compatible.">
+Canonical is committed to supporting Imagecraft 1.0.
 
 Imagecraft is released when it achieves development milestones in its product
 lifecycle. It doesn't follow a predefined release cadence.
@@ -91,6 +73,8 @@ development keeps pace with the OS's new releases and support lifecycle.
 
 .. toctree::
    :maxdepth: 1
+
+   imagecraft-1.0
 
 
 .. release note template:
