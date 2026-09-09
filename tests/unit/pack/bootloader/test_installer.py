@@ -222,10 +222,10 @@ class TestGracefulSkip:
             "generate_grub_cfg",
             side_effect=errors.BootloaderToolsMissingError("no grub-mkconfig"),
         )
-        result = installer.prepare_rootfs(
+        boot_method = installer.prepare_rootfs(
             root_dir=root_dir, esp_dir=esp_dir, root_uuid=uuid.uuid4()
         )
-        assert result.boot_method == BootMethod.NONE
+        assert boot_method == BootMethod.NONE
         # fstab is still written even when GRUB tooling is missing.
         assert (root_dir / "etc" / "fstab").is_file()
 
@@ -246,10 +246,10 @@ class TestGracefulSkip:
             "install_efi",
             side_effect=errors.BootloaderToolsMissingError("no modules"),
         )
-        result = installer.prepare_rootfs(
+        boot_method = installer.prepare_rootfs(
             root_dir=root_dir, esp_dir=esp_dir, root_uuid=uuid.uuid4()
         )
-        assert result.boot_method == BootMethod.NONE
+        assert boot_method == BootMethod.NONE
 
     def test_prepare_rootfs_skips_bios_staging_when_modules_missing(
         self, tmp_path, mocker
@@ -268,10 +268,10 @@ class TestGracefulSkip:
             "stage_non_efi_modules",
             side_effect=errors.BootloaderToolsMissingError("no modules"),
         )
-        result = installer.prepare_rootfs(
+        boot_method = installer.prepare_rootfs(
             root_dir=root_dir, esp_dir=None, root_uuid=uuid.uuid4()
         )
-        assert result.boot_method == BootMethod.NONE
+        assert boot_method == BootMethod.NONE
 
     def test_install_image_boot_code_skips_when_tools_missing(self, tmp_path, mocker):
         volume = _mbr_volume([{**ROOT_ITEM, "type": "83"}])
@@ -281,21 +281,19 @@ class TestGracefulSkip:
             "install_non_efi",
             side_effect=errors.BootloaderToolsMissingError("no grub-bios-setup"),
         )
-        result = installer.install_image_boot_code(
+        installer.install_image_boot_code(
             image_path=tmp_path / "disk.img",
             root_dir=tmp_path,
             root_uuid=uuid.uuid4(),
         )
-        assert result is None
 
     def test_install_image_boot_code_noop_for_efi(self, tmp_path, mocker):
         volume = _gpt_volume([ESP_ITEM, ROOT_ITEM])
         installer = BootloaderInstaller(volume=volume, arch=_AMD64)
         mock_install = mocker.patch.object(installer_mod, "install_non_efi")
-        result = installer.install_image_boot_code(
+        installer.install_image_boot_code(
             image_path=tmp_path / "disk.img",
             root_dir=tmp_path,
             root_uuid=uuid.uuid4(),
         )
-        assert result is None
         mock_install.assert_not_called()

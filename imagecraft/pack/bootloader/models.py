@@ -12,11 +12,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Result types for the bootloader installation package."""
+"""Shared enums for the bootloader installation package."""
 
 import enum
-from dataclasses import dataclass, field
-from pathlib import Path
 
 
 class BootMethod(str, enum.Enum):
@@ -43,42 +41,3 @@ class EfiTier(str, enum.Enum):
 
     FALLBACK_BUILD = "fallback_build"
     """Standalone EFI binary assembled locally with grub-mkimage."""
-
-
-@dataclass
-class EfiInstallResult:
-    """Result summary of an EFI installation operation."""
-
-    tier: EfiTier
-    boot_efi_binary: Path
-    installed_files: list[Path] = field(default_factory=list)
-    modules_installed: bool = False
-
-
-@dataclass
-class NonEfiInstallResult:
-    """Result summary of a non-EFI (BIOS) bootloader installation operation."""
-
-    format: str
-    core_img_size_bytes: int
-    installed_files: list[Path] = field(default_factory=list)
-    modules_installed: bool = False
-
-
-@dataclass
-class RootfsConfigResult:
-    """Result summary of root filesystem configuration (fstab + grub.cfg)."""
-
-    grub_cfg_path: Path
-    fstab_path: Path
-    fstab_updated: bool
-
-
-@dataclass
-class BootloaderResult:
-    """Overall result of a bootloader preparation or installation phase."""
-
-    boot_method: BootMethod
-    rootfs_result: RootfsConfigResult | None = None
-    efi_result: EfiInstallResult | None = None
-    non_efi_result: NonEfiInstallResult | None = None

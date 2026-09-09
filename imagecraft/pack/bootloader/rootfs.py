@@ -35,7 +35,7 @@ def configure_fstab(
     options: str = _DEFAULT_FSTAB_OPTIONS,
     dump: int = 0,
     passno: int = 1,
-) -> tuple[Path, bool]:
+) -> None:
     """Ensure /etc/fstab contains an entry for the root filesystem UUID.
 
     :param root_dir: Prime directory of the root filesystem partition.
@@ -44,7 +44,6 @@ def configure_fstab(
     :param options: Mount options.
     :param dump: Dump frequency.
     :param passno: Fsck pass number (1 for root).
-    :return: Tuple of (fstab_path, updated).
     """
     fstab_path = root_dir / "etc" / "fstab"
     fstab_path.parent.mkdir(parents=True, exist_ok=True)
@@ -54,11 +53,11 @@ def configure_fstab(
     if not fstab_path.is_file():
         content = "# /etc/fstab: static file system information.\n" + fstab_entry
         fstab_path.write_text(content)
-        return fstab_path, True
+        return
 
     existing_content = fstab_path.read_text()
     if str_uuid in existing_content:
-        return fstab_path, False
+        return
 
     # Replace an existing root entry (e.g. a project-provided
     # ``LABEL=writable / ...`` line) rather than appending a second one,
@@ -74,8 +73,7 @@ def configure_fstab(
         ):
             lines[index] = fstab_entry
             fstab_path.write_text("".join(lines))
-            return fstab_path, True
+            return
 
     separator = "" if existing_content.endswith("\n") else "\n"
     fstab_path.write_text(existing_content + separator + fstab_entry)
-    return fstab_path, True

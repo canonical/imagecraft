@@ -52,12 +52,7 @@ from imagecraft.pack.bootloader.bios import install_non_efi, stage_non_efi_modul
 from imagecraft.pack.bootloader.const import get_arch_spec
 from imagecraft.pack.bootloader.efi import install_efi
 from imagecraft.pack.bootloader.mkconfig import generate_grub_cfg
-from imagecraft.pack.bootloader.models import (
-    BootloaderResult,
-    BootMethod,
-    NonEfiInstallResult,
-    RootfsConfigResult,
-)
+from imagecraft.pack.bootloader.models import BootMethod
 from imagecraft.pack.bootloader.rootfs import configure_fstab
 
 AnyVolume = GPTVolume | MBRVolume | HybridVolume
@@ -189,7 +184,7 @@ class BootloaderInstaller:
         root_uuid: UUID,
         boot_dir: Path | None = None,
         boot_uuid: UUID | None = None,
-    ) -> BootloaderResult:
+    ) -> BootMethod:
         """Stage bootloader files into prime directories before formatting.
 
         :param root_dir: Prime directory of the root filesystem partition.
@@ -201,24 +196,26 @@ class BootloaderInstaller:
             separate partition.
         :param boot_uuid: UUID that will be assigned to the dedicated
             ``/boot`` partition's filesystem, if any.
+        :return: The boot method that was staged for (``BootMethod.NONE`` if
+            installation was skipped).
         """
         boot_method = self.resolve_boot_method()
         if boot_method == BootMethod.NONE:
-            return BootloaderResult(boot_method=boot_method)
+            return boot_method
         # resolve_boot_method() only returns a non-NONE method when self.arch
         # is a valid DebianArchitecture, so this is always safe here.
         assert self.arch is not None  # noqa: S101
         spec = get_arch_spec(self.arch)
 
         emit.progress("Preparing bootloader files")
-        fstab_path, fstab_updated = configure_fstab(root_dir, root_uuid)
+        configure_fstab(root_dir, root_uuid)
         partition_map = (
             "msdos"
             if self.volume.volume_schema == PartitionSchema.MBR
             else self.volume.volume_schema.value
         )
         try:
-            grub_cfg_path = generate_grub_cfg(
+            generate_grub_cfg(
                 root_dir,
                 root_uuid,
                 boot_dir=boot_dir,
@@ -227,21 +224,8 @@ class BootloaderInstaller:
             )
         except errors.BootloaderToolsMissingError as err:
             emit.progress(f"Skipping bootloader installation: {err}", permanent=True)
-            return BootloaderResult(
-                boot_method=BootMethod.NONE,
-                rootfs_result=RootfsConfigResult(
-                    grub_cfg_path=(boot_dir or root_dir / "boot") / "grub" / "grub.cfg",
-                    fstab_path=fstab_path,
-                    fstab_updated=fstab_updated,
-                ),
-            )
-        rootfs_result = RootfsConfigResult(
-            grub_cfg_path=grub_cfg_path,
-            fstab_path=fstab_path,
-            fstab_updated=fstab_updated,
-        )
+            return BootMethod.NONE
 
-        efi_result = None
         if boot_method == BootMethod.EFI:
             if esp_dir is None:
                 emit.progress(
@@ -249,11 +233,9 @@ class BootloaderInstaller:
                     "System Partition prime directory is available",
                     permanent=True,
                 )
-                return BootloaderResult(
-                    boot_method=BootMethod.NONE, rootfs_result=rootfs_result
-                )
+                return BootMethod.NONE
             try:
-                efi_result = install_efi(
+                install_efi(
                     root_dir=root_dir,
                     esp_dir=esp_dir,
                     root_uuid=root_uuid,
@@ -265,9 +247,7 @@ class BootloaderInstaller:
                 emit.progress(
                     f"Skipping EFI bootloader installation: {err}", permanent=True
                 )
-                return BootloaderResult(
-                    boot_method=BootMethod.NONE, rootfs_result=rootfs_result
-                )
+                return BootMethod.NONE
         elif boot_method == BootMethod.BIOS:
             # resolve_boot_method() only returns BIOS when a non-EFI target
             # exists for this architecture, so this is always safe here.
@@ -280,13 +260,9 @@ class BootloaderInstaller:
                 emit.progress(
                     f"Skipping BIOS bootloader installation: {err}", permanent=True
                 )
-                return BootloaderResult(
-                    boot_method=BootMethod.NONE, rootfs_result=rootfs_result
-                )
+                return BootMethod.NONE
 
-        return BootloaderResult(
-            boot_method=boot_method, rootfs_result=rootfs_result, efi_result=efi_result
-        )
+        return boot_method
 
     def install_image_boot_code(
         self,
@@ -295,12 +271,12 @@ class BootloaderInstaller:
         root_dir: Path,
         root_uuid: UUID,
         boot_uuid: UUID | None = None,
-    ) -> NonEfiInstallResult | None:
+    ) -> None:
         """Install BIOS boot code into the raw disk image, if applicable.
 
-        Only takes effect for the BIOS boot method; a no-op (returning None)
-        otherwise. Must be called after the image's partitions have been
-        formatted and finalized.
+        Only takes effect for the BIOS boot method; a no-op otherwise. Must
+        be called after the image's partitions have been formatted and
+        finalized.
 
         :param image_path: Path to the final, partitioned disk image file.
         :param root_dir: Prime directory of the root filesystem partition
@@ -310,14 +286,14 @@ class BootloaderInstaller:
             partition's filesystem, if any.
         """
         if self.resolve_boot_method() != BootMethod.BIOS:
-            return None
+            return
         # resolve_boot_method() only returns BIOS when self.arch is a valid
         # DebianArchitecture, so this is always safe here.
         assert self.arch is not None  # noqa: S101
 
         emit.progress("Installing BIOS bootloader into the image")
         try:
-            return install_non_efi(
+            install_non_efi(
                 image_path=image_path,
                 root_dir=root_dir,
                 root_uuid=root_uuid,
@@ -329,4 +305,4 @@ class BootloaderInstaller:
             emit.progress(
                 f"Skipping BIOS bootloader installation: {err}", permanent=True
             )
-            return None
+            return

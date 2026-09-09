@@ -107,8 +107,8 @@ class TestStageNonEfiModules:
         mod_dir = root / "usr" / "lib" / "grub" / "i386-pc"
         mod_dir.mkdir(parents=True)
         (mod_dir / "normal.mod").write_bytes(b"x")
-        target = stage_non_efi_modules(root, grub_format="i386-pc")
-        assert target == root / "boot" / "grub" / "i386-pc"
+        stage_non_efi_modules(root, grub_format="i386-pc")
+        target = root / "boot" / "grub" / "i386-pc"
         assert (target / "normal.mod").is_file()
 
     def test_copies_modules_to_dedicated_boot(self, tmp_path):
@@ -118,8 +118,8 @@ class TestStageNonEfiModules:
         mod_dir = root / "usr" / "lib" / "grub" / "i386-pc"
         mod_dir.mkdir(parents=True)
         (mod_dir / "normal.mod").write_bytes(b"x")
-        target = stage_non_efi_modules(root, boot, grub_format="i386-pc")
-        assert target == boot / "grub" / "i386-pc"
+        stage_non_efi_modules(root, boot, grub_format="i386-pc")
+        target = boot / "grub" / "i386-pc"
         assert (target / "normal.mod").is_file()
         assert not (root / "boot" / "grub").exists()
 

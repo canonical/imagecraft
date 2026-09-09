@@ -44,8 +44,6 @@ from imagecraft.pack.bootloader.const import (
     DEFAULT_SECTOR_SIZE,
     get_arch_spec,
 )
-from imagecraft.pack.bootloader.fs import safe_copytree
-from imagecraft.pack.bootloader.models import NonEfiInstallResult
 from imagecraft.utils.mount import ExtFuseMount
 
 
@@ -63,7 +61,7 @@ def _bios_mod_dir(root_dir: Path, grub_format: str) -> Path:
 
 def stage_non_efi_modules(
     root_dir: Path, boot_dir: Path | None = None, *, grub_format: str
-) -> Path:
+) -> None:
     """Stage BIOS GRUB runtime modules into the ``/boot`` prime directory.
 
     Must be called *before* the partitions are formatted (unlike the rest of
@@ -77,7 +75,6 @@ def stage_non_efi_modules(
         to ``root_dir / "boot"`` when ``/boot`` isn't a dedicated partition.
     :param grub_format: GRUB non-EFI target format (e.g. ``i386-pc``), from
         the architecture's :class:`~imagecraft.pack.bootloader.const.ArchSpec`.
-    :return: The directory the modules were copied into.
     :raises errors.BootloaderToolsMissingError: If the GRUB BIOS modules
         directory isn't present in the staged rootfs.
     """
@@ -88,9 +85,9 @@ def stage_non_efi_modules(
         )
 
     effective_boot_dir = boot_dir if boot_dir is not None else root_dir / "boot"
-    target_mod_dir = effective_boot_dir / "grub" / grub_format
-    safe_copytree(mod_dir, target_mod_dir)
-    return target_mod_dir
+    shutil.copytree(
+        mod_dir, effective_boot_dir / "grub" / grub_format, dirs_exist_ok=True
+    )
 
 
 class NonEfiInstaller:
@@ -156,7 +153,7 @@ class NonEfiInstaller:
             * DEFAULT_SECTOR_SIZE
         )
 
-    def install(self) -> NonEfiInstallResult:
+    def install(self) -> None:
         """Build core.img and install the BIOS boot code into the disk image.
 
         Assumes :func:`stage_non_efi_modules` has already been called during
@@ -221,7 +218,6 @@ class NonEfiInstaller:
                         *modules,
                     ]
                 )
-                core_img_size = core_img.stat().st_size
                 try:
                     _run_logged(
                         [
@@ -237,12 +233,6 @@ class NonEfiInstaller:
                 finally:
                     core_img.unlink(missing_ok=True)
 
-        return NonEfiInstallResult(
-            format=self.grub_format,
-            core_img_size_bytes=core_img_size,
-            modules_installed=True,
-        )
-
 
 def install_non_efi(
     *,
@@ -252,7 +242,7 @@ def install_non_efi(
     arch: DebianArchitecture,
     volume: GPTVolume | MBRVolume | HybridVolume,
     boot_uuid: UUID | str | None = None,
-) -> NonEfiInstallResult:
+) -> None:
     """Install the BIOS bootloader into a raw disk image.
 
     :param image_path: Path to the raw, partitioned disk image file.
@@ -262,7 +252,6 @@ def install_non_efi(
     :param volume: The volume layout used to partition the image.
     :param boot_uuid: UUID assigned to the dedicated ``/boot`` partition's
         filesystem, if any.
-    :return: NonEfiInstallResult.
     """
     installer = NonEfiInstaller(
         image_path=image_path,
@@ -272,4 +261,4 @@ def install_non_efi(
         volume=volume,
         boot_uuid=boot_uuid,
     )
-    return installer.install()
+    installer.install()

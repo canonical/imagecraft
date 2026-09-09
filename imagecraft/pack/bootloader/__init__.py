@@ -17,9 +17,8 @@
 Replaces the previous loop-device based ``grubutil`` module. Files are
 staged directly into partition prime directories before formatting, and
 GRUB's own tooling (``grub-mkconfig``, ``grub-mkimage``,
-``grub-bios-setup``) runs in a chroot rooted at the root partition's prime
-directory with the disk image exposed at ``/dev/image``, so no loop devices
-are needed to install GRUB.
+``grub-bios-setup``) runs against them, so no loop devices are needed to
+install GRUB.
 """
 
 from imagecraft.pack.bootloader.installer import (
@@ -28,23 +27,12 @@ from imagecraft.pack.bootloader.installer import (
     find_esp_structure_item,
     find_root_structure_item,
 )
-from imagecraft.pack.bootloader.models import (
-    BootloaderResult,
-    BootMethod,
-    EfiInstallResult,
-    EfiTier,
-    NonEfiInstallResult,
-    RootfsConfigResult,
-)
+from imagecraft.pack.bootloader.models import BootMethod, EfiTier
 
 __all__ = [
     "BootMethod",
     "BootloaderInstaller",
-    "BootloaderResult",
-    "EfiInstallResult",
     "EfiTier",
-    "NonEfiInstallResult",
-    "RootfsConfigResult",
     "find_boot_structure_item",
     "find_esp_structure_item",
     "find_root_structure_item",

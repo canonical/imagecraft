@@ -36,8 +36,7 @@ from imagecraft.pack.bootloader.chrootenv import (
 )
 from imagecraft.pack.bootloader.config import render_early_cfg
 from imagecraft.pack.bootloader.const import CORE_EFI_MODULES, ArchSpec, get_arch_spec
-from imagecraft.pack.bootloader.fs import resilient_copy, safe_copytree
-from imagecraft.pack.bootloader.models import EfiInstallResult, EfiTier
+from imagecraft.pack.bootloader.models import EfiTier
 
 _CHROOT_EFI_WORK_DIR = "/tmp/grub-efi"  # noqa: S108
 
@@ -168,15 +167,14 @@ class EfiInstaller:
                 return candidate
         return None
 
-    def deploy_early_stubs(self) -> list[Path]:
+    def deploy_early_stubs(self) -> None:
         """Write the early search stub grub.cfg to /EFI/BOOT/ and /EFI/ubuntu/ on the ESP."""
         boot_cfg = self.esp_dir / "EFI" / "BOOT" / "grub.cfg"
         u_cfg = self.esp_dir / "EFI" / "ubuntu" / "grub.cfg"
         write_esp_stub(boot_cfg, self.search_uuid, boot_prefix=self.boot_prefix)
         write_esp_stub(u_cfg, self.search_uuid, boot_prefix=self.boot_prefix)
-        return [boot_cfg, u_cfg]
 
-    def install_signed(self) -> EfiInstallResult | None:
+    def install_signed(self) -> EfiTier | None:
         """Attempt Tier 1: install signed shim and signed GRUB binaries."""
         bin_suf = self.spec.bin_suffix
         efi_suf = self.spec.efi_suffix
@@ -199,34 +197,27 @@ class EfiInstaller:
         boot_dir.mkdir(parents=True, exist_ok=True)
         u_dir.mkdir(parents=True, exist_ok=True)
 
-        installed: list[Path] = []
-        primary_boot = boot_dir / f"BOOT{efi_suf}.EFI"
-        installed.append(resilient_copy(shim, primary_boot))
-        installed.append(resilient_copy(grub, boot_dir / f"grub{bin_suf}.efi"))
-        installed.append(resilient_copy(shim, u_dir / f"shim{bin_suf}.efi"))
-        installed.append(resilient_copy(grub, u_dir / f"grub{bin_suf}.efi"))
+        shutil.copy2(shim, boot_dir / f"BOOT{efi_suf}.EFI")
+        shutil.copy2(grub, boot_dir / f"grub{bin_suf}.efi")
+        shutil.copy2(shim, u_dir / f"shim{bin_suf}.efi")
+        shutil.copy2(grub, u_dir / f"grub{bin_suf}.efi")
 
         if mm := self._find_file(f"usr/lib/shim/mm{bin_suf}.efi"):
-            installed.append(resilient_copy(mm, boot_dir / f"mm{bin_suf}.efi"))
-            installed.append(resilient_copy(mm, u_dir / f"mm{bin_suf}.efi"))
+            shutil.copy2(mm, boot_dir / f"mm{bin_suf}.efi")
+            shutil.copy2(mm, u_dir / f"mm{bin_suf}.efi")
 
         if fb := self._find_file(f"usr/lib/shim/fb{bin_suf}.efi"):
-            installed.append(resilient_copy(fb, boot_dir / f"fb{bin_suf}.efi"))
-            installed.append(resilient_copy(fb, u_dir / f"fb{bin_suf}.efi"))
+            shutil.copy2(fb, boot_dir / f"fb{bin_suf}.efi")
+            shutil.copy2(fb, u_dir / f"fb{bin_suf}.efi")
 
         if csv_file := self._find_file(f"usr/lib/shim/BOOT{efi_suf}.CSV"):
-            installed.append(resilient_copy(csv_file, u_dir / f"BOOT{efi_suf}.CSV"))
+            shutil.copy2(csv_file, u_dir / f"BOOT{efi_suf}.CSV")
 
-        installed.extend(self.deploy_early_stubs())
+        self.deploy_early_stubs()
 
-        return EfiInstallResult(
-            tier=EfiTier.SIGNED,
-            installed_files=installed,
-            modules_installed=False,
-            boot_efi_binary=primary_boot,
-        )
+        return EfiTier.SIGNED
 
-    def install_unsigned_prebuilt(self) -> EfiInstallResult | None:
+    def install_unsigned_prebuilt(self) -> EfiTier | None:
         """Attempt Tier 2: install an unsigned prebuilt monolithic GRUB binary."""
         bin_suf = self.spec.bin_suffix
         efi_suf = self.spec.efi_suffix
@@ -244,26 +235,19 @@ class EfiInstaller:
         boot_dir.mkdir(parents=True, exist_ok=True)
         u_dir.mkdir(parents=True, exist_ok=True)
 
-        installed: list[Path] = []
-        primary_boot = boot_dir / f"BOOT{efi_suf}.EFI"
-        installed.append(resilient_copy(prebuilt, primary_boot))
-        installed.append(resilient_copy(prebuilt, u_dir / f"grub{bin_suf}.efi"))
+        shutil.copy2(prebuilt, boot_dir / f"BOOT{efi_suf}.EFI")
+        shutil.copy2(prebuilt, u_dir / f"grub{bin_suf}.efi")
 
-        modules_copied = False
         if modules_dir := self._find_dir(f"usr/lib/grub/{mod_dir_name}"):
-            safe_copytree(modules_dir, self.boot_dir / "grub" / mod_dir_name)
-            modules_copied = True
+            shutil.copytree(
+                modules_dir, self.boot_dir / "grub" / mod_dir_name, dirs_exist_ok=True
+            )
 
-        installed.extend(self.deploy_early_stubs())
+        self.deploy_early_stubs()
 
-        return EfiInstallResult(
-            tier=EfiTier.UNSIGNED_PREBUILT,
-            installed_files=installed,
-            modules_installed=modules_copied,
-            boot_efi_binary=primary_boot,
-        )
+        return EfiTier.UNSIGNED_PREBUILT
 
-    def install_fallback_build(self) -> EfiInstallResult:
+    def install_fallback_build(self) -> EfiTier:
         """Attempt Tier 3: build a standalone EFI binary using grub-mkimage.
 
         The guest rootfs's own ``grub-mkimage`` is run in a chroot over the
@@ -308,7 +292,7 @@ class EfiInstaller:
                 ],
                 output=chroot_output,
             )
-            resilient_copy(self.root_dir / chroot_output.lstrip("/"), primary_boot)
+            shutil.copy2(self.root_dir / chroot_output.lstrip("/"), primary_boot)
         finally:
             # This runs pre-format, so the chroot's working directory must
             # not leak into the image.
@@ -316,29 +300,25 @@ class EfiInstaller:
                 self.root_dir / _CHROOT_EFI_WORK_DIR.lstrip("/"), ignore_errors=True
             )
 
-        installed: list[Path] = [primary_boot]
-        installed.append(resilient_copy(primary_boot, u_dir / f"grub{bin_suf}.efi"))
+        shutil.copy2(primary_boot, u_dir / f"grub{bin_suf}.efi")
 
-        safe_copytree(modules_dir, self.boot_dir / "grub" / mod_dir_name)
-
-        installed.extend(self.deploy_early_stubs())
-
-        return EfiInstallResult(
-            tier=EfiTier.FALLBACK_BUILD,
-            installed_files=installed,
-            modules_installed=True,
-            boot_efi_binary=primary_boot,
+        shutil.copytree(
+            modules_dir, self.boot_dir / "grub" / mod_dir_name, dirs_exist_ok=True
         )
 
-    def install(self) -> EfiInstallResult:
-        """Execute the 3-tier EFI bootloader resolution and installation sequence."""
-        if result := self.install_signed():
-            emit.debug("Installed signed EFI bootloader (secure boot capable)")
-            return result
+        self.deploy_early_stubs()
 
-        if result := self.install_unsigned_prebuilt():
+        return EfiTier.FALLBACK_BUILD
+
+    def install(self) -> EfiTier:
+        """Execute the 3-tier EFI bootloader resolution and installation sequence."""
+        if tier := self.install_signed():
+            emit.debug("Installed signed EFI bootloader (secure boot capable)")
+            return tier
+
+        if tier := self.install_unsigned_prebuilt():
             emit.debug("Installed unsigned prebuilt EFI bootloader")
-            return result
+            return tier
 
         emit.debug("Building standalone EFI bootloader with grub-mkimage")
         return self.install_fallback_build()
@@ -352,7 +332,7 @@ def install_efi(
     arch: DebianArchitecture,
     boot_dir: Path | None = None,
     boot_uuid: UUID | str | None = None,
-) -> EfiInstallResult:
+) -> EfiTier:
     """Install the EFI bootloader into esp_dir/root_dir prime directories.
 
     :param root_dir: Prime directory of the root filesystem partition.
@@ -363,7 +343,7 @@ def install_efi(
         to ``root_dir / "boot"`` when ``/boot`` isn't a dedicated partition.
     :param boot_uuid: UUID that will be assigned to the dedicated ``/boot``
         partition's filesystem, if any.
-    :return: EfiInstallResult detailing the installed tier and files.
+    :return: The resolution tier that was installed.
     """
     installer = EfiInstaller(
         root_dir=root_dir,

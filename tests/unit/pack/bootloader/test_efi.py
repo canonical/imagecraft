@@ -76,15 +76,13 @@ class TestEfiTiers:
     def test_signed_tier(self, tmp_path):
         _add_signed(tmp_path / "root")
         installer = _make_installer(tmp_path)
-        result = installer.install()
-        assert result.tier == EfiTier.SIGNED
+        assert installer.install() == EfiTier.SIGNED
         assert (tmp_path / "esp" / "EFI" / "BOOT" / "BOOTX64.EFI").is_file()
 
     def test_unsigned_prebuilt_tier(self, tmp_path):
         _add_unsigned_prebuilt(tmp_path / "root")
         installer = _make_installer(tmp_path)
-        result = installer.install()
-        assert result.tier == EfiTier.UNSIGNED_PREBUILT
+        assert installer.install() == EfiTier.UNSIGNED_PREBUILT
 
     def test_fallback_build_needs_modules(self, tmp_path):
         """Without any GRUB EFI modules in the rootfs, fail as tools-missing."""
