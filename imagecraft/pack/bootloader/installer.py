@@ -129,6 +129,7 @@ class BootloaderInstaller:
         self.root_uuid = uuid.uuid4()
         self.boot_uuid = uuid.uuid4() if self.boot_item is not None else None
         self._root_dir: Path | None = None
+        self._boot_method = BootMethod.NONE
 
     @property
     def partition_uuids(self) -> dict[str, str]:
@@ -136,7 +137,7 @@ class BootloaderInstaller:
         uuids: dict[str, str] = {}
         if self.root_item is not None:
             uuids[self.root_item.name] = str(self.root_uuid)
-        if self.boot_item is not None and self.boot_uuid is not None:
+        if self.boot_item is not None:
             uuids[self.boot_item.name] = str(self.boot_uuid)
         return uuids
 
@@ -158,9 +159,9 @@ class BootloaderInstaller:
         if self.esp_item is not None:
             return BootMethod.EFI
 
-        is_mbr_schema = self.volume.volume_schema == PartitionSchema.MBR
         if (
-            is_mbr_schema or self.volume.has_bios_boot_partition
+            self.volume.volume_schema == PartitionSchema.MBR
+            or self.volume.has_bios_boot_partition
         ) and self._spec.non_efi_format is not None:
             return BootMethod.BIOS
 
@@ -172,8 +173,10 @@ class BootloaderInstaller:
         return BootMethod.NONE
 
     def _prime_dir(
-        self, project_dirs: PrimeDirs, volume_name: str, item: StructureItem
-    ) -> Path:
+        self, project_dirs: PrimeDirs, volume_name: str, item: StructureItem | None
+    ) -> Path | None:
+        if item is None:
+            return None
         return project_dirs.get_prime_dir(
             partition=get_partition_name(volume_name, item)
         )
@@ -196,17 +199,19 @@ class BootloaderInstaller:
         assert self._spec is not None  # noqa: S101
         assert self.root_item is not None  # noqa: S101
 
-        self._root_dir = self._prime_dir(project_dirs, volume_name, self.root_item)
-        esp_dir = (
-            self._prime_dir(project_dirs, volume_name, self.esp_item)
-            if self.esp_item is not None
-            else None
-        )
-        boot_dir = (
-            self._prime_dir(project_dirs, volume_name, self.boot_item)
-            if self.boot_item is not None
-            else None
-        )
+        root_dir = self._prime_dir(project_dirs, volume_name, self.root_item)
+        assert root_dir is not None  # noqa: S101
+        self._root_dir = root_dir
+        esp_dir = self._prime_dir(project_dirs, volume_name, self.esp_item)
+        boot_dir = self._prime_dir(project_dirs, volume_name, self.boot_item)
+
+        if boot_method == BootMethod.EFI and esp_dir is None:
+            emit.progress(
+                "Skipping EFI bootloader installation because no EFI "
+                "System Partition prime directory is available",
+                permanent=True,
+            )
+            return BootMethod.NONE
 
         emit.progress("Preparing bootloader files")
         configure_fstab(self._root_dir, self.root_uuid)
@@ -221,19 +226,8 @@ class BootloaderInstaller:
                 boot_uuid=self.boot_uuid,
                 partition_map=partition_map,
             )
-        except errors.BootloaderToolsMissingError as err:
-            emit.progress(f"Skipping bootloader installation: {err}", permanent=True)
-            return BootMethod.NONE
-
-        if boot_method == BootMethod.EFI:
-            if esp_dir is None:
-                emit.progress(
-                    "Skipping EFI bootloader installation because no EFI "
-                    "System Partition prime directory is available",
-                    permanent=True,
-                )
-                return BootMethod.NONE
-            try:
+            if boot_method == BootMethod.EFI:
+                assert esp_dir is not None  # noqa: S101
                 EfiInstaller(
                     root_dir=self._root_dir,
                     esp_dir=esp_dir,
@@ -242,23 +236,16 @@ class BootloaderInstaller:
                     boot_dir=boot_dir,
                     boot_uuid=self.boot_uuid,
                 ).install()
-            except errors.BootloaderToolsMissingError as err:
-                emit.progress(
-                    f"Skipping EFI bootloader installation: {err}", permanent=True
-                )
-                return BootMethod.NONE
-        elif boot_method == BootMethod.BIOS:
-            # resolve_boot_method() only returns BIOS when a non-EFI target
-            # exists for this architecture.
-            assert self._spec.non_efi_format is not None  # noqa: S101
-            try:
+            elif boot_method == BootMethod.BIOS:
+                # resolve_boot_method() only returns BIOS when a non-EFI
+                # target exists for this architecture.
+                assert self._spec.non_efi_format is not None  # noqa: S101
                 stage_grub_modules(self._root_dir, boot_dir, self._spec.non_efi_format)
-            except errors.BootloaderToolsMissingError as err:
-                emit.progress(
-                    f"Skipping BIOS bootloader installation: {err}", permanent=True
-                )
-                return BootMethod.NONE
+        except errors.BootloaderToolsMissingError as err:
+            emit.progress(f"Skipping bootloader installation: {err}", permanent=True)
+            return BootMethod.NONE
 
+        self._boot_method = boot_method
         return boot_method
 
     def install_image_boot_code(self, *, image_path: Path) -> None:
@@ -270,9 +257,8 @@ class BootloaderInstaller:
 
         :param image_path: Path to the final, partitioned disk image file.
         """
-        if self.resolve_boot_method() != BootMethod.BIOS or self._root_dir is None:
+        if self._boot_method != BootMethod.BIOS or self._root_dir is None:
             return
-        # resolve_boot_method() only returns BIOS when the arch has a spec.
         assert self.arch is not None  # noqa: S101
 
         emit.progress("Installing BIOS bootloader into the image")

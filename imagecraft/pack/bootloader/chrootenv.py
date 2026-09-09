@@ -21,9 +21,11 @@ from pathlib import Path
 from imagecraft import errors
 from imagecraft.subprocesses import run
 
+_CHROOT_SEARCH_DIRS = ("usr/sbin", "usr/bin", "sbin", "bin")
+
 # Restricted PATH for in-chroot commands, so host-specific PATH entries
 # don't leak into the guest environment.
-_CHROOT_PATH = "/usr/sbin:/usr/bin:/sbin:/bin"
+_CHROOT_PATH = ":".join(f"/{d}" for d in _CHROOT_SEARCH_DIRS)
 
 
 def require_chroot_binary(root_dir: Path, name: str) -> Path:
@@ -33,7 +35,7 @@ def require_chroot_binary(root_dir: Path, name: str) -> Path:
     :raises errors.BootloaderToolsMissingError: If the binary isn't present
         in the staged rootfs.
     """
-    for prefix in ("usr/sbin", "usr/bin", "sbin", "bin"):
+    for prefix in _CHROOT_SEARCH_DIRS:
         candidate = Path(prefix) / name
         if (root_dir / candidate).is_file():
             return candidate

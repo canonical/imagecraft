@@ -242,36 +242,14 @@ def format_populate_partition(
     :param fstype: Type of FS - one of (vfat, fat16, ext3, ext4).
     :param content_dir: Directory containing contents for partition.
     :param partitionpath: Path to partition file.
-    :param disk_size: Disk size attributes.
     :param label: Filesystem label, empty if not supplied.
     """
-    if fstype.value.startswith("ext"):
-        _format_populate_ext_partition(
-            fstype=cast(ExtT, fstype.value),
-            content_dir=content_dir,
-            partitionpath=partitionpath,
-            label=label,
-        )
-        return
-    if "fat" in fstype.value:
-        fattype: FatT
-        if fstype == FileSystem.VFAT:
-            fattype = "vfat"
-            fatsize = None
-        elif fstype == FileSystem.FAT16:
-            fattype = "fat"
-            fatsize = 16
-        else:
-            raise CraftError(f"Unsupported FAT: {fstype}")
-        _format_populate_fat_partition(
-            fattype=fattype,
-            fatsize=fatsize,
-            content_dir=content_dir,
-            partitionpath=partitionpath,
-            label=label,
-        )
-        return
-    raise CraftError(f"Unsupported filesystem: {fstype}")
+    format_device(
+        device_path=partitionpath,
+        fstype=fstype,
+        label=label,
+        content_dir=content_dir,
+    )
 
 
 def inject_partition_into_image(

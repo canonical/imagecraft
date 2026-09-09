@@ -119,11 +119,11 @@ def _generate_grub_cfg_in_chroot(
     by_uuid_dir = Path("/dev/disk/by-uuid")
     by_uuid_dir.mkdir(parents=True, exist_ok=True)
     by_uuid_root = by_uuid_dir / root_uuid
-    by_uuid_root.symlink_to(str(_CHROOT_FAKE_DEVICE))
+    by_uuid_root.symlink_to(_CHROOT_FAKE_DEVICE)
     by_uuid_boot = None
     if boot_uuid is not None:
         by_uuid_boot = by_uuid_dir / boot_uuid
-        by_uuid_boot.symlink_to(str(_CHROOT_FAKE_BOOT_DEVICE))
+        by_uuid_boot.symlink_to(_CHROOT_FAKE_BOOT_DEVICE)
     try:
         Path("/boot/grub").mkdir(parents=True, exist_ok=True)
         proc = run_checked(["grub-mkconfig", "-o", "/boot/grub/grub.cfg"])
@@ -175,7 +175,9 @@ def _strip_boot_prefix(grub_cfg_path: Path, boot_dir: Path) -> None:
     """
     # Strip the longer (host-fs-internal) prefix first: it may itself end in
     # "/boot/" (e.g. a prime directory named "boot").
-    prefixes = (_fs_internal_path(boot_dir).rstrip("/") + "/", "/boot/")
+    internal = _fs_internal_path(boot_dir).rstrip("/")
+    # A "/" internal prefix (boot_dir at a mount root) needs no stripping.
+    prefixes = (internal + "/", "/boot/") if internal else ("/boot/",)
     directive_alternation = "|".join(_BOOT_PATH_DIRECTIVES)
     content = grub_cfg_path.read_text()
     for prefix in prefixes:
@@ -185,7 +187,7 @@ def _strip_boot_prefix(grub_cfg_path: Path, boot_dir: Path) -> None:
         )
         while True:
             updated, count = pattern.subn(r"\1/", content)
-            if not count:
+            if not count or updated == content:
                 break
             content = updated
     grub_cfg_path.write_text(content)
@@ -215,7 +217,7 @@ def generate_grub_cfg(
         present in the staged rootfs.
     """
     require_chroot_binary(root_dir, "grub-mkconfig")
-    require_chroot_binary(root_dir, "grub-probe")
+    probe_rel = require_chroot_binary(root_dir, "grub-probe")
 
     fake_boot_device = (
         _CHROOT_FAKE_BOOT_DEVICE if boot_uuid is not None else _CHROOT_FAKE_DEVICE
@@ -254,7 +256,7 @@ def generate_grub_cfg(
         Mount(
             fstype=None,
             src=str(shim_path),
-            relative_mountpoint="/usr/sbin/grub-probe",
+            relative_mountpoint=f"/{probe_rel}",
             options=["--bind"],
         )
     ]
@@ -276,8 +278,7 @@ def generate_grub_cfg(
             )
             shim_log.unlink()
 
-    effective_boot_dir = boot_dir if boot_dir is not None else root_dir / "boot"
-    grub_cfg_path = effective_boot_dir / "grub" / "grub.cfg"
+    grub_cfg_path = (boot_dir or root_dir / "boot") / "grub" / "grub.cfg"
     if boot_dir is not None:
         _strip_boot_prefix(grub_cfg_path, boot_dir)
     if mkconfig_output:

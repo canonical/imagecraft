@@ -171,13 +171,10 @@ class EfiInstaller:
         shutil.copy2(shim, self.esp_ubuntu_dir / f"shim{bin_suf}.efi")
         shutil.copy2(grub, self.esp_ubuntu_dir / f"grub{bin_suf}.efi")
 
-        if mm := self._find_file(f"usr/lib/shim/mm{bin_suf}.efi"):
-            shutil.copy2(mm, self.esp_boot_dir / f"mm{bin_suf}.efi")
-            shutil.copy2(mm, self.esp_ubuntu_dir / f"mm{bin_suf}.efi")
-
-        if fb := self._find_file(f"usr/lib/shim/fb{bin_suf}.efi"):
-            shutil.copy2(fb, self.esp_boot_dir / f"fb{bin_suf}.efi")
-            shutil.copy2(fb, self.esp_ubuntu_dir / f"fb{bin_suf}.efi")
+        for name in ("mm", "fb"):
+            if aux := self._find_file(f"usr/lib/shim/{name}{bin_suf}.efi"):
+                shutil.copy2(aux, self.esp_boot_dir / f"{name}{bin_suf}.efi")
+                shutil.copy2(aux, self.esp_ubuntu_dir / f"{name}{bin_suf}.efi")
 
         if csv_file := self._find_file(f"usr/lib/shim/BOOT{efi_suf}.CSV"):
             shutil.copy2(csv_file, self.esp_ubuntu_dir / f"BOOT{efi_suf}.CSV")
@@ -218,7 +215,7 @@ class EfiInstaller:
         bin_suf = self.spec.bin_suffix
         efi_suf = self.spec.efi_suffix
         efi_fmt = self.spec.efi_format
-        mod_dir_name = self.spec.efi_format
+        mod_dir_name = efi_fmt
 
         modules_dir = self.root_dir / "usr/lib/grub" / mod_dir_name
         if not modules_dir.is_dir():

@@ -76,21 +76,6 @@ class TestFsInternalPath:
 
 
 class TestProbeShim:
-    def test_shim_substitution(self):
-        root_uuid = uuid.uuid4()
-        boot_uuid = uuid.uuid4()
-        content = _GRUB_PROBE_SHIM % {
-            "shim_log": "/tmp/shim.log",
-            "root_device": "/image",
-            "boot_device": "/image-boot",
-            "root_uuid": str(root_uuid),
-            "boot_uuid": str(boot_uuid),
-            "partmap": "gpt",
-        }
-        assert str(root_uuid) in content
-        assert str(boot_uuid) in content
-        assert "%(" not in content
-
     def test_shim_answers(self, tmp_path):
         """The generated shim produces the expected answers when executed."""
         root_uuid = uuid.uuid4()

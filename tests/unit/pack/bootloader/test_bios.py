@@ -28,12 +28,12 @@ from .test_installer import ROOT_ITEM, _mbr_volume
 
 
 def _make_installer(tmp_path: Path, **kwargs) -> PCBiosInstaller:
+    kwargs.setdefault("arch", DebianArchitecture.AMD64)
+    kwargs.setdefault("root_uuid", uuid.uuid4())
     volume = _mbr_volume([{**ROOT_ITEM, "type": "83"}])
     return PCBiosInstaller(
         image_path=tmp_path / "disk.img",
         root_dir=tmp_path / "root",
-        root_uuid=uuid.uuid4(),
-        arch=DebianArchitecture.AMD64,
         volume=volume,
         **kwargs,
     )
@@ -41,15 +41,8 @@ def _make_installer(tmp_path: Path, **kwargs) -> PCBiosInstaller:
 
 class TestPCBiosInstallerChecks:
     def test_arch_without_non_efi_target_rejected(self, tmp_path):
-        volume = _mbr_volume([{**ROOT_ITEM, "type": "83"}])
         with pytest.raises(errors.BootloaderError, match="no non-EFI GRUB target"):
-            PCBiosInstaller(
-                image_path=tmp_path / "disk.img",
-                root_dir=tmp_path / "root",
-                root_uuid=uuid.uuid4(),
-                arch=DebianArchitecture.ARM64,
-                volume=volume,
-            )
+            _make_installer(tmp_path, arch=DebianArchitecture.ARM64)
 
     def test_missing_modules_dir(self, tmp_path):
         (tmp_path / "root").mkdir()
@@ -82,30 +75,14 @@ class TestPCBiosInstallerChecks:
             installer.install()
 
     def test_dedicated_boot_uuid_changes_search_and_prefix(self, tmp_path):
-        root_uuid = uuid.uuid4()
         boot_uuid = uuid.uuid4()
-        volume = _mbr_volume([{**ROOT_ITEM, "type": "83"}])
-        installer = PCBiosInstaller(
-            image_path=tmp_path / "disk.img",
-            root_dir=tmp_path / "root",
-            root_uuid=root_uuid,
-            arch=DebianArchitecture.AMD64,
-            volume=volume,
-            boot_uuid=boot_uuid,
-        )
+        installer = _make_installer(tmp_path, boot_uuid=boot_uuid)
         assert installer.search_uuid == str(boot_uuid)
         assert installer.boot_prefix == "/grub"
 
     def test_shared_boot_uses_root_uuid(self, tmp_path):
         root_uuid = uuid.uuid4()
-        volume = _mbr_volume([{**ROOT_ITEM, "type": "83"}])
-        installer = PCBiosInstaller(
-            image_path=tmp_path / "disk.img",
-            root_dir=tmp_path / "root",
-            root_uuid=root_uuid,
-            arch=DebianArchitecture.AMD64,
-            volume=volume,
-        )
+        installer = _make_installer(tmp_path, root_uuid=root_uuid)
         assert installer.search_uuid == str(root_uuid)
         assert installer.boot_prefix == "/boot/grub"
 

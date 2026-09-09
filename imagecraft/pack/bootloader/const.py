@@ -102,19 +102,16 @@ ARCH_SPECS: Final[dict[DebianArchitecture, ArchSpec]] = {
         efi_suffix="AA64",
         bin_suffix="aa64",
         efi_format="arm64-efi",
-        non_efi_format=None,
     ),
     DebianArchitecture.ARMHF: ArchSpec(
         efi_suffix="ARM",
         bin_suffix="arm",
         efi_format="arm-efi",
-        non_efi_format=None,
     ),
     DebianArchitecture.RISCV64: ArchSpec(
         efi_suffix="RISCV64",
         bin_suffix="riscv64",
         efi_format="riscv64-efi",
-        non_efi_format=None,
     ),
     DebianArchitecture.I386: ArchSpec(
         efi_suffix="IA32",
@@ -134,13 +131,13 @@ def get_arch_spec(arch: DebianArchitecture | str) -> ArchSpec:
         key = arch if isinstance(arch, DebianArchitecture) else DebianArchitecture(arch)
     except ValueError:
         key = None
-    if key is None or key not in ARCH_SPECS:
-        supported = ", ".join(sorted(a.value for a in ARCH_SPECS))
-        raise ValueError(
-            f"Unsupported architecture {arch!r} for GRUB installation. "
-            f"Supported architectures: {supported}"
-        )
-    return ARCH_SPECS[key]
+    if key is not None and (spec := ARCH_SPECS.get(key)):
+        return spec
+    supported = ", ".join(sorted(a.value for a in ARCH_SPECS))
+    raise ValueError(
+        f"Unsupported architecture {arch!r} for GRUB installation. "
+        f"Supported architectures: {supported}"
+    )
 
 
 # GRUB core modules embedded via grub-mkimage.
