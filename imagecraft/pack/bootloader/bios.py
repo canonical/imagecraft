@@ -34,7 +34,7 @@ from craft_platforms import DebianArchitecture
 from imagecraft import errors
 from imagecraft.models.volume import GPTVolume, HybridVolume, MBRVolume, Role
 from imagecraft.pack import gptutil
-from imagecraft.pack.bootloader.chrootenv import find_chroot_binary, run_checked
+from imagecraft.pack.bootloader.chrootenv import require_chroot_binary, run_checked
 from imagecraft.pack.bootloader.const import (
     CORE_BIOS_MODULES,
     get_arch_spec,
@@ -167,7 +167,7 @@ class NonEfiInstaller:
                 f"grub-bios-setup not found in the staged rootfs: {mod_dir_rel}",
                 resolution="Install the grub-pc-bin package in the image.",
             )
-        mkimage = find_chroot_binary(self.root_dir, "grub-mkimage")
+        require_chroot_binary(self.root_dir, "grub-mkimage")
         if shutil.which("fuse2fs") is None:
             raise errors.BootloaderToolsMissingError(
                 "fuse2fs not found on the build host",
@@ -192,7 +192,7 @@ class NonEfiInstaller:
                 core_img = mnt_mod_dir / "core.img"
                 _run_logged(
                     [
-                        str(mnt / mkimage.lstrip("/")),
+                        str(mnt / "usr/bin/grub-mkimage"),
                         "-d",
                         str(mnt_mod_dir),
                         "-O",

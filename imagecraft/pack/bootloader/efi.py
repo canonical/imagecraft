@@ -29,7 +29,7 @@ from craft_platforms import DebianArchitecture
 from imagecraft import errors
 from imagecraft.pack.bootloader.chrootenv import (
     build_prime_chroot,
-    find_chroot_binary,
+    require_chroot_binary,
     run_checked,
 )
 from imagecraft.pack.bootloader.const import (
@@ -45,7 +45,6 @@ _CHROOT_EFI_WORK_DIR = "/tmp/grub-efi"  # noqa: S108
 
 def _build_efi_image_in_chroot(
     *,
-    mkimage: str,
     efi_format: str,
     prefix: str,
     early_cfg_content: str,
@@ -65,7 +64,7 @@ def _build_efi_image_in_chroot(
     early_cfg.write_text(early_cfg_content)
     run_checked(
         [
-            mkimage,
+            "grub-mkimage",
             "-d",
             f"/usr/lib/grub/{efi_format}",
             "-O",
@@ -237,7 +236,7 @@ class EfiInstaller:
             raise errors.BootloaderToolsMissingError(
                 f"GRUB modules directory not found in rootfs: usr/lib/grub/{mod_dir_name}"
             )
-        mkimage = find_chroot_binary(self.root_dir, "grub-mkimage")
+        require_chroot_binary(self.root_dir, "grub-mkimage")
 
         boot_dir = self.esp_dir / "EFI" / "BOOT"
         u_dir = self.esp_dir / "EFI" / "ubuntu"
@@ -251,7 +250,6 @@ class EfiInstaller:
         try:
             chroot.execute(
                 target=_build_efi_image_in_chroot,
-                mkimage=mkimage,
                 efi_format=efi_fmt,
                 prefix="/EFI/ubuntu",
                 early_cfg_content=render_early_cfg(

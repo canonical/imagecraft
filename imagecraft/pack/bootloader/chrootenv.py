@@ -25,16 +25,15 @@ from imagecraft.pack.chroot import Chroot, Mount
 _CHROOT_PATH = "/usr/sbin:/usr/bin:/sbin:/bin"
 
 
-def find_chroot_binary(root_dir: Path, name: str) -> str:
-    """Return the absolute in-chroot path of a binary in the guest rootfs.
+def require_chroot_binary(root_dir: Path, name: str) -> None:
+    """Ensure a tool binary exists in the guest rootfs (on the chroot PATH).
 
     :raises errors.BootloaderToolsMissingError: If the binary isn't present
         in the staged rootfs.
     """
-    for prefix in ("/usr/sbin", "/usr/bin", "/sbin", "/bin"):
-        candidate = f"{prefix}/{name}"
-        if (root_dir / candidate.lstrip("/")).is_file():
-            return candidate
+    for prefix in ("usr/sbin", "usr/bin", "sbin", "bin"):
+        if (root_dir / prefix / name).is_file():
+            return
     raise errors.BootloaderToolsMissingError(
         f"{name} not found in the staged rootfs",
         resolution="Install the relevant GRUB packages in the image.",

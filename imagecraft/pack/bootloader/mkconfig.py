@@ -38,7 +38,7 @@ from craft_cli import emit
 
 from imagecraft.pack.bootloader.chrootenv import (
     build_prime_chroot,
-    find_chroot_binary,
+    require_chroot_binary,
     run_checked,
 )
 from imagecraft.pack.chroot import Mount
@@ -102,7 +102,7 @@ exit 0
 
 
 def _generate_grub_cfg_in_chroot(
-    *, mkconfig: str, grub_defaults: str, root_uuid: str, boot_uuid: str | None
+    *, grub_defaults: str, root_uuid: str, boot_uuid: str | None
 ) -> str:
     """Generate grub.cfg inside the chroot and return mkconfig's output.
 
@@ -127,7 +127,7 @@ def _generate_grub_cfg_in_chroot(
         by_uuid_boot.symlink_to(str(_CHROOT_FAKE_BOOT_DEVICE))
     try:
         Path("/boot/grub").mkdir(parents=True, exist_ok=True)
-        proc = run_checked([mkconfig, "-o", "/boot/grub/grub.cfg"])
+        proc = run_checked(["grub-mkconfig", "-o", "/boot/grub/grub.cfg"])
         return (proc.stdout + proc.stderr).strip()
     finally:
         _GRUB_DEFAULTS_SNIPPET.unlink(missing_ok=True)
@@ -215,8 +215,8 @@ def generate_grub_cfg(
     :raises errors.BootloaderToolsMissingError: If grub-mkconfig isn't
         present in the staged rootfs.
     """
-    mkconfig = find_chroot_binary(root_dir, "grub-mkconfig")
-    real_probe = find_chroot_binary(root_dir, "grub-probe")
+    require_chroot_binary(root_dir, "grub-mkconfig")
+    require_chroot_binary(root_dir, "grub-probe")
 
     fake_boot_device = (
         _CHROOT_FAKE_BOOT_DEVICE if boot_uuid is not None else _CHROOT_FAKE_DEVICE
@@ -255,7 +255,7 @@ def generate_grub_cfg(
         Mount(
             fstype=None,
             src=str(shim_path),
-            relative_mountpoint=real_probe,
+            relative_mountpoint="/usr/sbin/grub-probe",
             options=["--bind"],
         )
     ]
@@ -263,7 +263,6 @@ def generate_grub_cfg(
     try:
         mkconfig_output = chroot.execute(
             target=_generate_grub_cfg_in_chroot,
-            mkconfig=mkconfig,
             grub_defaults=grub_defaults,
             root_uuid=str(root_uuid),
             boot_uuid=str(boot_uuid) if boot_uuid is not None else None,
