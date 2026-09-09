@@ -32,6 +32,7 @@ from craft_platforms import DebianArchitecture
 
 from imagecraft import errors
 from imagecraft.models.volume import (
+    FileSystem,
     GPTVolume,
     HybridVolume,
     MBRVolume,
@@ -201,6 +202,16 @@ class PCBiosInstaller:
         if not mod_dir.is_dir():
             raise errors.BootloaderToolsMissingError(
                 f"GRUB BIOS modules directory not found: {mod_dir}"
+            )
+        boot_item = self.volume.boot_partition or self.volume.root_partition
+        if (
+            boot_item is not None
+            and boot_item.filesystem in (FileSystem.FAT16, FileSystem.VFAT)
+            and not (mod_dir / "fat.mod").is_file()
+        ):
+            raise errors.BootloaderToolsMissingError(
+                f"GRUB FAT module required for the boot filesystem: {mod_dir / 'fat.mod'}",
+                resolution="Install the grub-pc-bin package in the image.",
             )
         if not (mod_dir / "boot.img").is_file():
             raise errors.BootloaderToolsMissingError(

@@ -24,7 +24,7 @@ from imagecraft import errors
 from imagecraft.pack.bootloader.bios import PCBiosInstaller
 from imagecraft.pack.bootloader.chrootenv import stage_grub_modules
 
-from .test_installer import ROOT_ITEM, _mbr_volume
+from .test_installer import BOOT_ITEM, ROOT_ITEM, _mbr_volume
 
 
 def _make_installer(tmp_path: Path, **kwargs) -> PCBiosInstaller:
@@ -40,6 +40,50 @@ def _make_installer(tmp_path: Path, **kwargs) -> PCBiosInstaller:
 
 
 class TestPCBiosInstallerChecks:
+    @pytest.mark.parametrize("filesystem", ["fat16", "vfat"])
+    def test_fat_boot_requires_fat_module(self, tmp_path, filesystem):
+        volume = _mbr_volume(
+            [
+                {**BOOT_ITEM, "type": "0C", "filesystem": filesystem},
+                {**ROOT_ITEM, "type": "83"},
+            ]
+        )
+        mod_dir = tmp_path / "root/usr/lib/grub/i386-pc"
+        mod_dir.mkdir(parents=True)
+        installer = _make_installer(tmp_path, volume=volume, boot_uuid="1234-ABCD")
+
+        with pytest.raises(errors.BootloaderToolsMissingError, match="FAT module"):
+            installer.install()
+
+    def test_embeds_fat_module(self, tmp_path, mocker):
+        volume = _mbr_volume(
+            [
+                {**BOOT_ITEM, "type": "0C", "filesystem": "vfat"},
+                {**ROOT_ITEM, "type": "83"},
+            ]
+        )
+        installer = _make_installer(tmp_path, volume=volume, boot_uuid="1234-ABCD")
+        mod_dir = installer.root_dir / "usr/lib/grub/i386-pc"
+        mod_dir.mkdir(parents=True)
+        for name in ("boot.img", "grub-bios-setup", "fat.mod", "ext2.mod"):
+            (mod_dir / name).touch()
+        mocker.patch(
+            "imagecraft.pack.bootloader.bios.require_chroot_binary",
+            return_value=Path("usr/bin/grub-mkimage"),
+        )
+        mocker.patch(
+            "imagecraft.pack.bootloader.bios.shutil.which", return_value="fuse2fs"
+        )
+        mocker.patch.object(installer, "_root_partition_offset", return_value=2048)
+        mount = mocker.patch("imagecraft.pack.bootloader.bios.ExtFuseMount")
+        mount.return_value.__enter__.return_value = installer.root_dir
+        chroot = mocker.patch("imagecraft.pack.bootloader.bios.build_prime_chroot")
+        chroot.return_value.execute.return_value = ""
+
+        installer.install()
+
+        assert "fat" in chroot.return_value.execute.call_args.kwargs["modules"]
+
     def test_arch_without_non_efi_target_rejected(self, tmp_path):
         with pytest.raises(errors.BootloaderError, match="no non-EFI GRUB target"):
             _make_installer(tmp_path, arch=DebianArchitecture.ARM64)

@@ -25,6 +25,7 @@ Coordinates the two phases of bootloader installation:
    final disk image has been assembled; BIOS targets only.
 """
 
+import re
 from pathlib import Path
 from typing import Protocol
 from uuid import UUID, uuid4
@@ -79,8 +80,7 @@ def _new_filesystem_id(filesystem: FileSystem) -> UUID | str:
 def configure_fstab(root_dir: Path, root_uuid: UUID | str) -> None:
     """Ensure /etc/fstab contains an entry for the root filesystem UUID.
 
-    An existing non-comment root entry (e.g. ``LABEL=writable / ...``) is
-    replaced rather than duplicated.
+    Preserve the other fields of an existing root entry.
     """
     fstab_path = root_dir / "etc" / "fstab"
     fstab_path.parent.mkdir(parents=True, exist_ok=True)
@@ -93,13 +93,10 @@ def configure_fstab(root_dir: Path, root_uuid: UUID | str) -> None:
         return
 
     existing_content = fstab_path.read_text()
-    if str_uuid in existing_content:
-        return
-
     lines = existing_content.splitlines(keepends=True)
     for index, line in enumerate(lines):
         if not line.lstrip().startswith("#") and line.split()[1:2] == ["/"]:
-            lines[index] = fstab_entry
+            lines[index] = re.sub(r"\S+", f"UUID={str_uuid}", line, count=1)
             break
     else:
         if lines and not lines[-1].endswith("\n"):

@@ -161,7 +161,8 @@ def _fs_internal_path(path: Path) -> str:
         if len(fields) > mountpoint_field_index:
             mountpoint = fields[mountpoint_field_index].replace("\\040", " ")
             if (
-                resolved == mountpoint or resolved.startswith(mountpoint + "/")
+                resolved == mountpoint
+                or resolved.startswith(mountpoint.rstrip("/") + "/")
             ) and len(mountpoint) > len(best_mount):
                 best_mount = mountpoint
     if not best_mount:
@@ -184,18 +185,38 @@ def _strip_boot_prefix(grub_cfg_path: Path, boot_dir: Path) -> None:
     # A "/" internal prefix (boot_dir at a mount root) needs no stripping.
     prefixes = (internal + "/", "/boot/") if internal else ("/boot/",)
     directive_alternation = "|".join(_BOOT_PATH_DIRECTIVES)
-    content = grub_cfg_path.read_text()
-    for prefix in prefixes:
-        pattern = re.compile(
-            rf"^(\s*(?:{directive_alternation})\b.*){re.escape(prefix)}",
-            re.MULTILINE,
-        )
-        while True:
-            updated, count = pattern.subn(r"\1/", content)
-            if not count or updated == content:
+    directive_pattern = re.compile(
+        rf"^([ \t]*({directive_alternation})[ \t]+)([^\n]*)", re.MULTILINE
+    )
+    # Preserve quoting and whitespace; only initrd/loadfont accept multiple files.
+    operand_pattern = re.compile(r"""(?:[^\s"'\\;#]|\\.|"[^"]*"|'[^']*')+|[;#]""")
+    path_prefix = re.compile(
+        r"""^(["']?(?:\([^)]*\))?["']?)(?:"""
+        + "|".join(re.escape(prefix) for prefix in prefixes)
+        + ")"
+    )
+
+    def rewrite_directive(match: re.Match[str]) -> str:
+        arguments = match[3]
+        rewritten: list[str] = []
+        end = 0
+        for operand in operand_pattern.finditer(arguments):
+            token = operand[0]
+            if token in (";", "#"):
                 break
-            content = updated
-    grub_cfg_path.write_text(content)
+            if token.startswith("-"):
+                continue
+            rewritten.extend(
+                (arguments[end : operand.start()], path_prefix.sub(r"\1/", token))
+            )
+            end = operand.end()
+            if match[2] not in ("initrd", "loadfont"):
+                break
+        return match[1] + "".join(rewritten) + arguments[end:]
+
+    grub_cfg_path.write_text(
+        directive_pattern.sub(rewrite_directive, grub_cfg_path.read_text())
+    )
 
 
 def generate_grub_cfg(

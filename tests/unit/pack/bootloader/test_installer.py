@@ -19,6 +19,7 @@ import re
 import uuid
 from pathlib import Path
 
+import pytest
 from craft_platforms import DebianArchitecture
 from imagecraft import errors
 from imagecraft.models.volume import GptType, GPTVolume, HybridVolume, MBRVolume
@@ -90,8 +91,12 @@ BIOS_BOOT_ITEM = {
 class TestFindStructureItems:
     def test_root_and_esp_found(self):
         volume = _gpt_volume([ESP_ITEM, ROOT_ITEM])
-        assert volume.root_partition.name == "rootfs"  # type: ignore[union-attr]
-        assert volume.esp_partition.name == "efi"  # type: ignore[union-attr]
+        root = volume.root_partition
+        esp = volume.esp_partition
+        assert root is not None
+        assert esp is not None
+        assert root.name == "rootfs"
+        assert esp.name == "efi"
 
     def test_no_esp_for_mbr(self):
         volume = _mbr_volume(
@@ -100,7 +105,9 @@ class TestFindStructureItems:
             ]
         )
         assert volume.esp_partition is None
-        assert volume.root_partition.name == "rootfs"  # type: ignore[union-attr]
+        root = volume.root_partition
+        assert root is not None
+        assert root.name == "rootfs"
 
     def test_hybrid_esp_detected(self):
         """Hybrid items encode the GPT type as '<mbr>,<gpt>'; must still match."""
@@ -325,7 +332,9 @@ class TestConfigureFstab:
         configure_fstab(tmp_path, root_uuid)
         content = (etc / "fstab").read_text()
         assert "LABEL=writable" not in content
-        assert f"UUID={root_uuid} / ext4" in content
+        assert (
+            f"UUID={root_uuid}\t/\text4\tdiscard,errors=remount-ro\t0\t1\n" in content
+        )
         # The ESP entry is preserved.
         assert "LABEL=UEFI" in content
         # Exactly one root entry.
@@ -357,3 +366,32 @@ class TestConfigureFstab:
         content = (etc / "fstab").read_text()
         assert "# LABEL=old / ext4 defaults 0 1" in content
         assert f"UUID={root_uuid} / ext4" in content
+
+    @pytest.mark.parametrize(
+        "suffix",
+        [
+            "\t/\text3\tro,discard,x-systemd.device-timeout=30\t1\t2\n",
+            " / ext4 defaults 0 0 # keep this comment\n",
+            " / ext4 ro 0 1",
+        ],
+    )
+    def test_preserves_root_fields_and_formatting(self, tmp_path, suffix):
+        fstab = tmp_path / "etc" / "fstab"
+        fstab.parent.mkdir()
+        fstab.write_text("  LABEL=writable" + suffix)
+        root_uuid = uuid.uuid4()
+
+        configure_fstab(tmp_path, root_uuid)
+
+        assert fstab.read_text() == f"  UUID={root_uuid}" + suffix
+
+    def test_uuid_elsewhere_does_not_skip_root_update(self, tmp_path):
+        root_uuid = uuid.uuid4()
+        fstab = tmp_path / "etc" / "fstab"
+        fstab.parent.mkdir()
+        comment = f"# root UUID will be {root_uuid}\n"
+        fstab.write_text(comment + "LABEL=writable / ext4 ro 0 1\n")
+
+        configure_fstab(tmp_path, root_uuid)
+
+        assert fstab.read_text() == comment + f"UUID={root_uuid} / ext4 ro 0 1\n"

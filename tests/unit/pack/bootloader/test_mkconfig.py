@@ -17,6 +17,7 @@
 
 import subprocess
 import uuid
+from pathlib import Path
 
 import pytest
 from imagecraft import errors
@@ -29,6 +30,52 @@ from imagecraft.pack.bootloader.mkconfig import (
 
 
 class TestStripBootPrefix:
+    @pytest.mark.parametrize(
+        ("line", "expected"),
+        [
+            (
+                "linux /boot/vmlinuz key=/boot/key /boot/argument",
+                "linux /vmlinuz key=/boot/key /boot/argument",
+            ),
+            (
+                'linux "/boot/kernel name" key="/boot/key name"',
+                'linux "/kernel name" key="/boot/key name"',
+            ),
+            (
+                "multiboot --quirk-bad-kludge /boot/kernel config=/boot/config",
+                "multiboot --quirk-bad-kludge /kernel config=/boot/config",
+            ),
+            ("module /boot/module /boot/argument", "module /module /boot/argument"),
+            ("module2 /boot/module /boot/argument", "module2 /module /boot/argument"),
+            ("multiboot2 /boot/kernel /boot/arg", "multiboot2 /kernel /boot/arg"),
+            ("devicetree /boot/board.dtb", "devicetree /board.dtb"),
+            (
+                "initrd /boot/microcode.img '/boot/initrd name'",
+                "initrd /microcode.img '/initrd name'",
+            ),
+            (
+                'loadfont ($root)/boot/font.pf2 "($root)/boot/font two.pf2"',
+                'loadfont ($root)/font.pf2 "($root)/font two.pf2"',
+            ),
+            ("initrd /boot/initrd # /boot/comment", "initrd /initrd # /boot/comment"),
+            ("initrd /boot/initrd; echo /boot/keep", "initrd /initrd; echo /boot/keep"),
+            ("linux /vmlinuz key=/boot/key", "linux /vmlinuz key=/boot/key"),
+            ("echo /boot/keep", "echo /boot/keep"),
+            ("# linux /boot/keep", "# linux /boot/keep"),
+        ],
+    )
+    def test_rewrites_only_file_operands(self, tmp_path, mocker, line, expected):
+        mocker.patch(
+            "imagecraft.pack.bootloader.mkconfig._fs_internal_path",
+            return_value="/",
+        )
+        cfg = tmp_path / "grub.cfg"
+        cfg.write_text(f"\t{line}\n")
+
+        _strip_boot_prefix(cfg, tmp_path)
+
+        assert cfg.read_text() == f"\t{expected}\n"
+
     def test_strips_boot_prefix(self, tmp_path):
         boot_dir = tmp_path / "boot"
         boot_dir.mkdir()
@@ -65,6 +112,33 @@ class TestStripBootPrefix:
 
 
 class TestFsInternalPath:
+    @pytest.mark.parametrize(
+        ("path", "mountinfo", "expected"),
+        [
+            ("/work/boot", "1 0 8:1 / / rw - ext4 /dev/sda1 rw\n", "/work/boot"),
+            ("/", "1 0 8:1 / / rw - ext4 /dev/sda1 rw\n", "/"),
+            (
+                "/work/boot",
+                (
+                    "1 0 8:1 / / rw - ext4 /dev/sda1 rw\n"
+                    "2 1 8:2 / /work rw - ext4 /dev/sda2 rw\n"
+                ),
+                "/boot",
+            ),
+            (
+                "/workspace/boot",
+                (
+                    "1 0 8:1 / / rw - ext4 /dev/sda1 rw\n"
+                    "2 1 8:2 / /work rw - ext4 /dev/sda2 rw\n"
+                ),
+                "/workspace/boot",
+            ),
+        ],
+    )
+    def test_mountpoint_matching(self, mocker, path, mountinfo, expected):
+        mocker.patch.object(Path, "read_text", return_value=mountinfo)
+        assert _fs_internal_path(Path(path)) == expected
+
     def test_returns_absolute_path(self, tmp_path):
         result = _fs_internal_path(tmp_path)
         assert result.startswith("/")

@@ -145,6 +145,7 @@ _COMMON_GRUB_MODULES: Final[list[str]] = [
     "part_gpt",
     "part_msdos",
     "ext2",
+    "fat",
     "normal",
     "search",
     "search_fs_uuid",
@@ -163,7 +164,6 @@ _COMMON_GRUB_MODULES: Final[list[str]] = [
 
 CORE_EFI_MODULES: Final[list[str]] = [
     *_COMMON_GRUB_MODULES,
-    "fat",
     "efi_gop",
     "all_video",
 ]
