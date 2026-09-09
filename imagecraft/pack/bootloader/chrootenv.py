@@ -14,11 +14,12 @@
 
 """Shared helpers for running GRUB tooling in a prime-directory chroot."""
 
+import shutil
 import subprocess
 from pathlib import Path
 
 from imagecraft import errors
-from imagecraft.pack.chroot import Chroot, Mount
+from imagecraft.subprocesses import run
 
 # Restricted PATH for in-chroot commands, so host-specific PATH entries
 # don't leak into the guest environment.
@@ -41,69 +42,40 @@ def require_chroot_binary(root_dir: Path, name: str) -> None:
 
 
 def run_checked(cmd: list[str]) -> subprocess.CompletedProcess[str]:
-    """Run a command, capturing output and wrapping failures.
+    """Run a command with a restricted PATH, capturing output.
 
     :raises errors.BootloaderError: If the command exits non-zero.
     """
     try:
-        return subprocess.run(
-            cmd,
-            check=True,
-            capture_output=True,
-            text=True,
-            env={"PATH": _CHROOT_PATH},
-        )
+        return run(cmd[0], *cmd[1:], env={"PATH": _CHROOT_PATH})
     except subprocess.CalledProcessError as err:
         raise errors.BootloaderError(
-            f"Command {' '.join(cmd)!r} failed in chroot: "
+            f"Command {' '.join(cmd)!r} failed: "
             f"{err.stderr.strip() or err.stdout.strip()}"
         ) from err
 
 
-def build_prime_chroot(
-    root_dir: Path,
-    *,
-    boot_dir: Path | None = None,
-    extra_mounts: list[Mount] | None = None,
-) -> Chroot:
-    """Build a chroot rooted at the root partition's prime directory.
+def stage_grub_modules(root_dir: Path, boot_dir: Path | None, grub_format: str) -> None:
+    """Stage GRUB runtime modules into the ``/boot`` prime directory.
 
-    Only the device files GRUB needs are bind-mounted (rather than
-    overmounting ``/dev``, which would hide the bind targets).
+    Must be called *before* the partitions are formatted, since it writes
+    into a prime directory that ``diskutil.format_device`` will later embed
+    via ``mke2fs -d``.
 
-    :param root_dir: Prime directory of the root filesystem partition.
-    :param boot_dir: Prime directory of a dedicated ``/boot`` partition,
-        bound at ``/boot`` in the chroot. Defaults to the root partition's
-        own ``/boot`` when not given.
-    :param extra_mounts: Additional mounts to set up inside the chroot
-        (e.g. tool shims bind-mounted over the guest's binaries).
+    :param root_dir: Prime directory of the root filesystem partition (used
+        to locate the rootfs's installed GRUB modules).
+    :param boot_dir: Prime directory that corresponds to ``/boot``. Defaults
+        to ``root_dir / "boot"`` when ``/boot`` isn't a dedicated partition.
+    :param grub_format: GRUB target format (e.g. ``i386-pc``, ``x86_64-efi``).
+    :raises errors.BootloaderToolsMissingError: If the GRUB modules directory
+        isn't present in the staged rootfs.
     """
-    for mountpoint in ("proc", "sys", "dev", "tmp"):
-        (root_dir / mountpoint).mkdir(parents=True, exist_ok=True)
-
-    mounts = [
-        Mount(fstype="proc", src="proc-build", relative_mountpoint="/proc"),
-        Mount(fstype="sysfs", src="sysfs-build", relative_mountpoint="/sys"),
-    ]
-    for device in ("null", "zero", "urandom"):
-        (root_dir / "dev" / device).touch(exist_ok=True)
-        mounts.append(
-            Mount(
-                fstype=None,
-                src=f"/dev/{device}",
-                relative_mountpoint=f"/dev/{device}",
-                options=["--bind"],
-            )
+    mod_dir = root_dir / "usr" / "lib" / "grub" / grub_format
+    if not mod_dir.is_dir():
+        raise errors.BootloaderToolsMissingError(
+            f"GRUB modules directory not found: {mod_dir}"
         )
-    if boot_dir is not None:
-        (root_dir / "boot").mkdir(exist_ok=True)
-        mounts.append(
-            Mount(
-                fstype=None,
-                src=str(boot_dir.resolve()),
-                relative_mountpoint="/boot",
-                options=["--bind"],
-            )
-        )
-    mounts.extend(extra_mounts or [])
-    return Chroot(path=root_dir, mounts=mounts)
+    effective_boot_dir = boot_dir if boot_dir is not None else root_dir / "boot"
+    shutil.copytree(
+        mod_dir, effective_boot_dir / "grub" / grub_format, dirs_exist_ok=True
+    )

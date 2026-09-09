@@ -32,9 +32,12 @@ from craft_cli import emit
 from craft_platforms import DebianArchitecture
 
 from imagecraft import errors
-from imagecraft.models.volume import GPTVolume, HybridVolume, MBRVolume, Role
+from imagecraft.models.volume import GPTVolume, HybridVolume, MBRVolume
 from imagecraft.pack import gptutil
-from imagecraft.pack.bootloader.chrootenv import require_chroot_binary, run_checked
+from imagecraft.pack.bootloader.chrootenv import (
+    require_chroot_binary,
+    run_checked,
+)
 from imagecraft.pack.bootloader.const import (
     CORE_BIOS_MODULES,
     get_arch_spec,
@@ -53,34 +56,6 @@ def _run_logged(cmd: list[str]) -> None:
 def _bios_mod_dir(root_dir: Path, grub_format: str) -> Path:
     """Return the path to the rootfs's installed GRUB module directory."""
     return root_dir / "usr" / "lib" / "grub" / grub_format
-
-
-def stage_non_efi_modules(
-    root_dir: Path, boot_dir: Path | None = None, *, grub_format: str
-) -> None:
-    """Stage BIOS GRUB runtime modules into the ``/boot`` prime directory.
-
-    Must be called *before* the partitions are formatted (unlike the rest of
-    this module, which works on the formatted image).
-
-    :param root_dir: Prime directory of the root filesystem partition (used
-        to locate the rootfs's installed GRUB modules).
-    :param boot_dir: Prime directory that corresponds to ``/boot``. Defaults
-        to ``root_dir / "boot"`` when ``/boot`` isn't a dedicated partition.
-    :param grub_format: GRUB non-EFI target format (e.g. ``i386-pc``).
-    :raises errors.BootloaderToolsMissingError: If the GRUB BIOS modules
-        directory isn't present in the staged rootfs.
-    """
-    mod_dir = _bios_mod_dir(root_dir, grub_format)
-    if not mod_dir.is_dir():
-        raise errors.BootloaderToolsMissingError(
-            f"GRUB BIOS modules directory not found: {mod_dir}"
-        )
-
-    effective_boot_dir = boot_dir if boot_dir is not None else root_dir / "boot"
-    shutil.copytree(
-        mod_dir, effective_boot_dir / "grub" / grub_format, dirs_exist_ok=True
-    )
 
 
 class NonEfiInstaller:
@@ -128,12 +103,10 @@ class NonEfiInstaller:
 
     def _root_partition_offset(self) -> int:
         """Return the byte offset of the root (system-data) partition in the image."""
-        root_index = next(
-            i
-            for i, item in enumerate(self.volume.structure)
-            if item.role == Role.SYSTEM_DATA
-        )
-        item = self.volume.structure[root_index]
+        item = self.volume.root_partition
+        # Guaranteed by the BIOS boot-method resolution.
+        assert item is not None  # noqa: S101
+        root_index = list(self.volume.structure).index(item)
         # GPT items may declare an explicit partition number; MBR items are
         # always numbered by structure order.
         part_num = getattr(item, "number", None) or (root_index + 1)

@@ -19,19 +19,11 @@ formatting, so ``diskutil.format_device`` embeds them via
 ``mke2fs -d``/``mcopy``. No loop devices are needed.
 """
 
-from imagecraft.pack.bootloader.installer import (
-    BootloaderInstaller,
-    find_boot_structure_item,
-    find_esp_structure_item,
-    find_root_structure_item,
-)
 from imagecraft.pack.bootloader.const import BootMethod, EfiTier
+from imagecraft.pack.bootloader.installer import BootloaderInstaller
 
 __all__ = [
     "BootMethod",
     "BootloaderInstaller",
     "EfiTier",
-    "find_boot_structure_item",
-    "find_esp_structure_item",
-    "find_root_structure_item",
 ]

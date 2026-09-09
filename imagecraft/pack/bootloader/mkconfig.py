@@ -37,11 +37,10 @@ from uuid import UUID
 from craft_cli import emit
 
 from imagecraft.pack.bootloader.chrootenv import (
-    build_prime_chroot,
     require_chroot_binary,
     run_checked,
 )
-from imagecraft.pack.chroot import Mount
+from imagecraft.pack.chroot import Mount, build_prime_chroot
 
 _GRUB_DEFAULTS_SNIPPET = Path("/etc/default/grub.d/60-imagecraft.cfg")
 # grub scripts only need GRUB_DEVICE to exist (e.g. ``test -e``); the actual

@@ -25,7 +25,6 @@ Coordinates the two phases of bootloader installation:
    final disk image has been assembled; BIOS targets only.
 """
 
-import contextlib
 import uuid
 from pathlib import Path
 from uuid import UUID
@@ -37,15 +36,14 @@ from craft_platforms import DebianArchitecture
 from imagecraft import errors
 from imagecraft.models import get_partition_name
 from imagecraft.models.volume import (
-    GptType,
     GPTVolume,
     HybridVolume,
     MBRVolume,
     PartitionSchema,
-    Role,
     StructureItem,
 )
-from imagecraft.pack.bootloader.bios import NonEfiInstaller, stage_non_efi_modules
+from imagecraft.pack.bootloader.bios import NonEfiInstaller
+from imagecraft.pack.bootloader.chrootenv import stage_grub_modules
 from imagecraft.pack.bootloader.const import ArchSpec, BootMethod, get_arch_spec
 from imagecraft.pack.bootloader.efi import EfiInstaller
 from imagecraft.pack.bootloader.mkconfig import generate_grub_cfg
@@ -92,58 +90,6 @@ def configure_fstab(root_dir: Path, root_uuid: UUID | str) -> None:
     fstab_path.write_text(existing_content + separator + fstab_entry)
 
 
-def find_root_structure_item(volume: AnyVolume) -> StructureItem | None:
-    """Return the first system-data (root filesystem) structure item, if any."""
-    return next(
-        (item for item in volume.structure if item.role == Role.SYSTEM_DATA), None
-    )
-
-
-def _gpt_type_of(item: StructureItem) -> GptType | None:
-    """Return the GPT partition type of a structure item, if it has one.
-
-    GPT items carry a :class:`GptType` directly; hybrid items encode it as
-    the second component of a combined ``'<mbr-type>,<gpt-type>'`` string;
-    MBR items have no GPT type.
-    """
-    structure_type = getattr(item, "structure_type", None)
-    if isinstance(structure_type, GptType):
-        return structure_type
-    if isinstance(structure_type, str) and "," in structure_type:
-        gpt_part = structure_type.split(",", 1)[1]
-        with contextlib.suppress(ValueError):
-            return GptType(gpt_part.upper())
-    return None
-
-
-def find_esp_structure_item(volume: AnyVolume) -> StructureItem | None:
-    """Return the EFI System Partition structure item, if any."""
-    return next(
-        (item for item in volume.structure if _gpt_type_of(item) == GptType.EFI_SYSTEM),
-        None,
-    )
-
-
-def find_boot_structure_item(volume: AnyVolume) -> StructureItem | None:
-    """Return a dedicated ``/boot`` partition structure item, if any.
-
-    A "dedicated boot partition" is a ``system-boot``-role item that is
-    *not* the EFI System Partition and *not* a raw BIOS Boot partition
-    (which holds GRUB's core.img, not a filesystem).
-    """
-    esp_item = find_esp_structure_item(volume)
-    return next(
-        (
-            item
-            for item in volume.structure
-            if item.role == Role.SYSTEM_BOOT
-            and item is not esp_item
-            and _gpt_type_of(item) != GptType.BIOS_BOOT
-        ),
-        None,
-    )
-
-
 class BootloaderInstaller:
     """Coordinates loopless GRUB installation for a single image volume."""
 
@@ -168,9 +114,9 @@ class BootloaderInstaller:
             self.arch = None
             self._spec = None
 
-        self.root_item = find_root_structure_item(volume)
-        self.esp_item = find_esp_structure_item(volume)
-        self.boot_item = find_boot_structure_item(volume)
+        self.root_item = volume.root_partition
+        self.esp_item = volume.esp_partition
+        self.boot_item = volume.boot_partition
         self.root_uuid = uuid.uuid4()
         self.boot_uuid = uuid.uuid4() if self.boot_item is not None else None
         self._root_dir: Path | None = None
@@ -204,10 +150,9 @@ class BootloaderInstaller:
             return BootMethod.EFI
 
         is_mbr_schema = self.volume.volume_schema == PartitionSchema.MBR
-        has_bios_boot = any(
-            _gpt_type_of(item) == GptType.BIOS_BOOT for item in self.volume.structure
-        )
-        if (is_mbr_schema or has_bios_boot) and self._spec.non_efi_format is not None:
+        if (
+            is_mbr_schema or self.volume.has_bios_boot_partition
+        ) and self._spec.non_efi_format is not None:
             return BootMethod.BIOS
 
         emit.progress(
@@ -300,9 +245,7 @@ class BootloaderInstaller:
             # exists for this architecture.
             assert self._spec.non_efi_format is not None  # noqa: S101
             try:
-                stage_non_efi_modules(
-                    self._root_dir, boot_dir, grub_format=self._spec.non_efi_format
-                )
+                stage_grub_modules(self._root_dir, boot_dir, self._spec.non_efi_format)
             except errors.BootloaderToolsMissingError as err:
                 emit.progress(
                     f"Skipping BIOS bootloader installation: {err}", permanent=True

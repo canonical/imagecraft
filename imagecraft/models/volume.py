@@ -17,11 +17,12 @@
 """Volume configuration pydantic model."""
 
 import collections
+import contextlib
 import enum
 import re
 import typing
 import uuid
-from collections.abc import Collection
+from collections.abc import Collection, Sequence
 from typing import Annotated, Literal, Self
 
 from craft_application.models import (
@@ -483,7 +484,74 @@ class BaseVolume(CraftBaseModel):
         raise ValueError(f"Duplicate filesystem labels: {dupes}")
 
 
-class GPTVolume(BaseVolume):
+def _gpt_type_of(item: StructureItem) -> GptType | None:
+    """Return the GPT partition type of a structure item, if it has one.
+
+    GPT items carry a :class:`GptType` directly; hybrid items encode it as
+    the second component of a combined ``'<mbr-type>,<gpt-type>'`` string;
+    MBR items have no GPT type.
+    """
+    structure_type = getattr(item, "structure_type", None)
+    if isinstance(structure_type, GptType):
+        return structure_type
+    if isinstance(structure_type, str) and "," in structure_type:
+        gpt_part = structure_type.split(",", 1)[1]
+        with contextlib.suppress(ValueError):
+            return GptType(gpt_part.upper())
+    return None
+
+
+class _VolumePartitions:
+    """Partition-discovery properties shared by all volume schemas."""
+
+    structure: Sequence[StructureItem]  # narrowed by the concrete subclasses
+
+    @property
+    def root_partition(self) -> StructureItem | None:
+        """Return the first system-data (root filesystem) structure item, if any."""
+        return next(
+            (item for item in self.structure if item.role == Role.SYSTEM_DATA), None
+        )
+
+    @property
+    def esp_partition(self) -> StructureItem | None:
+        """Return the EFI System Partition structure item, if any."""
+        return next(
+            (
+                item
+                for item in self.structure
+                if _gpt_type_of(item) == GptType.EFI_SYSTEM
+            ),
+            None,
+        )
+
+    @property
+    def boot_partition(self) -> StructureItem | None:
+        """Return a dedicated ``/boot`` partition structure item, if any.
+
+        A "dedicated boot partition" is a ``system-boot``-role item that is
+        *not* the EFI System Partition and *not* a raw BIOS Boot partition
+        (which holds GRUB's core.img, not a filesystem).
+        """
+        esp_item = self.esp_partition
+        return next(
+            (
+                item
+                for item in self.structure
+                if item.role == Role.SYSTEM_BOOT
+                and item is not esp_item
+                and _gpt_type_of(item) != GptType.BIOS_BOOT
+            ),
+            None,
+        )
+
+    @property
+    def has_bios_boot_partition(self) -> bool:
+        """Whether the volume has a raw BIOS Boot partition (for core.img)."""
+        return any(_gpt_type_of(item) == GptType.BIOS_BOOT for item in self.structure)
+
+
+class GPTVolume(_VolumePartitions, BaseVolume):
     """Volume with a GUID Partition Table (GPT) schema."""
 
     volume_schema: Literal[PartitionSchema.GPT] = Field(
@@ -507,7 +575,7 @@ class GPTVolume(BaseVolume):
     """
 
 
-class MBRVolume(BaseVolume):
+class MBRVolume(_VolumePartitions, BaseVolume):
     """Volume with a Master Boot Record (MBR) schema."""
 
     volume_schema: Literal[PartitionSchema.MBR] = Field(
@@ -530,7 +598,7 @@ class MBRVolume(BaseVolume):
     """
 
 
-class HybridVolume(BaseVolume):
+class HybridVolume(_VolumePartitions, BaseVolume):
     """Volume with a hybrid MBR/GPT schema."""
 
     volume_schema: Literal[PartitionSchema.HYBRID] = Field(

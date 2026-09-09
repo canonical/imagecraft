@@ -21,7 +21,8 @@ from pathlib import Path
 import pytest
 from craft_platforms import DebianArchitecture
 from imagecraft import errors
-from imagecraft.pack.bootloader.bios import NonEfiInstaller, stage_non_efi_modules
+from imagecraft.pack.bootloader.bios import NonEfiInstaller
+from imagecraft.pack.bootloader.chrootenv import stage_grub_modules
 
 from .test_installer import ROOT_ITEM, _mbr_volume
 
@@ -109,13 +110,13 @@ class TestNonEfiInstallerChecks:
         assert installer.boot_prefix == "/boot/grub"
 
 
-class TestStageNonEfiModules:
+class TestStageGrubModules:
     def test_copies_modules_to_boot(self, tmp_path):
         root = tmp_path / "root"
         mod_dir = root / "usr" / "lib" / "grub" / "i386-pc"
         mod_dir.mkdir(parents=True)
         (mod_dir / "normal.mod").write_bytes(b"x")
-        stage_non_efi_modules(root, grub_format="i386-pc")
+        stage_grub_modules(root, None, "i386-pc")
         target = root / "boot" / "grub" / "i386-pc"
         assert (target / "normal.mod").is_file()
 
@@ -126,11 +127,11 @@ class TestStageNonEfiModules:
         mod_dir = root / "usr" / "lib" / "grub" / "i386-pc"
         mod_dir.mkdir(parents=True)
         (mod_dir / "normal.mod").write_bytes(b"x")
-        stage_non_efi_modules(root, boot, grub_format="i386-pc")
+        stage_grub_modules(root, boot, "i386-pc")
         target = boot / "grub" / "i386-pc"
         assert (target / "normal.mod").is_file()
         assert not (root / "boot" / "grub").exists()
 
     def test_missing_modules_raises(self, tmp_path):
         with pytest.raises(errors.BootloaderToolsMissingError):
-            stage_non_efi_modules(tmp_path, grub_format="i386-pc")
+            stage_grub_modules(tmp_path, None, "i386-pc")

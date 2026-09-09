@@ -28,9 +28,9 @@ from craft_platforms import DebianArchitecture
 
 from imagecraft import errors
 from imagecraft.pack.bootloader.chrootenv import (
-    build_prime_chroot,
     require_chroot_binary,
     run_checked,
+    stage_grub_modules,
 )
 from imagecraft.pack.bootloader.const import (
     CORE_EFI_MODULES,
@@ -39,6 +39,7 @@ from imagecraft.pack.bootloader.const import (
     get_arch_spec,
     render_early_cfg,
 )
+from imagecraft.pack.chroot import build_prime_chroot
 
 _CHROOT_EFI_WORK_DIR = "/tmp/grub-efi"  # noqa: S108
 
@@ -270,9 +271,7 @@ class EfiInstaller:
 
         shutil.copy2(primary_boot, u_dir / f"grub{bin_suf}.efi")
 
-        shutil.copytree(
-            modules_dir, self.boot_dir / "grub" / mod_dir_name, dirs_exist_ok=True
-        )
+        stage_grub_modules(self.root_dir, self.boot_dir, mod_dir_name)
 
         return EfiTier.FALLBACK_BUILD
 

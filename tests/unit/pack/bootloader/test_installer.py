@@ -22,12 +22,7 @@ from imagecraft import errors
 from imagecraft.models.volume import GPTVolume, HybridVolume, MBRVolume
 from imagecraft.pack.bootloader import installer as installer_mod
 from imagecraft.pack.bootloader.const import BootMethod
-from imagecraft.pack.bootloader.installer import (
-    BootloaderInstaller,
-    find_boot_structure_item,
-    find_esp_structure_item,
-    find_root_structure_item,
-)
+from imagecraft.pack.bootloader.installer import BootloaderInstaller
 
 _AMD64 = DebianArchitecture.AMD64
 
@@ -84,8 +79,8 @@ BIOS_BOOT_ITEM = {
 class TestFindStructureItems:
     def test_root_and_esp_found(self):
         volume = _gpt_volume([ESP_ITEM, ROOT_ITEM])
-        assert find_root_structure_item(volume).name == "rootfs"  # type: ignore[union-attr]
-        assert find_esp_structure_item(volume).name == "efi"  # type: ignore[union-attr]
+        assert volume.root_partition.name == "rootfs"  # type: ignore[union-attr]
+        assert volume.esp_partition.name == "efi"  # type: ignore[union-attr]
 
     def test_no_esp_for_mbr(self):
         volume = _mbr_volume(
@@ -93,8 +88,8 @@ class TestFindStructureItems:
                 {**ROOT_ITEM, "type": "83"},
             ]
         )
-        assert find_esp_structure_item(volume) is None
-        assert find_root_structure_item(volume).name == "rootfs"  # type: ignore[union-attr]
+        assert volume.esp_partition is None
+        assert volume.root_partition.name == "rootfs"  # type: ignore[union-attr]
 
     def test_hybrid_esp_detected(self):
         """Hybrid items encode the GPT type as '<mbr>,<gpt>'; must still match."""
@@ -104,7 +99,7 @@ class TestFindStructureItems:
                 {**ROOT_ITEM, "type": f"83,{LINUX_DATA_GUID}"},
             ]
         )
-        esp = find_esp_structure_item(volume)
+        esp = volume.esp_partition
         assert esp is not None
         assert esp.name == "efi"
 
@@ -115,15 +110,15 @@ class TestFindStructureItems:
                 {**ROOT_ITEM, "type": f"83,{LINUX_DATA_GUID.lower()}"},
             ]
         )
-        assert find_esp_structure_item(volume) is not None
+        assert volume.esp_partition is not None
 
     def test_boot_item_is_none_when_only_esp(self):
         volume = _gpt_volume([ESP_ITEM, ROOT_ITEM])
-        assert find_boot_structure_item(volume) is None
+        assert volume.boot_partition is None
 
     def test_boot_item_found_when_distinct_from_esp(self):
         volume = _gpt_volume([ESP_ITEM, BOOT_ITEM, ROOT_ITEM])
-        boot = find_boot_structure_item(volume)
+        boot = volume.boot_partition
         assert boot is not None
         assert boot.name == "boot"
 
@@ -134,14 +129,14 @@ class TestFindStructureItems:
                 {**ROOT_ITEM, "type": "83"},
             ]
         )
-        boot = find_boot_structure_item(volume)
+        boot = volume.boot_partition
         assert boot is not None
         assert boot.name == "boot"
 
     def test_bios_boot_partition_is_not_a_boot_partition(self):
         """A raw BIOS Boot partition (core.img embedding area) is not /boot."""
         volume = _gpt_volume([BIOS_BOOT_ITEM, ROOT_ITEM])
-        assert find_boot_structure_item(volume) is None
+        assert volume.boot_partition is None
 
 
 class TestResolveBootMethod:
@@ -258,7 +253,7 @@ class TestGracefulSkip:
         mocker.patch.object(installer_mod, "generate_grub_cfg")
         mocker.patch.object(
             installer_mod,
-            "stage_non_efi_modules",
+            "stage_grub_modules",
             side_effect=errors.BootloaderToolsMissingError("no modules"),
         )
         boot_method = _prepare(installer, tmp_path)
@@ -268,7 +263,7 @@ class TestGracefulSkip:
         volume = _mbr_volume([{**ROOT_ITEM, "type": "83"}])
         installer = BootloaderInstaller(volume=volume, arch=_AMD64)
         mocker.patch.object(installer_mod, "generate_grub_cfg")
-        mocker.patch.object(installer_mod, "stage_non_efi_modules")
+        mocker.patch.object(installer_mod, "stage_grub_modules")
         mock_bios = mocker.patch.object(installer_mod, "NonEfiInstaller")
         mock_bios.return_value.install.side_effect = errors.BootloaderToolsMissingError(
             "no grub-bios-setup"
