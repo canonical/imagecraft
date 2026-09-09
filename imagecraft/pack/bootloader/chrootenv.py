@@ -26,15 +26,17 @@ from imagecraft.subprocesses import run
 _CHROOT_PATH = "/usr/sbin:/usr/bin:/sbin:/bin"
 
 
-def require_chroot_binary(root_dir: Path, name: str) -> None:
+def require_chroot_binary(root_dir: Path, name: str) -> Path:
     """Ensure a tool binary exists in the guest rootfs (on the chroot PATH).
 
+    :return: The binary's path relative to the rootfs.
     :raises errors.BootloaderToolsMissingError: If the binary isn't present
         in the staged rootfs.
     """
     for prefix in ("usr/sbin", "usr/bin", "sbin", "bin"):
-        if (root_dir / prefix / name).is_file():
-            return
+        candidate = Path(prefix) / name
+        if (root_dir / candidate).is_file():
+            return candidate
     raise errors.BootloaderToolsMissingError(
         f"{name} not found in the staged rootfs",
         resolution="Install the relevant GRUB packages in the image.",

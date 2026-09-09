@@ -124,6 +124,8 @@ class EfiInstaller:
         self.search_uuid = str(boot_uuid) if boot_uuid is not None else str(root_uuid)
         self.boot_prefix = "/grub" if boot_uuid is not None else "/boot/grub"
         self.spec: ArchSpec = get_arch_spec(arch)
+        self.esp_boot_dir = esp_dir / "EFI" / "BOOT"
+        self.esp_ubuntu_dir = esp_dir / "EFI" / "ubuntu"
 
     def _find_file(self, *rel_paths: str) -> Path | None:
         """Return the first existing file among candidate paths relative to root_dir."""
@@ -133,20 +135,12 @@ class EfiInstaller:
                 return candidate
         return None
 
-    def _find_dir(self, *rel_paths: str) -> Path | None:
-        """Return the first existing directory among candidate paths relative to root_dir."""
-        for rel in rel_paths:
-            candidate = self.root_dir / rel
-            if candidate.is_dir():
-                return candidate
-        return None
-
     def deploy_early_stubs(self) -> None:
         """Write the early search stub grub.cfg to /EFI/BOOT/ and /EFI/ubuntu/ on the ESP."""
         stub = render_early_cfg(self.search_uuid, boot_prefix=self.boot_prefix)
         for target_cfg in (
-            self.esp_dir / "EFI" / "BOOT" / "grub.cfg",
-            self.esp_dir / "EFI" / "ubuntu" / "grub.cfg",
+            self.esp_boot_dir / "grub.cfg",
+            self.esp_ubuntu_dir / "grub.cfg",
         ):
             target_cfg.parent.mkdir(parents=True, exist_ok=True)
             target_cfg.write_text(stub)
@@ -169,26 +163,24 @@ class EfiInstaller:
         if not shim or not grub:
             return None
 
-        boot_dir = self.esp_dir / "EFI" / "BOOT"
-        u_dir = self.esp_dir / "EFI" / "ubuntu"
-        boot_dir.mkdir(parents=True, exist_ok=True)
-        u_dir.mkdir(parents=True, exist_ok=True)
+        self.esp_boot_dir.mkdir(parents=True, exist_ok=True)
+        self.esp_ubuntu_dir.mkdir(parents=True, exist_ok=True)
 
-        shutil.copy2(shim, boot_dir / f"BOOT{efi_suf}.EFI")
-        shutil.copy2(grub, boot_dir / f"grub{bin_suf}.efi")
-        shutil.copy2(shim, u_dir / f"shim{bin_suf}.efi")
-        shutil.copy2(grub, u_dir / f"grub{bin_suf}.efi")
+        shutil.copy2(shim, self.esp_boot_dir / f"BOOT{efi_suf}.EFI")
+        shutil.copy2(grub, self.esp_boot_dir / f"grub{bin_suf}.efi")
+        shutil.copy2(shim, self.esp_ubuntu_dir / f"shim{bin_suf}.efi")
+        shutil.copy2(grub, self.esp_ubuntu_dir / f"grub{bin_suf}.efi")
 
         if mm := self._find_file(f"usr/lib/shim/mm{bin_suf}.efi"):
-            shutil.copy2(mm, boot_dir / f"mm{bin_suf}.efi")
-            shutil.copy2(mm, u_dir / f"mm{bin_suf}.efi")
+            shutil.copy2(mm, self.esp_boot_dir / f"mm{bin_suf}.efi")
+            shutil.copy2(mm, self.esp_ubuntu_dir / f"mm{bin_suf}.efi")
 
         if fb := self._find_file(f"usr/lib/shim/fb{bin_suf}.efi"):
-            shutil.copy2(fb, boot_dir / f"fb{bin_suf}.efi")
-            shutil.copy2(fb, u_dir / f"fb{bin_suf}.efi")
+            shutil.copy2(fb, self.esp_boot_dir / f"fb{bin_suf}.efi")
+            shutil.copy2(fb, self.esp_ubuntu_dir / f"fb{bin_suf}.efi")
 
         if csv_file := self._find_file(f"usr/lib/shim/BOOT{efi_suf}.CSV"):
-            shutil.copy2(csv_file, u_dir / f"BOOT{efi_suf}.CSV")
+            shutil.copy2(csv_file, self.esp_ubuntu_dir / f"BOOT{efi_suf}.CSV")
 
         return EfiTier.SIGNED
 
@@ -205,18 +197,14 @@ class EfiInstaller:
         if not prebuilt:
             return None
 
-        boot_dir = self.esp_dir / "EFI" / "BOOT"
-        u_dir = self.esp_dir / "EFI" / "ubuntu"
-        boot_dir.mkdir(parents=True, exist_ok=True)
-        u_dir.mkdir(parents=True, exist_ok=True)
+        self.esp_boot_dir.mkdir(parents=True, exist_ok=True)
+        self.esp_ubuntu_dir.mkdir(parents=True, exist_ok=True)
 
-        shutil.copy2(prebuilt, boot_dir / f"BOOT{efi_suf}.EFI")
-        shutil.copy2(prebuilt, u_dir / f"grub{bin_suf}.efi")
+        shutil.copy2(prebuilt, self.esp_boot_dir / f"BOOT{efi_suf}.EFI")
+        shutil.copy2(prebuilt, self.esp_ubuntu_dir / f"grub{bin_suf}.efi")
 
-        if modules_dir := self._find_dir(f"usr/lib/grub/{mod_dir_name}"):
-            shutil.copytree(
-                modules_dir, self.boot_dir / "grub" / mod_dir_name, dirs_exist_ok=True
-            )
+        if (self.root_dir / "usr/lib/grub" / mod_dir_name).is_dir():
+            stage_grub_modules(self.root_dir, self.boot_dir, mod_dir_name)
 
         return EfiTier.UNSIGNED_PREBUILT
 
@@ -232,19 +220,17 @@ class EfiInstaller:
         efi_fmt = self.spec.efi_format
         mod_dir_name = self.spec.efi_format
 
-        modules_dir = self._find_dir(f"usr/lib/grub/{mod_dir_name}")
-        if not modules_dir:
+        modules_dir = self.root_dir / "usr/lib/grub" / mod_dir_name
+        if not modules_dir.is_dir():
             raise errors.BootloaderToolsMissingError(
                 f"GRUB modules directory not found in rootfs: usr/lib/grub/{mod_dir_name}"
             )
         require_chroot_binary(self.root_dir, "grub-mkimage")
 
-        boot_dir = self.esp_dir / "EFI" / "BOOT"
-        u_dir = self.esp_dir / "EFI" / "ubuntu"
-        boot_dir.mkdir(parents=True, exist_ok=True)
-        u_dir.mkdir(parents=True, exist_ok=True)
+        self.esp_boot_dir.mkdir(parents=True, exist_ok=True)
+        self.esp_ubuntu_dir.mkdir(parents=True, exist_ok=True)
 
-        primary_boot = boot_dir / f"BOOT{efi_suf}.EFI"
+        primary_boot = self.esp_boot_dir / f"BOOT{efi_suf}.EFI"
 
         chroot_output = f"{_CHROOT_EFI_WORK_DIR}/core.efi"
         chroot = build_prime_chroot(self.root_dir)
@@ -269,7 +255,7 @@ class EfiInstaller:
                 self.root_dir / _CHROOT_EFI_WORK_DIR.lstrip("/"), ignore_errors=True
             )
 
-        shutil.copy2(primary_boot, u_dir / f"grub{bin_suf}.efi")
+        shutil.copy2(primary_boot, self.esp_ubuntu_dir / f"grub{bin_suf}.efi")
 
         stage_grub_modules(self.root_dir, self.boot_dir, mod_dir_name)
 

@@ -23,7 +23,7 @@ import re
 import typing
 import uuid
 from collections.abc import Collection, Sequence
-from typing import Annotated, Literal, Self
+from typing import Annotated, Literal, Self, cast
 
 from craft_application.models import (
     CraftBaseModel,
@@ -351,8 +351,10 @@ class GPTStructureItem(StructureItem):
                         f"'number' and '{deprecated_key}' cannot be used together."
                     )
                 emit.warning(f"'{deprecated_key}' is deprecated; use 'number' instead.")
-                value = value.copy()
-                value["number"] = value.pop(deprecated_key)
+                value_map = cast("dict[str, object]", value).copy()
+                value_map["number"] = value_map.pop(deprecated_key)
+                return value_map
+            return cast("dict[str, object]", value)
         return value
 
 
@@ -557,7 +559,7 @@ class GPTVolume(BaseVolume):
     )
     """The partitioning schema of the image."""
 
-    structure: GPTStructureList = Field(
+    structure: GPTStructureList = Field(  # type: ignore[reportIncompatibleVariableOverride]
         min_length=1,
         description="The partitions that comprise the image.",
         examples=[
@@ -581,7 +583,7 @@ class MBRVolume(BaseVolume):
     )
     """The partitioning schema of the image."""
 
-    structure: MBRStructureList = Field(
+    structure: MBRStructureList = Field(  # type: ignore[reportIncompatibleVariableOverride]
         description="The partitions that comprise the image.",
         examples=[
             "[{name: ubuntu-seed, type: 0C, filesystem: vfat, role: system-boot, size: 1200M}]"
@@ -604,7 +606,7 @@ class HybridVolume(BaseVolume):
     )
     """The partitioning schema of the image."""
 
-    structure: HybridStructureList = Field(
+    structure: HybridStructureList = Field(  # type: ignore[reportIncompatibleVariableOverride]
         description="The partitions that comprise the image.",
         examples=[
             "[{name: ubuntu-seed, type: 0C,C12A7328-F81F-11D2-BA4B-00A0C93EC93B, filesystem: vfat, role: system-seed, size: 1200M}]"

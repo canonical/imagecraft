@@ -80,11 +80,13 @@ class ArchSpec:
     efi_format: str
     """GRUB target name for EFI (e.g. ``x86_64-efi``); also its module directory name."""
 
-    signed_dir: str
-    """Directory name under ``usr/lib/grub`` holding signed EFI binaries."""
-
-    non_efi_format: str | None
+    non_efi_format: str | None = None
     """GRUB target name for non-EFI (e.g. ``i386-pc``), or None if unsupported."""
+
+    @property
+    def signed_dir(self) -> str:
+        """Directory name under ``usr/lib/grub`` holding signed EFI binaries."""
+        return f"{self.efi_format}-signed"
 
 
 # GRUB naming conventions per Debian architecture. Only amd64/i386 have a
@@ -94,35 +96,30 @@ ARCH_SPECS: Final[dict[DebianArchitecture, ArchSpec]] = {
         efi_suffix="X64",
         bin_suffix="x64",
         efi_format="x86_64-efi",
-        signed_dir="x86_64-efi-signed",
         non_efi_format="i386-pc",
     ),
     DebianArchitecture.ARM64: ArchSpec(
         efi_suffix="AA64",
         bin_suffix="aa64",
         efi_format="arm64-efi",
-        signed_dir="arm64-efi-signed",
         non_efi_format=None,
     ),
     DebianArchitecture.ARMHF: ArchSpec(
         efi_suffix="ARM",
         bin_suffix="arm",
         efi_format="arm-efi",
-        signed_dir="arm-efi-signed",
         non_efi_format=None,
     ),
     DebianArchitecture.RISCV64: ArchSpec(
         efi_suffix="RISCV64",
         bin_suffix="riscv64",
         efi_format="riscv64-efi",
-        signed_dir="riscv64-efi-signed",
         non_efi_format=None,
     ),
     DebianArchitecture.I386: ArchSpec(
         efi_suffix="IA32",
         bin_suffix="ia32",
         efi_format="i386-efi",
-        signed_dir="i386-efi-signed",
         non_efi_format="i386-pc",
     ),
 }

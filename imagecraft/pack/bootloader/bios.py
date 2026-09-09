@@ -53,11 +53,6 @@ def _run_logged(cmd: list[str]) -> None:
         emit.debug(output)
 
 
-def _bios_mod_dir(root_dir: Path, grub_format: str) -> Path:
-    """Return the path to the rootfs's installed GRUB module directory."""
-    return root_dir / "usr" / "lib" / "grub" / grub_format
-
-
 class PCBiosInstaller:
     """Installs the PC BIOS (``i386-pc``) bootloader using GRUB's own tools.
 
@@ -106,10 +101,12 @@ class PCBiosInstaller:
         item = self.volume.root_partition
         # Guaranteed by the BIOS boot-method resolution.
         assert item is not None  # noqa: S101
-        root_index = list(self.volume.structure).index(item)
         # GPT items may declare an explicit partition number; MBR items are
         # always numbered by structure order.
-        part_num = getattr(item, "number", None) or (root_index + 1)
+        structure_index = next(
+            i for i, entry in enumerate(self.volume.structure) if entry is item
+        )
+        part_num = getattr(item, "number", None) or (structure_index + 1)
         return (
             gptutil.get_partition_sector_offset_by_number(self.image_path, part_num)
             * gptutil.SECTOR_SIZE_512
@@ -140,7 +137,7 @@ class PCBiosInstaller:
                 f"grub-bios-setup not found in the staged rootfs: {mod_dir_rel}",
                 resolution="Install the grub-pc-bin package in the image.",
             )
-        require_chroot_binary(self.root_dir, "grub-mkimage")
+        mkimage_rel = require_chroot_binary(self.root_dir, "grub-mkimage")
         if shutil.which("fuse2fs") is None:
             raise errors.BootloaderToolsMissingError(
                 "fuse2fs not found on the build host",
@@ -165,7 +162,7 @@ class PCBiosInstaller:
                 core_img = mnt_mod_dir / "core.img"
                 _run_logged(
                     [
-                        str(mnt / "usr/bin/grub-mkimage"),
+                        str(mnt / mkimage_rel),
                         "-d",
                         str(mnt_mod_dir),
                         "-O",

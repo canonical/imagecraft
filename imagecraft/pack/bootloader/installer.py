@@ -27,10 +27,10 @@ Coordinates the two phases of bootloader installation:
 
 import uuid
 from pathlib import Path
+from typing import Protocol
 from uuid import UUID
 
 from craft_cli import emit
-from craft_parts import ProjectDirs
 from craft_platforms import DebianArchitecture
 
 from imagecraft import errors
@@ -49,6 +49,15 @@ from imagecraft.pack.bootloader.efi import EfiInstaller
 from imagecraft.pack.bootloader.mkconfig import generate_grub_cfg
 
 AnyVolume = GPTVolume | MBRVolume | HybridVolume
+
+
+class PrimeDirs(Protocol):
+    """Minimal protocol for resolving partition prime directories."""
+
+    def get_prime_dir(self, partition: str | None = None) -> Path:
+        """Return the prime directory for the given partition."""
+        ...
+
 
 _DEFAULT_FSTAB_OPTIONS = "defaults,errors=remount-ro"
 
@@ -124,7 +133,7 @@ class BootloaderInstaller:
     @property
     def partition_uuids(self) -> dict[str, str]:
         """Map structure item names to the filesystem UUIDs to assign them."""
-        uuids = {}
+        uuids: dict[str, str] = {}
         if self.root_item is not None:
             uuids[self.root_item.name] = str(self.root_uuid)
         if self.boot_item is not None and self.boot_uuid is not None:
@@ -163,14 +172,14 @@ class BootloaderInstaller:
         return BootMethod.NONE
 
     def _prime_dir(
-        self, project_dirs: ProjectDirs, volume_name: str, item: StructureItem
+        self, project_dirs: PrimeDirs, volume_name: str, item: StructureItem
     ) -> Path:
         return project_dirs.get_prime_dir(
             partition=get_partition_name(volume_name, item)
         )
 
     def prepare_rootfs(
-        self, *, project_dirs: ProjectDirs, volume_name: str
+        self, *, project_dirs: PrimeDirs, volume_name: str
     ) -> BootMethod:
         """Stage bootloader files into prime directories before formatting.
 
@@ -202,9 +211,7 @@ class BootloaderInstaller:
         emit.progress("Preparing bootloader files")
         configure_fstab(self._root_dir, self.root_uuid)
         partition_map = (
-            "msdos"
-            if self.volume.volume_schema == PartitionSchema.MBR
-            else self.volume.volume_schema.value
+            "msdos" if self.volume.volume_schema == PartitionSchema.MBR else "gpt"
         )
         try:
             generate_grub_cfg(
