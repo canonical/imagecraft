@@ -120,9 +120,9 @@ class EfiInstaller:
         """
         self.root_dir = root_dir
         self.esp_dir = esp_dir
-        self.boot_dir = boot_dir if boot_dir is not None else root_dir / "boot"
-        self.search_uuid = str(boot_uuid) if boot_uuid is not None else str(root_uuid)
-        self.boot_prefix = "/grub" if boot_uuid is not None else "/boot/grub"
+        self.boot_dir = boot_dir or root_dir / "boot"
+        self.search_uuid = str(boot_uuid or root_uuid)
+        self.boot_prefix = "/grub" if boot_uuid else "/boot/grub"
         self.spec: ArchSpec = get_arch_spec(arch)
         self.esp_boot_dir = esp_dir / "EFI" / "BOOT"
         self.esp_ubuntu_dir = esp_dir / "EFI" / "ubuntu"
@@ -163,9 +163,6 @@ class EfiInstaller:
         if not shim or not grub:
             return None
 
-        self.esp_boot_dir.mkdir(parents=True, exist_ok=True)
-        self.esp_ubuntu_dir.mkdir(parents=True, exist_ok=True)
-
         shutil.copy2(shim, self.esp_boot_dir / f"BOOT{efi_suf}.EFI")
         shutil.copy2(grub, self.esp_boot_dir / f"grub{bin_suf}.efi")
         shutil.copy2(shim, self.esp_ubuntu_dir / f"shim{bin_suf}.efi")
@@ -194,9 +191,6 @@ class EfiInstaller:
         if not prebuilt:
             return None
 
-        self.esp_boot_dir.mkdir(parents=True, exist_ok=True)
-        self.esp_ubuntu_dir.mkdir(parents=True, exist_ok=True)
-
         shutil.copy2(prebuilt, self.esp_boot_dir / f"BOOT{efi_suf}.EFI")
         shutil.copy2(prebuilt, self.esp_ubuntu_dir / f"grub{bin_suf}.efi")
 
@@ -222,9 +216,6 @@ class EfiInstaller:
                 f"GRUB modules directory not found in rootfs: usr/lib/grub/{efi_fmt}"
             )
         require_chroot_binary(self.root_dir, "grub-mkimage")
-
-        self.esp_boot_dir.mkdir(parents=True, exist_ok=True)
-        self.esp_ubuntu_dir.mkdir(parents=True, exist_ok=True)
 
         primary_boot = self.esp_boot_dir / f"BOOT{efi_suf}.EFI"
 
@@ -259,6 +250,8 @@ class EfiInstaller:
 
     def install(self) -> EfiTier:
         """Execute the 3-tier EFI bootloader resolution and installation sequence."""
+        self.esp_boot_dir.mkdir(parents=True, exist_ok=True)
+        self.esp_ubuntu_dir.mkdir(parents=True, exist_ok=True)
         if tier := self.install_signed():
             emit.debug("Installed signed EFI bootloader (secure boot capable)")
         elif tier := self.install_unsigned_prebuilt():

@@ -113,28 +113,24 @@ def _generate_grub_cfg_in_chroot(
     _GRUB_DEFAULTS_SNIPPET.parent.mkdir(parents=True, exist_ok=True)
     _GRUB_DEFAULTS_SNIPPET.write_text(grub_defaults)
     _CHROOT_FAKE_DEVICE.touch(exist_ok=True)
-    if boot_uuid is not None:
-        _CHROOT_FAKE_BOOT_DEVICE.touch(exist_ok=True)
     # 10_linux only emits root=UUID= if /dev/disk/by-uuid/<uuid> exists.
     by_uuid_dir = Path("/dev/disk/by-uuid")
     by_uuid_dir.mkdir(parents=True, exist_ok=True)
     by_uuid_root = by_uuid_dir / root_uuid
     by_uuid_root.symlink_to(_CHROOT_FAKE_DEVICE)
-    by_uuid_boot = None
+    created = [_GRUB_DEFAULTS_SNIPPET, _CHROOT_FAKE_DEVICE, by_uuid_root]
     if boot_uuid is not None:
+        _CHROOT_FAKE_BOOT_DEVICE.touch(exist_ok=True)
         by_uuid_boot = by_uuid_dir / boot_uuid
         by_uuid_boot.symlink_to(_CHROOT_FAKE_BOOT_DEVICE)
+        created += [_CHROOT_FAKE_BOOT_DEVICE, by_uuid_boot]
     try:
         Path("/boot/grub").mkdir(parents=True, exist_ok=True)
         proc = run_checked(["grub-mkconfig", "-o", "/boot/grub/grub.cfg"])
         return (proc.stdout + proc.stderr).strip()
     finally:
-        _GRUB_DEFAULTS_SNIPPET.unlink(missing_ok=True)
-        _CHROOT_FAKE_DEVICE.unlink(missing_ok=True)
-        _CHROOT_FAKE_BOOT_DEVICE.unlink(missing_ok=True)
-        by_uuid_root.unlink(missing_ok=True)
-        if by_uuid_boot is not None:
-            by_uuid_boot.unlink(missing_ok=True)
+        for path in created:
+            path.unlink(missing_ok=True)
         # Remove the by-uuid directory if we created it (pre-format, so an
         # empty leftover would leak into the image).
         with contextlib.suppress(OSError):
@@ -219,6 +215,8 @@ def generate_grub_cfg(
     require_chroot_binary(root_dir, "grub-mkconfig")
     probe_rel = require_chroot_binary(root_dir, "grub-probe")
 
+    root_uuid_str = str(root_uuid)
+    boot_uuid_str = str(boot_uuid or root_uuid)
     fake_boot_device = (
         _CHROOT_FAKE_BOOT_DEVICE if boot_uuid is not None else _CHROOT_FAKE_DEVICE
     )
@@ -227,9 +225,9 @@ def generate_grub_cfg(
     # root=PARTUUID=.
     grub_defaults = (
         f"GRUB_DEVICE={_CHROOT_FAKE_DEVICE}\n"
-        f"GRUB_DEVICE_UUID={root_uuid}\n"
+        f"GRUB_DEVICE_UUID={root_uuid_str}\n"
         f"GRUB_DEVICE_BOOT={fake_boot_device}\n"
-        f"GRUB_DEVICE_BOOT_UUID={boot_uuid or root_uuid}\n"
+        f"GRUB_DEVICE_BOOT_UUID={boot_uuid_str}\n"
         "GRUB_FS=ext4\n"
         "GRUB_DEVICE_PARTUUID=\n"
         "GRUB_DEVICE_BOOT_PARTUUID=\n"
@@ -241,8 +239,8 @@ def generate_grub_cfg(
         "shim_log": _SHIM_LOG,
         "root_device": _CHROOT_FAKE_DEVICE,
         "boot_device": fake_boot_device,
-        "root_uuid": str(root_uuid),
-        "boot_uuid": str(boot_uuid or root_uuid),
+        "root_uuid": root_uuid_str,
+        "boot_uuid": boot_uuid_str,
         "partmap": partition_map,
     }
     with tempfile.NamedTemporaryFile(
@@ -265,8 +263,8 @@ def generate_grub_cfg(
         mkconfig_output = chroot.execute(
             target=_generate_grub_cfg_in_chroot,
             grub_defaults=grub_defaults,
-            root_uuid=str(root_uuid),
-            boot_uuid=str(boot_uuid) if boot_uuid is not None else None,
+            root_uuid=root_uuid_str,
+            boot_uuid=boot_uuid_str if boot_uuid is not None else None,
         )
     finally:
         shim_path.unlink(missing_ok=True)

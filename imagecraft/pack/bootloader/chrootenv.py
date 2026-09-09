@@ -79,7 +79,8 @@ def stage_grub_modules(root_dir: Path, boot_dir: Path | None, grub_format: str) 
         raise errors.BootloaderToolsMissingError(
             f"GRUB modules directory not found: {mod_dir}"
         )
-    effective_boot_dir = boot_dir if boot_dir is not None else root_dir / "boot"
     shutil.copytree(
-        mod_dir, effective_boot_dir / "grub" / grub_format, dirs_exist_ok=True
+        mod_dir,
+        (boot_dir or root_dir / "boot") / "grub" / grub_format,
+        dirs_exist_ok=True,
     )

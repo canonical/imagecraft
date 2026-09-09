@@ -93,8 +93,8 @@ class PCBiosInstaller:
         self.root_dir = root_dir
         self.volume = volume
         self.grub_format = spec.non_efi_format
-        self.search_uuid = str(boot_uuid) if boot_uuid is not None else str(root_uuid)
-        self.boot_prefix = "/grub" if boot_uuid is not None else "/boot/grub"
+        self.search_uuid = str(boot_uuid or root_uuid)
+        self.boot_prefix = "/grub" if boot_uuid else "/boot/grub"
 
     def _root_partition_offset(self) -> int:
         """Return the byte offset of the root (system-data) partition in the image."""
@@ -148,12 +148,13 @@ class PCBiosInstaller:
 
         with tempfile.TemporaryDirectory(prefix="imagecraft-grub-bios-") as workdir:
             work = Path(workdir)
+            resolved_image = self.image_path.resolve()
             early_cfg = work / "early.cfg"
             early_cfg.write_text(
                 render_early_cfg(self.search_uuid, boot_prefix=self.boot_prefix)
             )
             device_map = work / "device.map"
-            device_map.write_text(f"(hd0)\t{self.image_path.resolve()}\n")
+            device_map.write_text(f"(hd0)\t{resolved_image}\n")
 
             with ExtFuseMount(
                 self.image_path, offset=self._root_partition_offset(), fakeroot=True
@@ -185,7 +186,7 @@ class PCBiosInstaller:
                             str(device_map),
                             "-d",
                             str(mnt_mod_dir),
-                            str(self.image_path.resolve()),
+                            str(resolved_image),
                         ]
                     )
                 finally:

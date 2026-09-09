@@ -209,15 +209,8 @@ def format_device(
         return
 
     if "fat" in fstype.value:
-        fattype: FatT
-        if fstype == FileSystem.VFAT:
-            fattype = "vfat"
-            fatsize = None
-        elif fstype == FileSystem.FAT16:
-            fattype = "fat"
-            fatsize = 16
-        else:
-            raise CraftError(f"Unsupported FAT: {fstype}")
+        fattype: FatT = "vfat" if fstype == FileSystem.VFAT else "fat"
+        fatsize = None if fstype == FileSystem.VFAT else 16
         _format_populate_fat_partition(
             fattype=fattype,
             fatsize=fatsize,

@@ -20,16 +20,16 @@ from pathlib import Path
 
 from craft_platforms import DebianArchitecture
 from imagecraft import errors
-from imagecraft.models.volume import GPTVolume, HybridVolume, MBRVolume
+from imagecraft.models.volume import GptType, GPTVolume, HybridVolume, MBRVolume
 from imagecraft.pack.bootloader import installer as installer_mod
 from imagecraft.pack.bootloader.const import BootMethod
 from imagecraft.pack.bootloader.installer import BootloaderInstaller, configure_fstab
 
 _AMD64 = DebianArchitecture.AMD64
 
-ESP_GUID = "C12A7328-F81F-11D2-BA4B-00A0C93EC93B"
-LINUX_DATA_GUID = "0FC63DAF-8483-4772-8E79-3D69D8477DE4"
-BIOS_BOOT_GUID = "21686148-6449-6E6F-744E-656564454649"
+ESP_GUID = GptType.EFI_SYSTEM.value
+LINUX_DATA_GUID = GptType.LINUX_DATA.value
+BIOS_BOOT_GUID = GptType.BIOS_BOOT.value
 
 
 def _gpt_volume(structure: list[dict]) -> GPTVolume:
@@ -42,6 +42,15 @@ def _mbr_volume(structure: list[dict]) -> MBRVolume:
 
 def _hybrid_volume(structure: list[dict]) -> HybridVolume:
     return HybridVolume.model_validate({"schema": "mbr,gpt", "structure": structure})
+
+
+def _hybrid_esp_root_volume() -> HybridVolume:
+    return _hybrid_volume(
+        [
+            {**ESP_ITEM, "type": f"0C,{ESP_GUID}"},
+            {**ROOT_ITEM, "type": f"83,{LINUX_DATA_GUID}"},
+        ]
+    )
 
 
 ESP_ITEM = {
@@ -94,13 +103,7 @@ class TestFindStructureItems:
 
     def test_hybrid_esp_detected(self):
         """Hybrid items encode the GPT type as '<mbr>,<gpt>'; must still match."""
-        volume = _hybrid_volume(
-            [
-                {**ESP_ITEM, "type": f"0C,{ESP_GUID}"},
-                {**ROOT_ITEM, "type": f"83,{LINUX_DATA_GUID}"},
-            ]
-        )
-        esp = volume.esp_partition
+        esp = _hybrid_esp_root_volume().esp_partition
         assert esp is not None
         assert esp.name == "efi"
 
@@ -152,13 +155,7 @@ class TestResolveBootMethod:
         assert installer.resolve_boot_method() == BootMethod.EFI
 
     def test_efi_when_esp_present_hybrid(self):
-        volume = _hybrid_volume(
-            [
-                {**ESP_ITEM, "type": f"0C,{ESP_GUID}"},
-                {**ROOT_ITEM, "type": f"83,{LINUX_DATA_GUID}"},
-            ]
-        )
-        installer = BootloaderInstaller(volume=volume, arch=_AMD64)
+        installer = BootloaderInstaller(volume=_hybrid_esp_root_volume(), arch=_AMD64)
         assert installer.resolve_boot_method() == BootMethod.EFI
 
     def test_bios_for_mbr(self):

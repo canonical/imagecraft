@@ -25,10 +25,9 @@ Coordinates the two phases of bootloader installation:
    final disk image has been assembled; BIOS targets only.
 """
 
-import uuid
 from pathlib import Path
 from typing import Protocol
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from craft_cli import emit
 from craft_platforms import DebianArchitecture
@@ -84,19 +83,15 @@ def configure_fstab(root_dir: Path, root_uuid: UUID | str) -> None:
 
     lines = existing_content.splitlines(keepends=True)
     for index, line in enumerate(lines):
-        fields = line.split()
-        if (
-            fields
-            and not line.lstrip().startswith("#")
-            and len(fields) > 1
-            and fields[1] == "/"
-        ):
+        if not line.lstrip().startswith("#") and line.split()[1:2] == ["/"]:
             lines[index] = fstab_entry
-            fstab_path.write_text("".join(lines))
-            return
+            break
+    else:
+        if lines and not lines[-1].endswith("\n"):
+            lines[-1] += "\n"
+        lines.append(fstab_entry)
 
-    separator = "" if existing_content.endswith("\n") else "\n"
-    fstab_path.write_text(existing_content + separator + fstab_entry)
+    fstab_path.write_text("".join(lines))
 
 
 class BootloaderInstaller:
@@ -126,8 +121,8 @@ class BootloaderInstaller:
         self.root_item = volume.root_partition
         self.esp_item = volume.esp_partition
         self.boot_item = volume.boot_partition
-        self.root_uuid = uuid.uuid4()
-        self.boot_uuid = uuid.uuid4() if self.boot_item is not None else None
+        self.root_uuid = uuid4()
+        self.boot_uuid = uuid4() if self.boot_item is not None else None
         self._root_dir: Path | None = None
         self._boot_method = BootMethod.NONE
 
@@ -257,8 +252,10 @@ class BootloaderInstaller:
 
         :param image_path: Path to the final, partitioned disk image file.
         """
-        if self._boot_method != BootMethod.BIOS or self._root_dir is None:
+        if self._boot_method != BootMethod.BIOS:
             return
+        # prepare_rootfs() sets _root_dir before _boot_method becomes BIOS.
+        assert self._root_dir is not None  # noqa: S101
         assert self.arch is not None  # noqa: S101
 
         emit.progress("Installing BIOS bootloader into the image")

@@ -42,7 +42,7 @@ class TestStripBootPrefix:
         _strip_boot_prefix(cfg, boot_dir)
         content = cfg.read_text()
         assert "\tlinux\t/vmlinuz-6.8.0 " in content
-        assert "\tinitrd\t/boot/initrd.img-6.8.0".replace("/boot/", "/") in content
+        assert "\tinitrd\t/initrd.img-6.8.0" in content
         assert "/boot/vmlinuz" not in content
 
     def test_strips_fs_internal_prefix(self, tmp_path):
