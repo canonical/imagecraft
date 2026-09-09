@@ -35,6 +35,7 @@ from craft_platforms import DebianArchitecture
 
 from imagecraft import errors
 from imagecraft.models import get_partition_name
+from imagecraft.models.project import FilesystemsDictT
 from imagecraft.models.volume import (
     FileSystem,
     GPTVolume,
@@ -77,15 +78,31 @@ def _new_filesystem_id(filesystem: FileSystem) -> UUID | str:
     return uuid4()
 
 
-def configure_fstab(root_dir: Path, root_uuid: UUID | str) -> None:
-    """Ensure /etc/fstab contains an entry for the root filesystem UUID.
+def configure_fstab(
+    root_dir: Path,
+    filesystem_uuid: UUID | str,
+    *,
+    mountpoint: str = "/",
+    filesystem: FileSystem = FileSystem.EXT4,
+) -> None:
+    """Add or update a filesystem's UUID entry in /etc/fstab.
 
-    Preserve the other fields of an existing root entry.
+    Preserve the other fields of an existing entry.
     """
     fstab_path = root_dir / "etc" / "fstab"
     fstab_path.parent.mkdir(parents=True, exist_ok=True)
-    str_uuid = str(root_uuid)
-    fstab_entry = f"UUID={str_uuid} / ext4 {_DEFAULT_FSTAB_OPTIONS} 0 1\n"
+    str_uuid = str(filesystem_uuid)
+    is_root = mountpoint == "/"
+    filesystem_type = "vfat" if filesystem in _FAT_FILESYSTEMS else filesystem.value
+    options = (
+        _DEFAULT_FSTAB_OPTIONS
+        if is_root and filesystem not in _FAT_FILESYSTEMS
+        else "defaults"
+    )
+    fstab_entry = (
+        f"UUID={str_uuid} {mountpoint} {filesystem_type} {options} 0 "
+        f"{1 if is_root else 2}\n"
+    )
 
     if not fstab_path.is_file():
         content = "# /etc/fstab: static file system information.\n" + fstab_entry
@@ -95,7 +112,12 @@ def configure_fstab(root_dir: Path, root_uuid: UUID | str) -> None:
     existing_content = fstab_path.read_text()
     lines = existing_content.splitlines(keepends=True)
     for index, line in enumerate(lines):
-        if not line.lstrip().startswith("#") and line.split()[1:2] == ["/"]:
+        fields = line.split()
+        if (
+            not line.lstrip().startswith("#")
+            and len(fields) > 1
+            and Path(fields[1]) == Path(mountpoint)
+        ):
             lines[index] = re.sub(r"\S+", f"UUID={str_uuid}", line, count=1)
             break
     else:
@@ -197,12 +219,17 @@ class BootloaderInstaller:
         )
 
     def prepare_rootfs(
-        self, *, project_dirs: PrimeDirs, volume_name: str
+        self,
+        *,
+        project_dirs: PrimeDirs,
+        volume_name: str,
+        filesystems: FilesystemsDictT,
     ) -> BootMethod:
         """Stage bootloader files into prime directories before formatting.
 
         :param project_dirs: The lifecycle's project directories.
         :param volume_name: Name of the volume being packed.
+        :param filesystems: Project partition mount mappings.
         :return: The boot method staged for (``BootMethod.NONE`` if skipped).
         """
         boot_method = self.resolve_boot_method()
@@ -229,7 +256,22 @@ class BootloaderInstaller:
             return BootMethod.NONE
 
         emit.progress("Preparing bootloader files")
-        configure_fstab(self._root_dir, self.root_uuid)
+        configure_fstab(
+            self._root_dir, self.root_uuid, filesystem=self.root_item.filesystem
+        )
+        if self.boot_item is not None and any(
+            Path(entry["mount"]) == Path("/boot")
+            and entry["device"]
+            == f"({get_partition_name(volume_name, self.boot_item)})"
+            for entry in filesystems["default"]
+        ):
+            assert self.boot_uuid is not None  # noqa: S101
+            configure_fstab(
+                self._root_dir,
+                self.boot_uuid,
+                mountpoint="/boot",
+                filesystem=self.boot_item.filesystem,
+            )
         partition_map = (
             "msdos" if self.volume.volume_schema == PartitionSchema.MBR else "gpt"
         )

@@ -15,6 +15,7 @@ from typing import cast
 
 import pytest
 from craft_application import ServiceFactory
+from imagecraft.models import Project
 from imagecraft.services.image import ImageService
 from imagecraft.services.pack import ImagecraftPackService
 
@@ -70,7 +71,11 @@ def test_pack(
     # Bootloader staged before formatting, and boot code patched after
     mock_bootloader_cls.assert_called_once()
     mock_bootloader = mock_bootloader_cls.return_value
-    mock_bootloader.prepare_rootfs.assert_called_once()
+    mock_bootloader.prepare_rootfs.assert_called_once_with(
+        project_dirs=default_factory.get("lifecycle").project_info.dirs,
+        volume_name="pc",
+        filesystems=cast(Project, default_factory.get("project").get()).filesystems,
+    )
     mock_bootloader.install_image_boot_code.assert_called_once()
 
     # Old functions must NOT be called

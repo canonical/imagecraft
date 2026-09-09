@@ -61,7 +61,9 @@ class ImagecraftPackService(PackageService):
         # so mke2fs/mkfs.vfat embed them directly.
         try:
             bootloader.prepare_rootfs(
-                project_dirs=project_dirs, volume_name=volume_name
+                project_dirs=project_dirs,
+                volume_name=volume_name,
+                filesystems=project.filesystems,
             )
 
             for structure_item in volume.structure:

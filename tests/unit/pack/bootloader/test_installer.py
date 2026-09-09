@@ -22,7 +22,13 @@ from pathlib import Path
 import pytest
 from craft_platforms import DebianArchitecture
 from imagecraft import errors
-from imagecraft.models.volume import GptType, GPTVolume, HybridVolume, MBRVolume
+from imagecraft.models.volume import (
+    FileSystem,
+    GptType,
+    GPTVolume,
+    HybridVolume,
+    MBRVolume,
+)
 from imagecraft.pack.bootloader import installer as installer_mod
 from imagecraft.pack.bootloader.const import BootMethod
 from imagecraft.pack.bootloader.installer import BootloaderInstaller, configure_fstab
@@ -240,7 +246,9 @@ class FakeProjectDirs:
 
 def _prepare(installer: BootloaderInstaller, tmp_path: Path) -> BootMethod:
     return installer.prepare_rootfs(
-        project_dirs=FakeProjectDirs(tmp_path), volume_name="pc"
+        project_dirs=FakeProjectDirs(tmp_path),
+        volume_name="pc",
+        filesystems={"default": [{"mount": "/", "device": "(volume/pc/rootfs)"}]},
     )
 
 
@@ -305,7 +313,104 @@ class TestGracefulSkip:
         mock_install.assert_not_called()
 
 
+class TestBootFstab:
+    @pytest.mark.parametrize("filesystem", ["ext3", "ext4", "fat16", "vfat"])
+    @pytest.mark.parametrize("mountpoint", ["/boot", "/boot/"])
+    def test_prepare_adds_mapped_boot_entry(
+        self, tmp_path, mocker, filesystem, mountpoint
+    ):
+        volume = _gpt_volume(
+            [ESP_ITEM, {**BOOT_ITEM, "filesystem": filesystem}, ROOT_ITEM]
+        )
+        installer = BootloaderInstaller(volume=volume, arch=_AMD64)
+        mocker.patch.object(installer_mod, "generate_grub_cfg")
+        mocker.patch.object(installer_mod, "EfiInstaller")
+        filesystems = {
+            "default": [
+                {"mount": "/", "device": "(volume/pc/rootfs)"},
+                {"mount": mountpoint, "device": "(volume/pc/boot)"},
+                {"mount": "/boot/efi", "device": "(volume/pc/efi)"},
+            ]
+        }
+
+        installer.prepare_rootfs(
+            project_dirs=FakeProjectDirs(tmp_path),
+            volume_name="pc",
+            filesystems=filesystems,
+        )
+
+        fstab = tmp_path / "volume/pc/rootfs/etc/fstab"
+        content = fstab.read_text()
+        fs_type = "vfat" if filesystem == "fat16" else filesystem
+        assert (
+            f"UUID={installer.partition_uuids['boot']} /boot {fs_type} defaults 0 2\n"
+            in content
+        )
+        assert f"UUID={installer.root_uuid} / ext4" in content
+        assert "/boot/efi" not in content
+
+    @pytest.mark.parametrize(
+        ("mountpoint", "device"),
+        [
+            ("/srv", "(volume/pc/boot)"),
+            ("/boot", "(volume/pc/rootfs)"),
+            ("/boot/efi", "(volume/pc/boot)"),
+        ],
+    )
+    def test_does_not_invent_boot_mapping(self, tmp_path, mocker, mountpoint, device):
+        volume = _gpt_volume([ESP_ITEM, BOOT_ITEM, ROOT_ITEM])
+        installer = BootloaderInstaller(volume=volume, arch=_AMD64)
+        mocker.patch.object(installer_mod, "generate_grub_cfg")
+        mocker.patch.object(installer_mod, "EfiInstaller")
+
+        installer.prepare_rootfs(
+            project_dirs=FakeProjectDirs(tmp_path),
+            volume_name="pc",
+            filesystems={
+                "default": [
+                    {"mount": "/", "device": "(volume/pc/rootfs)"},
+                    {"mount": mountpoint, "device": device},
+                ]
+            },
+        )
+
+        content = (tmp_path / "volume/pc/rootfs/etc/fstab").read_text()
+        assert str(installer.boot_uuid) not in content
+
+
 class TestConfigureFstab:
+    @pytest.mark.parametrize("mountpoint", ["/boot", "/boot/"])
+    def test_preserves_existing_boot_entry(self, tmp_path, mountpoint):
+        fstab = tmp_path / "etc/fstab"
+        fstab.parent.mkdir()
+        root = "LABEL=writable / ext4 discard 0 1\n"
+        tail = f"\t{mountpoint}\tvfat\tro,umask=0077\t0\t0 # boot\n"
+        fstab.write_text(root + "  LABEL=BOOT" + tail)
+
+        configure_fstab(
+            tmp_path, "1234-ABCD", mountpoint="/boot", filesystem=FileSystem.VFAT
+        )
+        configure_fstab(
+            tmp_path, "1234-ABCD", mountpoint="/boot", filesystem=FileSystem.VFAT
+        )
+
+        assert fstab.read_text() == root + "  UUID=1234-ABCD" + tail
+
+    def test_appends_boot_without_final_newline(self, tmp_path):
+        fstab = tmp_path / "etc/fstab"
+        fstab.parent.mkdir()
+        root = "LABEL=writable / ext4 defaults 0 1"
+        fstab.write_text(root)
+        boot_uuid = uuid.uuid4()
+
+        configure_fstab(
+            tmp_path, boot_uuid, mountpoint="/boot", filesystem=FileSystem.EXT3
+        )
+
+        assert fstab.read_text() == (
+            root + f"\nUUID={boot_uuid} /boot ext3 defaults 0 2\n"
+        )
+
     def test_creates_fstab(self, tmp_path):
         root_uuid = uuid.uuid4()
         configure_fstab(tmp_path, root_uuid)
