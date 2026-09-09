@@ -215,12 +215,11 @@ class EfiInstaller:
         bin_suf = self.spec.bin_suffix
         efi_suf = self.spec.efi_suffix
         efi_fmt = self.spec.efi_format
-        mod_dir_name = efi_fmt
 
-        modules_dir = self.root_dir / "usr/lib/grub" / mod_dir_name
+        modules_dir = self.root_dir / "usr/lib/grub" / efi_fmt
         if not modules_dir.is_dir():
             raise errors.BootloaderToolsMissingError(
-                f"GRUB modules directory not found in rootfs: usr/lib/grub/{mod_dir_name}"
+                f"GRUB modules directory not found in rootfs: usr/lib/grub/{efi_fmt}"
             )
         require_chroot_binary(self.root_dir, "grub-mkimage")
 
@@ -254,7 +253,7 @@ class EfiInstaller:
 
         shutil.copy2(primary_boot, self.esp_ubuntu_dir / f"grub{bin_suf}.efi")
 
-        stage_grub_modules(self.root_dir, self.boot_dir, mod_dir_name)
+        stage_grub_modules(self.root_dir, self.boot_dir, efi_fmt)
 
         return EfiTier.FALLBACK_BUILD
 
