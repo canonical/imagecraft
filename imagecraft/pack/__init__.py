@@ -29,10 +29,7 @@ from imagecraft.pack.gptutil import (
 )
 from imagecraft.pack.mbrutil import create_empty_mbr_image
 
-from imagecraft.pack.image import Image
-
 __all__ = [
-    "Image",
     "SUPPORTED_SECTOR_SIZES",
     "bytes_to_sectors",
     "create_empty_gpt_image",

@@ -96,8 +96,16 @@ class TestNonEfiInstallerChecks:
         assert installer.boot_prefix == "/grub"
 
     def test_shared_boot_uses_root_uuid(self, tmp_path):
-        installer = _make_installer(tmp_path)
-        assert installer.search_uuid == installer.root_uuid
+        root_uuid = uuid.uuid4()
+        volume = _mbr_volume([{**ROOT_ITEM, "type": "83"}])
+        installer = NonEfiInstaller(
+            image_path=tmp_path / "disk.img",
+            root_dir=tmp_path / "root",
+            root_uuid=root_uuid,
+            arch=DebianArchitecture.AMD64,
+            volume=volume,
+        )
+        assert installer.search_uuid == str(root_uuid)
         assert installer.boot_prefix == "/boot/grub"
 
 

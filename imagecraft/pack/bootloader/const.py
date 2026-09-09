@@ -143,12 +143,3 @@ CORE_BIOS_MODULES: Final[list[str]] = [
     "gettext",
     "reboot",
 ]
-
-# ext2/3/4 superblock offsets.
-# See https://www.kernel.org/doc/html/latest/filesystems/ext4/dynamic.html#the-superblock
-DEFAULT_SECTOR_SIZE: Final = 512
-EXT4_SUPERBLOCK_OFFSET: Final = 1024
-EXT4_MAGIC_OFFSET: Final = 0x38
-EXT4_MAGIC: Final = b"\x53\xef"
-EXT4_UUID_OFFSET: Final = 104
-EXT4_UUID_BYTES: Final = 16

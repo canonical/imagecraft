@@ -77,21 +77,6 @@ def _build_efi_image_in_chroot(
     )
 
 
-def write_esp_stub(
-    target_cfg: Path, search_uuid: UUID | str, *, boot_prefix: str = "/boot/grub"
-) -> None:
-    """Write an early search stub grub.cfg to target_cfg.
-
-    :param search_uuid: UUID of the filesystem holding the GRUB configuration
-        (the root filesystem, or the dedicated ``/boot`` partition when one
-        exists).
-    :param boot_prefix: Path of the GRUB directory relative to the searched
-        filesystem's root.
-    """
-    target_cfg.parent.mkdir(parents=True, exist_ok=True)
-    target_cfg.write_text(render_early_cfg(search_uuid, boot_prefix=boot_prefix))
-
-
 class EfiInstaller:
     """Installs GRUB/shim EFI bootloader files into an ESP prime directory.
 
@@ -131,8 +116,6 @@ class EfiInstaller:
         """
         self.root_dir = root_dir
         self.esp_dir = esp_dir
-        self.root_uuid = str(root_uuid)
-        self.arch = arch
         self.boot_dir = boot_dir if boot_dir is not None else root_dir / "boot"
         self.search_uuid = str(boot_uuid) if boot_uuid is not None else str(root_uuid)
         self.boot_prefix = "/grub" if boot_uuid is not None else "/boot/grub"
@@ -156,10 +139,13 @@ class EfiInstaller:
 
     def deploy_early_stubs(self) -> None:
         """Write the early search stub grub.cfg to /EFI/BOOT/ and /EFI/ubuntu/ on the ESP."""
-        boot_cfg = self.esp_dir / "EFI" / "BOOT" / "grub.cfg"
-        u_cfg = self.esp_dir / "EFI" / "ubuntu" / "grub.cfg"
-        write_esp_stub(boot_cfg, self.search_uuid, boot_prefix=self.boot_prefix)
-        write_esp_stub(u_cfg, self.search_uuid, boot_prefix=self.boot_prefix)
+        stub = render_early_cfg(self.search_uuid, boot_prefix=self.boot_prefix)
+        for target_cfg in (
+            self.esp_dir / "EFI" / "BOOT" / "grub.cfg",
+            self.esp_dir / "EFI" / "ubuntu" / "grub.cfg",
+        ):
+            target_cfg.parent.mkdir(parents=True, exist_ok=True)
+            target_cfg.write_text(stub)
 
     def install_signed(self) -> EfiTier | None:
         """Attempt Tier 1: install signed shim and signed GRUB binaries."""

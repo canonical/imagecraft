@@ -24,7 +24,7 @@ class BootMethod(str, enum.Enum):
     """Boot via a UEFI System Partition, using the 3-tier EFI installer."""
 
     BIOS = "bios"
-    """Boot via legacy BIOS, patching Sector 0/core.img directly."""
+    """Boot via legacy BIOS, using grub-bios-setup."""
 
     NONE = "none"
     """No bootloader to install (unsupported arch/schema or no boot partition)."""

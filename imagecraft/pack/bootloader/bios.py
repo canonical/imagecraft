@@ -36,11 +36,7 @@ from imagecraft.models.volume import GPTVolume, HybridVolume, MBRVolume, Role
 from imagecraft.pack import gptutil
 from imagecraft.pack.bootloader.chrootenv import find_chroot_binary, run_checked
 from imagecraft.pack.bootloader.config import render_early_cfg
-from imagecraft.pack.bootloader.const import (
-    CORE_BIOS_MODULES,
-    DEFAULT_SECTOR_SIZE,
-    get_arch_spec,
-)
+from imagecraft.pack.bootloader.const import CORE_BIOS_MODULES, get_arch_spec
 from imagecraft.utils.mount import ExtFuseMount
 
 
@@ -122,7 +118,6 @@ class NonEfiInstaller:
             )
         self.image_path = image_path
         self.root_dir = root_dir
-        self.root_uuid = str(root_uuid)
         self.volume = volume
         self.grub_format = spec.non_efi_format
         self.search_uuid = str(boot_uuid) if boot_uuid is not None else str(root_uuid)
@@ -141,7 +136,7 @@ class NonEfiInstaller:
         part_num = getattr(item, "number", None) or (root_index + 1)
         return (
             gptutil.get_partition_sector_offset_by_number(self.image_path, part_num)
-            * DEFAULT_SECTOR_SIZE
+            * gptutil.SECTOR_SIZE_512
         )
 
     def install(self) -> None:

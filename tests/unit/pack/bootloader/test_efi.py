@@ -20,24 +20,21 @@ import uuid
 import pytest
 from craft_platforms import DebianArchitecture
 from imagecraft import errors
-from imagecraft.pack.bootloader.efi import EfiInstaller, write_esp_stub
+from imagecraft.pack.bootloader.config import render_early_cfg
+from imagecraft.pack.bootloader.efi import EfiInstaller
 from imagecraft.pack.bootloader.models import EfiTier
 
 
-class TestWriteEspStub:
-    def test_shared_boot_stub(self, tmp_path):
+class TestRenderEarlyCfg:
+    def test_shared_boot_stub(self):
         root_uuid = uuid.uuid4()
-        stub = tmp_path / "EFI" / "BOOT" / "grub.cfg"
-        write_esp_stub(stub, root_uuid)
-        content = stub.read_text()
+        content = render_early_cfg(root_uuid)
         assert f"search.fs_uuid {root_uuid} root" in content
         assert "($root)'/boot/grub'" in content
 
-    def test_dedicated_boot_stub(self, tmp_path):
+    def test_dedicated_boot_stub(self):
         boot_uuid = uuid.uuid4()
-        stub = tmp_path / "grub.cfg"
-        write_esp_stub(stub, boot_uuid, boot_prefix="/grub")
-        content = stub.read_text()
+        content = render_early_cfg(boot_uuid, boot_prefix="/grub")
         assert f"search.fs_uuid {boot_uuid} root" in content
         assert "($root)'/grub'" in content
 
