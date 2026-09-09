@@ -14,11 +14,9 @@
 
 """Root filesystem configuration: /etc/fstab.
 
-Writes are made to the root partition's prime directory before it is
-formatted, so the resulting files are embedded directly by ``mke2fs -d``.
-``/boot/grub/grub.cfg`` is generated separately by
-:mod:`imagecraft.pack.bootloader.mkconfig` using the guest's own
-``grub-mkconfig``.
+Written to the root partition's prime directory before it is formatted, so
+``mke2fs -d`` embeds the result directly. ``/boot/grub/grub.cfg`` is
+generated separately by :mod:`imagecraft.pack.bootloader.mkconfig`.
 """
 
 from pathlib import Path
@@ -27,28 +25,16 @@ from uuid import UUID
 _DEFAULT_FSTAB_OPTIONS = "defaults,errors=remount-ro"
 
 
-def configure_fstab(
-    root_dir: Path,
-    root_uuid: UUID | str,
-    *,
-    fstype: str = "ext4",
-    options: str = _DEFAULT_FSTAB_OPTIONS,
-    dump: int = 0,
-    passno: int = 1,
-) -> None:
+def configure_fstab(root_dir: Path, root_uuid: UUID | str) -> None:
     """Ensure /etc/fstab contains an entry for the root filesystem UUID.
 
-    :param root_dir: Prime directory of the root filesystem partition.
-    :param root_uuid: UUID that will be assigned to the root filesystem.
-    :param fstype: Filesystem type.
-    :param options: Mount options.
-    :param dump: Dump frequency.
-    :param passno: Fsck pass number (1 for root).
+    An existing non-comment root entry (e.g. ``LABEL=writable / ...``) is
+    replaced rather than duplicated.
     """
     fstab_path = root_dir / "etc" / "fstab"
     fstab_path.parent.mkdir(parents=True, exist_ok=True)
     str_uuid = str(root_uuid)
-    fstab_entry = f"UUID={str_uuid} / {fstype} {options} {dump} {passno}\n"
+    fstab_entry = f"UUID={str_uuid} / ext4 {_DEFAULT_FSTAB_OPTIONS} 0 1\n"
 
     if not fstab_path.is_file():
         content = "# /etc/fstab: static file system information.\n" + fstab_entry

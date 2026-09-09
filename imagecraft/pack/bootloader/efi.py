@@ -16,9 +16,7 @@
 
 All paths written here are prime directories (``root_dir`` for the rootfs
 partition, ``esp_dir`` for the EFI System Partition), staged *before* the
-partitions are formatted. ``diskutil.format_device`` later embeds these
-files into their filesystems via ``mke2fs``/``mkfs.vfat``, so no mounts or
-loop devices are needed to install the bootloader.
+partitions are formatted and embedded by ``diskutil.format_device``.
 """
 
 import shutil
@@ -55,12 +53,6 @@ def _build_efi_image_in_chroot(
     Must be a top-level function so it can be pickled into the chroot child
     process.
 
-    :param mkimage: In-chroot path to grub-mkimage.
-    :param efi_format: GRUB EFI target format (e.g. ``x86_64-efi``).
-    :param prefix: GRUB prefix baked into the binary.
-    :param early_cfg_content: Rendered early GRUB config content.
-    :param modules: GRUB modules to embed.
-    :param output: In-chroot output path for the EFI binary.
     :raises errors.BootloaderError: If grub-mkimage fails.
     """
     work_dir = Path(_CHROOT_EFI_WORK_DIR)
@@ -87,20 +79,17 @@ def _build_efi_image_in_chroot(
 
 def write_esp_stub(
     target_cfg: Path, search_uuid: UUID | str, *, boot_prefix: str = "/boot/grub"
-) -> Path:
-    """Render and write an early search stub grub.cfg to target_cfg.
+) -> None:
+    """Write an early search stub grub.cfg to target_cfg.
 
-    :param target_cfg: Target path for the early configuration stub.
     :param search_uuid: UUID of the filesystem holding the GRUB configuration
         (the root filesystem, or the dedicated ``/boot`` partition when one
         exists).
     :param boot_prefix: Path of the GRUB directory relative to the searched
         filesystem's root.
-    :return: The path written.
     """
     target_cfg.parent.mkdir(parents=True, exist_ok=True)
     target_cfg.write_text(render_early_cfg(search_uuid, boot_prefix=boot_prefix))
-    return target_cfg
 
 
 class EfiInstaller:
@@ -138,9 +127,7 @@ class EfiInstaller:
             Defaults to ``root_dir / "boot"`` when ``/boot`` isn't a
             dedicated partition.
         :param boot_uuid: UUID that will be assigned to the dedicated
-            ``/boot`` partition's filesystem, if any. The early search stub
-            searches this UUID (with a ``/grub`` prefix) instead of the root
-            filesystem's.
+            ``/boot`` partition's filesystem, if any.
         """
         self.root_dir = root_dir
         self.esp_dir = esp_dir
@@ -250,9 +237,6 @@ class EfiInstaller:
     def install_fallback_build(self) -> EfiTier:
         """Attempt Tier 3: build a standalone EFI binary using grub-mkimage.
 
-        The guest rootfs's own ``grub-mkimage`` is run in a chroot over the
-        root partition's prime directory.
-
         :raises errors.BootloaderToolsMissingError: If the GRUB modules
             directory for this architecture isn't present in the staged
             rootfs.
@@ -335,15 +319,8 @@ def install_efi(
 ) -> EfiTier:
     """Install the EFI bootloader into esp_dir/root_dir prime directories.
 
-    :param root_dir: Prime directory of the root filesystem partition.
-    :param esp_dir: Prime directory of the EFI System Partition.
-    :param root_uuid: UUID that will be assigned to the root filesystem.
-    :param arch: Target architecture.
-    :param boot_dir: Prime directory that corresponds to ``/boot``. Defaults
-        to ``root_dir / "boot"`` when ``/boot`` isn't a dedicated partition.
-    :param boot_uuid: UUID that will be assigned to the dedicated ``/boot``
-        partition's filesystem, if any.
-    :return: The resolution tier that was installed.
+    :return: The resolution tier that was installed. See
+        :class:`EfiInstaller` for parameter details.
     """
     installer = EfiInstaller(
         root_dir=root_dir,

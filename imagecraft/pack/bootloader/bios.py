@@ -16,14 +16,11 @@
 
 GRUB's own ``grub-mkimage`` and ``grub-bios-setup`` do the work, operating on
 the formatted disk image with its root partition mounted read-write via
-``fuse2fs`` -- no loop devices, no chroot, and no custom byte-level patching.
-
-The FUSE mount is required because ``grub-bios-setup`` resolves its ``-d``
-directory to a device through ``/proc/self/mountinfo``, which fails for plain
-directories (or chroots into them) in unprivileged containers: the backing
-block device isn't available there. With a fuse2fs mount the directory
-resolves to the mounted image file, which the generated device map translates
-to ``(hd0)`` -- the same drive the boot code is installed to.
+``fuse2fs``. The FUSE mount is required because ``grub-bios-setup`` resolves
+its ``-d`` directory to a device through ``/proc/self/mountinfo``; a plain
+directory has no resolvable backing device in unprivileged containers, but a
+fuse2fs mount resolves to the image file, which the generated device map
+translates to ``(hd0)``.
 """
 
 import shutil
@@ -65,16 +62,13 @@ def stage_non_efi_modules(
     """Stage BIOS GRUB runtime modules into the ``/boot`` prime directory.
 
     Must be called *before* the partitions are formatted (unlike the rest of
-    this module, which works on the formatted image), since it writes into a
-    prime directory that ``diskutil.format_device`` will later embed via
-    ``mke2fs -d``.
+    this module, which works on the formatted image).
 
     :param root_dir: Prime directory of the root filesystem partition (used
         to locate the rootfs's installed GRUB modules).
     :param boot_dir: Prime directory that corresponds to ``/boot``. Defaults
         to ``root_dir / "boot"`` when ``/boot`` isn't a dedicated partition.
-    :param grub_format: GRUB non-EFI target format (e.g. ``i386-pc``), from
-        the architecture's :class:`~imagecraft.pack.bootloader.const.ArchSpec`.
+    :param grub_format: GRUB non-EFI target format (e.g. ``i386-pc``).
     :raises errors.BootloaderToolsMissingError: If the GRUB BIOS modules
         directory isn't present in the staged rootfs.
     """
@@ -94,8 +88,7 @@ class NonEfiInstaller:
     """Installs the BIOS (non-EFI) bootloader using GRUB's own tools.
 
     Only architectures with a non-EFI target in ``ARCH_SPECS`` (currently
-    amd64/i386's ``i386-pc``) are supported; arm64/armhf/riscv64 always boot
-    via EFI.
+    amd64/i386's ``i386-pc``) are supported.
     """
 
     def __init__(
@@ -118,9 +111,7 @@ class NonEfiInstaller:
         :param arch: Target architecture.
         :param volume: The volume layout used to partition the image.
         :param boot_uuid: UUID assigned to the dedicated ``/boot``
-            partition's filesystem, if any. The early config embedded in
-            core.img searches this UUID (with a ``/grub`` prefix) instead of
-            the root filesystem's.
+            partition's filesystem, if any.
         :raises errors.BootloaderError: If the architecture has no non-EFI
             GRUB target.
         """
@@ -157,12 +148,11 @@ class NonEfiInstaller:
         """Build core.img and install the BIOS boot code into the disk image.
 
         Assumes :func:`stage_non_efi_modules` has already been called during
-        the pre-format staging phase to place GRUB runtime modules into the
-        boot partition's prime directory.
+        the pre-format staging phase.
 
-        :raises errors.BootloaderToolsMissingError: If GRUB modules, boot.img,
-            or the GRUB tools aren't present in the staged rootfs, or fuse2fs
-            isn't available on the host.
+        :raises errors.BootloaderToolsMissingError: If GRUB modules or tools
+            aren't present in the staged rootfs, or fuse2fs isn't available
+            on the host.
         """
         mod_dir_rel = f"usr/lib/grub/{self.grub_format}"
         mod_dir = self.root_dir / mod_dir_rel
@@ -245,13 +235,7 @@ def install_non_efi(
 ) -> None:
     """Install the BIOS bootloader into a raw disk image.
 
-    :param image_path: Path to the raw, partitioned disk image file.
-    :param root_dir: Prime directory of the root filesystem partition.
-    :param root_uuid: UUID assigned to the root filesystem.
-    :param arch: Target architecture.
-    :param volume: The volume layout used to partition the image.
-    :param boot_uuid: UUID assigned to the dedicated ``/boot`` partition's
-        filesystem, if any.
+    See :class:`NonEfiInstaller` for parameter details.
     """
     installer = NonEfiInstaller(
         image_path=image_path,

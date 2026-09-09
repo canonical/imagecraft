@@ -14,21 +14,15 @@
 
 """High-level bootloader installer coordinator.
 
-Coordinates the two phases of loopless bootloader installation:
+Coordinates the two phases of bootloader installation:
 
-1. :meth:`BootloaderInstaller.prepare_rootfs` -- run *before* the root/ESP
-   partitions are formatted. Writes ``/etc/fstab``, generates
-   ``/boot/grub/grub.cfg`` with the guest's own ``grub-mkconfig`` (run in a
-   chroot over the prime directory), and (for EFI targets) stages the EFI
-   binaries and early search stub, directly into the partitions' prime
-   directories. ``diskutil.format_device`` then embeds these files via
-   ``mke2fs -d``/``mcopy``.
+1. :meth:`BootloaderInstaller.prepare_rootfs` -- run *before* the partitions
+   are formatted. Writes ``/etc/fstab``, generates ``/boot/grub/grub.cfg``,
+   and (for EFI targets) stages the EFI binaries and early search stub into
+   the partitions' prime directories, which ``diskutil.format_device`` then
+   embeds via ``mke2fs -d``/``mcopy``.
 2. :meth:`BootloaderInstaller.install_image_boot_code` -- run *after* the
-   final disk image has been assembled. For BIOS targets only, runs
-   ``grub-mkimage``/``grub-bios-setup`` in a chroot with the image exposed
-   at ``/dev/image``.
-
-Neither phase attaches a loop device.
+   final disk image has been assembled; BIOS targets only.
 """
 
 import contextlib
@@ -125,7 +119,8 @@ class BootloaderInstaller:
         """Initialize the bootloader installer.
 
         :param volume: The volume layout being packed.
-        :param arch: Target architecture.
+        :param arch: Target architecture (invalid values disable bootloader
+            installation).
         """
         self.volume = volume
         try:
@@ -189,15 +184,12 @@ class BootloaderInstaller:
 
         :param root_dir: Prime directory of the root filesystem partition.
         :param esp_dir: Prime directory of the EFI System Partition, if any.
-        :param root_uuid: UUID that will be assigned to the root filesystem
-            when it's formatted.
+        :param root_uuid: UUID that will be assigned to the root filesystem.
         :param boot_dir: Prime directory of a dedicated ``/boot`` partition,
-            if any. Defaults to ``root_dir / "boot"`` when ``/boot`` isn't a
-            separate partition.
+            if any.
         :param boot_uuid: UUID that will be assigned to the dedicated
             ``/boot`` partition's filesystem, if any.
-        :return: The boot method that was staged for (``BootMethod.NONE`` if
-            installation was skipped).
+        :return: The boot method staged for (``BootMethod.NONE`` if skipped).
         """
         boot_method = self.resolve_boot_method()
         if boot_method == BootMethod.NONE:
@@ -274,13 +266,11 @@ class BootloaderInstaller:
     ) -> None:
         """Install BIOS boot code into the raw disk image, if applicable.
 
-        Only takes effect for the BIOS boot method; a no-op otherwise. Must
-        be called after the image's partitions have been formatted and
-        finalized.
+        No-op for non-BIOS volumes. Must be called after the image's
+        partitions have been formatted and finalized.
 
         :param image_path: Path to the final, partitioned disk image file.
-        :param root_dir: Prime directory of the root filesystem partition
-            (used as the chroot root for GRUB tooling).
+        :param root_dir: Prime directory of the root filesystem partition.
         :param root_uuid: UUID assigned to the root filesystem.
         :param boot_uuid: UUID assigned to the dedicated ``/boot``
             partition's filesystem, if any.

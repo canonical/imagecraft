@@ -12,13 +12,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Loopless bootloader installation.
+"""Bootloader installation via prime-directory staging and GRUB's own tools.
 
-Replaces the previous loop-device based ``grubutil`` module. Files are
-staged directly into partition prime directories before formatting, and
-GRUB's own tooling (``grub-mkconfig``, ``grub-mkimage``,
-``grub-bios-setup``) runs against them, so no loop devices are needed to
-install GRUB.
+Files are staged directly into partition prime directories before
+formatting, so ``diskutil.format_device`` embeds them via
+``mke2fs -d``/``mcopy``. No loop devices are needed.
 """
 
 from imagecraft.pack.bootloader.installer import (

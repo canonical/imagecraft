@@ -27,7 +27,7 @@ class BootMethod(str, enum.Enum):
     """Boot via legacy BIOS, patching Sector 0/core.img directly."""
 
     NONE = "none"
-    """No bootloader could be installed (unsupported arch/schema, or no boot partition)."""
+    """No bootloader to install (unsupported arch/schema or no boot partition)."""
 
 
 class EfiTier(str, enum.Enum):

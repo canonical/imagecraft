@@ -25,23 +25,23 @@ class ArchSpec:
     """GRUB naming and target conventions for a single architecture."""
 
     efi_suffix: str
-    """Suffix used in the EFI removable-media fallback binary (e.g. ``X64`` -> ``BOOTX64.EFI``)."""
+    """Suffix used in the EFI removable-media binary (e.g. ``X64`` -> ``BOOTX64.EFI``)."""
 
     bin_suffix: str
     """Suffix used in GRUB/shim package binary names (e.g. ``x64`` -> ``grubx64.efi``)."""
 
     efi_format: str
-    """``grub-mkimage``/module directory name for the EFI target (e.g. ``x86_64-efi``)."""
+    """GRUB target name for EFI (e.g. ``x86_64-efi``); also its module directory name."""
 
     signed_dir: str
     """Directory name under ``usr/lib/grub`` holding signed EFI binaries."""
 
     non_efi_format: str | None
-    """``grub-mkimage``/module directory name for the non-EFI target, or None if unsupported."""
+    """GRUB target name for non-EFI (e.g. ``i386-pc``), or None if unsupported."""
 
 
-# GRUB naming conventions per Debian architecture. Only amd64 has a non-EFI
-# (BIOS) target wired up in this package; see bios.py for details.
+# GRUB naming conventions per Debian architecture. Only amd64/i386 have a
+# non-EFI (BIOS) target.
 ARCH_SPECS: Final[dict[DebianArchitecture, ArchSpec]] = {
     DebianArchitecture.AMD64: ArchSpec(
         efi_suffix="X64",
@@ -84,7 +84,6 @@ ARCH_SPECS: Final[dict[DebianArchitecture, ArchSpec]] = {
 def get_arch_spec(arch: DebianArchitecture | str) -> ArchSpec:
     """Retrieve the GRUB architecture spec for the given architecture.
 
-    :param arch: Target architecture as a DebianArchitecture enum or string.
     :raises ValueError: If the architecture is not supported.
     """
     try:

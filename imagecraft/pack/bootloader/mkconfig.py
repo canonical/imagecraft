@@ -16,7 +16,7 @@
 
 Runs ``grub-mkconfig`` inside a chroot rooted at the root partition's prime
 directory (before formatting, so the resulting ``grub.cfg`` is embedded into
-the image by ``mke2fs -d``), rather than rendering a config ourselves.
+the image by ``mke2fs -d``).
 
 ``grub-mkconfig`` and its helper scripts unconditionally probe the chroot's
 ``/`` and ``/boot`` with ``grub-probe``, which cannot resolve a plain
@@ -24,8 +24,7 @@ directory on the build host to a block device (the backing device node is
 typically not even available inside unprivileged build containers). The
 chroot therefore gets a small ``grub-probe`` shim bind-mounted over the
 guest's binary, answering device/fs queries with the values of the image
-being built. The ``/etc/default/grub.d`` snippet with the pre-generated
-filesystem UUIDs is belt-and-braces for the values sourced from it.
+being built.
 """
 
 import os
@@ -105,16 +104,11 @@ exit 0
 def _generate_grub_cfg_in_chroot(
     *, mkconfig: str, grub_defaults: str, root_uuid: str, boot_uuid: str | None
 ) -> str:
-    """Generate grub.cfg inside the chroot.
+    """Generate grub.cfg inside the chroot and return mkconfig's output.
 
     Must be a top-level function so it can be pickled into the chroot child
     process.
 
-    :param mkconfig: In-chroot path to grub-mkconfig.
-    :param grub_defaults: Content for a transient /etc/default/grub.d snippet.
-    :param root_uuid: UUID of the root filesystem.
-    :param boot_uuid: UUID of the dedicated ``/boot`` filesystem, if any.
-    :return: grub-mkconfig's combined output (for logging).
     :raises errors.BootloaderError: If grub-mkconfig fails.
     """
     _GRUB_DEFAULTS_SNIPPET.parent.mkdir(parents=True, exist_ok=True)
@@ -156,10 +150,8 @@ def _generate_grub_cfg_in_chroot(
 def _fs_internal_path(path: Path) -> str:
     """Return path's location relative to the root of the filesystem hosting it.
 
-    Matches the ``root`` field the kernel reports in mountinfo for a bind
-    mount of this directory -- which is what ``grub-mkrelpath`` (run by
-    ``grub-mkconfig`` inside the chroot) ends up using as the prefix for
-    kernel paths under a bind-mounted ``/boot``.
+    This is the prefix ``grub-mkrelpath`` (run by ``grub-mkconfig`` inside
+    the chroot) uses for kernel paths under a bind-mounted ``/boot``.
     """
     resolved = str(path.resolve())
     best_mount = ""
@@ -179,12 +171,12 @@ def _fs_internal_path(path: Path) -> str:
 
 
 def _strip_boot_prefix(grub_cfg_path: Path, boot_dir: Path) -> None:
-    """Fix kernel-path directives in grub.cfg for a dedicated /boot partition.
+    """Make kernel-path directives relative to the boot filesystem's root.
 
-    grub-mkconfig saw the kernels at ``/boot/...`` inside the chroot (or, via
-    ``grub-mkrelpath``'s mountinfo parsing, under the host-fs-internal path of
-    the bind-mounted boot prime directory), but at boot time GRUB reads them
-    relative to the boot filesystem's root.
+    Needed with a dedicated ``/boot`` partition: grub-mkconfig saw the
+    kernels at ``/boot/...`` inside the chroot (or, via ``grub-mkrelpath``,
+    under the host-fs-internal path of the bind-mounted boot prime
+    directory).
     """
     # Strip the longer (host-fs-internal) prefix first: it may itself end in
     # "/boot/" (e.g. a prime directory named "boot").
@@ -215,12 +207,10 @@ def generate_grub_cfg(
     """Generate /boot/grub/grub.cfg using the guest rootfs's grub-mkconfig.
 
     :param root_dir: Prime directory of the root filesystem partition.
-    :param root_uuid: UUID that will be assigned to the root filesystem when
-        it's formatted; baked into the generated config's ``root=`` and
-        ``search --fs-uuid`` directives.
+    :param root_uuid: UUID that will be assigned to the root filesystem;
+        baked into the config's ``root=`` and ``search --fs-uuid`` values.
     :param boot_dir: Prime directory of a dedicated ``/boot`` partition,
-        bound at ``/boot`` in the chroot. Defaults to the root partition's
-        own ``/boot``.
+        bound at ``/boot`` in the chroot.
     :param boot_uuid: UUID that will be assigned to the dedicated ``/boot``
         partition's filesystem, if any.
     :param partition_map: The image's partition table format as GRUB calls

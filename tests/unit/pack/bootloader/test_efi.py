@@ -27,14 +27,16 @@ from imagecraft.pack.bootloader.models import EfiTier
 class TestWriteEspStub:
     def test_shared_boot_stub(self, tmp_path):
         root_uuid = uuid.uuid4()
-        stub = write_esp_stub(tmp_path / "EFI" / "BOOT" / "grub.cfg", root_uuid)
+        stub = tmp_path / "EFI" / "BOOT" / "grub.cfg"
+        write_esp_stub(stub, root_uuid)
         content = stub.read_text()
         assert f"search.fs_uuid {root_uuid} root" in content
         assert "($root)'/boot/grub'" in content
 
     def test_dedicated_boot_stub(self, tmp_path):
         boot_uuid = uuid.uuid4()
-        stub = write_esp_stub(tmp_path / "grub.cfg", boot_uuid, boot_prefix="/grub")
+        stub = tmp_path / "grub.cfg"
+        write_esp_stub(stub, boot_uuid, boot_prefix="/grub")
         content = stub.read_text()
         assert f"search.fs_uuid {boot_uuid} root" in content
         assert "($root)'/grub'" in content
