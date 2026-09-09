@@ -93,6 +93,7 @@ class ImagecraftPackService(PackageService):
                 esp_dir=esp_prime_dir,
                 root_uuid=root_uuid,
                 boot_dir=boot_prime_dir,
+                image_path=image_service.get_images()[volume_name],
             )
 
         try:

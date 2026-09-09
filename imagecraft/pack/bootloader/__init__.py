@@ -12,12 +12,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Zero-mount bootloader installation.
+"""Loopless bootloader installation.
 
-Replaces the previous loop-device + chroot based ``grubutil`` module. Files
-are staged directly into partition prime directories before formatting, and
-BIOS boot code is patched directly into the raw disk image bytes, so no
-mounts or loop devices are needed to install GRUB.
+Replaces the previous loop-device based ``grubutil`` module. Files are
+staged directly into partition prime directories before formatting, and
+GRUB's own tooling (``grub-mkconfig``, ``grub-mkimage``,
+``grub-bios-setup``) runs in a chroot rooted at the root partition's prime
+directory with the disk image exposed at ``/dev/image``, so no loop devices
+are needed to install GRUB.
 """
 
 from imagecraft.pack.bootloader.installer import (

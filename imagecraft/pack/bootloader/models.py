@@ -70,11 +70,8 @@ class RootfsConfigResult:
     """Result summary of root filesystem configuration (fstab + grub.cfg)."""
 
     grub_cfg_path: Path
-    grub_cfg_rendered: bool
     fstab_path: Path
     fstab_updated: bool
-    vmlinuz: str
-    initrd: str
 
 
 @dataclass

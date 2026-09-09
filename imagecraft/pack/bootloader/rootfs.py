@@ -12,20 +12,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Root filesystem configuration: /etc/fstab and /boot/grub/grub.cfg.
+"""Root filesystem configuration: /etc/fstab.
 
 Writes are made to the root partition's prime directory before it is
 formatted, so the resulting files are embedded directly by ``mke2fs -d``.
+``/boot/grub/grub.cfg`` is generated separately by
+:mod:`imagecraft.pack.bootloader.mkconfig` using the guest's own
+``grub-mkconfig``.
 """
 
 from pathlib import Path
 from uuid import UUID
-
-from craft_platforms import DebianArchitecture
-
-from imagecraft.pack.bootloader.config import render_grub_cfg
-from imagecraft.pack.bootloader.fs import find_kernel_and_initrd
-from imagecraft.pack.bootloader.models import RootfsConfigResult
 
 _DEFAULT_FSTAB_OPTIONS = "defaults,errors=remount-ro"
 
@@ -66,86 +63,3 @@ def configure_fstab(
     separator = "" if existing_content.endswith("\n") else "\n"
     fstab_path.write_text(existing_content + separator + fstab_entry)
     return fstab_path, True
-
-
-def configure_grub_cfg(
-    root_dir: Path,
-    root_uuid: UUID | str,
-    arch: DebianArchitecture,
-    *,
-    boot_dir: Path | None = None,
-    console: str | None = None,
-    timeout: int = 3,
-    default: str = "0",
-) -> tuple[Path, bool, str, str]:
-    """Render and write /boot/grub/grub.cfg on the root filesystem.
-
-    :param root_dir: Prime directory of the root filesystem partition.
-    :param root_uuid: UUID that will be assigned to the root filesystem.
-    :param arch: Target architecture.
-    :param boot_dir: Prime directory that corresponds to ``/boot``. Defaults
-        to ``root_dir / "boot"`` when ``/boot`` isn't a dedicated partition.
-    :param console: Optional custom kernel console string.
-    :param timeout: GRUB boot menu timeout in seconds.
-    :param default: Default menu entry index or title.
-    :return: Tuple of (target_cfg_path, rendered, vmlinuz_name, initrd_name).
-    """
-    effective_boot_dir = boot_dir if boot_dir is not None else root_dir / "boot"
-    target_cfg = effective_boot_dir / "grub" / "grub.cfg"
-    target_cfg.parent.mkdir(parents=True, exist_ok=True)
-
-    vmlinuz, initrd = find_kernel_and_initrd(effective_boot_dir)
-
-    content = render_grub_cfg(
-        arch=arch.value,
-        root_uuid=root_uuid,
-        vmlinuz=vmlinuz,
-        initrd=initrd,
-        console=console,
-        timeout=timeout,
-        default=default,
-    )
-    target_cfg.write_text(content)
-    return target_cfg, True, vmlinuz, initrd
-
-
-def configure_rootfs(
-    root_dir: Path,
-    root_uuid: UUID | str,
-    arch: DebianArchitecture,
-    *,
-    boot_dir: Path | None = None,
-    console: str | None = None,
-    timeout: int = 3,
-    default: str = "0",
-) -> RootfsConfigResult:
-    """Configure /etc/fstab and /boot/grub/grub.cfg on the root filesystem.
-
-    :param root_dir: Prime directory of the root filesystem partition.
-    :param root_uuid: UUID that will be assigned to the root filesystem.
-    :param arch: Target architecture.
-    :param boot_dir: Prime directory that corresponds to ``/boot``. Defaults
-        to ``root_dir / "boot"`` when ``/boot`` isn't a dedicated partition.
-    :param console: Optional custom kernel console string.
-    :param timeout: GRUB boot menu timeout in seconds.
-    :param default: Default menu entry index or title.
-    """
-    cfg_path, rendered, vmlinuz, initrd = configure_grub_cfg(
-        root_dir,
-        root_uuid,
-        arch,
-        boot_dir=boot_dir,
-        console=console,
-        timeout=timeout,
-        default=default,
-    )
-    fstab_path, fstab_updated = configure_fstab(root_dir, root_uuid)
-
-    return RootfsConfigResult(
-        grub_cfg_path=cfg_path,
-        grub_cfg_rendered=rendered,
-        fstab_path=fstab_path,
-        fstab_updated=fstab_updated,
-        vmlinuz=vmlinuz,
-        initrd=initrd,
-    )

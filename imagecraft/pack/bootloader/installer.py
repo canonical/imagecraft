@@ -14,18 +14,21 @@
 
 """High-level bootloader installer coordinator.
 
-Coordinates the two phases of zero-mount bootloader installation:
+Coordinates the two phases of loopless bootloader installation:
 
 1. :meth:`BootloaderInstaller.prepare_rootfs` -- run *before* the root/ESP
-   partitions are formatted. Writes ``/etc/fstab``, ``/boot/grub/grub.cfg``,
-   and (for EFI targets) the EFI binaries and early search stub, directly
-   into the partitions' prime directories. ``diskutil.format_device`` then
-   embeds these files via ``mke2fs -d``/``mcopy``.
+   partitions are formatted. Writes ``/etc/fstab``, generates
+   ``/boot/grub/grub.cfg`` with the guest's own ``grub-mkconfig`` (run in a
+   chroot over the prime directory), and (for EFI targets) stages the EFI
+   binaries and early search stub, directly into the partitions' prime
+   directories. ``diskutil.format_device`` then embeds these files via
+   ``mke2fs -d``/``mcopy``.
 2. :meth:`BootloaderInstaller.install_image_boot_code` -- run *after* the
-   final disk image has been assembled. For BIOS targets only, patches
-   Sector 0 and embeds ``core.img`` directly into the raw image file.
+   final disk image has been assembled. For BIOS targets only, runs
+   ``grub-mkimage``/``grub-bios-setup`` in a chroot with the image exposed
+   at ``/dev/image``.
 
-Neither phase mounts anything or attaches a loop device.
+Neither phase attaches a loop device.
 """
 
 from pathlib import Path
@@ -47,12 +50,14 @@ from imagecraft.models.volume import (
 from imagecraft.pack.bootloader.bios import install_non_efi, stage_non_efi_modules
 from imagecraft.pack.bootloader.const import get_arch_spec
 from imagecraft.pack.bootloader.efi import install_efi
+from imagecraft.pack.bootloader.mkconfig import generate_grub_cfg
 from imagecraft.pack.bootloader.models import (
     BootloaderResult,
     BootMethod,
     NonEfiInstallResult,
+    RootfsConfigResult,
 )
-from imagecraft.pack.bootloader.rootfs import configure_rootfs
+from imagecraft.pack.bootloader.rootfs import configure_fstab
 
 AnyVolume = GPTVolume | MBRVolume | HybridVolume
 
@@ -168,6 +173,7 @@ class BootloaderInstaller:
         esp_dir: Path | None,
         root_uuid: UUID,
         boot_dir: Path | None = None,
+        image_path: Path | None = None,
     ) -> BootloaderResult:
         """Stage bootloader files into prime directories before formatting.
 
@@ -178,6 +184,8 @@ class BootloaderInstaller:
         :param boot_dir: Prime directory of a dedicated ``/boot`` partition,
             if any. Defaults to ``root_dir / "boot"`` when ``/boot`` isn't a
             separate partition.
+        :param image_path: Path to the raw disk image file, exposed at
+            ``/dev/image`` in the chroot used to run grub-mkconfig.
         """
         boot_method = self.resolve_boot_method()
         if boot_method == BootMethod.NONE:
@@ -185,10 +193,28 @@ class BootloaderInstaller:
         # resolve_boot_method() only returns a non-NONE method when self.arch
         # is a valid DebianArchitecture, so this is always safe here.
         assert self.arch is not None  # noqa: S101
+        spec = get_arch_spec(self.arch)
 
         emit.progress("Preparing bootloader files")
-        rootfs_result = configure_rootfs(
-            root_dir, root_uuid, self.arch, boot_dir=boot_dir
+        fstab_path, fstab_updated = configure_fstab(root_dir, root_uuid)
+        try:
+            grub_cfg_path = generate_grub_cfg(
+                root_dir, root_uuid, boot_dir=boot_dir, image_path=image_path
+            )
+        except errors.BootloaderToolsMissingError as err:
+            emit.progress(f"Skipping bootloader installation: {err}", permanent=True)
+            return BootloaderResult(
+                boot_method=BootMethod.NONE,
+                rootfs_result=RootfsConfigResult(
+                    grub_cfg_path=(boot_dir or root_dir / "boot") / "grub" / "grub.cfg",
+                    fstab_path=fstab_path,
+                    fstab_updated=fstab_updated,
+                ),
+            )
+        rootfs_result = RootfsConfigResult(
+            grub_cfg_path=grub_cfg_path,
+            fstab_path=fstab_path,
+            fstab_updated=fstab_updated,
         )
 
         efi_result = None
@@ -218,8 +244,13 @@ class BootloaderInstaller:
                     boot_method=BootMethod.NONE, rootfs_result=rootfs_result
                 )
         elif boot_method == BootMethod.BIOS:
+            # resolve_boot_method() only returns BIOS when a non-EFI target
+            # exists for this architecture, so this is always safe here.
+            assert spec.non_efi_format is not None  # noqa: S101
             try:
-                stage_non_efi_modules(root_dir, boot_dir)
+                stage_non_efi_modules(
+                    root_dir, boot_dir, grub_format=spec.non_efi_format
+                )
             except errors.BootloaderToolsMissingError as err:
                 emit.progress(
                     f"Skipping BIOS bootloader installation: {err}", permanent=True
@@ -235,7 +266,7 @@ class BootloaderInstaller:
     def install_image_boot_code(
         self, *, image_path: Path, root_dir: Path, root_uuid: UUID
     ) -> NonEfiInstallResult | None:
-        """Patch the raw disk image with BIOS boot code, if applicable.
+        """Install BIOS boot code into the raw disk image, if applicable.
 
         Only takes effect for the BIOS boot method; a no-op (returning None)
         otherwise. Must be called after the image's partitions have been
@@ -243,11 +274,14 @@ class BootloaderInstaller:
 
         :param image_path: Path to the final, partitioned disk image file.
         :param root_dir: Prime directory of the root filesystem partition
-            (used to locate GRUB modules/boot.img).
+            (used as the chroot root for GRUB tooling).
         :param root_uuid: UUID assigned to the root filesystem.
         """
         if self.resolve_boot_method() != BootMethod.BIOS:
             return None
+        # resolve_boot_method() only returns BIOS when self.arch is a valid
+        # DebianArchitecture, so this is always safe here.
+        assert self.arch is not None  # noqa: S101
 
         emit.progress("Installing BIOS bootloader into the image")
         try:
@@ -255,6 +289,7 @@ class BootloaderInstaller:
                 image_path=image_path,
                 root_dir=root_dir,
                 root_uuid=root_uuid,
+                arch=self.arch,
             )
         except errors.BootloaderToolsMissingError as err:
             emit.progress(
