@@ -81,9 +81,9 @@ Governance and policies
     how-to/index
     reference/index
     explanation/index
-    release-notes/index
 
 .. toctree::
     :hidden:
 
+    release-notes/index
     contribute-to-this-documentation
