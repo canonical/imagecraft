@@ -62,7 +62,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: snap
-          path: ${{ steps.build-imagecraft.outputs.snap }}
+          path: ${{ steps.build-imagecraft.outputs.snaps }}
 
       - name: Get branch name
         id: vars
@@ -81,5 +81,5 @@ jobs:
         env:
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
         with:
-          snap: ${{ steps.build-imagecraft.outputs.snap }}
+          snap: ${{ steps.build-imagecraft.outputs.snaps }}
           release: edge/${{ steps.vars.outputs.branch }}
