@@ -20,9 +20,8 @@ import uuid
 import pytest
 from craft_platforms import DebianArchitecture
 from imagecraft import errors
-from imagecraft.pack.bootloader.config import render_early_cfg
+from imagecraft.pack.bootloader.const import EfiTier, render_early_cfg
 from imagecraft.pack.bootloader.efi import EfiInstaller
-from imagecraft.pack.bootloader.models import EfiTier
 
 
 class TestRenderEarlyCfg:

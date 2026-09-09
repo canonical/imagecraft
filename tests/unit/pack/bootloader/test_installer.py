@@ -15,15 +15,15 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Unit tests for the bootloader installer coordinator."""
 
-import uuid
+from pathlib import Path
 
 from craft_platforms import DebianArchitecture
 from imagecraft import errors
 from imagecraft.models.volume import GPTVolume, HybridVolume, MBRVolume
 from imagecraft.pack.bootloader import installer as installer_mod
+from imagecraft.pack.bootloader.const import BootMethod
 from imagecraft.pack.bootloader.installer import (
     BootloaderInstaller,
-    BootMethod,
     find_boot_structure_item,
     find_esp_structure_item,
     find_root_structure_item,
@@ -207,48 +207,47 @@ class TestResolveBootMethod:
         assert installer.resolve_boot_method() == BootMethod.NONE
 
 
+class FakeProjectDirs:
+    """Minimal ProjectDirs stand-in mapping partition names to directories."""
+
+    def __init__(self, base: Path) -> None:
+        self._base = base
+
+    def get_prime_dir(self, partition: str | None = None) -> Path:
+        return self._base / (partition or "default")
+
+
+def _prepare(installer: BootloaderInstaller, tmp_path: Path) -> BootMethod:
+    return installer.prepare_rootfs(
+        project_dirs=FakeProjectDirs(tmp_path), volume_name="pc"
+    )
+
+
 class TestGracefulSkip:
     """Missing GRUB tooling in the rootfs must not crash pack."""
 
     def test_prepare_rootfs_skips_when_mkconfig_missing(self, tmp_path, mocker):
         volume = _gpt_volume([ESP_ITEM, ROOT_ITEM])
         installer = BootloaderInstaller(volume=volume, arch=_AMD64)
-        root_dir = tmp_path / "root"
-        esp_dir = tmp_path / "esp"
-        root_dir.mkdir()
-        esp_dir.mkdir()
         mocker.patch.object(
             installer_mod,
             "generate_grub_cfg",
             side_effect=errors.BootloaderToolsMissingError("no grub-mkconfig"),
         )
-        boot_method = installer.prepare_rootfs(
-            root_dir=root_dir, esp_dir=esp_dir, root_uuid=uuid.uuid4()
-        )
+        boot_method = _prepare(installer, tmp_path)
         assert boot_method == BootMethod.NONE
         # fstab is still written even when GRUB tooling is missing.
-        assert (root_dir / "etc" / "fstab").is_file()
+        assert (tmp_path / "volume" / "pc" / "rootfs" / "etc" / "fstab").is_file()
 
     def test_prepare_rootfs_skips_efi_when_modules_missing(self, tmp_path, mocker):
         volume = _gpt_volume([ESP_ITEM, ROOT_ITEM])
         installer = BootloaderInstaller(volume=volume, arch=_AMD64)
-        root_dir = tmp_path / "root"
-        esp_dir = tmp_path / "esp"
-        root_dir.mkdir()
-        esp_dir.mkdir()
-        mocker.patch.object(
-            installer_mod,
-            "generate_grub_cfg",
-            return_value=root_dir / "boot/grub/grub.cfg",
+        mocker.patch.object(installer_mod, "generate_grub_cfg")
+        mock_efi = mocker.patch.object(installer_mod, "EfiInstaller")
+        mock_efi.return_value.install.side_effect = errors.BootloaderToolsMissingError(
+            "no modules"
         )
-        mocker.patch.object(
-            installer_mod,
-            "install_efi",
-            side_effect=errors.BootloaderToolsMissingError("no modules"),
-        )
-        boot_method = installer.prepare_rootfs(
-            root_dir=root_dir, esp_dir=esp_dir, root_uuid=uuid.uuid4()
-        )
+        boot_method = _prepare(installer, tmp_path)
         assert boot_method == BootMethod.NONE
 
     def test_prepare_rootfs_skips_bios_staging_when_modules_missing(
@@ -256,44 +255,30 @@ class TestGracefulSkip:
     ):
         volume = _mbr_volume([{**ROOT_ITEM, "type": "83"}])
         installer = BootloaderInstaller(volume=volume, arch=_AMD64)
-        root_dir = tmp_path / "root"
-        root_dir.mkdir()
-        mocker.patch.object(
-            installer_mod,
-            "generate_grub_cfg",
-            return_value=root_dir / "boot/grub/grub.cfg",
-        )
+        mocker.patch.object(installer_mod, "generate_grub_cfg")
         mocker.patch.object(
             installer_mod,
             "stage_non_efi_modules",
             side_effect=errors.BootloaderToolsMissingError("no modules"),
         )
-        boot_method = installer.prepare_rootfs(
-            root_dir=root_dir, esp_dir=None, root_uuid=uuid.uuid4()
-        )
+        boot_method = _prepare(installer, tmp_path)
         assert boot_method == BootMethod.NONE
 
     def test_install_image_boot_code_skips_when_tools_missing(self, tmp_path, mocker):
         volume = _mbr_volume([{**ROOT_ITEM, "type": "83"}])
         installer = BootloaderInstaller(volume=volume, arch=_AMD64)
-        mocker.patch.object(
-            installer_mod,
-            "install_non_efi",
-            side_effect=errors.BootloaderToolsMissingError("no grub-bios-setup"),
+        mocker.patch.object(installer_mod, "generate_grub_cfg")
+        mocker.patch.object(installer_mod, "stage_non_efi_modules")
+        mock_bios = mocker.patch.object(installer_mod, "NonEfiInstaller")
+        mock_bios.return_value.install.side_effect = errors.BootloaderToolsMissingError(
+            "no grub-bios-setup"
         )
-        installer.install_image_boot_code(
-            image_path=tmp_path / "disk.img",
-            root_dir=tmp_path,
-            root_uuid=uuid.uuid4(),
-        )
+        _prepare(installer, tmp_path)
+        installer.install_image_boot_code(image_path=tmp_path / "disk.img")
 
     def test_install_image_boot_code_noop_for_efi(self, tmp_path, mocker):
         volume = _gpt_volume([ESP_ITEM, ROOT_ITEM])
         installer = BootloaderInstaller(volume=volume, arch=_AMD64)
-        mock_install = mocker.patch.object(installer_mod, "install_non_efi")
-        installer.install_image_boot_code(
-            image_path=tmp_path / "disk.img",
-            root_dir=tmp_path,
-            root_uuid=uuid.uuid4(),
-        )
+        mock_install = mocker.patch.object(installer_mod, "NonEfiInstaller")
+        installer.install_image_boot_code(image_path=tmp_path / "disk.img")
         mock_install.assert_not_called()

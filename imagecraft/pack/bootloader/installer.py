@@ -26,13 +26,16 @@ Coordinates the two phases of bootloader installation:
 """
 
 import contextlib
+import uuid
 from pathlib import Path
 from uuid import UUID
 
 from craft_cli import emit
+from craft_parts import ProjectDirs
 from craft_platforms import DebianArchitecture
 
 from imagecraft import errors
+from imagecraft.models import get_partition_name
 from imagecraft.models.volume import (
     GptType,
     GPTVolume,
@@ -42,14 +45,51 @@ from imagecraft.models.volume import (
     Role,
     StructureItem,
 )
-from imagecraft.pack.bootloader.bios import install_non_efi, stage_non_efi_modules
-from imagecraft.pack.bootloader.const import get_arch_spec
-from imagecraft.pack.bootloader.efi import install_efi
+from imagecraft.pack.bootloader.bios import NonEfiInstaller, stage_non_efi_modules
+from imagecraft.pack.bootloader.const import ArchSpec, BootMethod, get_arch_spec
+from imagecraft.pack.bootloader.efi import EfiInstaller
 from imagecraft.pack.bootloader.mkconfig import generate_grub_cfg
-from imagecraft.pack.bootloader.models import BootMethod
-from imagecraft.pack.bootloader.rootfs import configure_fstab
 
 AnyVolume = GPTVolume | MBRVolume | HybridVolume
+
+_DEFAULT_FSTAB_OPTIONS = "defaults,errors=remount-ro"
+
+
+def configure_fstab(root_dir: Path, root_uuid: UUID | str) -> None:
+    """Ensure /etc/fstab contains an entry for the root filesystem UUID.
+
+    An existing non-comment root entry (e.g. ``LABEL=writable / ...``) is
+    replaced rather than duplicated.
+    """
+    fstab_path = root_dir / "etc" / "fstab"
+    fstab_path.parent.mkdir(parents=True, exist_ok=True)
+    str_uuid = str(root_uuid)
+    fstab_entry = f"UUID={str_uuid} / ext4 {_DEFAULT_FSTAB_OPTIONS} 0 1\n"
+
+    if not fstab_path.is_file():
+        content = "# /etc/fstab: static file system information.\n" + fstab_entry
+        fstab_path.write_text(content)
+        return
+
+    existing_content = fstab_path.read_text()
+    if str_uuid in existing_content:
+        return
+
+    lines = existing_content.splitlines(keepends=True)
+    for index, line in enumerate(lines):
+        fields = line.split()
+        if (
+            fields
+            and not line.lstrip().startswith("#")
+            and len(fields) > 1
+            and fields[1] == "/"
+        ):
+            lines[index] = fstab_entry
+            fstab_path.write_text("".join(lines))
+            return
+
+    separator = "" if existing_content.endswith("\n") else "\n"
+    fstab_path.write_text(existing_content + separator + fstab_entry)
 
 
 def find_root_structure_item(volume: AnyVolume) -> StructureItem | None:
@@ -89,11 +129,7 @@ def find_boot_structure_item(volume: AnyVolume) -> StructureItem | None:
 
     A "dedicated boot partition" is a ``system-boot``-role item that is
     *not* the EFI System Partition and *not* a raw BIOS Boot partition
-    (which holds GRUB's core.img, not a filesystem) -- e.g. an MBR volume
-    with a separate ``/boot`` partition, or a GPT volume with distinct ESP
-    and ``/boot`` partitions. Returns ``None`` when there's no such partition
-    (including the common case where the only ``system-boot``-role item *is*
-    the ESP).
+    (which holds GRUB's core.img, not a filesystem).
     """
     esp_item = find_esp_structure_item(volume)
     return next(
@@ -108,60 +144,70 @@ def find_boot_structure_item(volume: AnyVolume) -> StructureItem | None:
     )
 
 
-def _has_bios_boot_partition(volume: AnyVolume) -> bool:
-    return any(_gpt_type_of(item) == GptType.BIOS_BOOT for item in volume.structure)
-
-
 class BootloaderInstaller:
-    """Coordinates zero-mount GRUB installation for a single image volume."""
+    """Coordinates loopless GRUB installation for a single image volume."""
 
     def __init__(self, *, volume: AnyVolume, arch: DebianArchitecture | str) -> None:
         """Initialize the bootloader installer.
 
         :param volume: The volume layout being packed.
-        :param arch: Target architecture (invalid values disable bootloader
-            installation).
+        :param arch: Target architecture (invalid or unsupported values
+            disable bootloader installation).
         """
         self.volume = volume
+        self.arch: DebianArchitecture | None
+        self._spec: ArchSpec | None
         try:
-            self.arch: DebianArchitecture | None = (
+            self.arch = (
                 arch
                 if isinstance(arch, DebianArchitecture)
                 else DebianArchitecture(arch)
             )
+            self._spec = get_arch_spec(self.arch)
         except ValueError:
             self.arch = None
+            self._spec = None
+
+        self.root_item = find_root_structure_item(volume)
+        self.esp_item = find_esp_structure_item(volume)
+        self.boot_item = find_boot_structure_item(volume)
+        self.root_uuid = uuid.uuid4()
+        self.boot_uuid = uuid.uuid4() if self.boot_item is not None else None
+        self._root_dir: Path | None = None
+
+    @property
+    def partition_uuids(self) -> dict[str, str]:
+        """Map structure item names to the filesystem UUIDs to assign them."""
+        uuids = {}
+        if self.root_item is not None:
+            uuids[self.root_item.name] = str(self.root_uuid)
+        if self.boot_item is not None and self.boot_uuid is not None:
+            uuids[self.boot_item.name] = str(self.boot_uuid)
+        return uuids
 
     def resolve_boot_method(self) -> BootMethod:
         """Determine which boot method (if any) applies to this volume/arch."""
-        if find_root_structure_item(self.volume) is None:
+        if self.root_item is None:
             emit.progress(
                 "Skipping bootloader installation because no data partition was found",
                 permanent=True,
             )
             return BootMethod.NONE
 
-        if self.arch is None:
+        if self._spec is None:
             emit.progress(
                 "Cannot install a bootloader for this architecture", permanent=True
             )
             return BootMethod.NONE
 
-        try:
-            spec = get_arch_spec(self.arch)
-        except ValueError:
-            emit.progress(
-                "Cannot install a bootloader for this architecture", permanent=True
-            )
-            return BootMethod.NONE
-
-        if find_esp_structure_item(self.volume) is not None:
+        if self.esp_item is not None:
             return BootMethod.EFI
 
         is_mbr_schema = self.volume.volume_schema == PartitionSchema.MBR
-        if (
-            is_mbr_schema or _has_bios_boot_partition(self.volume)
-        ) and spec.non_efi_format is not None:
+        has_bios_boot = any(
+            _gpt_type_of(item) == GptType.BIOS_BOOT for item in self.volume.structure
+        )
+        if (is_mbr_schema or has_bios_boot) and self._spec.non_efi_format is not None:
             return BootMethod.BIOS
 
         emit.progress(
@@ -171,36 +217,45 @@ class BootloaderInstaller:
         )
         return BootMethod.NONE
 
+    def _prime_dir(
+        self, project_dirs: ProjectDirs, volume_name: str, item: StructureItem
+    ) -> Path:
+        return project_dirs.get_prime_dir(
+            partition=get_partition_name(volume_name, item)
+        )
+
     def prepare_rootfs(
-        self,
-        *,
-        root_dir: Path,
-        esp_dir: Path | None,
-        root_uuid: UUID,
-        boot_dir: Path | None = None,
-        boot_uuid: UUID | None = None,
+        self, *, project_dirs: ProjectDirs, volume_name: str
     ) -> BootMethod:
         """Stage bootloader files into prime directories before formatting.
 
-        :param root_dir: Prime directory of the root filesystem partition.
-        :param esp_dir: Prime directory of the EFI System Partition, if any.
-        :param root_uuid: UUID that will be assigned to the root filesystem.
-        :param boot_dir: Prime directory of a dedicated ``/boot`` partition,
-            if any.
-        :param boot_uuid: UUID that will be assigned to the dedicated
-            ``/boot`` partition's filesystem, if any.
+        :param project_dirs: The lifecycle's project directories.
+        :param volume_name: Name of the volume being packed.
         :return: The boot method staged for (``BootMethod.NONE`` if skipped).
         """
         boot_method = self.resolve_boot_method()
         if boot_method == BootMethod.NONE:
             return boot_method
-        # resolve_boot_method() only returns a non-NONE method when self.arch
-        # is a valid DebianArchitecture, so this is always safe here.
+        # resolve_boot_method() only returns a non-NONE method when the arch
+        # has a spec, so these are always safe here.
         assert self.arch is not None  # noqa: S101
-        spec = get_arch_spec(self.arch)
+        assert self._spec is not None  # noqa: S101
+        assert self.root_item is not None  # noqa: S101
+
+        self._root_dir = self._prime_dir(project_dirs, volume_name, self.root_item)
+        esp_dir = (
+            self._prime_dir(project_dirs, volume_name, self.esp_item)
+            if self.esp_item is not None
+            else None
+        )
+        boot_dir = (
+            self._prime_dir(project_dirs, volume_name, self.boot_item)
+            if self.boot_item is not None
+            else None
+        )
 
         emit.progress("Preparing bootloader files")
-        configure_fstab(root_dir, root_uuid)
+        configure_fstab(self._root_dir, self.root_uuid)
         partition_map = (
             "msdos"
             if self.volume.volume_schema == PartitionSchema.MBR
@@ -208,10 +263,10 @@ class BootloaderInstaller:
         )
         try:
             generate_grub_cfg(
-                root_dir,
-                root_uuid,
+                self._root_dir,
+                self.root_uuid,
                 boot_dir=boot_dir,
-                boot_uuid=boot_uuid,
+                boot_uuid=self.boot_uuid,
                 partition_map=partition_map,
             )
         except errors.BootloaderToolsMissingError as err:
@@ -227,14 +282,14 @@ class BootloaderInstaller:
                 )
                 return BootMethod.NONE
             try:
-                install_efi(
-                    root_dir=root_dir,
+                EfiInstaller(
+                    root_dir=self._root_dir,
                     esp_dir=esp_dir,
-                    root_uuid=root_uuid,
+                    root_uuid=self.root_uuid,
                     arch=self.arch,
                     boot_dir=boot_dir,
-                    boot_uuid=boot_uuid,
-                )
+                    boot_uuid=self.boot_uuid,
+                ).install()
             except errors.BootloaderToolsMissingError as err:
                 emit.progress(
                     f"Skipping EFI bootloader installation: {err}", permanent=True
@@ -242,11 +297,11 @@ class BootloaderInstaller:
                 return BootMethod.NONE
         elif boot_method == BootMethod.BIOS:
             # resolve_boot_method() only returns BIOS when a non-EFI target
-            # exists for this architecture, so this is always safe here.
-            assert spec.non_efi_format is not None  # noqa: S101
+            # exists for this architecture.
+            assert self._spec.non_efi_format is not None  # noqa: S101
             try:
                 stage_non_efi_modules(
-                    root_dir, boot_dir, grub_format=spec.non_efi_format
+                    self._root_dir, boot_dir, grub_format=self._spec.non_efi_format
                 )
             except errors.BootloaderToolsMissingError as err:
                 emit.progress(
@@ -256,43 +311,31 @@ class BootloaderInstaller:
 
         return boot_method
 
-    def install_image_boot_code(
-        self,
-        *,
-        image_path: Path,
-        root_dir: Path,
-        root_uuid: UUID,
-        boot_uuid: UUID | None = None,
-    ) -> None:
+    def install_image_boot_code(self, *, image_path: Path) -> None:
         """Install BIOS boot code into the raw disk image, if applicable.
 
         No-op for non-BIOS volumes. Must be called after the image's
-        partitions have been formatted and finalized.
+        partitions have been formatted and finalized, and after
+        :meth:`prepare_rootfs`.
 
         :param image_path: Path to the final, partitioned disk image file.
-        :param root_dir: Prime directory of the root filesystem partition.
-        :param root_uuid: UUID assigned to the root filesystem.
-        :param boot_uuid: UUID assigned to the dedicated ``/boot``
-            partition's filesystem, if any.
         """
-        if self.resolve_boot_method() != BootMethod.BIOS:
+        if self.resolve_boot_method() != BootMethod.BIOS or self._root_dir is None:
             return
-        # resolve_boot_method() only returns BIOS when self.arch is a valid
-        # DebianArchitecture, so this is always safe here.
+        # resolve_boot_method() only returns BIOS when the arch has a spec.
         assert self.arch is not None  # noqa: S101
 
         emit.progress("Installing BIOS bootloader into the image")
         try:
-            install_non_efi(
+            NonEfiInstaller(
                 image_path=image_path,
-                root_dir=root_dir,
-                root_uuid=root_uuid,
+                root_dir=self._root_dir,
+                root_uuid=self.root_uuid,
                 arch=self.arch,
                 volume=self.volume,
-                boot_uuid=boot_uuid,
-            )
+                boot_uuid=self.boot_uuid,
+            ).install()
         except errors.BootloaderToolsMissingError as err:
             emit.progress(
                 f"Skipping BIOS bootloader installation: {err}", permanent=True
             )
-            return

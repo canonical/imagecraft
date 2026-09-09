@@ -32,9 +32,13 @@ from imagecraft.pack.bootloader.chrootenv import (
     find_chroot_binary,
     run_checked,
 )
-from imagecraft.pack.bootloader.config import render_early_cfg
-from imagecraft.pack.bootloader.const import CORE_EFI_MODULES, ArchSpec, get_arch_spec
-from imagecraft.pack.bootloader.models import EfiTier
+from imagecraft.pack.bootloader.const import (
+    CORE_EFI_MODULES,
+    ArchSpec,
+    EfiTier,
+    get_arch_spec,
+    render_early_cfg,
+)
 
 _CHROOT_EFI_WORK_DIR = "/tmp/grub-efi"  # noqa: S108
 
@@ -186,8 +190,6 @@ class EfiInstaller:
         if csv_file := self._find_file(f"usr/lib/shim/BOOT{efi_suf}.CSV"):
             shutil.copy2(csv_file, u_dir / f"BOOT{efi_suf}.CSV")
 
-        self.deploy_early_stubs()
-
         return EfiTier.SIGNED
 
     def install_unsigned_prebuilt(self) -> EfiTier | None:
@@ -215,8 +217,6 @@ class EfiInstaller:
             shutil.copytree(
                 modules_dir, self.boot_dir / "grub" / mod_dir_name, dirs_exist_ok=True
             )
-
-        self.deploy_early_stubs()
 
         return EfiTier.UNSIGNED_PREBUILT
 
@@ -276,44 +276,16 @@ class EfiInstaller:
             modules_dir, self.boot_dir / "grub" / mod_dir_name, dirs_exist_ok=True
         )
 
-        self.deploy_early_stubs()
-
         return EfiTier.FALLBACK_BUILD
 
     def install(self) -> EfiTier:
         """Execute the 3-tier EFI bootloader resolution and installation sequence."""
         if tier := self.install_signed():
             emit.debug("Installed signed EFI bootloader (secure boot capable)")
-            return tier
-
-        if tier := self.install_unsigned_prebuilt():
+        elif tier := self.install_unsigned_prebuilt():
             emit.debug("Installed unsigned prebuilt EFI bootloader")
-            return tier
-
-        emit.debug("Building standalone EFI bootloader with grub-mkimage")
-        return self.install_fallback_build()
-
-
-def install_efi(
-    *,
-    root_dir: Path,
-    esp_dir: Path,
-    root_uuid: UUID | str,
-    arch: DebianArchitecture,
-    boot_dir: Path | None = None,
-    boot_uuid: UUID | str | None = None,
-) -> EfiTier:
-    """Install the EFI bootloader into esp_dir/root_dir prime directories.
-
-    :return: The resolution tier that was installed. See
-        :class:`EfiInstaller` for parameter details.
-    """
-    installer = EfiInstaller(
-        root_dir=root_dir,
-        esp_dir=esp_dir,
-        root_uuid=root_uuid,
-        arch=arch,
-        boot_dir=boot_dir,
-        boot_uuid=boot_uuid,
-    )
-    return installer.install()
+        else:
+            emit.debug("Building standalone EFI bootloader with grub-mkimage")
+            tier = self.install_fallback_build()
+        self.deploy_early_stubs()
+        return tier

@@ -27,6 +27,7 @@ guest's binary, answering device/fs queries with the values of the image
 being built.
 """
 
+import contextlib
 import os
 import re
 import tempfile
@@ -42,7 +43,6 @@ from imagecraft.pack.bootloader.chrootenv import (
 )
 from imagecraft.pack.chroot import Mount
 
-_OS_PROBER = Path("/etc/grub.d/30_os-prober")
 _GRUB_DEFAULTS_SNIPPET = Path("/etc/default/grub.d/60-imagecraft.cfg")
 # grub scripts only need GRUB_DEVICE to exist (e.g. ``test -e``); the actual
 # device identity in the generated config comes from the UUID overrides.
@@ -125,13 +125,6 @@ def _generate_grub_cfg_in_chroot(
     if boot_uuid is not None:
         by_uuid_boot = by_uuid_dir / boot_uuid
         by_uuid_boot.symlink_to(str(_CHROOT_FAKE_BOOT_DEVICE))
-    Path("/dev/disk/by-partuuid").mkdir(exist_ok=True)
-    # Disable os-prober so it doesn't scan the build host's devices and write
-    # bogus entries (the historical flow used dpkg-divert for this). The
-    # original permissions are restored afterwards.
-    prober_was_executable = _OS_PROBER.is_file() and os.access(_OS_PROBER, os.X_OK)
-    if prober_was_executable:
-        _OS_PROBER.chmod(0o644)
     try:
         Path("/boot/grub").mkdir(parents=True, exist_ok=True)
         proc = run_checked([mkconfig, "-o", "/boot/grub/grub.cfg"])
@@ -143,8 +136,11 @@ def _generate_grub_cfg_in_chroot(
         by_uuid_root.unlink(missing_ok=True)
         if by_uuid_boot is not None:
             by_uuid_boot.unlink(missing_ok=True)
-        if prober_was_executable:
-            _OS_PROBER.chmod(0o755)
+        # Remove the by-uuid directory if we created it (pre-format, so an
+        # empty leftover would leak into the image).
+        with contextlib.suppress(OSError):
+            by_uuid_dir.rmdir()
+            by_uuid_dir.parent.rmdir()
 
 
 def _fs_internal_path(path: Path) -> str:

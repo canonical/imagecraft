@@ -35,8 +35,11 @@ from imagecraft import errors
 from imagecraft.models.volume import GPTVolume, HybridVolume, MBRVolume, Role
 from imagecraft.pack import gptutil
 from imagecraft.pack.bootloader.chrootenv import find_chroot_binary, run_checked
-from imagecraft.pack.bootloader.config import render_early_cfg
-from imagecraft.pack.bootloader.const import CORE_BIOS_MODULES, get_arch_spec
+from imagecraft.pack.bootloader.const import (
+    CORE_BIOS_MODULES,
+    get_arch_spec,
+    render_early_cfg,
+)
 from imagecraft.utils.mount import ExtFuseMount
 
 
@@ -217,27 +220,3 @@ class NonEfiInstaller:
                     )
                 finally:
                     core_img.unlink(missing_ok=True)
-
-
-def install_non_efi(
-    *,
-    image_path: Path,
-    root_dir: Path,
-    root_uuid: UUID | str,
-    arch: DebianArchitecture,
-    volume: GPTVolume | MBRVolume | HybridVolume,
-    boot_uuid: UUID | str | None = None,
-) -> None:
-    """Install the BIOS bootloader into a raw disk image.
-
-    See :class:`NonEfiInstaller` for parameter details.
-    """
-    installer = NonEfiInstaller(
-        image_path=image_path,
-        root_dir=root_dir,
-        root_uuid=root_uuid,
-        arch=arch,
-        volume=volume,
-        boot_uuid=boot_uuid,
-    )
-    installer.install()

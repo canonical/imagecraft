@@ -25,7 +25,7 @@ from imagecraft.pack.bootloader.installer import (
     find_esp_structure_item,
     find_root_structure_item,
 )
-from imagecraft.pack.bootloader.models import BootMethod, EfiTier
+from imagecraft.pack.bootloader.const import BootMethod, EfiTier
 
 __all__ = [
     "BootMethod",

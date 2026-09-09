@@ -12,12 +12,59 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Architecture specs, GRUB module lists, and on-disk offsets for the bootloader package."""
+"""Shared constants, enums, and the early-config renderer for the bootloader package."""
 
+import enum
 from dataclasses import dataclass
 from typing import Final
+from uuid import UUID
 
 from craft_platforms import DebianArchitecture
+
+
+class BootMethod(str, enum.Enum):
+    """The resolved boot method for a target image."""
+
+    EFI = "efi"
+    """Boot via a UEFI System Partition, using the 3-tier EFI installer."""
+
+    BIOS = "bios"
+    """Boot via legacy BIOS, using grub-bios-setup."""
+
+    NONE = "none"
+    """No bootloader to install (unsupported arch/schema or no boot partition)."""
+
+
+class EfiTier(str, enum.Enum):
+    """Resolution tier used to install the EFI bootloader."""
+
+    SIGNED = "signed"
+    """Signed shim + signed GRUB (secure boot capable)."""
+
+    UNSIGNED_PREBUILT = "unsigned_prebuilt"
+    """Prebuilt monolithic (unsigned) GRUB EFI binary."""
+
+    FALLBACK_BUILD = "fallback_build"
+    """Standalone EFI binary assembled with grub-mkimage."""
+
+
+def render_early_cfg(
+    search_uuid: UUID | str, *, boot_prefix: str = "/boot/grub"
+) -> str:
+    """Render the early GRUB search stub configuration.
+
+    :param search_uuid: UUID of the filesystem holding the GRUB configuration
+        (the root filesystem, or the dedicated ``/boot`` partition when one
+        exists).
+    :param boot_prefix: Path of the GRUB directory relative to the searched
+        filesystem's root (``/boot/grub``, or ``/grub`` when ``/boot`` is a
+        dedicated partition).
+    """
+    return (
+        f"search.fs_uuid {search_uuid} root\n"
+        f"set prefix=($root)'{boot_prefix}'\n"
+        "configfile $prefix/grub.cfg\n"
+    )
 
 
 @dataclass(frozen=True)
@@ -100,10 +147,9 @@ def get_arch_spec(arch: DebianArchitecture | str) -> ArchSpec:
 
 
 # GRUB core modules embedded via grub-mkimage.
-CORE_EFI_MODULES: Final[list[str]] = [
+_COMMON_GRUB_MODULES: Final[list[str]] = [
     "part_gpt",
     "part_msdos",
-    "fat",
     "ext2",
     "normal",
     "search",
@@ -119,27 +165,16 @@ CORE_EFI_MODULES: Final[list[str]] = [
     "gfxterm",
     "gettext",
     "reboot",
+]
+
+CORE_EFI_MODULES: Final[list[str]] = [
+    *_COMMON_GRUB_MODULES,
+    "fat",
     "efi_gop",
     "all_video",
 ]
 
 CORE_BIOS_MODULES: Final[list[str]] = [
     "biosdisk",
-    "part_gpt",
-    "part_msdos",
-    "ext2",
-    "normal",
-    "search",
-    "search_fs_uuid",
-    "configfile",
-    "echo",
-    "test",
-    "linux",
-    "gzio",
-    "serial",
-    "terminal",
-    "font",
-    "gfxterm",
-    "gettext",
-    "reboot",
+    *_COMMON_GRUB_MODULES,
 ]

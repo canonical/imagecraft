@@ -17,7 +17,7 @@
 
 import uuid
 
-from imagecraft.pack.bootloader.rootfs import configure_fstab
+from imagecraft.pack.bootloader.installer import configure_fstab
 
 
 class TestConfigureFstab:

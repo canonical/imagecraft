@@ -14,7 +14,6 @@
 
 """Imagecraft Package service."""
 
-import uuid
 from pathlib import Path
 from typing import cast
 
@@ -24,12 +23,7 @@ from typing_extensions import override
 
 from imagecraft.models import Project, get_partition_name
 from imagecraft.pack import diskutil
-from imagecraft.pack.bootloader import (
-    BootloaderInstaller,
-    find_boot_structure_item,
-    find_esp_structure_item,
-    find_root_structure_item,
-)
+from imagecraft.pack.bootloader import BootloaderInstaller
 from imagecraft.services.image import ImageService
 
 
@@ -60,43 +54,15 @@ class ImagecraftPackService(PackageService):
 
         arch = self._services.get("lifecycle").project_info.target_arch
         bootloader = BootloaderInstaller(volume=volume, arch=arch)
+        partition_uuids = bootloader.partition_uuids
 
         # Pre-format staging: write bootloader files (fstab, grub.cfg, EFI
         # binaries) into the root/ESP prime directories *before* formatting,
         # so mke2fs/mkfs.vfat embed them directly.
-        root_uuid = uuid.uuid4()
-        root_item = find_root_structure_item(volume)
-        esp_item = find_esp_structure_item(volume)
-        boot_item = find_boot_structure_item(volume)
-        boot_uuid = uuid.uuid4() if boot_item is not None else None
-        root_prime_dir = None
-
         try:
-            if root_item is not None:
-                root_prime_dir = project_dirs.get_prime_dir(
-                    partition=get_partition_name(volume_name, root_item)
-                )
-                esp_prime_dir = (
-                    project_dirs.get_prime_dir(
-                        partition=get_partition_name(volume_name, esp_item)
-                    )
-                    if esp_item is not None
-                    else None
-                )
-                boot_prime_dir = (
-                    project_dirs.get_prime_dir(
-                        partition=get_partition_name(volume_name, boot_item)
-                    )
-                    if boot_item is not None
-                    else None
-                )
-                bootloader.prepare_rootfs(
-                    root_dir=root_prime_dir,
-                    esp_dir=esp_prime_dir,
-                    root_uuid=root_uuid,
-                    boot_dir=boot_prime_dir,
-                    boot_uuid=boot_uuid,
-                )
+            bootloader.prepare_rootfs(
+                project_dirs=project_dirs, volume_name=volume_name
+            )
 
             for structure_item in volume.structure:
                 partition_name = get_partition_name(volume_name, structure_item)
@@ -106,17 +72,12 @@ class ImagecraftPackService(PackageService):
                 )
                 loop_path = Path(loop_paths[f"{volume_name}/{structure_item.name}"])
 
-                partition_uuid = None
-                if root_item is not None and structure_item.name == root_item.name:
-                    partition_uuid = str(root_uuid)
-                elif boot_item is not None and structure_item.name == boot_item.name:
-                    partition_uuid = str(boot_uuid)
                 diskutil.format_device(
                     device_path=loop_path,
                     fstype=structure_item.filesystem,
                     label=structure_item.filesystem_label,
                     content_dir=partition_prime_dir,
-                    uuid=partition_uuid,
+                    uuid=partition_uuids.get(structure_item.name),
                 )
 
             image_service.verify_images()
@@ -128,14 +89,8 @@ class ImagecraftPackService(PackageService):
         # Post-format: for BIOS targets, install the boot code into the raw
         # disk image (fuse2fs mount + grub-bios-setup). No-op for
         # EFI/unsupported targets.
-        if root_prime_dir is not None:
-            for path in images.values():
-                bootloader.install_image_boot_code(
-                    image_path=path,
-                    root_dir=root_prime_dir,
-                    root_uuid=root_uuid,
-                    boot_uuid=boot_uuid,
-                )
+        for path in images.values():
+            bootloader.install_image_boot_code(image_path=path)
 
         return list(images.values())
 
