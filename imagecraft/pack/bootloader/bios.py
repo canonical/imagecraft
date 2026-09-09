@@ -31,6 +31,7 @@ import tempfile
 from pathlib import Path
 from uuid import UUID
 
+from craft_cli import emit
 from craft_platforms import DebianArchitecture
 
 from imagecraft import errors
@@ -46,6 +47,13 @@ from imagecraft.pack.bootloader.const import (
 from imagecraft.pack.bootloader.fs import safe_copytree
 from imagecraft.pack.bootloader.models import NonEfiInstallResult
 from imagecraft.utils.mount import ExtFuseMount
+
+
+def _run_logged(cmd: list[str]) -> None:
+    """Run a GRUB tool, forwarding its output to the craft log."""
+    proc = run_checked(cmd)
+    if output := (proc.stdout + proc.stderr).strip():
+        emit.debug(output)
 
 
 def _bios_mod_dir(root_dir: Path, grub_format: str) -> Path:
@@ -197,7 +205,7 @@ class NonEfiInstaller:
             ) as mnt:
                 mnt_mod_dir = mnt / mod_dir_rel
                 core_img = mnt_mod_dir / "core.img"
-                run_checked(
+                _run_logged(
                     [
                         str(mnt / mkimage.lstrip("/")),
                         "-d",
@@ -215,7 +223,7 @@ class NonEfiInstaller:
                 )
                 core_img_size = core_img.stat().st_size
                 try:
-                    run_checked(
+                    _run_logged(
                         [
                             str(mnt_mod_dir / "grub-bios-setup"),
                             "--skip-fs-probe",

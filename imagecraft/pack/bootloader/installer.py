@@ -31,6 +31,7 @@ Coordinates the two phases of loopless bootloader installation:
 Neither phase attaches a loop device.
 """
 
+import contextlib
 from pathlib import Path
 from uuid import UUID
 
@@ -69,14 +70,27 @@ def find_root_structure_item(volume: AnyVolume) -> StructureItem | None:
     )
 
 
+def _gpt_type_of(item: StructureItem) -> GptType | None:
+    """Return the GPT partition type of a structure item, if it has one.
+
+    GPT items carry a :class:`GptType` directly; hybrid items encode it as
+    the second component of a combined ``'<mbr-type>,<gpt-type>'`` string;
+    MBR items have no GPT type.
+    """
+    structure_type = getattr(item, "structure_type", None)
+    if isinstance(structure_type, GptType):
+        return structure_type
+    if isinstance(structure_type, str) and "," in structure_type:
+        gpt_part = structure_type.split(",", 1)[1]
+        with contextlib.suppress(ValueError):
+            return GptType(gpt_part.upper())
+    return None
+
+
 def find_esp_structure_item(volume: AnyVolume) -> StructureItem | None:
     """Return the EFI System Partition structure item, if any."""
     return next(
-        (
-            item
-            for item in volume.structure
-            if getattr(item, "structure_type", None) == GptType.EFI_SYSTEM
-        ),
+        (item for item in volume.structure if _gpt_type_of(item) == GptType.EFI_SYSTEM),
         None,
     )
 
@@ -85,27 +99,28 @@ def find_boot_structure_item(volume: AnyVolume) -> StructureItem | None:
     """Return a dedicated ``/boot`` partition structure item, if any.
 
     A "dedicated boot partition" is a ``system-boot``-role item that is
-    *not* the EFI System Partition -- e.g. an MBR volume with a separate
-    ``/boot`` partition, or a GPT volume with distinct ESP and ``/boot``
-    partitions. Returns ``None`` when there's no such partition (including
-    the common case where the only ``system-boot``-role item *is* the ESP).
+    *not* the EFI System Partition and *not* a raw BIOS Boot partition
+    (which holds GRUB's core.img, not a filesystem) -- e.g. an MBR volume
+    with a separate ``/boot`` partition, or a GPT volume with distinct ESP
+    and ``/boot`` partitions. Returns ``None`` when there's no such partition
+    (including the common case where the only ``system-boot``-role item *is*
+    the ESP).
     """
     esp_item = find_esp_structure_item(volume)
     return next(
         (
             item
             for item in volume.structure
-            if item.role == Role.SYSTEM_BOOT and item is not esp_item
+            if item.role == Role.SYSTEM_BOOT
+            and item is not esp_item
+            and _gpt_type_of(item) != GptType.BIOS_BOOT
         ),
         None,
     )
 
 
 def _has_bios_boot_partition(volume: AnyVolume) -> bool:
-    return any(
-        getattr(item, "structure_type", None) == GptType.BIOS_BOOT
-        for item in volume.structure
-    )
+    return any(_gpt_type_of(item) == GptType.BIOS_BOOT for item in volume.structure)
 
 
 class BootloaderInstaller:

@@ -104,7 +104,7 @@ exit 0
 
 def _generate_grub_cfg_in_chroot(
     *, mkconfig: str, grub_defaults: str, root_uuid: str, boot_uuid: str | None
-) -> None:
+) -> str:
     """Generate grub.cfg inside the chroot.
 
     Must be a top-level function so it can be pickled into the chroot child
@@ -114,6 +114,7 @@ def _generate_grub_cfg_in_chroot(
     :param grub_defaults: Content for a transient /etc/default/grub.d snippet.
     :param root_uuid: UUID of the root filesystem.
     :param boot_uuid: UUID of the dedicated ``/boot`` filesystem, if any.
+    :return: grub-mkconfig's combined output (for logging).
     :raises errors.BootloaderError: If grub-mkconfig fails.
     """
     _GRUB_DEFAULTS_SNIPPET.parent.mkdir(parents=True, exist_ok=True)
@@ -139,7 +140,8 @@ def _generate_grub_cfg_in_chroot(
         _OS_PROBER.chmod(0o644)
     try:
         Path("/boot/grub").mkdir(parents=True, exist_ok=True)
-        run_checked([mkconfig, "-o", "/boot/grub/grub.cfg"])
+        proc = run_checked([mkconfig, "-o", "/boot/grub/grub.cfg"])
+        return (proc.stdout + proc.stderr).strip()
     finally:
         _GRUB_DEFAULTS_SNIPPET.unlink(missing_ok=True)
         _CHROOT_FAKE_DEVICE.unlink(missing_ok=True)
@@ -184,18 +186,21 @@ def _strip_boot_prefix(grub_cfg_path: Path, boot_dir: Path) -> None:
     the bind-mounted boot prime directory), but at boot time GRUB reads them
     relative to the boot filesystem's root.
     """
-    prefixes = ("/boot/", _fs_internal_path(boot_dir).rstrip("/") + "/")
-    prefix_alternation = "|".join(re.escape(p) for p in prefixes)
-    pattern = re.compile(
-        rf"^(\s*(?:{'|'.join(_BOOT_PATH_DIRECTIVES)})\b.*)(?:{prefix_alternation})",
-        re.MULTILINE,
-    )
+    # Strip the longer (host-fs-internal) prefix first: it may itself end in
+    # "/boot/" (e.g. a prime directory named "boot").
+    prefixes = (_fs_internal_path(boot_dir).rstrip("/") + "/", "/boot/")
+    directive_alternation = "|".join(_BOOT_PATH_DIRECTIVES)
     content = grub_cfg_path.read_text()
-    while True:
-        updated, count = pattern.subn(r"\1/", content)
-        if not count:
-            break
-        content = updated
+    for prefix in prefixes:
+        pattern = re.compile(
+            rf"^(\s*(?:{directive_alternation})\b.*){re.escape(prefix)}",
+            re.MULTILINE,
+        )
+        while True:
+            updated, count = pattern.subn(r"\1/", content)
+            if not count:
+                break
+            content = updated
     grub_cfg_path.write_text(content)
 
 
@@ -270,7 +275,7 @@ def generate_grub_cfg(
     ]
     chroot = build_prime_chroot(root_dir, boot_dir=boot_dir, extra_mounts=extra_mounts)
     try:
-        chroot.execute(
+        mkconfig_output = chroot.execute(
             target=_generate_grub_cfg_in_chroot,
             mkconfig=mkconfig,
             grub_defaults=grub_defaults,
@@ -291,5 +296,9 @@ def generate_grub_cfg(
     grub_cfg_path = effective_boot_dir / "grub" / "grub.cfg"
     if boot_dir is not None:
         _strip_boot_prefix(grub_cfg_path, boot_dir)
+    if mkconfig_output:
+        # grub-mkconfig logs its progress ("Generating grub configuration
+        # file ...", menu entries added, ...) to the craft log.
+        emit.debug(mkconfig_output)
     emit.debug(f"Generated {grub_cfg_path} with grub-mkconfig")
     return grub_cfg_path

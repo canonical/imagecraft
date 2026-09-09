@@ -47,13 +47,14 @@ def find_chroot_binary(root_dir: Path, name: str) -> str:
     )
 
 
-def run_checked(cmd: list[str]) -> None:
+def run_checked(cmd: list[str]) -> subprocess.CompletedProcess[str]:
     """Run a command inside the chroot, wrapping failures.
 
+    :return: The completed process (output captured).
     :raises errors.BootloaderError: If the command exits non-zero.
     """
     try:
-        subprocess.run(
+        return subprocess.run(
             cmd,
             check=True,
             capture_output=True,

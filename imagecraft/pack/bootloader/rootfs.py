@@ -60,6 +60,22 @@ def configure_fstab(
     if str_uuid in existing_content:
         return fstab_path, False
 
+    # Replace an existing root entry (e.g. a project-provided
+    # ``LABEL=writable / ...`` line) rather than appending a second one,
+    # which would leave the stale root specification in place.
+    lines = existing_content.splitlines(keepends=True)
+    for index, line in enumerate(lines):
+        fields = line.split()
+        if (
+            fields
+            and not line.lstrip().startswith("#")
+            and len(fields) > 1
+            and fields[1] == "/"
+        ):
+            lines[index] = fstab_entry
+            fstab_path.write_text("".join(lines))
+            return fstab_path, True
+
     separator = "" if existing_content.endswith("\n") else "\n"
     fstab_path.write_text(existing_content + separator + fstab_entry)
     return fstab_path, True

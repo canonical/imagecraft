@@ -63,41 +63,41 @@ class ImagecraftPackService(PackageService):
 
         # Pre-format staging: write bootloader files (fstab, grub.cfg, EFI
         # binaries) into the root/ESP prime directories *before* formatting,
-        # so mke2fs/mkfs.vfat embed them directly. This requires no mounts
-        # or loop-device chroots.
+        # so mke2fs/mkfs.vfat embed them directly.
         root_uuid = uuid.uuid4()
         root_item = find_root_structure_item(volume)
         esp_item = find_esp_structure_item(volume)
         boot_item = find_boot_structure_item(volume)
         boot_uuid = uuid.uuid4() if boot_item is not None else None
         root_prime_dir = None
-        if root_item is not None:
-            root_prime_dir = project_dirs.get_prime_dir(
-                partition=get_partition_name(volume_name, root_item)
-            )
-            esp_prime_dir = (
-                project_dirs.get_prime_dir(
-                    partition=get_partition_name(volume_name, esp_item)
-                )
-                if esp_item is not None
-                else None
-            )
-            boot_prime_dir = (
-                project_dirs.get_prime_dir(
-                    partition=get_partition_name(volume_name, boot_item)
-                )
-                if boot_item is not None
-                else None
-            )
-            bootloader.prepare_rootfs(
-                root_dir=root_prime_dir,
-                esp_dir=esp_prime_dir,
-                root_uuid=root_uuid,
-                boot_dir=boot_prime_dir,
-                boot_uuid=boot_uuid,
-            )
 
         try:
+            if root_item is not None:
+                root_prime_dir = project_dirs.get_prime_dir(
+                    partition=get_partition_name(volume_name, root_item)
+                )
+                esp_prime_dir = (
+                    project_dirs.get_prime_dir(
+                        partition=get_partition_name(volume_name, esp_item)
+                    )
+                    if esp_item is not None
+                    else None
+                )
+                boot_prime_dir = (
+                    project_dirs.get_prime_dir(
+                        partition=get_partition_name(volume_name, boot_item)
+                    )
+                    if boot_item is not None
+                    else None
+                )
+                bootloader.prepare_rootfs(
+                    root_dir=root_prime_dir,
+                    esp_dir=esp_prime_dir,
+                    root_uuid=root_uuid,
+                    boot_dir=boot_prime_dir,
+                    boot_uuid=boot_uuid,
+                )
+
             for structure_item in volume.structure:
                 partition_name = get_partition_name(volume_name, structure_item)
                 emit.progress(f"Preparing partition {partition_name}")
@@ -125,8 +125,8 @@ class ImagecraftPackService(PackageService):
 
         images = image_service.finalize_images(dest)
 
-        # Post-format patching: for BIOS targets, patch Sector 0 and embed
-        # core.img directly into the raw disk image bytes. No-op for
+        # Post-format: for BIOS targets, install the boot code into the raw
+        # disk image (fuse2fs mount + grub-bios-setup). No-op for
         # EFI/unsupported targets.
         if root_prime_dir is not None:
             for path in images.values():
