@@ -21,19 +21,69 @@ files into their filesystems via ``mke2fs``/``mkfs.vfat``, so no mounts or
 loop devices are needed to install the bootloader.
 """
 
-import tempfile
-from pathlib import Path, PurePosixPath
+import shutil
+from pathlib import Path
 from uuid import UUID
 
 from craft_cli import emit
 from craft_platforms import DebianArchitecture
 
 from imagecraft import errors
+from imagecraft.pack.bootloader.chrootenv import (
+    build_prime_chroot,
+    find_chroot_binary,
+    run_checked,
+)
 from imagecraft.pack.bootloader.config import render_early_cfg
 from imagecraft.pack.bootloader.const import CORE_EFI_MODULES, ArchSpec, get_arch_spec
 from imagecraft.pack.bootloader.fs import resilient_copy, safe_copytree
-from imagecraft.pack.bootloader.mkimage import GrubMkimage
 from imagecraft.pack.bootloader.models import EfiInstallResult, EfiTier
+
+_CHROOT_EFI_WORK_DIR = "/tmp/grub-efi"  # noqa: S108
+
+
+def _build_efi_image_in_chroot(
+    *,
+    mkimage: str,
+    efi_format: str,
+    prefix: str,
+    early_cfg_content: str,
+    modules: list[str],
+    output: str,
+) -> None:
+    """Build a standalone GRUB EFI binary inside the chroot.
+
+    Must be a top-level function so it can be pickled into the chroot child
+    process.
+
+    :param mkimage: In-chroot path to grub-mkimage.
+    :param efi_format: GRUB EFI target format (e.g. ``x86_64-efi``).
+    :param prefix: GRUB prefix baked into the binary.
+    :param early_cfg_content: Rendered early GRUB config content.
+    :param modules: GRUB modules to embed.
+    :param output: In-chroot output path for the EFI binary.
+    :raises errors.BootloaderError: If grub-mkimage fails.
+    """
+    work_dir = Path(_CHROOT_EFI_WORK_DIR)
+    work_dir.mkdir(parents=True, exist_ok=True)
+    early_cfg = work_dir / "early.cfg"
+    early_cfg.write_text(early_cfg_content)
+    run_checked(
+        [
+            mkimage,
+            "-d",
+            f"/usr/lib/grub/{efi_format}",
+            "-O",
+            efi_format,
+            "-o",
+            output,
+            "-p",
+            prefix,
+            "-c",
+            str(early_cfg),
+            *modules,
+        ]
+    )
 
 
 def write_esp_stub(
@@ -64,8 +114,9 @@ class EfiInstaller:
        apt packages during the parts lifecycle).
     2. **Unsigned prebuilt**: uses a prebuilt monolithic (unsigned) GRUB EFI
        binary from ``grub-efi-*`` packages.
-    3. **Fallback build**: assembles a standalone EFI binary locally with the
-       host's ``grub-mkimage``, embedding the early search stub.
+    3. **Fallback build**: assembles a standalone EFI binary with the guest
+       rootfs's own ``grub-mkimage`` (run in a chroot), embedding the early
+       search stub.
     """
 
     def __init__(
@@ -77,7 +128,6 @@ class EfiInstaller:
         arch: DebianArchitecture,
         boot_dir: Path | None = None,
         boot_uuid: UUID | str | None = None,
-        mkimage: GrubMkimage | None = None,
     ) -> None:
         """Initialize the EFI installer.
 
@@ -92,7 +142,6 @@ class EfiInstaller:
             ``/boot`` partition's filesystem, if any. The early search stub
             searches this UUID (with a ``/grub`` prefix) instead of the root
             filesystem's.
-        :param mkimage: Optional GrubMkimage instance (mainly for tests).
         """
         self.root_dir = root_dir
         self.esp_dir = esp_dir
@@ -102,14 +151,6 @@ class EfiInstaller:
         self.search_uuid = str(boot_uuid) if boot_uuid is not None else str(root_uuid)
         self.boot_prefix = "/grub" if boot_uuid is not None else "/boot/grub"
         self.spec: ArchSpec = get_arch_spec(arch)
-        self._mkimage = mkimage
-
-    @property
-    def mkimage(self) -> GrubMkimage:
-        """Get or lazily initialize the GrubMkimage instance."""
-        if self._mkimage is None:
-            self._mkimage = GrubMkimage(root_dir=self.root_dir)
-        return self._mkimage
 
     def _find_file(self, *rel_paths: str) -> Path | None:
         """Return the first existing file among candidate paths relative to root_dir."""
@@ -225,6 +266,9 @@ class EfiInstaller:
     def install_fallback_build(self) -> EfiInstallResult:
         """Attempt Tier 3: build a standalone EFI binary using grub-mkimage.
 
+        The guest rootfs's own ``grub-mkimage`` is run in a chroot over the
+        root partition's prime directory.
+
         :raises errors.BootloaderToolsMissingError: If the GRUB modules
             directory for this architecture isn't present in the staged
             rootfs.
@@ -239,6 +283,7 @@ class EfiInstaller:
             raise errors.BootloaderToolsMissingError(
                 f"GRUB modules directory not found in rootfs: usr/lib/grub/{mod_dir_name}"
             )
+        mkimage = find_chroot_binary(self.root_dir, "grub-mkimage")
 
         boot_dir = self.esp_dir / "EFI" / "BOOT"
         u_dir = self.esp_dir / "EFI" / "ubuntu"
@@ -247,19 +292,28 @@ class EfiInstaller:
 
         primary_boot = boot_dir / f"BOOT{efi_suf}.EFI"
 
-        with tempfile.TemporaryDirectory(prefix="imagecraft-grub-efi-") as tmpdir:
-            temp_cfg_path = Path(tmpdir) / "early.cfg"
-            temp_cfg_path.write_text(
-                render_early_cfg(self.search_uuid, boot_prefix=self.boot_prefix)
+        chroot_output = f"{_CHROOT_EFI_WORK_DIR}/core.efi"
+        chroot = build_prime_chroot(self.root_dir)
+        try:
+            chroot.execute(
+                target=_build_efi_image_in_chroot,
+                mkimage=mkimage,
+                efi_format=efi_fmt,
+                prefix="/EFI/ubuntu",
+                early_cfg_content=render_early_cfg(
+                    self.search_uuid, boot_prefix=self.boot_prefix
+                ),
+                modules=[
+                    m for m in CORE_EFI_MODULES if (modules_dir / f"{m}.mod").is_file()
+                ],
+                output=chroot_output,
             )
-
-            self.mkimage.run(
-                grub_format=efi_fmt,
-                output=primary_boot,
-                prefix=PurePosixPath("/EFI/ubuntu"),
-                config=temp_cfg_path,
-                modules=CORE_EFI_MODULES,
-                directory=modules_dir,
+            resilient_copy(self.root_dir / chroot_output.lstrip("/"), primary_boot)
+        finally:
+            # This runs pre-format, so the chroot's working directory must
+            # not leak into the image.
+            shutil.rmtree(
+                self.root_dir / _CHROOT_EFI_WORK_DIR.lstrip("/"), ignore_errors=True
             )
 
         installed: list[Path] = [primary_boot]
@@ -298,7 +352,6 @@ def install_efi(
     arch: DebianArchitecture,
     boot_dir: Path | None = None,
     boot_uuid: UUID | str | None = None,
-    mkimage: GrubMkimage | None = None,
 ) -> EfiInstallResult:
     """Install the EFI bootloader into esp_dir/root_dir prime directories.
 
@@ -310,7 +363,6 @@ def install_efi(
         to ``root_dir / "boot"`` when ``/boot`` isn't a dedicated partition.
     :param boot_uuid: UUID that will be assigned to the dedicated ``/boot``
         partition's filesystem, if any.
-    :param mkimage: Optional GrubMkimage instance (mainly for tests).
     :return: EfiInstallResult detailing the installed tier and files.
     """
     installer = EfiInstaller(
@@ -320,6 +372,5 @@ def install_efi(
         arch=arch,
         boot_dir=boot_dir,
         boot_uuid=boot_uuid,
-        mkimage=mkimage,
     )
     return installer.install()

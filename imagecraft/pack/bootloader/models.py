@@ -61,6 +61,7 @@ class NonEfiInstallResult:
 
     format: str
     core_img_size_bytes: int
+    target_sector: int | None = None
     installed_files: list[Path] = field(default_factory=list)
     modules_installed: bool = False
 

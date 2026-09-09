@@ -307,6 +307,7 @@ class BootloaderInstaller:
                 root_dir=root_dir,
                 root_uuid=root_uuid,
                 arch=self.arch,
+                volume=self.volume,
                 boot_uuid=boot_uuid,
             )
         except errors.BootloaderToolsMissingError as err:
