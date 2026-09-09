@@ -173,7 +173,7 @@ class BootloaderInstaller:
         esp_dir: Path | None,
         root_uuid: UUID,
         boot_dir: Path | None = None,
-        image_path: Path | None = None,
+        boot_uuid: UUID | None = None,
     ) -> BootloaderResult:
         """Stage bootloader files into prime directories before formatting.
 
@@ -184,8 +184,8 @@ class BootloaderInstaller:
         :param boot_dir: Prime directory of a dedicated ``/boot`` partition,
             if any. Defaults to ``root_dir / "boot"`` when ``/boot`` isn't a
             separate partition.
-        :param image_path: Path to the raw disk image file, exposed at
-            ``/dev/image`` in the chroot used to run grub-mkconfig.
+        :param boot_uuid: UUID that will be assigned to the dedicated
+            ``/boot`` partition's filesystem, if any.
         """
         boot_method = self.resolve_boot_method()
         if boot_method == BootMethod.NONE:
@@ -197,9 +197,18 @@ class BootloaderInstaller:
 
         emit.progress("Preparing bootloader files")
         fstab_path, fstab_updated = configure_fstab(root_dir, root_uuid)
+        partition_map = (
+            "msdos"
+            if self.volume.volume_schema == PartitionSchema.MBR
+            else self.volume.volume_schema.value
+        )
         try:
             grub_cfg_path = generate_grub_cfg(
-                root_dir, root_uuid, boot_dir=boot_dir, image_path=image_path
+                root_dir,
+                root_uuid,
+                boot_dir=boot_dir,
+                boot_uuid=boot_uuid,
+                partition_map=partition_map,
             )
         except errors.BootloaderToolsMissingError as err:
             emit.progress(f"Skipping bootloader installation: {err}", permanent=True)
@@ -235,6 +244,7 @@ class BootloaderInstaller:
                     root_uuid=root_uuid,
                     arch=self.arch,
                     boot_dir=boot_dir,
+                    boot_uuid=boot_uuid,
                 )
             except errors.BootloaderToolsMissingError as err:
                 emit.progress(
@@ -264,7 +274,12 @@ class BootloaderInstaller:
         )
 
     def install_image_boot_code(
-        self, *, image_path: Path, root_dir: Path, root_uuid: UUID
+        self,
+        *,
+        image_path: Path,
+        root_dir: Path,
+        root_uuid: UUID,
+        boot_uuid: UUID | None = None,
     ) -> NonEfiInstallResult | None:
         """Install BIOS boot code into the raw disk image, if applicable.
 
@@ -276,6 +291,8 @@ class BootloaderInstaller:
         :param root_dir: Prime directory of the root filesystem partition
             (used as the chroot root for GRUB tooling).
         :param root_uuid: UUID assigned to the root filesystem.
+        :param boot_uuid: UUID assigned to the dedicated ``/boot``
+            partition's filesystem, if any.
         """
         if self.resolve_boot_method() != BootMethod.BIOS:
             return None
@@ -290,6 +307,7 @@ class BootloaderInstaller:
                 root_dir=root_dir,
                 root_uuid=root_uuid,
                 arch=self.arch,
+                boot_uuid=boot_uuid,
             )
         except errors.BootloaderToolsMissingError as err:
             emit.progress(

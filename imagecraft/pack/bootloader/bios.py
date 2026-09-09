@@ -86,6 +86,7 @@ def _install_boot_code_in_chroot(
     mkimage: str,
     bios_setup: str,
     grub_format: str,
+    boot_prefix: str,
 ) -> None:
     """Build core.img and write the BIOS boot code to /dev/image.
 
@@ -97,6 +98,8 @@ def _install_boot_code_in_chroot(
     :param mkimage: In-chroot path to grub-mkimage.
     :param bios_setup: In-chroot path to grub-bios-setup.
     :param grub_format: GRUB non-EFI target format (e.g. ``i386-pc``).
+    :param boot_prefix: GRUB prefix baked into core.img (``/boot/grub``, or
+        ``/grub`` when ``/boot`` is a dedicated partition).
     :raises errors.BootloaderError: If any GRUB command fails.
     """
     mod_dir = f"/usr/lib/grub/{grub_format}"
@@ -118,7 +121,7 @@ def _install_boot_code_in_chroot(
             "-o",
             core_img,
             "-p",
-            "/boot/grub",
+            boot_prefix,
             "-c",
             str(early_cfg),
             *modules,
@@ -152,6 +155,7 @@ class NonEfiInstaller:
         root_dir: Path,
         root_uuid: UUID | str,
         arch: DebianArchitecture,
+        boot_uuid: UUID | str | None = None,
     ) -> None:
         """Initialize the non-EFI bootloader installer.
 
@@ -160,6 +164,10 @@ class NonEfiInstaller:
             Used as the chroot root; GRUB modules and tools come from here.
         :param root_uuid: UUID assigned to the root filesystem.
         :param arch: Target architecture.
+        :param boot_uuid: UUID assigned to the dedicated ``/boot``
+            partition's filesystem, if any. The early config embedded in
+            core.img searches this UUID (with a ``/grub`` prefix) instead of
+            the root filesystem's.
         :raises errors.BootloaderError: If the architecture has no non-EFI
             GRUB target.
         """
@@ -172,6 +180,8 @@ class NonEfiInstaller:
         self.root_dir = root_dir
         self.root_uuid = str(root_uuid)
         self.grub_format = spec.non_efi_format
+        self.search_uuid = str(boot_uuid) if boot_uuid is not None else str(root_uuid)
+        self.boot_prefix = "/grub" if boot_uuid is not None else "/boot/grub"
 
     def install(self) -> NonEfiInstallResult:
         """Build core.img and install the BIOS boot code into the disk image.
@@ -201,11 +211,14 @@ class NonEfiInstaller:
         chroot = build_prime_chroot(self.root_dir, image_path=self.image_path)
         chroot.execute(
             target=_install_boot_code_in_chroot,
-            early_cfg_content=render_early_cfg(self.root_uuid),
+            early_cfg_content=render_early_cfg(
+                self.search_uuid, boot_prefix=self.boot_prefix
+            ),
             modules=modules,
             mkimage=mkimage,
             bios_setup=bios_setup,
             grub_format=self.grub_format,
+            boot_prefix=self.boot_prefix,
         )
 
         core_img = mod_dir / "core.img"
@@ -223,6 +236,7 @@ def install_non_efi(
     root_dir: Path,
     root_uuid: UUID | str,
     arch: DebianArchitecture,
+    boot_uuid: UUID | str | None = None,
 ) -> NonEfiInstallResult:
     """Install the BIOS bootloader into a raw disk image.
 
@@ -230,6 +244,8 @@ def install_non_efi(
     :param root_dir: Prime directory of the root filesystem partition.
     :param root_uuid: UUID assigned to the root filesystem.
     :param arch: Target architecture.
+    :param boot_uuid: UUID assigned to the dedicated ``/boot`` partition's
+        filesystem, if any.
     :return: NonEfiInstallResult.
     """
     installer = NonEfiInstaller(
@@ -237,5 +253,6 @@ def install_non_efi(
         root_dir=root_dir,
         root_uuid=root_uuid,
         arch=arch,
+        boot_uuid=boot_uuid,
     )
     return installer.install()

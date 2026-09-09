@@ -31,11 +31,18 @@ def _get_jinja_env() -> Environment:
     )
 
 
-def render_early_cfg(root_uuid: UUID | str) -> str:
+def render_early_cfg(
+    search_uuid: UUID | str, *, boot_prefix: str = "/boot/grub"
+) -> str:
     """Render the early GRUB search stub configuration.
 
-    :param root_uuid: UUID of the root filesystem to search for.
+    :param search_uuid: UUID of the filesystem holding the GRUB configuration
+        (the root filesystem, or the dedicated ``/boot`` partition when one
+        exists).
+    :param boot_prefix: Path of the GRUB directory relative to the searched
+        filesystem's root (``/boot/grub``, or ``/grub`` when ``/boot`` is a
+        dedicated partition).
     """
     env = _get_jinja_env()
     template = env.get_template("early.cfg.j2")
-    return template.render(root_uuid=str(root_uuid))
+    return template.render(search_uuid=str(search_uuid), boot_prefix=boot_prefix)

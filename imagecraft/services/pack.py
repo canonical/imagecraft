@@ -69,6 +69,7 @@ class ImagecraftPackService(PackageService):
         root_item = find_root_structure_item(volume)
         esp_item = find_esp_structure_item(volume)
         boot_item = find_boot_structure_item(volume)
+        boot_uuid = uuid.uuid4() if boot_item is not None else None
         root_prime_dir = None
         if root_item is not None:
             root_prime_dir = project_dirs.get_prime_dir(
@@ -93,7 +94,7 @@ class ImagecraftPackService(PackageService):
                 esp_dir=esp_prime_dir,
                 root_uuid=root_uuid,
                 boot_dir=boot_prime_dir,
-                image_path=image_service.get_images()[volume_name],
+                boot_uuid=boot_uuid,
             )
 
         try:
@@ -105,11 +106,11 @@ class ImagecraftPackService(PackageService):
                 )
                 loop_path = Path(loop_paths[f"{volume_name}/{structure_item.name}"])
 
-                partition_uuid = (
-                    str(root_uuid)
-                    if root_item is not None and structure_item.name == root_item.name
-                    else None
-                )
+                partition_uuid = None
+                if root_item is not None and structure_item.name == root_item.name:
+                    partition_uuid = str(root_uuid)
+                elif boot_item is not None and structure_item.name == boot_item.name:
+                    partition_uuid = str(boot_uuid)
                 diskutil.format_device(
                     device_path=loop_path,
                     fstype=structure_item.filesystem,
@@ -130,7 +131,10 @@ class ImagecraftPackService(PackageService):
         if root_prime_dir is not None:
             for path in images.values():
                 bootloader.install_image_boot_code(
-                    image_path=path, root_dir=root_prime_dir, root_uuid=root_uuid
+                    image_path=path,
+                    root_dir=root_prime_dir,
+                    root_uuid=root_uuid,
+                    boot_uuid=boot_uuid,
                 )
 
         return list(images.values())

@@ -36,15 +36,21 @@ from imagecraft.pack.bootloader.mkimage import GrubMkimage
 from imagecraft.pack.bootloader.models import EfiInstallResult, EfiTier
 
 
-def write_esp_stub(target_cfg: Path, root_uuid: UUID | str) -> Path:
+def write_esp_stub(
+    target_cfg: Path, search_uuid: UUID | str, *, boot_prefix: str = "/boot/grub"
+) -> Path:
     """Render and write an early search stub grub.cfg to target_cfg.
 
     :param target_cfg: Target path for the early configuration stub.
-    :param root_uuid: UUID of the root filesystem.
+    :param search_uuid: UUID of the filesystem holding the GRUB configuration
+        (the root filesystem, or the dedicated ``/boot`` partition when one
+        exists).
+    :param boot_prefix: Path of the GRUB directory relative to the searched
+        filesystem's root.
     :return: The path written.
     """
     target_cfg.parent.mkdir(parents=True, exist_ok=True)
-    target_cfg.write_text(render_early_cfg(root_uuid))
+    target_cfg.write_text(render_early_cfg(search_uuid, boot_prefix=boot_prefix))
     return target_cfg
 
 
@@ -70,6 +76,7 @@ class EfiInstaller:
         root_uuid: UUID | str,
         arch: DebianArchitecture,
         boot_dir: Path | None = None,
+        boot_uuid: UUID | str | None = None,
         mkimage: GrubMkimage | None = None,
     ) -> None:
         """Initialize the EFI installer.
@@ -81,6 +88,10 @@ class EfiInstaller:
         :param boot_dir: Prime directory that corresponds to ``/boot``.
             Defaults to ``root_dir / "boot"`` when ``/boot`` isn't a
             dedicated partition.
+        :param boot_uuid: UUID that will be assigned to the dedicated
+            ``/boot`` partition's filesystem, if any. The early search stub
+            searches this UUID (with a ``/grub`` prefix) instead of the root
+            filesystem's.
         :param mkimage: Optional GrubMkimage instance (mainly for tests).
         """
         self.root_dir = root_dir
@@ -88,6 +99,8 @@ class EfiInstaller:
         self.root_uuid = str(root_uuid)
         self.arch = arch
         self.boot_dir = boot_dir if boot_dir is not None else root_dir / "boot"
+        self.search_uuid = str(boot_uuid) if boot_uuid is not None else str(root_uuid)
+        self.boot_prefix = "/grub" if boot_uuid is not None else "/boot/grub"
         self.spec: ArchSpec = get_arch_spec(arch)
         self._mkimage = mkimage
 
@@ -118,8 +131,8 @@ class EfiInstaller:
         """Write the early search stub grub.cfg to /EFI/BOOT/ and /EFI/ubuntu/ on the ESP."""
         boot_cfg = self.esp_dir / "EFI" / "BOOT" / "grub.cfg"
         u_cfg = self.esp_dir / "EFI" / "ubuntu" / "grub.cfg"
-        write_esp_stub(boot_cfg, self.root_uuid)
-        write_esp_stub(u_cfg, self.root_uuid)
+        write_esp_stub(boot_cfg, self.search_uuid, boot_prefix=self.boot_prefix)
+        write_esp_stub(u_cfg, self.search_uuid, boot_prefix=self.boot_prefix)
         return [boot_cfg, u_cfg]
 
     def install_signed(self) -> EfiInstallResult | None:
@@ -236,7 +249,9 @@ class EfiInstaller:
 
         with tempfile.TemporaryDirectory(prefix="imagecraft-grub-efi-") as tmpdir:
             temp_cfg_path = Path(tmpdir) / "early.cfg"
-            temp_cfg_path.write_text(render_early_cfg(self.root_uuid))
+            temp_cfg_path.write_text(
+                render_early_cfg(self.search_uuid, boot_prefix=self.boot_prefix)
+            )
 
             self.mkimage.run(
                 grub_format=efi_fmt,
@@ -282,6 +297,7 @@ def install_efi(
     root_uuid: UUID | str,
     arch: DebianArchitecture,
     boot_dir: Path | None = None,
+    boot_uuid: UUID | str | None = None,
     mkimage: GrubMkimage | None = None,
 ) -> EfiInstallResult:
     """Install the EFI bootloader into esp_dir/root_dir prime directories.
@@ -292,6 +308,8 @@ def install_efi(
     :param arch: Target architecture.
     :param boot_dir: Prime directory that corresponds to ``/boot``. Defaults
         to ``root_dir / "boot"`` when ``/boot`` isn't a dedicated partition.
+    :param boot_uuid: UUID that will be assigned to the dedicated ``/boot``
+        partition's filesystem, if any.
     :param mkimage: Optional GrubMkimage instance (mainly for tests).
     :return: EfiInstallResult detailing the installed tier and files.
     """
@@ -301,6 +319,7 @@ def install_efi(
         root_uuid=root_uuid,
         arch=arch,
         boot_dir=boot_dir,
+        boot_uuid=boot_uuid,
         mkimage=mkimage,
     )
     return installer.install()

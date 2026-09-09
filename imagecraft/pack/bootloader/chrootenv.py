@@ -72,11 +72,10 @@ def build_prime_chroot(
     *,
     image_path: Path | None = None,
     boot_dir: Path | None = None,
+    host_dev: bool = False,
+    extra_mounts: list[Mount] | None = None,
 ) -> Chroot:
     """Build a chroot rooted at the root partition's prime directory.
-
-    Rather than overmounting ``/dev`` (which would hide the bind-mount
-    targets), only the device files GRUB needs are bind-mounted in.
 
     :param root_dir: Prime directory of the root filesystem partition.
     :param image_path: If given, the raw disk image is bind-mounted at
@@ -84,7 +83,16 @@ def build_prime_chroot(
     :param boot_dir: Prime directory of a dedicated ``/boot`` partition,
         bound at ``/boot`` in the chroot. Defaults to the root partition's
         own ``/boot`` when not given.
+    :param host_dev: Bind-mount the host's ``/dev`` instead of only the few
+        device files GRUB needs. Incompatible with ``image_path`` since the
+        overmount would hide the bind target. (A real devtmpfs mount is
+        preferable but is blocked in unprivileged containers.)
+    :param extra_mounts: Additional mounts to set up inside the chroot
+        (e.g. tool shims bind-mounted over the guest's binaries).
     """
+    if host_dev and image_path is not None:
+        raise ValueError("host /dev overmounts /dev, hiding the /dev/image bind target")
+
     for mountpoint in ("proc", "sys", "dev", "tmp"):
         (root_dir / mountpoint).mkdir(parents=True, exist_ok=True)
 
@@ -92,26 +100,33 @@ def build_prime_chroot(
         Mount(fstype="proc", src="proc-build", relative_mountpoint="/proc"),
         Mount(fstype="sysfs", src="sysfs-build", relative_mountpoint="/sys"),
     ]
-    for device in ("null", "zero", "urandom"):
-        (root_dir / "dev" / device).touch(exist_ok=True)
+    if host_dev:
         mounts.append(
             Mount(
-                fstype=None,
-                src=f"/dev/{device}",
-                relative_mountpoint=f"/dev/{device}",
-                options=["--bind"],
+                fstype=None, src="/dev", relative_mountpoint="/dev", options=["--bind"]
             )
         )
-    if image_path is not None:
-        (root_dir / "dev" / "image").touch(exist_ok=True)
-        mounts.append(
-            Mount(
-                fstype=None,
-                src=str(image_path.resolve()),
-                relative_mountpoint=CHROOT_IMAGE_DEVICE,
-                options=["--bind"],
+    else:
+        for device in ("null", "zero", "urandom"):
+            (root_dir / "dev" / device).touch(exist_ok=True)
+            mounts.append(
+                Mount(
+                    fstype=None,
+                    src=f"/dev/{device}",
+                    relative_mountpoint=f"/dev/{device}",
+                    options=["--bind"],
+                )
             )
-        )
+        if image_path is not None:
+            (root_dir / "dev" / "image").touch(exist_ok=True)
+            mounts.append(
+                Mount(
+                    fstype=None,
+                    src=str(image_path.resolve()),
+                    relative_mountpoint=CHROOT_IMAGE_DEVICE,
+                    options=["--bind"],
+                )
+            )
     if boot_dir is not None:
         (root_dir / "boot").mkdir(exist_ok=True)
         mounts.append(
@@ -122,4 +137,5 @@ def build_prime_chroot(
                 options=["--bind"],
             )
         )
+    mounts.extend(extra_mounts or [])
     return Chroot(path=root_dir, mounts=mounts)
