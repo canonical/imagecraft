@@ -461,8 +461,27 @@ HybridStructureList = Annotated[list[HybridStructureItem], Field(min_length=1)]
 StructureList = GPTStructureList | MBRStructureList | HybridStructureList
 
 
+def _gpt_type_of(item: StructureItem) -> GptType | None:
+    """Return the GPT partition type of a structure item, if it has one.
+
+    GPT items carry a :class:`GptType` directly; hybrid items encode it as
+    the second component of a combined ``'<mbr-type>,<gpt-type>'`` string;
+    MBR items have no GPT type.
+    """
+    structure_type = getattr(item, "structure_type", None)
+    if isinstance(structure_type, GptType):
+        return structure_type
+    if isinstance(structure_type, str) and "," in structure_type:
+        gpt_part = structure_type.split(",", 1)[1]
+        with contextlib.suppress(ValueError):
+            return GptType(gpt_part.upper())
+    return None
+
+
 class BaseVolume(CraftBaseModel):
     """Base class for volume definitions."""
+
+    structure: Sequence[StructureItem]  # narrowed by the concrete subclasses
 
     @field_validator("structure", mode="after", check_fields=False)
     @classmethod
@@ -482,29 +501,6 @@ class BaseVolume(CraftBaseModel):
             if count > 1 and item != ""
         ]
         raise ValueError(f"Duplicate filesystem labels: {dupes}")
-
-
-def _gpt_type_of(item: StructureItem) -> GptType | None:
-    """Return the GPT partition type of a structure item, if it has one.
-
-    GPT items carry a :class:`GptType` directly; hybrid items encode it as
-    the second component of a combined ``'<mbr-type>,<gpt-type>'`` string;
-    MBR items have no GPT type.
-    """
-    structure_type = getattr(item, "structure_type", None)
-    if isinstance(structure_type, GptType):
-        return structure_type
-    if isinstance(structure_type, str) and "," in structure_type:
-        gpt_part = structure_type.split(",", 1)[1]
-        with contextlib.suppress(ValueError):
-            return GptType(gpt_part.upper())
-    return None
-
-
-class _VolumePartitions:
-    """Partition-discovery properties shared by all volume schemas."""
-
-    structure: Sequence[StructureItem]  # narrowed by the concrete subclasses
 
     @property
     def root_partition(self) -> StructureItem | None:
@@ -551,7 +547,7 @@ class _VolumePartitions:
         return any(_gpt_type_of(item) == GptType.BIOS_BOOT for item in self.structure)
 
 
-class GPTVolume(_VolumePartitions, BaseVolume):
+class GPTVolume(BaseVolume):
     """Volume with a GUID Partition Table (GPT) schema."""
 
     volume_schema: Literal[PartitionSchema.GPT] = Field(
@@ -575,7 +571,7 @@ class GPTVolume(_VolumePartitions, BaseVolume):
     """
 
 
-class MBRVolume(_VolumePartitions, BaseVolume):
+class MBRVolume(BaseVolume):
     """Volume with a Master Boot Record (MBR) schema."""
 
     volume_schema: Literal[PartitionSchema.MBR] = Field(
@@ -598,7 +594,7 @@ class MBRVolume(_VolumePartitions, BaseVolume):
     """
 
 
-class HybridVolume(_VolumePartitions, BaseVolume):
+class HybridVolume(BaseVolume):
     """Volume with a hybrid MBR/GPT schema."""
 
     volume_schema: Literal[PartitionSchema.HYBRID] = Field(
