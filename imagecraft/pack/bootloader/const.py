@@ -153,17 +153,3 @@ EXT4_MAGIC_OFFSET: Final = 0x38
 EXT4_MAGIC: Final = b"\x53\xef"
 EXT4_UUID_OFFSET: Final = 104
 EXT4_UUID_BYTES: Final = 16
-
-# BIOS/MBR raw sector patch offsets, per the GRUB boot.img/diskboot.img layout.
-GRUB_BOOT_IMAGE_CORE_LBA_OFFSET: Final = 0x5C
-"""Offset in boot.img of the 64-bit LBA pointer to the start of core.img."""
-
-GRUB_DISKBOOT_IMAGE_NEXT_SECTOR_OFFSET: Final = 0x1F8
-"""Offset in core.img's first (diskboot) sector of the 32-bit pointer to the next sector."""
-
-MBR_BOOT_CODE_SIZE: Final = 440
-"""Maximum number of bytes of Sector 0 that may be overwritten with boot code.
-
-Preserves the partition table (bytes 446-509) and the 0x55AA boot signature
-(bytes 510-511).
-"""
