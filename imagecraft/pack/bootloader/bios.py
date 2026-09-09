@@ -58,8 +58,8 @@ def _bios_mod_dir(root_dir: Path, grub_format: str) -> Path:
     return root_dir / "usr" / "lib" / "grub" / grub_format
 
 
-class NonEfiInstaller:
-    """Installs the BIOS (non-EFI) bootloader using GRUB's own tools.
+class PCBiosInstaller:
+    """Installs the PC BIOS (``i386-pc``) bootloader using GRUB's own tools.
 
     Only architectures with a non-EFI target in ``ARCH_SPECS`` (currently
     amd64/i386's ``i386-pc``) are supported.
@@ -118,7 +118,7 @@ class NonEfiInstaller:
     def install(self) -> None:
         """Build core.img and install the BIOS boot code into the disk image.
 
-        Assumes :func:`stage_non_efi_modules` has already been called during
+        Assumes :func:`~imagecraft.pack.bootloader.chrootenv.stage_grub_modules` has already been called during
         the pre-format staging phase.
 
         :raises errors.BootloaderToolsMissingError: If GRUB modules or tools

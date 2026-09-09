@@ -264,7 +264,7 @@ class TestGracefulSkip:
         installer = BootloaderInstaller(volume=volume, arch=_AMD64)
         mocker.patch.object(installer_mod, "generate_grub_cfg")
         mocker.patch.object(installer_mod, "stage_grub_modules")
-        mock_bios = mocker.patch.object(installer_mod, "NonEfiInstaller")
+        mock_bios = mocker.patch.object(installer_mod, "PCBiosInstaller")
         mock_bios.return_value.install.side_effect = errors.BootloaderToolsMissingError(
             "no grub-bios-setup"
         )
@@ -274,6 +274,6 @@ class TestGracefulSkip:
     def test_install_image_boot_code_noop_for_efi(self, tmp_path, mocker):
         volume = _gpt_volume([ESP_ITEM, ROOT_ITEM])
         installer = BootloaderInstaller(volume=volume, arch=_AMD64)
-        mock_install = mocker.patch.object(installer_mod, "NonEfiInstaller")
+        mock_install = mocker.patch.object(installer_mod, "PCBiosInstaller")
         installer.install_image_boot_code(image_path=tmp_path / "disk.img")
         mock_install.assert_not_called()

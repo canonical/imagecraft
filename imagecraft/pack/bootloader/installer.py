@@ -42,7 +42,7 @@ from imagecraft.models.volume import (
     PartitionSchema,
     StructureItem,
 )
-from imagecraft.pack.bootloader.bios import NonEfiInstaller
+from imagecraft.pack.bootloader.bios import PCBiosInstaller
 from imagecraft.pack.bootloader.chrootenv import stage_grub_modules
 from imagecraft.pack.bootloader.const import ArchSpec, BootMethod, get_arch_spec
 from imagecraft.pack.bootloader.efi import EfiInstaller
@@ -270,7 +270,7 @@ class BootloaderInstaller:
 
         emit.progress("Installing BIOS bootloader into the image")
         try:
-            NonEfiInstaller(
+            PCBiosInstaller(
                 image_path=image_path,
                 root_dir=self._root_dir,
                 root_uuid=self.root_uuid,

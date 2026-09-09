@@ -21,15 +21,15 @@ from pathlib import Path
 import pytest
 from craft_platforms import DebianArchitecture
 from imagecraft import errors
-from imagecraft.pack.bootloader.bios import NonEfiInstaller
+from imagecraft.pack.bootloader.bios import PCBiosInstaller
 from imagecraft.pack.bootloader.chrootenv import stage_grub_modules
 
 from .test_installer import ROOT_ITEM, _mbr_volume
 
 
-def _make_installer(tmp_path: Path, **kwargs) -> NonEfiInstaller:
+def _make_installer(tmp_path: Path, **kwargs) -> PCBiosInstaller:
     volume = _mbr_volume([{**ROOT_ITEM, "type": "83"}])
-    return NonEfiInstaller(
+    return PCBiosInstaller(
         image_path=tmp_path / "disk.img",
         root_dir=tmp_path / "root",
         root_uuid=uuid.uuid4(),
@@ -39,11 +39,11 @@ def _make_installer(tmp_path: Path, **kwargs) -> NonEfiInstaller:
     )
 
 
-class TestNonEfiInstallerChecks:
+class TestPCBiosInstallerChecks:
     def test_arch_without_non_efi_target_rejected(self, tmp_path):
         volume = _mbr_volume([{**ROOT_ITEM, "type": "83"}])
         with pytest.raises(errors.BootloaderError, match="no non-EFI GRUB target"):
-            NonEfiInstaller(
+            PCBiosInstaller(
                 image_path=tmp_path / "disk.img",
                 root_dir=tmp_path / "root",
                 root_uuid=uuid.uuid4(),
@@ -85,7 +85,7 @@ class TestNonEfiInstallerChecks:
         root_uuid = uuid.uuid4()
         boot_uuid = uuid.uuid4()
         volume = _mbr_volume([{**ROOT_ITEM, "type": "83"}])
-        installer = NonEfiInstaller(
+        installer = PCBiosInstaller(
             image_path=tmp_path / "disk.img",
             root_dir=tmp_path / "root",
             root_uuid=root_uuid,
@@ -99,7 +99,7 @@ class TestNonEfiInstallerChecks:
     def test_shared_boot_uses_root_uuid(self, tmp_path):
         root_uuid = uuid.uuid4()
         volume = _mbr_volume([{**ROOT_ITEM, "type": "83"}])
-        installer = NonEfiInstaller(
+        installer = PCBiosInstaller(
             image_path=tmp_path / "disk.img",
             root_dir=tmp_path / "root",
             root_uuid=root_uuid,
