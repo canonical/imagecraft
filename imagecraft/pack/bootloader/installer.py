@@ -35,6 +35,7 @@ from craft_platforms import DebianArchitecture
 from imagecraft import errors
 from imagecraft.models import get_partition_name
 from imagecraft.models.volume import (
+    FileSystem,
     GPTVolume,
     HybridVolume,
     MBRVolume,
@@ -59,6 +60,20 @@ class PrimeDirs(Protocol):
 
 
 _DEFAULT_FSTAB_OPTIONS = "defaults,errors=remount-ro"
+
+_FAT_FILESYSTEMS = (FileSystem.VFAT, FileSystem.FAT16)
+
+
+def _new_filesystem_id(filesystem: FileSystem) -> UUID | str:
+    """Generate a filesystem ID assignable at format time.
+
+    FAT filesystems carry a 32-bit volume serial that GRUB probes as
+    ``XXXX-XXXX``; other filesystems take a regular UUID.
+    """
+    if filesystem in _FAT_FILESYSTEMS:
+        hex_id = uuid4().hex[:8].upper()
+        return f"{hex_id[:4]}-{hex_id[4:]}"
+    return uuid4()
 
 
 def configure_fstab(root_dir: Path, root_uuid: UUID | str) -> None:
@@ -121,8 +136,16 @@ class BootloaderInstaller:
         self.root_item = volume.root_partition
         self.esp_item = volume.esp_partition
         self.boot_item = volume.boot_partition
-        self.root_uuid = uuid4()
-        self.boot_uuid = uuid4() if self.boot_item is not None else None
+        self.root_uuid: UUID | str = (
+            _new_filesystem_id(self.root_item.filesystem)
+            if self.root_item is not None
+            else uuid4()
+        )
+        self.boot_uuid: UUID | str | None = (
+            _new_filesystem_id(self.boot_item.filesystem)
+            if self.boot_item is not None
+            else None
+        )
         self._root_dir: Path | None = None
         self._boot_method = BootMethod.NONE
 

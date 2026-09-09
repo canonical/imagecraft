@@ -24,7 +24,6 @@ translates to ``(hd0)``.
 """
 
 import shutil
-import tempfile
 from pathlib import Path
 from uuid import UUID
 
@@ -32,8 +31,13 @@ from craft_cli import emit
 from craft_platforms import DebianArchitecture
 
 from imagecraft import errors
-from imagecraft.models.volume import GPTVolume, HybridVolume, MBRVolume
-from imagecraft.pack import gptutil
+from imagecraft.models.volume import (
+    GPTVolume,
+    HybridVolume,
+    MBRVolume,
+    PartitionSchema,
+)
+from imagecraft.pack import gptutil, mbrutil
 from imagecraft.pack.bootloader.chrootenv import (
     require_chroot_binary,
     run_checked,
@@ -43,14 +47,74 @@ from imagecraft.pack.bootloader.const import (
     get_arch_spec,
     render_early_cfg,
 )
+from imagecraft.pack.chroot import Mount, build_prime_chroot
 from imagecraft.utils.mount import ExtFuseMount
 
+_CHROOT_BIOS_WORK_DIR = "/tmp/grub-bios"  # noqa: S108
 
-def _run_logged(cmd: list[str]) -> None:
-    """Run a GRUB tool, forwarding its output to the craft log."""
-    proc = run_checked(cmd)
-    if output := (proc.stdout + proc.stderr).strip():
-        emit.debug(output)
+
+def _install_boot_code_in_chroot(
+    *,
+    grub_format: str,
+    mkimage_path: str,
+    boot_prefix: str,
+    early_cfg_content: str,
+    device_map_content: str,
+    image_path: str,
+    modules: list[str],
+) -> str:
+    """Run grub-mkimage and grub-bios-setup inside the chrooted rootfs.
+
+    Executing the rootfs's own binaries in a chroot ensures the target's ELF
+    interpreter and libraries are used regardless of the build host.
+
+    Must be a top-level function so it can be pickled into the chroot child
+    process. Returns the tools' combined output.
+    """
+    work_dir = Path(_CHROOT_BIOS_WORK_DIR)
+    work_dir.mkdir(parents=True, exist_ok=True)
+    early_cfg = work_dir / "early.cfg"
+    early_cfg.write_text(early_cfg_content)
+    device_map = work_dir / "device.map"
+    device_map.write_text(device_map_content)
+    mod_dir = f"/usr/lib/grub/{grub_format}"
+    core_img = Path(f"{mod_dir}/core.img")
+    output: list[str] = []
+    try:
+        proc = run_checked(
+            [
+                mkimage_path,
+                "-d",
+                mod_dir,
+                "-O",
+                grub_format,
+                "-o",
+                str(core_img),
+                "-p",
+                boot_prefix,
+                "-c",
+                str(early_cfg),
+                *modules,
+            ]
+        )
+        output.append(proc.stdout + proc.stderr)
+        proc = run_checked(
+            [
+                f"{mod_dir}/grub-bios-setup",
+                "--skip-fs-probe",
+                "-m",
+                str(device_map),
+                "-d",
+                mod_dir,
+                image_path,
+            ]
+        )
+        output.append(proc.stdout + proc.stderr)
+    finally:
+        # These live inside the disk image's filesystem; don't leak them.
+        core_img.unlink(missing_ok=True)
+        shutil.rmtree(work_dir, ignore_errors=True)
+    return "".join(output).strip()
 
 
 class PCBiosInstaller:
@@ -102,11 +166,21 @@ class PCBiosInstaller:
         # Guaranteed by the BIOS boot-method resolution.
         assert item is not None  # noqa: S101
         # GPT items may declare an explicit partition number; MBR items are
-        # always numbered by structure order.
+        # numbered by structure order. Mirrors
+        # ImageService._get_partition_numbers: with more than four MBR
+        # entries, slot 4 is the synthesized extended container and logical
+        # partitions are numbered from 5.
         structure_index = next(
             i for i, entry in enumerate(self.volume.structure) if entry is item
         )
-        part_num = getattr(item, "number", None) or (structure_index + 1)
+        if (
+            self.volume.volume_schema == PartitionSchema.MBR
+            and len(self.volume.structure) > mbrutil.MAX_PRIMARY_SLOTS
+            and structure_index >= mbrutil.PRIMARY_SLOTS_WITH_EXTENDED
+        ):
+            part_num = structure_index + 2
+        else:
+            part_num = getattr(item, "number", None) or (structure_index + 1)
         return (
             gptutil.get_partition_sector_offset_by_number(self.image_path, part_num)
             * gptutil.SECTOR_SIZE_512
@@ -146,48 +220,51 @@ class PCBiosInstaller:
 
         modules = [m for m in CORE_BIOS_MODULES if (mod_dir / f"{m}.mod").is_file()]
 
-        with tempfile.TemporaryDirectory(prefix="imagecraft-grub-bios-") as workdir:
-            work = Path(workdir)
-            resolved_image = self.image_path.resolve()
-            early_cfg = work / "early.cfg"
-            early_cfg.write_text(
-                render_early_cfg(self.search_uuid, boot_prefix=self.boot_prefix)
-            )
-            device_map = work / "device.map"
-            device_map.write_text(f"(hd0)\t{resolved_image}\n")
+        resolved_image = self.image_path.resolve()
+        image_rel = str(resolved_image).lstrip("/")
 
-            with ExtFuseMount(
-                self.image_path, offset=self._root_partition_offset(), fakeroot=True
-            ) as mnt:
-                mnt_mod_dir = mnt / mod_dir_rel
-                core_img = mnt_mod_dir / "core.img"
-                _run_logged(
-                    [
-                        str(mnt / mkimage_rel),
-                        "-d",
-                        str(mnt_mod_dir),
-                        "-O",
-                        self.grub_format,
-                        "-o",
-                        str(core_img),
-                        "-p",
-                        self.boot_prefix,
-                        "-c",
-                        str(early_cfg),
-                        *modules,
-                    ]
-                )
-                try:
-                    _run_logged(
-                        [
-                            str(mnt_mod_dir / "grub-bios-setup"),
-                            "--skip-fs-probe",
-                            "-m",
-                            str(device_map),
-                            "-d",
-                            str(mnt_mod_dir),
-                            str(resolved_image),
-                        ]
+        with ExtFuseMount(
+            self.image_path, offset=self._root_partition_offset(), fakeroot=True
+        ) as mnt:
+            # grub-bios-setup resolves its -d directory through
+            # /proc/self/mountinfo, where this fuse mount appears as "/" once
+            # chrooted into. The image file itself must exist at its host
+            # path inside the chroot so the device map reference resolves.
+            chroot_image = mnt / image_rel
+            missing_parents: list[Path] = []
+            parent = chroot_image.parent
+            while not parent.exists():
+                missing_parents.append(parent)
+                parent = parent.parent
+            chroot_image.parent.mkdir(parents=True, exist_ok=True)
+            chroot_image.touch()
+            chroot = build_prime_chroot(
+                mnt,
+                extra_mounts=[
+                    Mount(
+                        fstype=None,
+                        src=str(resolved_image),
+                        relative_mountpoint=f"/{image_rel}",
+                        options=["--bind"],
                     )
-                finally:
-                    core_img.unlink(missing_ok=True)
+                ],
+            )
+            try:
+                output = chroot.execute(
+                    target=_install_boot_code_in_chroot,
+                    grub_format=self.grub_format,
+                    mkimage_path=f"/{mkimage_rel}",
+                    boot_prefix=self.boot_prefix,
+                    early_cfg_content=render_early_cfg(
+                        self.search_uuid, boot_prefix=self.boot_prefix
+                    ),
+                    device_map_content=f"(hd0)\t{resolved_image}\n",
+                    image_path=str(resolved_image),
+                    modules=modules,
+                )
+            finally:
+                chroot_image.unlink(missing_ok=True)
+                if missing_parents:
+                    shutil.rmtree(missing_parents[-1], ignore_errors=True)
+        if output:
+            emit.debug(output)

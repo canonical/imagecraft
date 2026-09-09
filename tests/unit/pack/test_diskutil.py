@@ -162,6 +162,24 @@ def test_format_device(
     mocked_run.assert_has_calls(expected_calls)
 
 
+def test_format_device_vfat_with_volume_id(mocker, content, device):
+    """format_device assigns a FAT volume ID via mkfs.fat -i."""
+    mocker.patch("imagecraft.pack.diskutil.create_zero_image", autospec=True)
+    mocked_run = mocker.patch("imagecraft.pack.diskutil.run", autospec=True)
+
+    diskutil.format_device(
+        device_path=device,
+        fstype=FileSystem.VFAT,
+        label="test",
+        content_dir=content,
+        uuid="1234-ABCD",
+    )
+
+    mocked_run.assert_any_call(
+        "mkfs.vfat", "-i", "1234ABCD", "-n", "test", device, stdout=ANY, stderr=ANY
+    )
+
+
 def test_format_device_missing_device(tmp_path):
     """format_device raises CraftError when the device does not exist."""
     missing = tmp_path / "nonexistent"

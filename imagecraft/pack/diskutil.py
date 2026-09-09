@@ -138,6 +138,7 @@ def _format_populate_fat_partition(  # pylint: disable=too-many-arguments
     content_dir: Path | None,
     partitionpath: Path,
     label: str | None = None,
+    uuid: str | None = None,
 ) -> None:
     """Format a partition/device as FAT and copy content.
 
@@ -146,12 +147,17 @@ def _format_populate_fat_partition(  # pylint: disable=too-many-arguments
     :param content_dir: Directory containing contents for partition, or None.
     :param partitionpath: Path to partition file or block device.
     :param label: Fat Filesystem label, empty if not supplied.
+    :param uuid: FAT volume ID (``XXXX-XXXX``) to assign, or None to let
+        mkfs.fat generate one.
     :raises CalledProcessError: If mkfs.xxx or mcopy fails.
     """
     mkdosfs_args: list[str | Path] = []
 
     if fatsize is not None:
         mkdosfs_args.extend(["-F", str(fatsize)])
+
+    if uuid is not None:
+        mkdosfs_args.extend(["-i", uuid.replace("-", "")])
 
     if label is not None:
         mkdosfs_args.extend(["-n", label])
@@ -192,7 +198,8 @@ def format_device(
     :param label: Optional filesystem label.
     :param content_dir: Optional directory whose contents are copied into the
         filesystem after formatting.
-    :param uuid: Optional filesystem UUID to assign (Ext filesystems only).
+    :param uuid: Optional filesystem UUID to assign (Ext filesystems), or FAT
+        volume ID in ``XXXX-XXXX`` form (FAT filesystems).
     :raises CraftError: If the device does not exist or the filesystem is unsupported.
     """
     if not device_path.exists():
@@ -217,6 +224,7 @@ def format_device(
             content_dir=content_dir,
             partitionpath=device_path,
             label=label,
+            uuid=uuid,
         )
         return
 

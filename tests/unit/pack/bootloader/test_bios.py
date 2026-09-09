@@ -30,7 +30,7 @@ from .test_installer import ROOT_ITEM, _mbr_volume
 def _make_installer(tmp_path: Path, **kwargs) -> PCBiosInstaller:
     kwargs.setdefault("arch", DebianArchitecture.AMD64)
     kwargs.setdefault("root_uuid", uuid.uuid4())
-    volume = _mbr_volume([{**ROOT_ITEM, "type": "83"}])
+    volume = kwargs.pop("volume", None) or _mbr_volume([{**ROOT_ITEM, "type": "83"}])
     return PCBiosInstaller(
         image_path=tmp_path / "disk.img",
         root_dir=tmp_path / "root",
@@ -85,6 +85,45 @@ class TestPCBiosInstallerChecks:
         installer = _make_installer(tmp_path, root_uuid=root_uuid)
         assert installer.search_uuid == str(root_uuid)
         assert installer.boot_prefix == "/boot/grub"
+
+
+class TestRootPartitionOffset:
+    def _offset(self, mocker, installer: PCBiosInstaller) -> tuple[int, int]:
+        offset_mock = mocker.patch(
+            "imagecraft.pack.bootloader.bios.gptutil"
+            ".get_partition_sector_offset_by_number",
+            return_value=2048,
+        )
+        offset = installer._root_partition_offset()
+        return offset_mock.call_args[0][1], offset
+
+    def test_simple_mbr_root_is_partition_one(self, tmp_path, mocker):
+        installer = _make_installer(tmp_path)
+        part_num, offset = self._offset(mocker, installer)
+        assert part_num == 1
+        assert offset == 2048 * 512
+
+    def test_extended_mbr_root_skips_slot_four(self, tmp_path, mocker):
+        """With >4 MBR entries, slot 4 is the extended container."""
+        items = [
+            {
+                "name": name,
+                "type": "83",
+                "filesystem": "ext4",
+                "role": role,
+                "size": "100M",
+            }
+            for name, role in [
+                ("boot", "system-boot"),
+                ("seed", "system-seed"),
+                ("save", "system-save"),
+                ("rootfs", "system-data"),
+                ("extra", "system-data"),
+            ]
+        ]
+        installer = _make_installer(tmp_path, volume=_mbr_volume(items))
+        part_num, _ = self._offset(mocker, installer)
+        assert part_num == 5
 
 
 class TestStageGrubModules:

@@ -15,6 +15,7 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Unit tests for the bootloader installer coordinator."""
 
+import re
 import uuid
 from pathlib import Path
 
@@ -198,6 +199,26 @@ class TestResolveBootMethod:
         volume = _gpt_volume([ESP_ITEM, ROOT_ITEM])
         installer = BootloaderInstaller(volume=volume, arch=DebianArchitecture.S390X)
         assert installer.resolve_boot_method() == BootMethod.NONE
+
+
+class TestFilesystemIds:
+    def test_ext_partitions_get_uuids(self):
+        volume = _gpt_volume([ESP_ITEM, BOOT_ITEM, ROOT_ITEM])
+        installer = BootloaderInstaller(volume=volume, arch=_AMD64)
+        assert isinstance(installer.root_uuid, uuid.UUID)
+        assert isinstance(installer.boot_uuid, uuid.UUID)
+
+    def test_fat_boot_partition_gets_volume_id(self):
+        """FAT /boot partitions get an XXXX-XXXX volume ID that mkfs.fat -i applies."""
+        volume = _mbr_volume(
+            [
+                {**BOOT_ITEM, "type": "0C", "filesystem": "vfat"},
+                {**ROOT_ITEM, "type": "83"},
+            ]
+        )
+        installer = BootloaderInstaller(volume=volume, arch=_AMD64)
+        assert re.fullmatch(r"[0-9A-F]{4}-[0-9A-F]{4}", str(installer.boot_uuid))
+        assert installer.partition_uuids["boot"] == str(installer.boot_uuid)
 
 
 class FakeProjectDirs:

@@ -111,6 +111,11 @@ def _generate_grub_cfg_in_chroot(
     :raises errors.BootloaderError: If grub-mkconfig fails.
     """
     _GRUB_DEFAULTS_SNIPPET.parent.mkdir(parents=True, exist_ok=True)
+    # The staged rootfs may already ship this file; restore it afterwards
+    # rather than deleting project-provided configuration.
+    previous_defaults = (
+        _GRUB_DEFAULTS_SNIPPET.read_text() if _GRUB_DEFAULTS_SNIPPET.exists() else None
+    )
     _GRUB_DEFAULTS_SNIPPET.write_text(grub_defaults)
     _CHROOT_FAKE_DEVICE.touch(exist_ok=True)
     # 10_linux only emits root=UUID= if /dev/disk/by-uuid/<uuid> exists.
@@ -118,7 +123,7 @@ def _generate_grub_cfg_in_chroot(
     by_uuid_dir.mkdir(parents=True, exist_ok=True)
     by_uuid_root = by_uuid_dir / root_uuid
     by_uuid_root.symlink_to(_CHROOT_FAKE_DEVICE)
-    created = [_GRUB_DEFAULTS_SNIPPET, _CHROOT_FAKE_DEVICE, by_uuid_root]
+    created = [_CHROOT_FAKE_DEVICE, by_uuid_root]
     if boot_uuid is not None:
         _CHROOT_FAKE_BOOT_DEVICE.touch(exist_ok=True)
         by_uuid_boot = by_uuid_dir / boot_uuid
@@ -131,6 +136,10 @@ def _generate_grub_cfg_in_chroot(
     finally:
         for path in created:
             path.unlink(missing_ok=True)
+        if previous_defaults is None:
+            _GRUB_DEFAULTS_SNIPPET.unlink(missing_ok=True)
+        else:
+            _GRUB_DEFAULTS_SNIPPET.write_text(previous_defaults)
         # Remove the by-uuid directory if we created it (pre-format, so an
         # empty leftover would leak into the image).
         with contextlib.suppress(OSError):
