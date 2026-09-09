@@ -12,23 +12,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""GRUB configuration file generation using Jinja2 templates."""
+"""Early GRUB search stub configuration generation."""
 
 from uuid import UUID
-
-from jinja2 import Environment, PackageLoader
-
-
-def _get_jinja_env() -> Environment:
-    """Return a configured Jinja2 environment loading templates/ from this package."""
-    # These templates render GRUB config files, not HTML, so autoescaping
-    # would incorrectly escape shell-like syntax (e.g. quotes in kernel args).
-    return Environment(  # noqa: S701
-        loader=PackageLoader("imagecraft.pack.bootloader", "templates"),
-        trim_blocks=True,
-        lstrip_blocks=True,
-        keep_trailing_newline=True,
-    )
 
 
 def render_early_cfg(
@@ -43,6 +29,8 @@ def render_early_cfg(
         filesystem's root (``/boot/grub``, or ``/grub`` when ``/boot`` is a
         dedicated partition).
     """
-    env = _get_jinja_env()
-    template = env.get_template("early.cfg.j2")
-    return template.render(search_uuid=str(search_uuid), boot_prefix=boot_prefix)
+    return (
+        f"search.fs_uuid {search_uuid} root\n"
+        f"set prefix=($root)'{boot_prefix}'\n"
+        "configfile $prefix/grub.cfg\n"
+    )

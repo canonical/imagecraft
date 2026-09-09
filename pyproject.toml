@@ -12,7 +12,6 @@ dependencies = [
     "craft-application~=7.2",
     "craft-grammar~=2.3",
     "craft-providers~=3.7",
-    "jinja2>=3.1.0",
     "pydantic~=2.8",
     "pygit2>=1.13.0,<1.15.0; python_version=='3.12'", # pin pygit2 to versions compatible with libgit2-1.7 for core24
     "pygit2>=1.19.0,<1.20.0; python_version=='3.14'", # Ubuntu 26.04 and core26
@@ -184,9 +183,6 @@ git_describe_command = [
 [tool.setuptools.packages.find]
 include = ["*craft*"]
 namespaces = false
-
-[tool.setuptools.package-data]
-"imagecraft.pack.bootloader" = ["templates/*.j2"]
 
 [tool.codespell]
 ignore-words-list = "buildd,crate,keyserver,comandos,ro,dedent,dedented"
