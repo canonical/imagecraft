@@ -44,74 +44,46 @@ def imagepath(tmp_path):
     return imagepath
 
 
-@pytest.fixture
-def mke2fs(request, content, imagepath):
-    return [
-        "mke2fs",
-        "-t",
-        "ext3",
-        "-d",
-        content,
-        "-L",
-        "test",
-        imagepath,
-    ]
+def _mke2fs_cmd(content, target):
+    return ["mke2fs", "-t", "ext3", "-d", content, "-L", "test", target]
+
+
+def _mkfsfat16_cmd(content, target):
+    return ["mkfs.fat", "-F", "16", "-n", "test", target]
+
+
+def _mcopy_cmd(content, target):
+    return ["bash", "-c", f"mcopy -n -o -s -i{target} {content}/* ::"]
 
 
 @pytest.fixture
-def mke2fs_device(request, content, device):
-    return [
-        "mke2fs",
-        "-t",
-        "ext3",
-        "-d",
-        content,
-        "-L",
-        "test",
-        device,
-    ]
+def mke2fs(content, imagepath):
+    return _mke2fs_cmd(content, imagepath)
 
 
 @pytest.fixture
-def mkfsfat16(request, content, imagepath):
-    return [
-        "mkfs.fat",
-        "-F",
-        "16",
-        "-n",
-        "test",
-        imagepath,
-    ]
+def mke2fs_device(content, device):
+    return _mke2fs_cmd(content, device)
 
 
 @pytest.fixture
-def mkfsfat16_device(request, content, device):
-    return [
-        "mkfs.fat",
-        "-F",
-        "16",
-        "-n",
-        "test",
-        device,
-    ]
+def mkfsfat16(content, imagepath):
+    return _mkfsfat16_cmd(content, imagepath)
 
 
 @pytest.fixture
-def mcopy(request, content, imagepath):
-    return [
-        "bash",
-        "-c",
-        f"mcopy -n -o -s -i{str(imagepath)} {str(content)}/* ::",
-    ]
+def mkfsfat16_device(content, device):
+    return _mkfsfat16_cmd(content, device)
 
 
 @pytest.fixture
-def mcopy_device(request, content, device):
-    return [
-        "bash",
-        "-c",
-        f"mcopy -n -o -s -i{str(device)} {str(content)}/* ::",
-    ]
+def mcopy(content, imagepath):
+    return _mcopy_cmd(content, imagepath)
+
+
+@pytest.fixture
+def mcopy_device(content, device):
+    return _mcopy_cmd(content, device)
 
 
 @pytest.mark.parametrize(
@@ -188,6 +160,24 @@ def test_format_device(
         for f in [request.getfixturevalue(f) for f in expected_fixtures]
     ]
     mocked_run.assert_has_calls(expected_calls)
+
+
+def test_format_device_vfat_with_volume_id(mocker, content, device):
+    """format_device assigns a FAT volume ID via mkfs.fat -i."""
+    mocker.patch("imagecraft.pack.diskutil.create_zero_image", autospec=True)
+    mocked_run = mocker.patch("imagecraft.pack.diskutil.run", autospec=True)
+
+    diskutil.format_device(
+        device_path=device,
+        fstype=FileSystem.VFAT,
+        label="test",
+        content_dir=content,
+        uuid="1234-ABCD",
+    )
+
+    mocked_run.assert_any_call(
+        "mkfs.vfat", "-i", "1234ABCD", "-n", "test", device, stdout=ANY, stderr=ANY
+    )
 
 
 def test_format_device_missing_device(tmp_path):

@@ -17,12 +17,13 @@
 """Volume configuration pydantic model."""
 
 import collections
+import contextlib
 import enum
 import re
 import typing
 import uuid
-from collections.abc import Collection
-from typing import Annotated, Literal, Self
+from collections.abc import Collection, Sequence
+from typing import Annotated, Literal, Self, cast
 
 from craft_application.models import (
     CraftBaseModel,
@@ -350,8 +351,10 @@ class GPTStructureItem(StructureItem):
                         f"'number' and '{deprecated_key}' cannot be used together."
                     )
                 emit.warning(f"'{deprecated_key}' is deprecated; use 'number' instead.")
-                value = value.copy()
-                value["number"] = value.pop(deprecated_key)
+                value_map = cast("dict[str, object]", value).copy()
+                value_map["number"] = value_map.pop(deprecated_key)
+                return value_map
+            return cast("dict[str, object]", value)
         return value
 
 
@@ -460,8 +463,27 @@ HybridStructureList = Annotated[list[HybridStructureItem], Field(min_length=1)]
 StructureList = GPTStructureList | MBRStructureList | HybridStructureList
 
 
+def _gpt_type_of(item: StructureItem) -> GptType | None:
+    """Return the GPT partition type of a structure item, if it has one.
+
+    GPT items carry a :class:`GptType` directly; hybrid items encode it as
+    the second component of a combined ``'<mbr-type>,<gpt-type>'`` string;
+    MBR items have no GPT type.
+    """
+    structure_type = getattr(item, "structure_type", None)
+    if isinstance(structure_type, GptType):
+        return structure_type
+    if isinstance(structure_type, str) and "," in structure_type:
+        gpt_part = structure_type.split(",", 1)[1]
+        with contextlib.suppress(ValueError):
+            return GptType(gpt_part.upper())
+    return None
+
+
 class BaseVolume(CraftBaseModel):
     """Base class for volume definitions."""
+
+    structure: Sequence[StructureItem]  # narrowed by the concrete subclasses
 
     @field_validator("structure", mode="after", check_fields=False)
     @classmethod
@@ -482,6 +504,50 @@ class BaseVolume(CraftBaseModel):
         ]
         raise ValueError(f"Duplicate filesystem labels: {dupes}")
 
+    @property
+    def root_partition(self) -> StructureItem | None:
+        """Return the first system-data (root filesystem) structure item, if any."""
+        return next(
+            (item for item in self.structure if item.role == Role.SYSTEM_DATA), None
+        )
+
+    @property
+    def esp_partition(self) -> StructureItem | None:
+        """Return the EFI System Partition structure item, if any."""
+        return next(
+            (
+                item
+                for item in self.structure
+                if _gpt_type_of(item) == GptType.EFI_SYSTEM
+            ),
+            None,
+        )
+
+    @property
+    def boot_partition(self) -> StructureItem | None:
+        """Return a dedicated ``/boot`` partition structure item, if any.
+
+        A "dedicated boot partition" is a ``system-boot``-role item that is
+        *not* the EFI System Partition and *not* a raw BIOS Boot partition
+        (which holds GRUB's core.img, not a filesystem).
+        """
+        esp_item = self.esp_partition
+        return next(
+            (
+                item
+                for item in self.structure
+                if item.role == Role.SYSTEM_BOOT
+                and item is not esp_item
+                and _gpt_type_of(item) != GptType.BIOS_BOOT
+            ),
+            None,
+        )
+
+    @property
+    def has_bios_boot_partition(self) -> bool:
+        """Whether the volume has a raw BIOS Boot partition (for core.img)."""
+        return any(_gpt_type_of(item) == GptType.BIOS_BOOT for item in self.structure)
+
 
 class GPTVolume(BaseVolume):
     """Volume with a GUID Partition Table (GPT) schema."""
@@ -493,7 +559,7 @@ class GPTVolume(BaseVolume):
     )
     """The partitioning schema of the image."""
 
-    structure: GPTStructureList = Field(
+    structure: GPTStructureList = Field(  # type: ignore[reportIncompatibleVariableOverride]
         min_length=1,
         description="The partitions that comprise the image.",
         examples=[
@@ -517,7 +583,7 @@ class MBRVolume(BaseVolume):
     )
     """The partitioning schema of the image."""
 
-    structure: MBRStructureList = Field(
+    structure: MBRStructureList = Field(  # type: ignore[reportIncompatibleVariableOverride]
         description="The partitions that comprise the image.",
         examples=[
             "[{name: ubuntu-seed, type: 0C, filesystem: vfat, role: system-boot, size: 1200M}]"
@@ -540,7 +606,7 @@ class HybridVolume(BaseVolume):
     )
     """The partitioning schema of the image."""
 
-    structure: HybridStructureList = Field(
+    structure: HybridStructureList = Field(  # type: ignore[reportIncompatibleVariableOverride]
         description="The partitions that comprise the image.",
         examples=[
             "[{name: ubuntu-seed, type: 0C,C12A7328-F81F-11D2-BA4B-00A0C93EC93B, filesystem: vfat, role: system-seed, size: 1200M}]"

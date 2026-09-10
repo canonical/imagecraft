@@ -15,6 +15,7 @@ from typing import cast
 
 import pytest
 from craft_application import ServiceFactory
+from imagecraft.models import Project
 from imagecraft.services.image import ImageService
 from imagecraft.services.pack import ImagecraftPackService
 
@@ -53,8 +54,9 @@ def test_pack(
         return_value={"pc": tmp_path / "dest" / "pc.img"},
     )
     mock_diskutil = mocker.patch("imagecraft.services.pack.diskutil", autospec=True)
-    mock_grubutil = mocker.patch("imagecraft.services.pack.grubutil", autospec=True)
-    mock_image_cls = mocker.patch("imagecraft.services.pack.Image", autospec=True)
+    mock_bootloader_cls = mocker.patch(
+        "imagecraft.services.pack.BootloaderInstaller", autospec=True
+    )
 
     result = pack_service.pack(prime_dir=prime_dir, dest=dest_path)
 
@@ -66,9 +68,15 @@ def test_pack(
     mock_detach.assert_called_once()
     mock_finalize.assert_called_once_with(dest_path)
 
-    # grubutil called on the final image
-    mock_grubutil.setup_grub.assert_called_once()
-    mock_image_cls.assert_called_once()
+    # Bootloader staged before formatting, and boot code patched after
+    mock_bootloader_cls.assert_called_once()
+    mock_bootloader = mock_bootloader_cls.return_value
+    mock_bootloader.prepare_rootfs.assert_called_once_with(
+        project_dirs=default_factory.get("lifecycle").project_info.dirs,
+        volume_name="pc",
+        filesystems=cast(Project, default_factory.get("project").get()).filesystems,
+    )
+    mock_bootloader.install_image_boot_code.assert_called_once()
 
     # Old functions must NOT be called
     mock_diskutil.create_zero_image.assert_not_called()
@@ -98,8 +106,7 @@ def test_pack_detaches_on_error(
         "imagecraft.services.pack.diskutil.format_device",
         side_effect=RuntimeError("disk full"),
     )
-    mocker.patch("imagecraft.services.pack.grubutil", autospec=True)
-    mocker.patch("imagecraft.services.pack.Image", autospec=True)
+    mocker.patch("imagecraft.services.pack.BootloaderInstaller", autospec=True)
 
     with pytest.raises(RuntimeError, match="disk full"):
         pack_service.pack(prime_dir=tmp_path / "prime", dest=dest_path)

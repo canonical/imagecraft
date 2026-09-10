@@ -3,7 +3,7 @@ summary: Pack an image with GRUB and a dedicated boot partition
 systems: [ubuntu-24.04-64]
 
 execute: |
-  GRUB_INSTALL_LOG="Setting up GRUB in the image"
+  GRUB_INSTALL_LOG="Preparing bootloader files"
 
   imagecraft pack --verbosity verbose --destructive-mode 2>&1 >/dev/null | MATCH "$GRUB_INSTALL_LOG"
 
