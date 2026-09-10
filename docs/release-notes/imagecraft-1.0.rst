@@ -21,9 +21,6 @@ software. These requirements apply to local hosts as well as virtual machines an
 container hosts.
 
 
-System  requirements
-~~~~~~~~~~~~~~~~~~~~~
-
 - AMD64, ARM64, RISC-V 64-bit, PowerPC 64-bit little-endian, or S390x
   processor
 - 2GB RAM
@@ -42,9 +39,7 @@ Declarative image definitions
 
 Images and their build environments are configured in a project file named ``imagecraft.yaml``.
 This is where all of the image's essential details are declared, including its top-level descriptors,
-compatible platforms, structure, and content. Images can include package repositories, custom files,
-and cloud-init configuration. These features support repeatable setup of software, files, users, and
-other instance settings when an image starts.
+compatible platforms, structure, and content.
 
 
 GPT and MBR partition layouts
@@ -65,6 +60,6 @@ Snap preparation
 ~~~~~~~~~~~~~~~~
 
 Imagecraft ships with two plugins for pre-installing snaps and reducing the initial boot time of your images:
-Snap-preseed and UC-Prepare. The Snap-preseed plugin builds adds preinstalled snaps to classic images. Similarly,
+Snap-preseed and UC-Prepare. The Snap-preseed plugin builds preinstalled snaps into classic images. Similarly,
 the UC-prepare plugin prepares the seed directory for Ubuntu Core images by installing the snaps listed in the
 provided model assertion.
