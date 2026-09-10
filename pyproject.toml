@@ -48,7 +48,7 @@ types = [
     "types-setuptools",
 ]
 docs = [
-    "pydantic-kitbash~=1.0",
+    "pydantic-kitbash>=1.0.1,<2.0",
     "sphinx-pydantic==0.1.1",
     "sphinx-lint==1.0.2",
     "sphinxext-rediraffe==0.3.0",
