@@ -6,7 +6,7 @@
 Imagecraft 1.0 release notes
 ============================
 
-9 September 2026
+10 September 2026
 
 Learn about the new features, changes, and fixes introduced in Imagecraft 1.0.
 For information about the Imagecraft release policy, see the
@@ -31,8 +31,6 @@ Core features
 -------------
 
 Imagecraft 1.0 provides a declarative workflow for creating Ubuntu bootable images.
-Project files define the image contents, partition layout, target platforms, and build
-steps in one place.
 
 Declarative image definitions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
