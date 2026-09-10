@@ -15,6 +15,7 @@
 import subprocess
 from pathlib import Path
 from subprocess import CompletedProcess
+from typing import Any
 
 import pytest
 from imagecraft import errors
@@ -24,6 +25,7 @@ from imagecraft.utils.mount import (
     CompositeMount,
     ExtFuseMount,
     FatFuseMount,
+    ImageDevDir,
     VirtualOffsetDevice,
     mount_partition,
     mount_volume,
@@ -427,3 +429,342 @@ def test_mount_volume_mbr(mocker, mbr_volume, tmp_path: Path):
         "seed": FatFuseMount,
         "": ExtFuseMount,
     }
+
+
+SECTOR_SIZE = 512
+PART_TABLE = {
+    "device": "/dev/loop0",
+    "sectorsize": SECTOR_SIZE,
+    "partitions": [
+        {"node": "/dev/loop0p1", "start": 2048, "size": 65536},
+        {"node": "/dev/loop0p2", "start": 67584, "size": 131072},
+    ],
+}
+
+
+@pytest.fixture
+def mock_partition_table(mocker):
+    return mocker.patch(
+        "imagecraft.pack.gptutil.get_partition_table",
+        return_value=PART_TABLE,
+    )
+
+
+@pytest.fixture
+def mock_which(mocker):
+    return mocker.patch(
+        "imagecraft.utils.mount.shutil.which",
+        side_effect=lambda cmd: f"/usr/bin/{cmd}",
+    )
+
+
+@pytest.fixture
+def dev_dir(tmp_path: Path) -> Path:
+    path = tmp_path / "dev"
+    path.mkdir()
+    return path
+
+
+@pytest.fixture
+def image_path(tmp_path: Path) -> Path:
+    path = tmp_path / "disk.img"
+    path.touch()
+    return path
+
+
+def _assert_image_dev_dir_cleaned_up(
+    devdir: ImageDevDir, dev_dir: Path, *, expect_partition_table_empty: bool = True
+) -> None:
+    """Assert that an ImageDevDir instance is fully unmounted and cleaned up."""
+    assert not devdir.is_mounted
+    assert devdir._devices is None
+    if expect_partition_table_empty:
+        assert devdir.partition_table is None
+    assert list(dev_dir.iterdir()) == []
+
+
+def test_image_dev_dir_mount(
+    mock_run, mock_partition_table, image_path: Path, dev_dir: Path
+):
+    devdir = ImageDevDir(image_path=image_path, dev_dir=dev_dir)
+    assert not devdir.is_mounted
+
+    devices = devdir.mount()
+
+    assert devdir.is_mounted
+    assert devices[None] == dev_dir / "loop0"
+    assert devices[1] == dev_dir / "loop0p1"
+    assert devices[2] == dev_dir / "loop0p2"
+    # Partitions are addressable by both number and node name.
+    assert devices["loop0p1"] == devices[1]
+    assert devices["loop0p2"] == devices[2]
+    assert all(path.exists() for path in devices.values())
+
+    assert [call.args for call in mock_run.call_args_list] == [
+        ("mount", "--bind", str(image_path), str(dev_dir / "loop0")),
+        (
+            "fusefile",
+            str(dev_dir / "loop0p1"),
+            f"{image_path}/{2048 * SECTOR_SIZE}+{65536 * SECTOR_SIZE}",
+        ),
+        (
+            "fusefile",
+            str(dev_dir / "loop0p2"),
+            f"{image_path}/{67584 * SECTOR_SIZE}+{131072 * SECTOR_SIZE}",
+        ),
+    ]
+
+
+def test_image_dev_dir_mount_twice_raises(
+    mock_run, mock_partition_table, image_path: Path, dev_dir: Path
+):
+    devdir = ImageDevDir(image_path=image_path, dev_dir=dev_dir)
+    devdir.mount()
+
+    with pytest.raises(errors.MountError, match="already mounted"):
+        devdir.mount()
+
+
+def test_image_dev_dir_unmount_not_mounted_raises(
+    mock_run, image_path: Path, dev_dir: Path
+):
+    devdir = ImageDevDir(image_path=image_path, dev_dir=dev_dir)
+
+    with pytest.raises(errors.MountError, match="Not mounted"):
+        devdir.unmount()
+    mock_run.assert_not_called()
+
+
+def test_image_dev_dir_unmount_removes_created_devices(
+    mock_run, mock_which, mock_partition_table, image_path: Path, dev_dir: Path
+):
+    devdir = ImageDevDir(image_path=image_path, dev_dir=dev_dir)
+    devices = devdir.mount()
+    created = set(devices.values())
+
+    devdir.unmount()
+
+    _assert_image_dev_dir_cleaned_up(
+        devdir, dev_dir, expect_partition_table_empty=False
+    )
+    assert all(not path.exists() for path in created)
+    unmounted = {
+        call.args[2]
+        for call in mock_run.call_args_list
+        if call.args[0] == "fusermount3"
+    }
+    assert unmounted == {str(path.resolve()) for path in created}
+
+
+def test_image_dev_dir_unmount_keeps_preexisting_devices(
+    mock_run, mock_which, mock_partition_table, image_path: Path, dev_dir: Path
+):
+    preexisting = dev_dir / "loop0p1"
+    preexisting.touch()
+
+    devdir = ImageDevDir(image_path=image_path, dev_dir=dev_dir)
+    devdir.mount()
+    devdir.unmount()
+
+    assert preexisting.exists()
+    assert list(dev_dir.iterdir()) == [preexisting]
+
+
+def test_image_dev_dir_remount_after_unmount(
+    mock_run, mock_which, mock_partition_table, image_path: Path, dev_dir: Path
+):
+    devdir = ImageDevDir(image_path=image_path, dev_dir=dev_dir)
+    first = dict(devdir.mount())
+    devdir.unmount()
+
+    assert devdir._devices is None
+    assert devdir.partition_table is None
+
+    second = devdir.mount()
+
+    assert devdir.is_mounted
+    assert second == first
+
+
+def test_image_dev_dir_context_manager(
+    mock_run, mock_which, mock_partition_table, image_path: Path, dev_dir: Path
+):
+    devdir = ImageDevDir(image_path=image_path, dev_dir=dev_dir)
+
+    with devdir as devices:
+        assert devdir.is_mounted
+        assert set(devices) == {None, 1, 2, "loop0p1", "loop0p2"}
+
+    _assert_image_dev_dir_cleaned_up(devdir, dev_dir)
+
+
+@pytest.mark.parametrize(
+    ("scenario", "side_effect", "match"),
+    [
+        pytest.param(
+            "bind_mount_fails",
+            subprocess.CalledProcessError(1, "fusefile"),
+            "Error bind-mounting",
+            id="bind_mount_fails",
+        ),
+        pytest.param(
+            "partition_2_fails",
+            None,
+            "Error mounting partition 2",
+            id="partition_2_fails",
+        ),
+    ],
+)
+def test_image_dev_dir_mount_failure_propagates(
+    mock_run,
+    mock_partition_table,
+    image_path: Path,
+    dev_dir: Path,
+    scenario: str,
+    side_effect: Any,
+    match: str,
+):
+    if side_effect is None:
+        failing_fragment = f"{image_path}/{67584 * SECTOR_SIZE}+{131072 * SECTOR_SIZE}"
+
+        def _side_effect(*args, **kwargs):
+            if args[0] == "fusefile" and args[2] == failing_fragment:
+                raise subprocess.CalledProcessError(1, "fusefile")
+            return CompletedProcess(args=list(args), returncode=0, stdout="")
+
+        mock_run.side_effect = _side_effect
+    else:
+        mock_run.side_effect = side_effect
+
+    devdir = ImageDevDir(image_path=image_path, dev_dir=dev_dir)
+    assert devdir.is_mounted is False
+
+    with pytest.raises(errors.MountError, match=match):
+        devdir.mount()
+
+    _assert_image_dev_dir_cleaned_up(devdir, dev_dir)
+
+    if scenario == "partition_2_fails":
+        unmounted = {
+            call.args[-1]
+            for call in mock_run.call_args_list
+            if call.args[0] in ("fusermount3", "fusermount", "umount")
+        }
+        created = {dev_dir / "loop0", dev_dir / "loop0p1", dev_dir / "loop0p2"}
+        assert unmounted == {str(path.resolve()) for path in created}
+
+
+def test_image_dev_dir_unmount_failure_continues_cleanup(
+    mock_run, mock_partition_table, image_path: Path, dev_dir: Path
+):
+    failing_unmount_path = str((dev_dir / "loop0p2").resolve())
+
+    def _side_effect(*args, **kwargs):
+        if (
+            args[0] in ("fusermount3", "fusermount", "umount")
+            and args[-1] == failing_unmount_path
+        ):
+            raise subprocess.CalledProcessError(1, args[0])
+        return CompletedProcess(args=list(args), returncode=0, stdout="")
+
+    mock_run.side_effect = _side_effect
+    devdir = ImageDevDir(image_path=image_path, dev_dir=dev_dir)
+    devices = devdir.mount()
+    created = set(devices.values())
+
+    with pytest.raises(errors.MountError, match="Errors occurred while unmounting"):
+        devdir.unmount()
+
+    _assert_image_dev_dir_cleaned_up(devdir, dev_dir)
+    unmounted = {
+        call.args[-1]
+        for call in mock_run.call_args_list
+        if call.args[0] in ("fusermount3", "fusermount", "umount")
+    }
+    assert unmounted == {str(path.resolve()) for path in created}
+
+
+def test_image_dev_dir_mount_empty_partition_table(
+    mock_partition_table, mock_run, image_path: Path, dev_dir: Path
+):
+    mock_partition_table.return_value = {
+        "device": "/dev/loop0",
+        "sectorsize": SECTOR_SIZE,
+        "partitions": [],
+    }
+    devdir = ImageDevDir(image_path=image_path, dev_dir=dev_dir)
+
+    devices = devdir.mount()
+
+    assert devices == {None: dev_dir / "loop0"}
+    mock_run.assert_called_once_with(
+        "mount", "--bind", str(image_path), str(dev_dir / "loop0")
+    )
+    assert devdir.is_mounted
+
+
+def test_image_dev_dir_context_manager_exception_still_unmounts(
+    mock_run, mock_which, mock_partition_table, image_path: Path, dev_dir: Path
+):
+    devdir = ImageDevDir(image_path=image_path, dev_dir=dev_dir)
+
+    def _raise_inside_context() -> None:
+        with devdir as devices:
+            assert devdir.is_mounted
+            assert devices is not None
+            raise RuntimeError("boom")
+
+    with pytest.raises(RuntimeError, match="boom"):
+        _raise_inside_context()
+
+    _assert_image_dev_dir_cleaned_up(devdir, dev_dir)
+
+
+def test_image_dev_dir_mount_preexisting_directory_fails_cleanly(
+    mock_run, mock_partition_table, image_path: Path, dev_dir: Path
+):
+    (dev_dir / "loop0p1").mkdir()
+    devdir = ImageDevDir(image_path=image_path, dev_dir=dev_dir)
+
+    with pytest.raises(errors.MountError, match="Error creating device file"):
+        devdir.mount()
+
+    assert not devdir.is_mounted
+    assert (dev_dir / "loop0p1").exists()
+    assert (dev_dir / "loop0p1").is_dir()
+
+
+def test_image_dev_dir_multiple_images_same_dev_dir(
+    mock_run, mock_partition_table, image_path: Path, dev_dir: Path
+):
+    def make_partition_table(device: str) -> dict[str, Any]:
+        return {
+            "device": device,
+            "sectorsize": SECTOR_SIZE,
+            "partitions": [
+                {"node": f"{device}p1", "start": 2048, "size": 65536},
+            ],
+        }
+
+    mock_partition_table.side_effect = [
+        make_partition_table("/dev/loop0"),
+        make_partition_table("/dev/loop1"),
+    ]
+    image_path_2 = image_path.parent / "disk2.img"
+    image_path_2.touch()
+
+    devdir_a = ImageDevDir(image_path=image_path, dev_dir=dev_dir)
+    devdir_b = ImageDevDir(image_path=image_path_2, dev_dir=dev_dir)
+
+    devices_a = devdir_a.mount()
+    devices_b = devdir_b.mount()
+
+    assert devdir_a.is_mounted
+    assert devdir_b.is_mounted
+    assert {devices_a[None].name, devices_b[None].name} == {"loop0", "loop1"}
+    assert devices_a[1] == devices_a["loop0p1"] == dev_dir / "loop0p1"
+    assert devices_b[1] == devices_b["loop1p1"] == dev_dir / "loop1p1"
+
+    devdir_a.unmount()
+    devdir_b.unmount()
+    assert list(dev_dir.iterdir()) == []
