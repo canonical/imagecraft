@@ -57,7 +57,7 @@ the image.
 Snap preparation
 ~~~~~~~~~~~~~~~~
 
-Imagecraft ships with two plugins for pre-installing snaps and reducing the initial boot time of your images:
-Snap-preseed and UC-Prepare. The Snap-preseed plugin builds preinstalled snaps into classic images. Similarly,
-the UC-prepare plugin prepares the seed directory for Ubuntu Core images by installing the snaps listed in the
-provided model assertion.
+Imagecraft ships with two plugins for pre-installing snaps and reducing the initial boot time of the resulting images:
+Snap-preseed and UC-Prepare. The Snap-preseed plugin builds the scaffolding of any listed snaps directly into classic
+images. Similarly, the UC-prepare plugin prepares the seed directory for Ubuntu Core images by installing the snaps
+listed in the provided model assertion.
