@@ -31,6 +31,7 @@ def target_func(content: str) -> str:
 class TestChroot:
     """Fork process and execute in chroot."""
 
+    @pytest.mark.requires_root
     def test_chroot(self, mocker, new_dir, mock_chroot):
         mock_mount = mocker.patch("imagecraft.pack.chroot.os_utils.mount")
         mock_umount = mocker.patch("imagecraft.pack.chroot.os_utils.umount")

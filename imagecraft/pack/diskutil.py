@@ -112,7 +112,7 @@ def _format_populate_ext_partition(
     :param label: Ext Filesystem label, empty if not supplied.
     :raises CalledProcessError: If mke2fs fails.
     """
-    mke2fs_args: list[str | Path] = ["-t", fstype]
+    mke2fs_args: list[str | Path] = ["-F", "-t", fstype]
 
     if content_dir is not None:
         mke2fs_args.extend(["-d", content_dir])

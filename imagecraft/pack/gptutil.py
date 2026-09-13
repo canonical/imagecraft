@@ -185,7 +185,7 @@ def create_empty_gpt_image(
     )
 
 
-def _get_partition_table(imagepath: Path) -> dict[str, Any]:
+def get_partition_table(imagepath: Path) -> dict[str, Any]:
     """Return a dict representing the complete partition table.
 
     :raises CalledProcessError: If sfdisk fails.
@@ -200,13 +200,13 @@ def _get_partition_info(imagepath: Path, partname: str) -> dict[str, Any]:
 
     :raises CalledProcessError: If sfdisk fails.
     """
-    for partition in _get_partition_table(imagepath).get("partitions", []):
+    for partition in get_partition_table(imagepath).get("partitions", []):
         if partition.get("name") == partname:
             return cast(dict[str, Any], partition)
     raise CraftError(f"No partition named {partname} in {imagepath}")
 
 
-def _partition_node_number(
+def partition_node_number(
     table: dict[str, Any], partition: dict[str, Any]
 ) -> int | None:
     """Return the partition number sfdisk reported for a partition entry.
@@ -232,9 +232,9 @@ def _get_partition_info_by_number(imagepath: Path, partnum: int) -> dict[str, An
 
     :raises CalledProcessError: If sfdisk fails.
     """
-    table = _get_partition_table(imagepath)
+    table = get_partition_table(imagepath)
     for partition in table.get("partitions", []):
-        if _partition_node_number(table, partition) == partnum:
+        if partition_node_number(table, partition) == partnum:
             return cast(dict[str, Any], partition)
     raise CraftError(f"No partition number {partnum} in {imagepath}")
 
