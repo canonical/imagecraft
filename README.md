@@ -77,9 +77,9 @@ Imagecraft is released under the [GPL-3.0 license](LICENSE).
 [imagecraft-site]: https://snapcraft.io/imagecraft
 [rtd-badge]: https://readthedocs.com/projects/canonical-imagecraft/badge/?version=latest
 [rtd-latest]: https://canonical-imagecraft.readthedocs-hosted.com/latest/
-[ruff-badge]: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/asset
+[ruff-badge]: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json
 [ruff-site]: https://github.com/astral-sh/ruff
 [codecov-badge]: https://codecov.io/github/canonical/imagecraft/coverage.svg?branch=main
 [codecov-status]: https://codecov.io/github/canonical/imagecraft?branch=main
-[qa-badge]: https://github.com/canonical/imagecraft/actions/workflows/qa.yaml/badge.svg?branch=main&event=pus
+[qa-badge]: https://github.com/canonical/imagecraft/actions/workflows/qa.yaml/badge.svg?branch=main&event=push
 [qa-status]: https://github.com/canonical/imagecraft/actions/workflows/qa.yaml
