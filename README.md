@@ -15,7 +15,7 @@ and incorporating processes from common tools.
 The structure, content, and build details of an image are declared in a project file
 called `imagecraft.yaml`.
 
-Create a minimal project file with:
+In your project directory, create a minimal project file with:
 
 ```
 imagecraft init
