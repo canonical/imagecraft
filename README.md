@@ -21,7 +21,7 @@ In your project directory, create a minimal project file with:
 imagecraft init
 ```
 
-After declaring all of the images essential details, pack it with:
+After declaring your image's essential details, pack it with:
 
 ```
 imagecraft pack
