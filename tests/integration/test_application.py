@@ -19,6 +19,7 @@ import time
 from pathlib import Path
 
 import pytest
+from craft_application import ServiceFactory
 from craft_parts import Features
 from imagecraft import application
 
@@ -153,23 +154,26 @@ def test_imagecraft_pack(
 @pytest.mark.requires_root
 def test_imagecraft_pack_skips_when_unchanged(
     project_path: Path,
-    imagecraft_app: application.Imagecraft,
+    app_metadata,
     monkeypatch: pytest.MonkeyPatch,
     mocker,
 ):
     """A second pack should skip rebuilding an unchanged image."""
-    monkeypatch.setenv("CRAFT_DEBUG", "1")
-
     mocker.patch("imagecraft.services.pack.Image")
     mocker.patch("imagecraft.services.pack.grubutil.setup_grub")
     project_file = project_path / "imagecraft.yaml"
     project_file.write_text(IMAGECRAFT_YAML)
 
+    def run_pack() -> int:
+        service_factory = ServiceFactory(app=app_metadata)
+        imagecraft_app = application.Imagecraft(app_metadata, service_factory)
+        return imagecraft_app.run()
+
     monkeypatch.setattr(
         "sys.argv",
         ["imagecraft", "pack", "--destructive-mode", "--verbosity", "debug"],
     )
-    first_result = imagecraft_app.run()
+    first_result = run_pack()
 
     assert first_result == 0
 
@@ -177,7 +181,7 @@ def test_imagecraft_pack_skips_when_unchanged(
     first_mtime = artifact_path.stat().st_mtime_ns
 
     time.sleep(0.01)
-    second_result = imagecraft_app.run()
+    second_result = run_pack()
 
     assert second_result == 0
     assert artifact_path.stat().st_mtime_ns == first_mtime
@@ -187,23 +191,26 @@ def test_imagecraft_pack_skips_when_unchanged(
 @pytest.mark.requires_root
 def test_imagecraft_pack_rebuilds_when_pack_inputs_change(
     project_path: Path,
-    imagecraft_app: application.Imagecraft,
+    app_metadata,
     monkeypatch: pytest.MonkeyPatch,
     mocker,
 ):
     """A pack-input change should force a later pack to rebuild the image."""
-    monkeypatch.setenv("CRAFT_DEBUG", "1")
-
     mocker.patch("imagecraft.services.pack.Image")
     mocker.patch("imagecraft.services.pack.grubutil.setup_grub")
     project_file = project_path / "imagecraft.yaml"
     project_file.write_text(IMAGECRAFT_YAML)
 
+    def run_pack() -> int:
+        service_factory = ServiceFactory(app=app_metadata)
+        imagecraft_app = application.Imagecraft(app_metadata, service_factory)
+        return imagecraft_app.run()
+
     monkeypatch.setattr(
         "sys.argv",
         ["imagecraft", "pack", "--destructive-mode", "--verbosity", "debug"],
     )
-    first_result = imagecraft_app.run()
+    first_result = run_pack()
 
     assert first_result == 0
 
@@ -214,7 +221,7 @@ def test_imagecraft_pack_rebuilds_when_pack_inputs_change(
     project_file.write_text(
         IMAGECRAFT_YAML.replace("mount: /boot/", "mount: /boot/efi/")
     )
-    second_result = imagecraft_app.run()
+    second_result = run_pack()
 
     assert second_result == 0
     assert artifact_path.stat().st_mtime_ns > first_mtime
@@ -224,7 +231,7 @@ def test_imagecraft_pack_rebuilds_when_pack_inputs_change(
 @pytest.mark.requires_root
 def test_imagecraft_pack_rebuilds_when_grub_availability_changes(
     project_path: Path,
-    imagecraft_app: application.Imagecraft,
+    app_metadata,
     monkeypatch: pytest.MonkeyPatch,
     mocker,
 ):
@@ -234,8 +241,6 @@ def test_imagecraft_pack_rebuilds_when_grub_availability_changes(
     or requiring a lifecycle rerun, so only the pack service's own repack
     detection (not the framework's generic checks) can catch it.
     """
-    monkeypatch.setenv("CRAFT_DEBUG", "1")
-
     mocker.patch("imagecraft.services.pack.Image")
     mocker.patch("imagecraft.services.pack.grubutil.setup_grub")
     mocker.patch(
@@ -244,11 +249,16 @@ def test_imagecraft_pack_rebuilds_when_grub_availability_changes(
     project_file = project_path / "imagecraft.yaml"
     project_file.write_text(IMAGECRAFT_YAML)
 
+    def run_pack() -> int:
+        service_factory = ServiceFactory(app=app_metadata)
+        imagecraft_app = application.Imagecraft(app_metadata, service_factory)
+        return imagecraft_app.run()
+
     monkeypatch.setattr(
         "sys.argv",
         ["imagecraft", "pack", "--destructive-mode", "--verbosity", "debug"],
     )
-    first_result = imagecraft_app.run()
+    first_result = run_pack()
 
     assert first_result == 0
 
@@ -257,7 +267,7 @@ def test_imagecraft_pack_rebuilds_when_grub_availability_changes(
 
     time.sleep(0.01)
     mocker.patch("imagecraft.services.pack.shutil.which", return_value=None)
-    second_result = imagecraft_app.run()
+    second_result = run_pack()
 
     assert second_result == 0
     assert artifact_path.stat().st_mtime_ns > first_mtime

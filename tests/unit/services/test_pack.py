@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import cast
 
 import pytest
+import yaml
 from craft_application import ServiceFactory
 from craft_parts import ProjectDirs, ProjectInfo, ProjectVar, ProjectVarInfo
 from craft_parts.filesystem_mounts import FilesystemMount, FilesystemMounts
@@ -199,18 +200,20 @@ def test_write_artifacts_state_persists_pack_fingerprint(
     tmp_path: Path,
     mocker,
 ):
-    """write_artifacts_state also records the pack-input fingerprint."""
+    """write_artifacts_state also records the pack-input fingerprint on disk."""
     mocker.patch(
         "imagecraft.services.pack.shutil.which", return_value="/sbin/grub-install"
     )
     artifact_path = tmp_path / "dest" / "pc.img"
-    state_service = default_factory.get("state")
     platform = configured_pack_service._build_info.platform
 
     configured_pack_service.write_artifacts_state({None: artifact_path})
 
+    persisted_state = yaml.safe_load(
+        configured_pack_service._pack_inputs_state_path().read_text()
+    )
     assert (
-        state_service.get("pack_inputs", platform)
+        persisted_state["pack_inputs"][platform]
         == configured_pack_service._current_pack_fingerprint()
     )
 
@@ -219,6 +222,26 @@ def test_app_needs_repack_when_no_fingerprint_stored(
     configured_pack_service: ImagecraftPackService,
 ):
     """A repack is required when there is no stored fingerprint to compare against."""
+    assert configured_pack_service._app_needs_repack() is True
+
+
+@pytest.mark.parametrize(
+    "bad_contents",
+    [
+        pytest.param("not-yaml: [", id="invalid-yaml"),
+        pytest.param("42", id="non-dict-root"),
+        pytest.param("pack_inputs: 42", id="non-dict-pack-inputs"),
+    ],
+)
+def test_app_needs_repack_when_persisted_state_is_corrupt(
+    configured_pack_service: ImagecraftPackService,
+    bad_contents: str,
+):
+    """A corrupt or non-dict pack state file conservatively forces a repack."""
+    state_path = configured_pack_service._pack_inputs_state_path()
+    state_path.parent.mkdir(parents=True, exist_ok=True)
+    state_path.write_text(bad_contents)
+
     assert configured_pack_service._app_needs_repack() is True
 
 
@@ -235,6 +258,30 @@ def test_app_needs_repack_when_fingerprint_unchanged(
     configured_pack_service.write_artifacts_state({None: artifact_path})
 
     assert configured_pack_service._app_needs_repack() is False
+
+
+def test_app_needs_repack_reads_persisted_fingerprint_across_service_instances(
+    configured_pack_service: ImagecraftPackService,
+    default_factory: ServiceFactory,
+    tmp_path: Path,
+    mocker,
+):
+    """A fresh pack service can reuse the persisted fingerprint from work state."""
+    mocker.patch(
+        "imagecraft.services.pack.shutil.which", return_value="/sbin/grub-install"
+    )
+    artifact_path = tmp_path / "dest" / "pc.img"
+    configured_pack_service.write_artifacts_state({None: artifact_path})
+
+    fresh_pack_service = ImagecraftPackService(
+        app=default_factory.app,
+        services=default_factory,
+    )
+    fresh_pack_service.set_output_dir(tmp_path / "dest")
+    default_factory.get("project").get()
+    fresh_pack_service.update_project()
+
+    assert fresh_pack_service._app_needs_repack() is False
 
 
 def test_app_needs_repack_when_grub_install_availability_changes(

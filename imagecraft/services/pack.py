@@ -19,7 +19,8 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, cast
 
-from craft_application import PackageService, models
+import yaml
+from craft_application import PackageService, models, util
 from craft_cli import emit
 from typing_extensions import override
 
@@ -30,6 +31,8 @@ from imagecraft.services.image import ImageService
 
 class ImagecraftPackService(PackageService):
     """Package service subclass for Imagecraft."""
+
+    _PACK_INPUTS_STATE_FILE = ".imagecraft-pack-state.yaml"
 
     @override
     def get_artifacts(self) -> dict[str | None, Path]:
@@ -70,6 +73,62 @@ class ImagecraftPackService(PackageService):
             "grub_install_available": shutil.which("grub-install") is not None,
         }
 
+    def _pack_inputs_state_path(self) -> Path:
+        """Return the persistent pack-inputs state file path."""
+        project_dirs = self._services.get("lifecycle").project_info.dirs
+        return project_dirs.work_dir / self._PACK_INPUTS_STATE_FILE
+
+    def _read_persisted_pack_fingerprint(self) -> dict[str, Any] | None:
+        """Read the persisted pack-input fingerprint for the current platform."""
+        state_path = self._pack_inputs_state_path()
+        platform = self._build_info.platform
+
+        if not state_path.is_file():
+            return None
+
+        try:
+            raw_state = yaml.safe_load(state_path.read_text())
+        except (OSError, yaml.YAMLError):
+            emit.debug(f"Failed to read pack-input state from {str(state_path)!r}.")
+            return None
+
+        if not isinstance(raw_state, dict):
+            return None
+
+        fingerprints = raw_state.get("pack_inputs")
+        if not isinstance(fingerprints, dict):
+            return None
+
+        stored_fingerprint = fingerprints.get(platform)
+        return stored_fingerprint if isinstance(stored_fingerprint, dict) else None
+
+    def _write_persisted_pack_fingerprint(self) -> None:
+        """Persist the current pack-input fingerprint in the project work tree."""
+        state_path = self._pack_inputs_state_path()
+        state_path.parent.mkdir(parents=True, exist_ok=True)
+
+        raw_state: dict[str, Any] = {}
+        if state_path.is_file():
+            try:
+                loaded_state = yaml.safe_load(state_path.read_text())
+            except (OSError, yaml.YAMLError):
+                loaded_state = None
+            if isinstance(loaded_state, dict):
+                raw_state = loaded_state
+
+        fingerprints = raw_state.get("pack_inputs")
+        if not isinstance(fingerprints, dict):
+            fingerprints = {}
+            raw_state["pack_inputs"] = fingerprints
+
+        fingerprints[self._build_info.platform] = self._current_pack_fingerprint()
+
+        tmp_path = state_path.with_name(
+            f"{state_path.name}.{self._build_info.platform}.{id(self)}.tmp"
+        )
+        tmp_path.write_text(util.dump_yaml(raw_state))
+        tmp_path.replace(state_path)
+
     @override
     def _app_needs_repack(self, partition: str | None = None) -> bool:
         """Determine whether pack-time inputs changed since the last pack.
@@ -80,12 +139,8 @@ class ImagecraftPackService(PackageService):
         inputs described in `_current_pack_fingerprint`, and must prefer
         returning True whenever it can't prove the artifact is still valid.
         """
-        platform = self._build_info.platform
-        state_service = self._services.get("state")
-
-        try:
-            stored_fingerprint = state_service.get("pack_inputs", platform)
-        except KeyError:
+        stored_fingerprint = self._read_persisted_pack_fingerprint()
+        if stored_fingerprint is None:
             return True
 
         return stored_fingerprint != self._current_pack_fingerprint()
@@ -102,12 +157,7 @@ class ImagecraftPackService(PackageService):
         state_service.set(
             "artifacts", platform, value=state_entries or None, overwrite=True
         )
-        state_service.set(
-            "pack_inputs",
-            platform,
-            value=self._current_pack_fingerprint(),
-            overwrite=True,
-        )
+        self._write_persisted_pack_fingerprint()
 
     @override
     def _pack(self, *, name: str | None = None, path: Path) -> None:
