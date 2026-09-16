@@ -320,3 +320,19 @@ class ImageService(AppService):
             images[name] = final_path
         self._images = None
         return images
+
+    def finalize_image(self, name: str, dest: pathlib.Path) -> pathlib.Path:
+        """Move a single hidden image file to its final destination.
+
+        :param name: The image/volume name.
+        :param dest: Final destination for the image.
+        :returns: The final image path.
+        """
+        images = dict(self.get_images())
+        hidden_path = images[name]
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(hidden_path), dest)
+        emit.debug(f"Finalized image {name!r} -> {dest}")
+        images[name] = dest
+        self._images = None
+        return dest

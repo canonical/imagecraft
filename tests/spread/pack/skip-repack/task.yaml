@@ -1,0 +1,14 @@
+summary: Pack a simple image
+
+system:
+  - ubuntu-24.04
+
+prepare: |
+  . /etc/os-release
+  sed "s/__BUILD_BASE__/${ID}@${VERSION_ID}/" imagecraft-template.yaml > imagecraft.yaml
+
+execute: |
+  rm -f disk.img
+  imagecraft pack --verbose --ignore=unmaintained
+  test -f disk.img
+  imagecraft pack | MATCH "Skipping pack"
