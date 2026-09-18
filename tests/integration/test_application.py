@@ -165,6 +165,7 @@ def test_imagecraft_pack_skips_when_unchanged(
     project_file.write_text(IMAGECRAFT_YAML)
 
     def run_pack() -> int:
+        Features.reset()
         service_factory = ServiceFactory(app=app_metadata)
         imagecraft_app = application.Imagecraft(app_metadata, service_factory)
         return imagecraft_app.run()
@@ -202,6 +203,7 @@ def test_imagecraft_pack_rebuilds_when_pack_inputs_change(
     project_file.write_text(IMAGECRAFT_YAML)
 
     def run_pack() -> int:
+        Features.reset()
         service_factory = ServiceFactory(app=app_metadata)
         imagecraft_app = application.Imagecraft(app_metadata, service_factory)
         return imagecraft_app.run()
@@ -250,6 +252,7 @@ def test_imagecraft_pack_rebuilds_when_grub_availability_changes(
     project_file.write_text(IMAGECRAFT_YAML)
 
     def run_pack() -> int:
+        Features.reset()
         service_factory = ServiceFactory(app=app_metadata)
         imagecraft_app = application.Imagecraft(app_metadata, service_factory)
         return imagecraft_app.run()
