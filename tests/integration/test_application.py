@@ -15,9 +15,11 @@
 #  with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Integration tests for the application as a whole."""
 
+import time
 from pathlib import Path
 
 import pytest
+from craft_application import ServiceFactory
 from craft_parts import Features
 from imagecraft import application
 
@@ -146,3 +148,129 @@ def test_imagecraft_pack(
     assert result == 0
 
     check.is_true((project_path / "pc.img").is_file())
+
+
+@pytest.mark.slow
+@pytest.mark.requires_root
+def test_imagecraft_pack_skips_when_unchanged(
+    project_path: Path,
+    app_metadata,
+    monkeypatch: pytest.MonkeyPatch,
+    mocker,
+):
+    """A second pack should skip rebuilding an unchanged image."""
+    mocker.patch("imagecraft.services.pack.Image")
+    mocker.patch("imagecraft.services.pack.grubutil.setup_grub")
+    project_file = project_path / "imagecraft.yaml"
+    project_file.write_text(IMAGECRAFT_YAML)
+
+    def run_pack() -> int:
+        Features.reset()
+        service_factory = ServiceFactory(app=app_metadata)
+        imagecraft_app = application.Imagecraft(app_metadata, service_factory)
+        return imagecraft_app.run()
+
+    monkeypatch.setattr(
+        "sys.argv",
+        ["imagecraft", "pack", "--destructive-mode", "--verbosity", "debug"],
+    )
+    first_result = run_pack()
+
+    assert first_result == 0
+
+    artifact_path = project_path / "pc.img"
+    first_mtime = artifact_path.stat().st_mtime_ns
+
+    time.sleep(0.01)
+    second_result = run_pack()
+
+    assert second_result == 0
+    assert artifact_path.stat().st_mtime_ns == first_mtime
+
+
+@pytest.mark.slow
+@pytest.mark.requires_root
+def test_imagecraft_pack_rebuilds_when_pack_inputs_change(
+    project_path: Path,
+    app_metadata,
+    monkeypatch: pytest.MonkeyPatch,
+    mocker,
+):
+    """A pack-input change should force a later pack to rebuild the image."""
+    mocker.patch("imagecraft.services.pack.Image")
+    mocker.patch("imagecraft.services.pack.grubutil.setup_grub")
+    project_file = project_path / "imagecraft.yaml"
+    project_file.write_text(IMAGECRAFT_YAML)
+
+    def run_pack() -> int:
+        Features.reset()
+        service_factory = ServiceFactory(app=app_metadata)
+        imagecraft_app = application.Imagecraft(app_metadata, service_factory)
+        return imagecraft_app.run()
+
+    monkeypatch.setattr(
+        "sys.argv",
+        ["imagecraft", "pack", "--destructive-mode", "--verbosity", "debug"],
+    )
+    first_result = run_pack()
+
+    assert first_result == 0
+
+    artifact_path = project_path / "pc.img"
+    first_mtime = artifact_path.stat().st_mtime_ns
+
+    time.sleep(0.01)
+    project_file.write_text(
+        IMAGECRAFT_YAML.replace("mount: /boot/", "mount: /boot/efi/")
+    )
+    second_result = run_pack()
+
+    assert second_result == 0
+    assert artifact_path.stat().st_mtime_ns > first_mtime
+
+
+@pytest.mark.slow
+@pytest.mark.requires_root
+def test_imagecraft_pack_rebuilds_when_grub_availability_changes(
+    project_path: Path,
+    app_metadata,
+    monkeypatch: pytest.MonkeyPatch,
+    mocker,
+):
+    """A grub-install availability change should force a repack.
+
+    This changes GRUB installation behavior without editing the project file
+    or requiring a lifecycle rerun, so only the pack service's own repack
+    detection (not the framework's generic checks) can catch it.
+    """
+    mocker.patch("imagecraft.services.pack.Image")
+    mocker.patch("imagecraft.services.pack.grubutil.setup_grub")
+    mocker.patch(
+        "imagecraft.services.pack.shutil.which", return_value="/sbin/grub-install"
+    )
+    project_file = project_path / "imagecraft.yaml"
+    project_file.write_text(IMAGECRAFT_YAML)
+
+    def run_pack() -> int:
+        Features.reset()
+        service_factory = ServiceFactory(app=app_metadata)
+        imagecraft_app = application.Imagecraft(app_metadata, service_factory)
+        return imagecraft_app.run()
+
+    monkeypatch.setattr(
+        "sys.argv",
+        ["imagecraft", "pack", "--destructive-mode", "--verbosity", "debug"],
+    )
+    first_result = run_pack()
+
+    assert first_result == 0
+
+    artifact_path = project_path / "pc.img"
+    first_mtime = artifact_path.stat().st_mtime_ns
+
+    time.sleep(0.01)
+    mocker.patch("imagecraft.services.pack.shutil.which", return_value=None)
+    second_result = run_pack()
+
+    assert second_result == 0
+    assert artifact_path.stat().st_mtime_ns > first_mtime
