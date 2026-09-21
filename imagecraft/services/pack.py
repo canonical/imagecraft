@@ -155,7 +155,10 @@ class ImagecraftPackService(PackageService):
         ]
 
         state_service.set(
-            "artifacts", platform, value=state_entries or None, overwrite=True
+            "artifacts",
+            platform,
+            value=cast(Any, state_entries or None),
+            overwrite=True,
         )
         self._write_persisted_pack_fingerprint()
 
