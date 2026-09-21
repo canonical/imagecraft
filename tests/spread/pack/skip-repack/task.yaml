@@ -11,4 +11,4 @@ execute: |
   rm -f disk.img
   imagecraft pack --verbose --ignore=unmaintained
   test -f disk.img
-  imagecraft pack | MATCH "Skipping pack"
+  imagecraft pack 2>&1 | MATCH "Skipping pack"
