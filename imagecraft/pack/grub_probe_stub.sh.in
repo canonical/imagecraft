@@ -1,0 +1,35 @@
+#!/bin/sh
+TARGET=""
+DEVICE=""
+for arg in "$@"; do
+    case "$arg" in
+        --target=*) TARGET="${arg#--target=}" ;;
+        --device=*) DEVICE="${arg#--device=}" ;;
+        --device) ;;
+        -*) ;;
+    esac
+done
+
+if [ "$TARGET" = "device" ]; then
+    echo "__IMAGECRAFT_LOOP_DEV__"
+    exit 0
+fi
+
+if [ "$DEVICE" != "__IMAGECRAFT_LOOP_DEV__" ]; then
+    exit 1
+fi
+
+case "$TARGET" in
+    drive) echo "__IMAGECRAFT_DRIVE__" ;;
+    fs) echo "ext2" ;;
+    fs_uuid)
+        UUID=$(tune2fs -l "__IMAGECRAFT_LOOP_DEV__" 2>/dev/null | sed -n 's/^Filesystem UUID: *//p')
+        if [ -n "$UUID" ]; then
+            echo "$UUID"
+        fi
+        ;;
+    partuuid) ;;
+    partmap) echo "__IMAGECRAFT_PARTMAP__" ;;
+    abstraction) ;;
+esac
+exit 0
