@@ -177,21 +177,17 @@ def test_pack_artifacts_detaches_on_error(
     mock_detach.assert_called_once()
 
 
-def test_write_artifacts_state_overwrites_existing_value(
+def test_write_artifacts_state_uses_framework_default_behavior(
     configured_pack_service: ImagecraftPackService,
     default_factory: ServiceFactory,
     tmp_path: Path,
 ):
     artifact_path = tmp_path / "dest" / "pc.img"
-    state_service = default_factory.get("state")
-    platform = configured_pack_service._build_info.platform
 
     configured_pack_service.write_artifacts_state({None: artifact_path})
-    configured_pack_service.write_artifacts_state({None: artifact_path})
 
-    assert state_service.get("artifacts", platform) == [
-        {"name": None, "path": str(artifact_path)}
-    ]
+    with pytest.raises(ValueError, match="overwrite is false"):
+        configured_pack_service.write_artifacts_state({None: artifact_path})
 
 
 def test_write_artifacts_state_persists_pack_fingerprint(

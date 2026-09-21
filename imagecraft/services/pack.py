@@ -148,18 +148,7 @@ class ImagecraftPackService(PackageService):
     @override
     def write_artifacts_state(self, artifacts: Mapping[str | None, Path]) -> None:
         """Write artifact-oriented packaging state."""
-        platform = self._build_info.platform
-        state_service = self._services.get("state")
-        state_entries = [
-            {"name": name, "path": str(path)} for name, path in artifacts.items()
-        ]
-
-        state_service.set(
-            "artifacts",
-            platform,
-            value=cast(Any, state_entries or None),
-            overwrite=True,
-        )
+        super().write_artifacts_state(artifacts)
         self._write_persisted_pack_fingerprint()
 
     @override
