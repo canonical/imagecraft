@@ -20,7 +20,7 @@ from pathlib import Path
 
 import pytest
 from craft_application import ServiceFactory
-from craft_parts import Features
+from craft_parts import Features, callbacks
 from imagecraft import application
 
 IMAGECRAFT_YAML = """
@@ -166,6 +166,7 @@ def test_imagecraft_pack_skips_when_unchanged(
 
     def run_pack() -> int:
         Features.reset()
+        callbacks.unregister_all()
         service_factory = ServiceFactory(app=app_metadata)
         imagecraft_app = application.Imagecraft(app_metadata, service_factory)
         return imagecraft_app.run()
@@ -204,6 +205,7 @@ def test_imagecraft_pack_rebuilds_when_pack_inputs_change(
 
     def run_pack() -> int:
         Features.reset()
+        callbacks.unregister_all()
         service_factory = ServiceFactory(app=app_metadata)
         imagecraft_app = application.Imagecraft(app_metadata, service_factory)
         return imagecraft_app.run()
@@ -253,6 +255,7 @@ def test_imagecraft_pack_rebuilds_when_grub_availability_changes(
 
     def run_pack() -> int:
         Features.reset()
+        callbacks.unregister_all()
         service_factory = ServiceFactory(app=app_metadata)
         imagecraft_app = application.Imagecraft(app_metadata, service_factory)
         return imagecraft_app.run()
