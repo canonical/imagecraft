@@ -314,6 +314,34 @@ class TestGracefulSkip:
 
 
 class TestBootFstab:
+    def test_prepare_uses_root_mapping_for_ids_and_staging(self, tmp_path, mocker):
+        seed_item = {
+            "name": "seed",
+            "type": "0C",
+            "filesystem": "vfat",
+            "role": "system-seed",
+            "size": "512M",
+        }
+        boot_item = {**BOOT_ITEM, "type": "83"}
+        root_item = {**ROOT_ITEM, "type": "83"}
+        volume = _mbr_volume([seed_item, boot_item, root_item])
+        installer = BootloaderInstaller(volume=volume, arch=_AMD64)
+        mock_grub_cfg = mocker.patch.object(installer_mod, "generate_grub_cfg")
+        mocker.patch.object(installer_mod, "stage_grub_modules")
+
+        installer.prepare_rootfs(
+            project_dirs=FakeProjectDirs(tmp_path),
+            volume_name="pc",
+            filesystems={"default": [{"mount": "/", "device": "(volume/pc/seed)"}]},
+        )
+
+        assert installer.root_item is not None
+        assert installer.root_item.name == "seed"
+        assert installer.partition_uuids == {"seed": str(installer.root_uuid)}
+        assert (tmp_path / "volume/pc/seed/etc/fstab").is_file()
+        assert not (tmp_path / "volume/pc/rootfs/etc/fstab").exists()
+        assert mock_grub_cfg.call_args.args[0] == tmp_path / "volume/pc/seed"
+
     @pytest.mark.parametrize("filesystem", ["ext3", "ext4", "fat16", "vfat"])
     @pytest.mark.parametrize("mountpoint", ["/boot", "/boot/"])
     def test_prepare_adds_mapped_boot_entry(
@@ -360,8 +388,8 @@ class TestBootFstab:
     def test_does_not_invent_boot_mapping(self, tmp_path, mocker, mountpoint, device):
         volume = _gpt_volume([ESP_ITEM, BOOT_ITEM, ROOT_ITEM])
         installer = BootloaderInstaller(volume=volume, arch=_AMD64)
-        mocker.patch.object(installer_mod, "generate_grub_cfg")
-        mocker.patch.object(installer_mod, "EfiInstaller")
+        mock_grub_cfg = mocker.patch.object(installer_mod, "generate_grub_cfg")
+        mock_efi = mocker.patch.object(installer_mod, "EfiInstaller")
 
         installer.prepare_rootfs(
             project_dirs=FakeProjectDirs(tmp_path),
@@ -376,6 +404,10 @@ class TestBootFstab:
 
         content = (tmp_path / "volume/pc/rootfs/etc/fstab").read_text()
         assert str(installer.boot_uuid) not in content
+        assert mock_grub_cfg.call_args.kwargs["boot_dir"] is None
+        assert mock_grub_cfg.call_args.kwargs["boot_uuid"] is None
+        assert mock_efi.call_args.kwargs["boot_dir"] is None
+        assert mock_efi.call_args.kwargs["boot_uuid"] is None
 
 
 class TestConfigureFstab:

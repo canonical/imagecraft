@@ -54,7 +54,6 @@ class ImagecraftPackService(PackageService):
 
         arch = self._services.get("lifecycle").project_info.target_arch
         bootloader = BootloaderInstaller(volume=volume, arch=arch)
-        partition_uuids = bootloader.partition_uuids
 
         # Pre-format staging: write bootloader files (fstab, grub.cfg, EFI
         # binaries) into the root/ESP prime directories *before* formatting,
@@ -65,6 +64,7 @@ class ImagecraftPackService(PackageService):
                 volume_name=volume_name,
                 filesystems=project.filesystems,
             )
+            partition_uuids = bootloader.partition_uuids
 
             for structure_item in volume.structure:
                 partition_name = get_partition_name(volume_name, structure_item)

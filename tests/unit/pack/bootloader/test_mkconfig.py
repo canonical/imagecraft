@@ -22,6 +22,7 @@ from pathlib import Path
 import pytest
 from imagecraft import errors
 from imagecraft.pack.bootloader.mkconfig import (
+    _generate_grub_cfg_in_chroot,
     _GRUB_PROBE_SHIM,
     _fs_internal_path,
     _strip_boot_prefix,
@@ -195,3 +196,46 @@ class TestGenerateGrubCfg:
     def test_missing_mkconfig_raises_tools_missing(self, tmp_path):
         with pytest.raises(errors.BootloaderToolsMissingError):
             generate_grub_cfg(tmp_path, uuid.uuid4())
+
+    def test_preserves_existing_placeholders_and_directories(self, tmp_path, mocker):
+        root = tmp_path / "chroot"
+        fake_device = root / "image"
+        fake_boot_device = root / "image-boot"
+        fake_device.parent.mkdir(parents=True, exist_ok=True)
+        fake_device.write_text("keep root")
+        fake_boot_device.write_text("keep boot")
+        by_uuid_dir = root / "dev/disk/by-uuid"
+        by_uuid_dir.mkdir(parents=True)
+        mocker.patch(
+            "imagecraft.pack.bootloader.mkconfig._GRUB_DEFAULTS_SNIPPET",
+            root / "etc/default/grub.d/60-imagecraft.cfg",
+        )
+        mocker.patch("imagecraft.pack.bootloader.mkconfig._CHROOT_FAKE_DEVICE", fake_device)
+        mocker.patch(
+            "imagecraft.pack.bootloader.mkconfig._CHROOT_FAKE_BOOT_DEVICE",
+            fake_boot_device,
+        )
+        real_path = Path
+
+        def fake_path(value):
+            if value.startswith("/"):
+                return root / value.lstrip("/")
+            return real_path(value)
+
+        mocker.patch("imagecraft.pack.bootloader.mkconfig.Path", side_effect=fake_path)
+        mocker.patch(
+            "imagecraft.pack.bootloader.mkconfig.run_checked",
+            return_value=subprocess.CompletedProcess(
+                ["grub-mkconfig"], 0, stdout="", stderr=""
+            ),
+        )
+
+        _generate_grub_cfg_in_chroot(
+            grub_defaults="GRUB_DISABLE_OS_PROBER=true\n",
+            root_uuid=str(uuid.uuid4()),
+            boot_uuid=str(uuid.uuid4()),
+        )
+
+        assert fake_device.read_text() == "keep root"
+        assert fake_boot_device.read_text() == "keep boot"
+        assert by_uuid_dir.is_dir()

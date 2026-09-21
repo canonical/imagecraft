@@ -218,6 +218,41 @@ class BootloaderInstaller:
             partition=get_partition_name(volume_name, item)
         )
 
+    def _mounted_item(
+        self, filesystems: FilesystemsDictT, volume_name: str, mountpoint: str
+    ) -> StructureItem | None:
+        """Return the structure item mounted at mountpoint for this volume."""
+        for entry in filesystems.get("default", []):
+            if Path(entry["mount"]) != Path(mountpoint):
+                continue
+            device = str(entry["device"]).strip("()")
+            return next(
+                (
+                    item
+                    for item in self.volume.structure
+                    if get_partition_name(volume_name, item) == device
+                ),
+                None,
+            )
+        return None
+
+    def _resolve_mapped_items(
+        self, filesystems: FilesystemsDictT, volume_name: str
+    ) -> None:
+        """Resolve the staged root and dedicated /boot items from mount mappings."""
+        root_item = self._mounted_item(filesystems, volume_name, "/")
+        if root_item is not None and root_item is not self.root_item:
+            self.root_item = root_item
+            self.root_uuid = _new_filesystem_id(root_item.filesystem)
+
+        boot_item = self._mounted_item(filesystems, volume_name, "/boot")
+        if boot_item is None or boot_item is self.root_item or boot_item is self.esp_item:
+            self.boot_item = None
+            self.boot_uuid = None
+        elif boot_item is not self.boot_item:
+            self.boot_item = boot_item
+            self.boot_uuid = _new_filesystem_id(boot_item.filesystem)
+
     def prepare_rootfs(
         self,
         *,
@@ -232,6 +267,7 @@ class BootloaderInstaller:
         :param filesystems: Project partition mount mappings.
         :return: The boot method staged for (``BootMethod.NONE`` if skipped).
         """
+        self._resolve_mapped_items(filesystems, volume_name)
         boot_method = self.resolve_boot_method()
         if boot_method == BootMethod.NONE:
             return boot_method
@@ -259,12 +295,7 @@ class BootloaderInstaller:
         configure_fstab(
             self._root_dir, self.root_uuid, filesystem=self.root_item.filesystem
         )
-        if self.boot_item is not None and any(
-            Path(entry["mount"]) == Path("/boot")
-            and entry["device"]
-            == f"({get_partition_name(volume_name, self.boot_item)})"
-            for entry in filesystems["default"]
-        ):
+        if self.boot_item is not None:
             assert self.boot_uuid is not None  # noqa: S101
             configure_fstab(
                 self._root_dir,
@@ -326,9 +357,11 @@ class BootloaderInstaller:
                 image_path=image_path,
                 root_dir=self._root_dir,
                 root_uuid=self.root_uuid,
+                root_item=self.root_item,
                 arch=self.arch,
                 volume=self.volume,
                 boot_uuid=self.boot_uuid,
+                boot_item=self.boot_item,
             ).install()
         except errors.BootloaderToolsMissingError as err:
             emit.progress(

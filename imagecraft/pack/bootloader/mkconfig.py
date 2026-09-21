@@ -117,18 +117,30 @@ def _generate_grub_cfg_in_chroot(
         _GRUB_DEFAULTS_SNIPPET.read_text() if _GRUB_DEFAULTS_SNIPPET.exists() else None
     )
     _GRUB_DEFAULTS_SNIPPET.write_text(grub_defaults)
-    _CHROOT_FAKE_DEVICE.touch(exist_ok=True)
+    created: list[Path] = []
+
+    def touch_placeholder(path: Path) -> None:
+        if not path.exists():
+            path.touch()
+            created.append(path)
+
+    touch_placeholder(_CHROOT_FAKE_DEVICE)
     # 10_linux only emits root=UUID= if /dev/disk/by-uuid/<uuid> exists.
     by_uuid_dir = Path("/dev/disk/by-uuid")
+    created_dirs: list[Path] = []
+    parent = by_uuid_dir
+    while not parent.exists():
+        created_dirs.append(parent)
+        parent = parent.parent
     by_uuid_dir.mkdir(parents=True, exist_ok=True)
     by_uuid_root = by_uuid_dir / root_uuid
     by_uuid_root.symlink_to(_CHROOT_FAKE_DEVICE)
-    created = [_CHROOT_FAKE_DEVICE, by_uuid_root]
+    created.append(by_uuid_root)
     if boot_uuid is not None:
-        _CHROOT_FAKE_BOOT_DEVICE.touch(exist_ok=True)
+        touch_placeholder(_CHROOT_FAKE_BOOT_DEVICE)
         by_uuid_boot = by_uuid_dir / boot_uuid
         by_uuid_boot.symlink_to(_CHROOT_FAKE_BOOT_DEVICE)
-        created += [_CHROOT_FAKE_BOOT_DEVICE, by_uuid_boot]
+        created.append(by_uuid_boot)
     try:
         Path("/boot/grub").mkdir(parents=True, exist_ok=True)
         proc = run_checked(["grub-mkconfig", "-o", "/boot/grub/grub.cfg"])
@@ -140,11 +152,9 @@ def _generate_grub_cfg_in_chroot(
             _GRUB_DEFAULTS_SNIPPET.unlink(missing_ok=True)
         else:
             _GRUB_DEFAULTS_SNIPPET.write_text(previous_defaults)
-        # Remove the by-uuid directory if we created it (pre-format, so an
-        # empty leftover would leak into the image).
-        with contextlib.suppress(OSError):
-            by_uuid_dir.rmdir()
-            by_uuid_dir.parent.rmdir()
+        for directory in created_dirs:
+            with contextlib.suppress(OSError):
+                directory.rmdir()
 
 
 def _fs_internal_path(path: Path) -> str:

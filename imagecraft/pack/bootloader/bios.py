@@ -37,6 +37,7 @@ from imagecraft.models.volume import (
     HybridVolume,
     MBRVolume,
     PartitionSchema,
+    StructureItem,
 )
 from imagecraft.pack import gptutil, mbrutil
 from imagecraft.pack.bootloader.chrootenv import (
@@ -131,9 +132,11 @@ class PCBiosInstaller:
         image_path: Path,
         root_dir: Path,
         root_uuid: UUID | str,
+        root_item: StructureItem,
         arch: DebianArchitecture,
         volume: GPTVolume | MBRVolume | HybridVolume,
         boot_uuid: UUID | str | None = None,
+        boot_item: StructureItem | None = None,
     ) -> None:
         """Initialize the non-EFI bootloader installer.
 
@@ -156,23 +159,22 @@ class PCBiosInstaller:
             )
         self.image_path = image_path
         self.root_dir = root_dir
+        self.root_item = root_item
         self.volume = volume
+        self.boot_item = boot_item
         self.grub_format = spec.non_efi_format
         self.search_uuid = str(boot_uuid or root_uuid)
         self.boot_prefix = "/grub" if boot_uuid else "/boot/grub"
 
     def _root_partition_offset(self) -> int:
         """Return the byte offset of the root (system-data) partition in the image."""
-        item = self.volume.root_partition
-        # Guaranteed by the BIOS boot-method resolution.
-        assert item is not None  # noqa: S101
         # GPT items may declare an explicit partition number; MBR items are
         # numbered by structure order. Mirrors
         # ImageService._get_partition_numbers: with more than four MBR
         # entries, slot 4 is the synthesized extended container and logical
         # partitions are numbered from 5.
         structure_index = next(
-            i for i, entry in enumerate(self.volume.structure) if entry is item
+            i for i, entry in enumerate(self.volume.structure) if entry is self.root_item
         )
         if (
             self.volume.volume_schema == PartitionSchema.MBR
@@ -181,7 +183,7 @@ class PCBiosInstaller:
         ):
             part_num = structure_index + 2
         else:
-            part_num = getattr(item, "number", None) or (structure_index + 1)
+            part_num = getattr(self.root_item, "number", None) or (structure_index + 1)
         return (
             gptutil.get_partition_sector_offset_by_number(self.image_path, part_num)
             * gptutil.SECTOR_SIZE_512
@@ -203,7 +205,7 @@ class PCBiosInstaller:
             raise errors.BootloaderToolsMissingError(
                 f"GRUB BIOS modules directory not found: {mod_dir}"
             )
-        boot_item = self.volume.boot_partition or self.volume.root_partition
+        boot_item = self.boot_item or self.root_item
         if (
             boot_item is not None
             and boot_item.filesystem in (FileSystem.FAT16, FileSystem.VFAT)
@@ -248,7 +250,10 @@ class PCBiosInstaller:
                 missing_parents.append(parent)
                 parent = parent.parent
             chroot_image.parent.mkdir(parents=True, exist_ok=True)
-            chroot_image.touch()
+            created_image_placeholder = False
+            if not chroot_image.exists():
+                chroot_image.touch()
+                created_image_placeholder = True
             chroot = build_prime_chroot(
                 mnt,
                 extra_mounts=[
@@ -274,7 +279,8 @@ class PCBiosInstaller:
                     modules=modules,
                 )
             finally:
-                chroot_image.unlink(missing_ok=True)
+                if created_image_placeholder:
+                    chroot_image.unlink(missing_ok=True)
                 if missing_parents:
                     shutil.rmtree(missing_parents[-1], ignore_errors=True)
         if output:

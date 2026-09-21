@@ -31,9 +31,12 @@ def _make_installer(tmp_path: Path, **kwargs) -> PCBiosInstaller:
     kwargs.setdefault("arch", DebianArchitecture.AMD64)
     kwargs.setdefault("root_uuid", uuid.uuid4())
     volume = kwargs.pop("volume", None) or _mbr_volume([{**ROOT_ITEM, "type": "83"}])
+    root_item = kwargs.pop("root_item", None) or volume.root_partition
+    assert root_item is not None
     return PCBiosInstaller(
         image_path=tmp_path / "disk.img",
         root_dir=tmp_path / "root",
+        root_item=root_item,
         volume=volume,
         **kwargs,
     )
@@ -50,7 +53,12 @@ class TestPCBiosInstallerChecks:
         )
         mod_dir = tmp_path / "root/usr/lib/grub/i386-pc"
         mod_dir.mkdir(parents=True)
-        installer = _make_installer(tmp_path, volume=volume, boot_uuid="1234-ABCD")
+        installer = _make_installer(
+            tmp_path,
+            volume=volume,
+            boot_uuid="1234-ABCD",
+            boot_item=volume.boot_partition,
+        )
 
         with pytest.raises(errors.BootloaderToolsMissingError, match="FAT module"):
             installer.install()
@@ -62,7 +70,12 @@ class TestPCBiosInstallerChecks:
                 {**ROOT_ITEM, "type": "83"},
             ]
         )
-        installer = _make_installer(tmp_path, volume=volume, boot_uuid="1234-ABCD")
+        installer = _make_installer(
+            tmp_path,
+            volume=volume,
+            boot_uuid="1234-ABCD",
+            boot_item=volume.boot_partition,
+        )
         mod_dir = installer.root_dir / "usr/lib/grub/i386-pc"
         mod_dir.mkdir(parents=True)
         for name in ("boot.img", "grub-bios-setup", "fat.mod", "ext2.mod"):
@@ -83,6 +96,33 @@ class TestPCBiosInstallerChecks:
         installer.install()
 
         assert "fat" in chroot.return_value.execute.call_args.kwargs["modules"]
+
+    def test_preserves_existing_chroot_image_placeholder(self, tmp_path, mocker):
+        installer = _make_installer(tmp_path)
+        mod_dir = installer.root_dir / "usr/lib/grub/i386-pc"
+        mod_dir.mkdir(parents=True)
+        for name in ("boot.img", "grub-bios-setup", "ext2.mod"):
+            (mod_dir / name).touch()
+        mocker.patch(
+            "imagecraft.pack.bootloader.bios.require_chroot_binary",
+            return_value=Path("usr/bin/grub-mkimage"),
+        )
+        mocker.patch(
+            "imagecraft.pack.bootloader.bios.shutil.which", return_value="fuse2fs"
+        )
+        mocker.patch.object(installer, "_root_partition_offset", return_value=2048)
+        mount = mocker.patch("imagecraft.pack.bootloader.bios.ExtFuseMount")
+        mount.return_value.__enter__.return_value = installer.root_dir
+        chroot = mocker.patch("imagecraft.pack.bootloader.bios.build_prime_chroot")
+        chroot.return_value.execute.return_value = ""
+
+        existing = installer.root_dir / str(installer.image_path.resolve()).lstrip("/")
+        existing.parent.mkdir(parents=True, exist_ok=True)
+        existing.write_text("keep me")
+
+        installer.install()
+
+        assert existing.read_text() == "keep me"
 
     def test_arch_without_non_efi_target_rejected(self, tmp_path):
         with pytest.raises(errors.BootloaderError, match="no non-EFI GRUB target"):
