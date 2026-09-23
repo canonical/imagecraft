@@ -20,9 +20,9 @@ import yaml
 from craft_application import ServiceFactory
 from craft_parts import ProjectDirs, ProjectInfo, ProjectVar, ProjectVarInfo
 from craft_parts.filesystem_mounts import FilesystemMount, FilesystemMounts
+from imagecraft.errors import GRUBInstallError
 from imagecraft.services.image import ImageService
 from imagecraft.services.pack import ImagecraftPackService
-from imagecraft.errors import GRUBInstallError
 
 
 @pytest.fixture(autouse=True)

@@ -25,10 +25,10 @@ from craft_application import PackageService, models, util
 from craft_cli import emit
 from typing_extensions import override
 
+from imagecraft.errors import ImagecraftError
 from imagecraft.models import Project, get_partition_name
 from imagecraft.pack import Image, diskutil, grubutil
 from imagecraft.services.image import ImageService
-from imagecraft.errors import ImagecraftError
 
 
 class ImagecraftPackService(PackageService):
