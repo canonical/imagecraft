@@ -304,16 +304,20 @@ def test_app_needs_repack_when_no_fingerprint_stored(
         pytest.param("not-yaml: [", id="invalid-yaml"),
         pytest.param("42", id="non-dict-root"),
         pytest.param("pack_inputs: 42", id="non-dict-pack-inputs"),
+        pytest.param(b"\xff\xfe\xfd", id="invalid-utf8"),
     ],
 )
 def test_app_needs_repack_when_persisted_state_is_corrupt(
     configured_pack_service: ImagecraftPackService,
-    bad_contents: str,
+    bad_contents: str | bytes,
 ):
     """A corrupt or non-dict pack state file conservatively forces a repack."""
     state_path = configured_pack_service._pack_inputs_state_path()
     state_path.parent.mkdir(parents=True, exist_ok=True)
-    state_path.write_text(bad_contents)
+    if isinstance(bad_contents, bytes):
+        state_path.write_bytes(bad_contents)
+    else:
+        state_path.write_text(bad_contents)
 
     assert configured_pack_service._app_needs_repack() is True
 
