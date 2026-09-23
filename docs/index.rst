@@ -85,4 +85,5 @@ Governance and policies
 .. toctree::
     :hidden:
 
+    release-notes/index
     contribute-to-this-documentation

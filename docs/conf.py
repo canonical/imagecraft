@@ -206,8 +206,6 @@ exclude_patterns = [
     ".DS_Store",
     "env",
     "sphinx-starter-pack",
-    # Disable sections and pages that are currently empty
-    "release-notes/index.rst",
     # We do not use the overlay command, yet...
     "reference/commands/overlay.rst",
     # Disable unused pages from Craft Parts
