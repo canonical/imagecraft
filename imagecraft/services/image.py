@@ -334,5 +334,7 @@ class ImageService(AppService):
             shutil.move(str(hidden_path), final_path)
             emit.debug(f"Finalized image {name!r} -> {final_path}")
             images[name] = final_path
+        # Finalization consumes the tracked temporary image set; callers must
+        # recreate images before any later image-service operations.
         self._images = None
         return images

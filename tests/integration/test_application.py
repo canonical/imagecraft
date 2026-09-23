@@ -15,6 +15,7 @@
 #  with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Integration tests for the application as a whole."""
 
+import shutil
 import time
 from pathlib import Path
 
@@ -22,6 +23,10 @@ import pytest
 from craft_application import ServiceFactory
 from craft_parts import Features, callbacks
 from imagecraft import application
+from imagecraft.models import GPTVolume, MBRVolume
+from imagecraft.utils.mount import mount_volume
+
+from tests.conftest import is_noble_non_amd64
 
 IMAGECRAFT_YAML = """
 name: ubuntu-server-amd64
@@ -78,6 +83,77 @@ volumes:
         size: 512M
 
 """
+
+IMAGECRAFT_YAML_NO_EFI = IMAGECRAFT_YAML.replace(
+    """      - name: efi
+        type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
+        filesystem: vfat
+        filesystem-label: system-boot
+        size: 512M
+        role: system-boot
+      - name: rootfs
+""",
+    """      - name: ubuntu-seed
+        type: EBD0A0A2-B9E5-4433-87C0-68B6B72699C7
+        filesystem: vfat
+        filesystem-label: system-boot
+        size: 512M
+        role: system-boot
+      - name: rootfs
+""",
+).replace("(volume/pc/efi)", "(volume/pc/ubuntu-seed)")
+
+IMAGECRAFT_YAML_FIRST_PARTITION_FALLBACK = IMAGECRAFT_YAML.replace(
+    """      - name: efi
+        type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
+        filesystem: vfat
+        filesystem-label: system-boot
+        size: 512M
+        role: system-boot
+      - name: rootfs
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        filesystem: ext4
+        filesystem-label: writable
+        role: system-data
+        size: 512M
+""",
+    """      - name: data
+        type: EBD0A0A2-B9E5-4433-87C0-68B6B72699C7
+        filesystem: vfat
+        filesystem-label: data
+        size: 512M
+        role: system-data
+      - name: rootfs
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        filesystem: ext4
+        filesystem-label: writable
+        role: system-data
+        size: 512M
+""",
+).replace("(volume/pc/efi)", "(volume/pc/data)")
+
+
+def _run_pack(app_metadata, monkeypatch: pytest.MonkeyPatch) -> int:
+    Features.reset()
+    callbacks.unregister_all()
+    service_factory = ServiceFactory(app=app_metadata)
+    imagecraft_app = application.Imagecraft(app_metadata, service_factory)
+    monkeypatch.setattr(
+        "sys.argv",
+        ["imagecraft", "pack", "--destructive-mode", "--verbosity", "debug"],
+    )
+    return imagecraft_app.run()
+
+
+def _skip_if_mount_helpers_unavailable() -> None:
+    if is_noble_non_amd64():
+        pytest.skip("fusefat is unavailable on noble on non-amd64 architectures")
+    if (
+        shutil.which("fuse2fs") is None
+        or shutil.which("fusefat") is None
+        or shutil.which("fusefile") is None
+    ):
+        pytest.skip("Required FUSE binaries are not installed")
 
 
 @pytest.fixture
@@ -148,6 +224,130 @@ def test_imagecraft_pack(
     assert result == 0
 
     check.is_true((project_path / "pc.img").is_file())
+
+
+@pytest.mark.slow
+@pytest.mark.requires_root
+@pytest.mark.parametrize(
+    ("project_yaml", "expected_mount_path", "volume"),
+    [
+        pytest.param(
+            IMAGECRAFT_YAML,
+            Path("boot/efi/.image/metadata.yaml"),
+            GPTVolume.unmarshal(
+                {
+                    "schema": "gpt",
+                    "structure": [
+                        {
+                            "name": "efi",
+                            "type": "C12A7328-F81F-11D2-BA4B-00A0C93EC93B",
+                            "filesystem": "vfat",
+                            "filesystem-label": "system-boot",
+                            "size": "512M",
+                            "role": "system-boot",
+                        },
+                        {
+                            "name": "rootfs",
+                            "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+                            "filesystem": "ext4",
+                            "filesystem-label": "writable",
+                            "role": "system-data",
+                            "size": "512M",
+                        },
+                    ],
+                }
+            ),
+            id="efi-partition",
+        ),
+        pytest.param(
+            IMAGECRAFT_YAML_NO_EFI,
+            Path("boot/.image/metadata.yaml"),
+            GPTVolume.unmarshal(
+                {
+                    "schema": "gpt",
+                    "structure": [
+                        {
+                            "name": "ubuntu-seed",
+                            "type": "EBD0A0A2-B9E5-4433-87C0-68B6B72699C7",
+                            "filesystem": "vfat",
+                            "filesystem-label": "system-boot",
+                            "size": "512M",
+                            "role": "system-boot",
+                        },
+                        {
+                            "name": "rootfs",
+                            "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+                            "filesystem": "ext4",
+                            "filesystem-label": "writable",
+                            "role": "system-data",
+                            "size": "512M",
+                        },
+                    ],
+                }
+            ),
+            id="system-boot-fallback",
+        ),
+        pytest.param(
+            IMAGECRAFT_YAML_FIRST_PARTITION_FALLBACK,
+            Path("boot/.image/metadata.yaml"),
+            GPTVolume.unmarshal(
+                {
+                    "schema": "gpt",
+                    "structure": [
+                        {
+                            "name": "data",
+                            "type": "EBD0A0A2-B9E5-4433-87C0-68B6B72699C7",
+                            "filesystem": "vfat",
+                            "filesystem-label": "data",
+                            "size": "512M",
+                            "role": "system-data",
+                        },
+                        {
+                            "name": "rootfs",
+                            "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+                            "filesystem": "ext4",
+                            "filesystem-label": "writable",
+                            "role": "system-data",
+                            "size": "512M",
+                        },
+                    ],
+                }
+            ),
+            id="first-partition-fallback",
+        ),
+    ],
+)
+def test_imagecraft_pack_embeds_metadata(
+    project_path: Path,
+    app_metadata,
+    monkeypatch: pytest.MonkeyPatch,
+    mocker,
+    project_yaml: str,
+    expected_mount_path: Path,
+    volume: GPTVolume | MBRVolume,
+):
+    _skip_if_mount_helpers_unavailable()
+
+    mocker.patch("imagecraft.services.pack.Image")
+    mocker.patch("imagecraft.services.pack.grubutil.setup_grub")
+    (project_path / "imagecraft.yaml").write_text(project_yaml)
+
+    result = _run_pack(app_metadata, monkeypatch)
+
+    assert result == 0
+    assert (project_path / "pc.img").is_file()
+
+    with mount_volume(volume, project_path / "pc.img") as rootfs:
+        metadata_path = rootfs / expected_mount_path
+        assert metadata_path.is_file()
+        metadata = pytest.importorskip("yaml").safe_load(metadata_path.read_text())
+
+    assert metadata["name"] == "ubuntu-server-amd64"
+    assert metadata["base"] == "bare"
+    assert metadata["build-base"] == "devel"
+    assert metadata["platform"] == "generic-amd64"
+    assert metadata["architecture"] == "amd64"
+    assert metadata["volumes"] == {"pc.img": {"format": "raw"}}
 
 
 @pytest.mark.slow

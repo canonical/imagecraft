@@ -13,16 +13,20 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 
 import pytest
 import yaml
 from craft_application import ServiceFactory
+from craft_cli import CraftError
 from craft_parts import ProjectDirs, ProjectInfo, ProjectVar, ProjectVarInfo
 from craft_parts.filesystem_mounts import FilesystemMount, FilesystemMounts
 from imagecraft.errors import GRUBInstallError
+from imagecraft.models import Project
+from imagecraft.models.volume import GPTStructureItem, GptType, Role
 from imagecraft.services.image import ImageService
 from imagecraft.services.pack import ImagecraftPackService
+from pydantic import AnyUrl, TypeAdapter
 
 
 @pytest.fixture(autouse=True)
@@ -119,6 +123,38 @@ def rootfs_prime_dir(configured_pack_service: ImagecraftPackService) -> Path:
     return prime_dir
 
 
+def _metadata_path(
+    configured_pack_service: ImagecraftPackService,
+    partition_name: str,
+    *,
+    stage: bool = False,
+) -> Path:
+    project_dirs = configured_pack_service._services.get("lifecycle").project_info.dirs
+    if stage:
+        base_dir = project_dirs.get_stage_dir(partition=partition_name)
+    else:
+        base_dir = project_dirs.get_prime_dir(partition=partition_name)
+    return base_dir / configured_pack_service._metadata_relative_path()
+
+
+def _mock_pack_dependencies(
+    mock_image_service: ImageService, artifact_path: Path, mocker
+) -> Any:
+    """Mock image and disk operations for a successful pack; return diskutil."""
+    mocker.patch.object(mock_image_service, "create_images")
+    mocker.patch.object(mock_image_service, "attach_images")
+    mocker.patch.object(mock_image_service, "verify_images")
+    mocker.patch.object(mock_image_service, "detach_images")
+    mocker.patch.object(
+        mock_image_service,
+        "finalize_images",
+        return_value={"pc": artifact_path},
+    )
+    mocker.patch("imagecraft.services.pack.grubutil", autospec=True)
+    mocker.patch("imagecraft.services.pack.Image", autospec=True)
+    return mocker.patch("imagecraft.services.pack.diskutil", autospec=True)
+
+
 def test_get_artifacts(
     configured_pack_service: ImagecraftPackService,
     tmp_path: Path,
@@ -126,6 +162,481 @@ def test_get_artifacts(
     assert configured_pack_service.get_artifacts() == {
         None: tmp_path / "dest" / "pc.img"
     }
+
+
+def test_render_image_metadata(
+    configured_pack_service: ImagecraftPackService,
+):
+    metadata = yaml.safe_load(configured_pack_service._render_image_metadata())
+
+    assert metadata == {
+        "name": "default",
+        "base": "bare",
+        "build-base": "devel",
+        "platform": configured_pack_service._build_info.platform,
+        "architecture": "amd64",
+        "version": "1.0",
+        "summary": "default project",
+        "description": "default project",
+        "volumes": {"pc.img": {"format": "raw"}},
+    }
+    assert "title" not in metadata
+    assert "contact" not in metadata
+    assert "issues" not in metadata
+    assert "source-code" not in metadata
+
+
+def test_render_image_metadata_omits_build_base_matching_base(
+    configured_pack_service: ImagecraftPackService,
+):
+    """ST181 only requires build-base when it differs from base."""
+    project = cast(Project, configured_pack_service._services.get("project").get())
+    # Bypass validation: no currently valid project has matching bases.
+    object.__setattr__(project, "build_base", project.base)
+
+    metadata = yaml.safe_load(configured_pack_service._render_image_metadata())
+
+    assert metadata["base"] == "bare"
+    assert "build-base" not in metadata
+
+
+def test_render_image_metadata_uses_artifact_extension_for_volume_format(
+    configured_pack_service: ImagecraftPackService,
+    tmp_path: Path,
+    mocker,
+):
+    configured_pack_service.set_output_dir(tmp_path / "dest")
+    mocker.patch.object(
+        configured_pack_service,
+        "get_artifacts",
+        return_value={None: tmp_path / "dest" / "pc.vhd"},
+    )
+
+    metadata = yaml.safe_load(configured_pack_service._render_image_metadata())
+
+    assert metadata["volumes"] == {"pc.vhd": {"format": "vhd"}}
+
+
+def test_render_image_metadata_normalizes_scalar_project_metadata(
+    configured_pack_service: ImagecraftPackService,
+):
+    project = configured_pack_service._services.get("project").get()
+    project.contact = "dev@example.com"
+    project.issues = "https://example.com/issues"
+    project.source_code = TypeAdapter(AnyUrl).validate_python(
+        "https://github.com/canonical/imagecraft"
+    )
+
+    metadata = yaml.safe_load(configured_pack_service._render_image_metadata())
+
+    assert metadata["contact"] == ["dev@example.com"]
+    assert metadata["issues"] == ["https://example.com/issues"]
+    assert metadata["source-code"] == "https://github.com/canonical/imagecraft"
+
+
+def test_select_metadata_partition_prefers_efi(
+    configured_pack_service: ImagecraftPackService,
+):
+    project = cast(Project, configured_pack_service._services.get("project").get())
+    volume = cast(object, project.volumes["pc"])
+    object.__setattr__(
+        volume,
+        "structure",
+        [
+            GPTStructureItem(
+                name="data",
+                structure_type=GptType.LINUX_DATA,
+                role=Role.SYSTEM_DATA,
+                size="1G",
+                filesystem="ext4",
+            ),
+            GPTStructureItem(
+                name="efi",
+                structure_type=GptType.EFI_SYSTEM,
+                role=Role.SYSTEM_DATA,
+                size="256M",
+                filesystem="vfat",
+            ),
+            GPTStructureItem(
+                name="boot",
+                structure_type=GptType.WINDOWS_BASIC,
+                role=Role.SYSTEM_BOOT,
+                size="512M",
+                filesystem="vfat",
+            ),
+        ],
+    )
+    assert configured_pack_service._select_metadata_partition() == "volume/pc/efi"
+
+
+def test_select_metadata_partition_falls_back_to_system_boot(
+    configured_pack_service: ImagecraftPackService,
+):
+    project = cast(Project, configured_pack_service._services.get("project").get())
+    volume = cast(object, project.volumes["pc"])
+    object.__setattr__(
+        volume,
+        "structure",
+        [
+            GPTStructureItem(
+                name="data",
+                structure_type=GptType.LINUX_DATA,
+                role=Role.SYSTEM_DATA,
+                size="1G",
+                filesystem="ext4",
+            ),
+            GPTStructureItem(
+                name="boot",
+                structure_type=GptType.WINDOWS_BASIC,
+                role=Role.SYSTEM_BOOT,
+                size="512M",
+                filesystem="vfat",
+            ),
+        ],
+    )
+    assert configured_pack_service._select_metadata_partition() == "volume/pc/boot"
+
+
+def test_select_metadata_partition_falls_back_to_first_partition(
+    configured_pack_service: ImagecraftPackService,
+):
+    project = cast(Project, configured_pack_service._services.get("project").get())
+    volume = cast(object, project.volumes["pc"])
+    object.__setattr__(
+        volume,
+        "structure",
+        [
+            GPTStructureItem(
+                name="first",
+                structure_type=GptType.LINUX_DATA,
+                role=Role.SYSTEM_DATA,
+                size="1G",
+                filesystem="ext4",
+            ),
+            GPTStructureItem(
+                name="second",
+                structure_type=GptType.LINUX_DATA,
+                role=Role.SYSTEM_DATA,
+                size="1G",
+                filesystem="ext4",
+            ),
+        ],
+    )
+    assert configured_pack_service._select_metadata_partition() == "volume/pc/first"
+
+
+def test_select_metadata_partition_raises_error_when_no_partitions(
+    configured_pack_service: ImagecraftPackService,
+):
+    project = cast(Project, configured_pack_service._services.get("project").get())
+    # Bypass Pydantic validation to simulate an empty structure
+    object.__setattr__(project.volumes["pc"], "structure", [])
+
+    with pytest.raises(
+        CraftError, match="has no partitions; cannot inject image metadata"
+    ):
+        configured_pack_service._select_metadata_partition()
+
+
+def test_assert_no_metadata_conflict_rejects_user_file(
+    configured_pack_service: ImagecraftPackService,
+):
+    metadata_path = _metadata_path(configured_pack_service, "volume/pc/efi", stage=True)
+    metadata_path.parent.mkdir(parents=True, exist_ok=True)
+    metadata_path.write_text("name: custom\n")
+
+    with pytest.raises(CraftError, match="conflicts with generated image metadata"):
+        configured_pack_service._assert_no_metadata_conflict("volume/pc/efi")
+
+
+def test_assert_no_metadata_conflict_rejects_prime_file(
+    configured_pack_service: ImagecraftPackService,
+):
+    """Metadata created in prime (e.g. by override-prime) is a user conflict."""
+    metadata_path = _metadata_path(configured_pack_service, "volume/pc/efi")
+    metadata_path.parent.mkdir(parents=True, exist_ok=True)
+    metadata_path.write_text("name: stale\n")
+
+    with pytest.raises(CraftError, match="conflicts with generated image metadata"):
+        configured_pack_service._assert_no_metadata_conflict("volume/pc/efi")
+
+
+def test_remove_stale_metadata_files_removes_matching_current_metadata(
+    configured_pack_service: ImagecraftPackService,
+):
+    metadata_path = _metadata_path(configured_pack_service, "volume/pc/efi")
+    metadata_path.parent.mkdir(parents=True, exist_ok=True)
+    metadata_yaml = configured_pack_service._render_image_metadata()
+    metadata_path.write_text(metadata_yaml)
+
+    configured_pack_service._remove_stale_metadata_files("volume/pc/efi", metadata_yaml)
+
+    assert metadata_path.exists() is False
+
+
+def test_remove_stale_metadata_files_removes_matching_persisted_metadata(
+    configured_pack_service: ImagecraftPackService,
+    tmp_path: Path,
+):
+    artifact_path = tmp_path / "dest" / "pc.img"
+    configured_pack_service.write_artifacts_state({None: artifact_path})
+
+    metadata_path = _metadata_path(configured_pack_service, "volume/pc/efi")
+    metadata_path.parent.mkdir(parents=True, exist_ok=True)
+    metadata_path.write_text(configured_pack_service._render_image_metadata())
+
+    project = cast(Project, configured_pack_service._services.get("project").get())
+    structure = cast(list[GPTStructureItem], project.volumes["pc"].structure)
+    object.__setattr__(structure[0], "structure_type", GptType.WINDOWS_BASIC)
+    object.__setattr__(structure[0], "role", Role.SYSTEM_DATA)
+    object.__setattr__(structure[1], "role", Role.SYSTEM_BOOT)
+    new_metadata_partition = configured_pack_service._select_metadata_partition()
+    new_metadata_yaml = configured_pack_service._render_image_metadata()
+
+    configured_pack_service._remove_stale_metadata_files(
+        new_metadata_partition, new_metadata_yaml
+    )
+
+    assert metadata_path.exists() is False
+
+
+def test_remove_stale_metadata_files_preserves_prime_only_user_metadata(
+    configured_pack_service: ImagecraftPackService,
+):
+    metadata_path = _metadata_path(configured_pack_service, "volume/pc/efi")
+    metadata_path.parent.mkdir(parents=True, exist_ok=True)
+    metadata_path.write_text("name: custom\n")
+
+    configured_pack_service._remove_stale_metadata_files(
+        "volume/pc/efi", configured_pack_service._render_image_metadata()
+    )
+
+    assert metadata_path.read_text() == "name: custom\n"
+
+
+def test_inject_metadata_file_sets_read_only_permissions_on_ext_filesystems(
+    configured_pack_service: ImagecraftPackService,
+):
+    project = cast(Project, configured_pack_service._services.get("project").get())
+    volume = cast(object, project.volumes["pc"])
+    object.__setattr__(
+        volume,
+        "structure",
+        [
+            GPTStructureItem(
+                name="rootfs",
+                structure_type=GptType.LINUX_DATA,
+                role=Role.SYSTEM_DATA,
+                size="1G",
+                filesystem="ext4",
+            )
+        ],
+    )
+
+    metadata_path = configured_pack_service._inject_metadata_file(
+        "volume/pc/rootfs", configured_pack_service._render_image_metadata()
+    )
+
+    assert metadata_path.parent.stat().st_mode & 0o777 == 0o555
+    assert metadata_path.stat().st_mode & 0o777 == 0o444
+
+
+def test_inject_metadata_file_leaves_default_permissions_on_fat_filesystems(
+    configured_pack_service: ImagecraftPackService,
+):
+    metadata_path = configured_pack_service._inject_metadata_file(
+        "volume/pc/efi", configured_pack_service._render_image_metadata()
+    )
+
+    assert metadata_path.parent.stat().st_mode & 0o777 != 0o555
+    assert metadata_path.stat().st_mode & 0o777 != 0o444
+
+
+def test_pack_artifacts_removes_read_only_metadata_after_success(
+    tmp_path: Path,
+    configured_pack_service: ImagecraftPackService,
+    mock_image_service: ImageService,
+    mocker,
+):
+    project = cast(Project, configured_pack_service._services.get("project").get())
+    volume = cast(object, project.volumes["pc"])
+    object.__setattr__(
+        volume,
+        "structure",
+        [
+            GPTStructureItem(
+                name="rootfs",
+                structure_type=GptType.LINUX_DATA,
+                role=Role.SYSTEM_DATA,
+                size="1G",
+                filesystem="ext4",
+            )
+        ],
+    )
+
+    artifact_path = tmp_path / "dest" / "pc.img"
+    _mock_pack_dependencies(mock_image_service, artifact_path, mocker)
+
+    configured_pack_service.pack_artifacts()
+
+    metadata_path = _metadata_path(configured_pack_service, "volume/pc/rootfs")
+    assert metadata_path.exists() is False
+    assert metadata_path.parent.exists() is False
+
+
+def test_pack_artifacts_writes_metadata_before_partition_population(
+    tmp_path: Path,
+    configured_pack_service: ImagecraftPackService,
+    mock_image_service: ImageService,
+    mocker,
+):
+    artifact_path = tmp_path / "dest" / "pc.img"
+    mock_diskutil = _mock_pack_dependencies(mock_image_service, artifact_path, mocker)
+    metadata_path = _metadata_path(configured_pack_service, "volume/pc/efi")
+    populated: dict[Path, str] = {}
+
+    def format_device(*, content_dir: Path, **kwargs: Any) -> None:
+        if metadata_path.is_relative_to(content_dir):
+            populated[content_dir] = metadata_path.read_text()
+
+    mock_diskutil.format_device.side_effect = format_device
+
+    configured_pack_service.pack_artifacts()
+
+    assert populated == {
+        metadata_path.parent.parent: configured_pack_service._render_image_metadata()
+    }
+    # The generated file is only needed while partitions are populated.
+    assert metadata_path.exists() is False
+
+
+def test_pack_artifacts_replaces_stale_prime_metadata(
+    tmp_path: Path,
+    configured_pack_service: ImagecraftPackService,
+    mock_image_service: ImageService,
+    mocker,
+):
+    """Metadata left in prime by an interrupted pack doesn't block packing."""
+    artifact_path = tmp_path / "dest" / "pc.img"
+    _mock_pack_dependencies(mock_image_service, artifact_path, mocker)
+    stale_path = _metadata_path(configured_pack_service, "volume/pc/efi")
+    stale_path.parent.mkdir(parents=True, exist_ok=True)
+    stale_path.write_text(configured_pack_service._render_image_metadata())
+
+    assert configured_pack_service.pack_artifacts() == {None: True}
+
+    assert stale_path.exists() is False
+
+
+def test_pack_artifacts_rejects_staged_metadata(
+    tmp_path: Path,
+    configured_pack_service: ImagecraftPackService,
+    mock_image_service: ImageService,
+    mocker,
+):
+    artifact_path = tmp_path / "dest" / "pc.img"
+    mock_diskutil = _mock_pack_dependencies(mock_image_service, artifact_path, mocker)
+    staged_path = _metadata_path(configured_pack_service, "volume/pc/efi", stage=True)
+    staged_path.parent.mkdir(parents=True, exist_ok=True)
+    staged_path.write_text("name: custom\n")
+
+    with pytest.raises(CraftError, match="conflicts with generated image metadata"):
+        configured_pack_service.pack_artifacts()
+
+    mock_diskutil.format_device.assert_not_called()
+    assert staged_path.exists()
+
+
+def test_pack_artifacts_cleans_metadata_when_injection_fails(
+    tmp_path: Path,
+    configured_pack_service: ImagecraftPackService,
+    mock_image_service: ImageService,
+    mocker,
+):
+    artifact_path = tmp_path / "dest" / "pc.img"
+    _mock_pack_dependencies(mock_image_service, artifact_path, mocker)
+    mocker.patch.object(
+        configured_pack_service,
+        "_apply_metadata_permissions",
+        side_effect=OSError("chmod failed"),
+    )
+
+    with pytest.raises(OSError, match="chmod failed"):
+        configured_pack_service.pack_artifacts()
+
+    assert _metadata_path(configured_pack_service, "volume/pc/efi").exists() is False
+
+
+def test_pack_artifacts_keeps_original_error_when_cleanup_fails(
+    configured_pack_service: ImagecraftPackService,
+    mock_image_service: ImageService,
+    mocker,
+):
+    mocker.patch.object(
+        mock_image_service, "create_images", side_effect=RuntimeError("boom")
+    )
+    mocker.patch.object(
+        configured_pack_service,
+        "_remove_metadata_file",
+        side_effect=OSError("unlink failed"),
+    )
+
+    with pytest.raises(RuntimeError, match="boom"):
+        configured_pack_service.pack_artifacts()
+
+
+def test_pack_artifacts_rejects_prime_only_metadata(
+    tmp_path: Path,
+    configured_pack_service: ImagecraftPackService,
+    mock_image_service: ImageService,
+    mocker,
+):
+    artifact_path = tmp_path / "dest" / "pc.img"
+    mock_diskutil = _mock_pack_dependencies(mock_image_service, artifact_path, mocker)
+    prime_path = _metadata_path(configured_pack_service, "volume/pc/efi")
+    prime_path.parent.mkdir(parents=True, exist_ok=True)
+    prime_path.write_text("name: custom\n")
+
+    with pytest.raises(CraftError, match="conflicts with generated image metadata"):
+        configured_pack_service.pack_artifacts()
+
+    mock_diskutil.format_device.assert_not_called()
+    assert prime_path.read_text() == "name: custom\n"
+
+
+def test_app_needs_repack_when_metadata_content_changes(
+    configured_pack_service: ImagecraftPackService,
+    tmp_path: Path,
+    rootfs_prime_dir: Path,
+):
+    (rootfs_prime_dir / "usr/sbin").mkdir(parents=True)
+    (rootfs_prime_dir / "usr/sbin/grub-install").write_text("")
+    artifact_path = tmp_path / "dest" / "pc.img"
+    configured_pack_service.write_artifacts_state({None: artifact_path})
+
+    project = configured_pack_service._services.get("project").get()
+    project.summary = "updated summary"
+
+    assert configured_pack_service._app_needs_repack() is True
+
+
+def test_app_needs_repack_when_metadata_placement_changes(
+    configured_pack_service: ImagecraftPackService,
+    tmp_path: Path,
+    rootfs_prime_dir: Path,
+):
+    (rootfs_prime_dir / "usr/sbin").mkdir(parents=True)
+    (rootfs_prime_dir / "usr/sbin/grub-install").write_text("")
+    artifact_path = tmp_path / "dest" / "pc.img"
+    configured_pack_service.write_artifacts_state({None: artifact_path})
+
+    project = cast(Project, configured_pack_service._services.get("project").get())
+    structure = cast(list[GPTStructureItem], project.volumes["pc"].structure)
+    object.__setattr__(structure[0], "structure_type", GptType.WINDOWS_BASIC)
+    object.__setattr__(structure[0], "role", Role.SYSTEM_DATA)
+    object.__setattr__(structure[1], "role", Role.SYSTEM_BOOT)
+
+    assert configured_pack_service._app_needs_repack() is True
 
 
 def test_pack_artifacts(
@@ -186,6 +697,32 @@ def test_pack_artifacts_detaches_on_error(
         configured_pack_service.pack_artifacts()
 
     mock_detach.assert_called_once()
+
+
+def test_pack_artifacts_cleans_generated_metadata_on_error(
+    configured_pack_service: ImagecraftPackService,
+    mock_image_service: ImageService,
+    mocker,
+):
+    metadata_path = _metadata_path(configured_pack_service, "volume/pc/efi")
+
+    mocker.patch.object(mock_image_service, "create_images")
+    mocker.patch.object(mock_image_service, "attach_images")
+    mocker.patch.object(mock_image_service, "detach_images")
+    mocker.patch.object(mock_image_service, "verify_images")
+    mocker.patch.object(
+        mock_image_service,
+        "finalize_images",
+        side_effect=RuntimeError("finalize failed"),
+    )
+    mocker.patch("imagecraft.services.pack.diskutil", autospec=True)
+    mocker.patch("imagecraft.services.pack.grubutil", autospec=True)
+    mocker.patch("imagecraft.services.pack.Image", autospec=True)
+
+    with pytest.raises(RuntimeError, match="finalize failed"):
+        configured_pack_service.pack_artifacts()
+
+    assert metadata_path.exists() is False
 
 
 def test_pack_artifacts_removes_stale_artifact_before_repacking(
