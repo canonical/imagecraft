@@ -20,6 +20,7 @@ partitions are formatted and embedded by ``diskutil.format_device``.
 """
 
 import shutil
+import tempfile
 from pathlib import Path
 from uuid import UUID
 
@@ -41,8 +42,6 @@ from imagecraft.pack.bootloader.const import (
 from imagecraft.pack.bootloader.staging import stage_grub_modules
 from imagecraft.pack.chroot import build_prime_chroot
 
-_CHROOT_EFI_WORK_DIR = "/tmp/grub-efi"  # noqa: S108
-
 
 def _build_efi_image_in_chroot(
     *,
@@ -50,8 +49,8 @@ def _build_efi_image_in_chroot(
     prefix: str,
     early_cfg_content: str,
     modules: list[str],
-    output: str,
-) -> None:
+    work_dir: str,
+) -> str:
     """Build a standalone GRUB EFI binary inside the chroot.
 
     Must be a top-level function so it can be pickled into the chroot child
@@ -59,10 +58,10 @@ def _build_efi_image_in_chroot(
 
     :raises errors.BootloaderError: If grub-mkimage fails.
     """
-    work_dir = Path(_CHROOT_EFI_WORK_DIR)
-    work_dir.mkdir(parents=True, exist_ok=True)
-    early_cfg = work_dir / "early.cfg"
+    work_path = Path(work_dir)
+    early_cfg = work_path / "early.cfg"
     early_cfg.write_text(early_cfg_content)
+    output = work_path / "core.efi"
     run_checked(
         [
             "grub-mkimage",
@@ -71,7 +70,7 @@ def _build_efi_image_in_chroot(
             "-O",
             efi_format,
             "-o",
-            output,
+            str(output),
             "-p",
             prefix,
             "-c",
@@ -79,6 +78,7 @@ def _build_efi_image_in_chroot(
             *modules,
         ]
     )
+    return str(output)
 
 
 class EfiInstaller:
@@ -219,10 +219,11 @@ class EfiInstaller:
 
         primary_boot = self.esp_boot_dir / f"BOOT{efi_suf}.EFI"
 
-        chroot_output = f"{_CHROOT_EFI_WORK_DIR}/core.efi"
         chroot = build_prime_chroot(self.root_dir)
-        try:
-            chroot.execute(
+        with tempfile.TemporaryDirectory(
+            dir=self.root_dir / "tmp", prefix="imagecraft-grub-efi-"
+        ) as host_work_dir:
+            chroot_output = chroot.execute(
                 target=_build_efi_image_in_chroot,
                 efi_format=efi_fmt,
                 prefix="/EFI/ubuntu",
@@ -232,15 +233,9 @@ class EfiInstaller:
                 modules=[
                     m for m in CORE_EFI_MODULES if (modules_dir / f"{m}.mod").is_file()
                 ],
-                output=chroot_output,
+                work_dir=f"/{Path(host_work_dir).relative_to(self.root_dir)}",
             )
             shutil.copy2(self.root_dir / chroot_output.lstrip("/"), primary_boot)
-        finally:
-            # This runs pre-format, so the chroot's working directory must
-            # not leak into the image.
-            shutil.rmtree(
-                self.root_dir / _CHROOT_EFI_WORK_DIR.lstrip("/"), ignore_errors=True
-            )
 
         shutil.copy2(primary_boot, self.esp_ubuntu_dir / f"grub{bin_suf}.efi")
 

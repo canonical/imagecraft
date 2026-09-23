@@ -24,6 +24,7 @@ translates to ``(hd0)``.
 """
 
 import shutil
+import tempfile
 from pathlib import Path
 from uuid import UUID
 
@@ -52,8 +53,6 @@ from imagecraft.pack.bootloader.const import (
 from imagecraft.pack.chroot import Mount, build_prime_chroot
 from imagecraft.utils.mount import ExtFuseMount
 
-_CHROOT_BIOS_WORK_DIR = "/tmp/grub-bios"  # noqa: S108
-
 
 def _install_boot_code_in_chroot(
     *,
@@ -73,49 +72,50 @@ def _install_boot_code_in_chroot(
     Must be a top-level function so it can be pickled into the chroot child
     process. Returns the tools' combined output.
     """
-    work_dir = Path(_CHROOT_BIOS_WORK_DIR)
-    work_dir.mkdir(parents=True, exist_ok=True)
-    early_cfg = work_dir / "early.cfg"
-    early_cfg.write_text(early_cfg_content)
-    device_map = work_dir / "device.map"
-    device_map.write_text(device_map_content)
     mod_dir = f"/usr/lib/grub/{grub_format}"
     core_img = Path(f"{mod_dir}/core.img")
     output: list[str] = []
-    try:
-        proc = run_checked(
-            [
-                mkimage_path,
-                "-d",
-                mod_dir,
-                "-O",
-                grub_format,
-                "-o",
-                str(core_img),
-                "-p",
-                boot_prefix,
-                "-c",
-                str(early_cfg),
-                *modules,
-            ]
-        )
-        output.append(proc.stdout + proc.stderr)
-        proc = run_checked(
-            [
-                f"{mod_dir}/grub-bios-setup",
-                "--skip-fs-probe",
-                "-m",
-                str(device_map),
-                "-d",
-                mod_dir,
-                image_path,
-            ]
-        )
-        output.append(proc.stdout + proc.stderr)
-    finally:
-        # These live inside the disk image's filesystem; don't leak them.
-        core_img.unlink(missing_ok=True)
-        shutil.rmtree(work_dir, ignore_errors=True)
+    with tempfile.TemporaryDirectory(
+        dir="/tmp", prefix="imagecraft-grub-bios-"
+    ) as work_dir_name:
+        work_dir = Path(work_dir_name)
+        early_cfg = work_dir / "early.cfg"
+        early_cfg.write_text(early_cfg_content)
+        device_map = work_dir / "device.map"
+        device_map.write_text(device_map_content)
+        try:
+            proc = run_checked(
+                [
+                    mkimage_path,
+                    "-d",
+                    mod_dir,
+                    "-O",
+                    grub_format,
+                    "-o",
+                    str(core_img),
+                    "-p",
+                    boot_prefix,
+                    "-c",
+                    str(early_cfg),
+                    *modules,
+                ]
+            )
+            output.append(proc.stdout + proc.stderr)
+            proc = run_checked(
+                [
+                    f"{mod_dir}/grub-bios-setup",
+                    "--skip-fs-probe",
+                    "-m",
+                    str(device_map),
+                    "-d",
+                    mod_dir,
+                    image_path,
+                ]
+            )
+            output.append(proc.stdout + proc.stderr)
+        finally:
+            # These live inside the disk image's filesystem; don't leak them.
+            core_img.unlink(missing_ok=True)
     return "".join(output).strip()
 
 
