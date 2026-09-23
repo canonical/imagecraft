@@ -130,10 +130,14 @@ class Chroot:
 
     mounts: list[Mount]
     path: Path
+    created_paths: list[Path]
 
-    def __init__(self, *, path: Path, mounts: list[Mount]) -> None:
+    def __init__(
+        self, *, path: Path, mounts: list[Mount], created_paths: list[Path] | None = None
+    ) -> None:
         self.path = path
         self.mounts = mounts
+        self.created_paths = created_paths or []
 
     def _setup(self) -> None:
         """Chroot environment preparation."""
@@ -156,6 +160,10 @@ class Chroot:
                 if err.stderr:
                     msg += f" ({err.stderr.strip()!s})"
                 umount_errors.append(msg)
+
+        if not umount_errors:
+            for path in self.created_paths:
+                path.unlink(missing_ok=True)
 
         if umount_errors:
             raise errors.ChrootExecutionError(
@@ -219,8 +227,12 @@ def build_prime_chroot(
         Mount(fstype="proc", src="proc-build", relative_mountpoint="/proc"),
         Mount(fstype="sysfs", src="sysfs-build", relative_mountpoint="/sys"),
     ]
+    created_paths: list[Path] = []
     for device in ("null", "zero", "urandom"):
-        (root_dir / "dev" / device).touch(exist_ok=True)
+        device_path = root_dir / "dev" / device
+        if not device_path.exists():
+            created_paths.append(device_path)
+        device_path.touch(exist_ok=True)
         mounts.append(
             Mount(
                 fstype=None,
@@ -240,4 +252,4 @@ def build_prime_chroot(
             )
         )
     mounts.extend(extra_mounts or [])
-    return Chroot(path=root_dir, mounts=mounts)
+    return Chroot(path=root_dir, mounts=mounts, created_paths=created_paths)
