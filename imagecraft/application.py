@@ -28,6 +28,7 @@ APP_METADATA = AppMetadata(
     ProjectClass=project.Project,
     enable_for_grammar=True,
     check_supported_base=True,
+    allow_spread_yaml=False,
 )
 
 
