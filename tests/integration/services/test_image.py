@@ -95,13 +95,13 @@ def test_finalize_images_creates_dest_dir(
 
 
 def test_finalize_image_moves_file(image_service: ImageService, new_dir, tmp_path):
-    """finalize_image() moves a selected image to an explicit destination."""
+    """_finalize_image() moves a selected image to an explicit destination."""
     image_service.create_images()
     hidden_path = image_service._project_dir / ".pc.img.tmp"
     assert hidden_path.exists()
 
     final_path = tmp_path / "output" / "custom-pc.img"
-    image_service.finalize_image("pc", final_path)
+    image_service._finalize_image("pc", final_path)
 
     assert final_path.exists()
     assert not hidden_path.exists()

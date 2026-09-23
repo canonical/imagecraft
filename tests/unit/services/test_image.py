@@ -521,7 +521,7 @@ def test_finalize_image(image_service, project_dir, mocker):
     final_path = project_dir / "dest" / "pc.img"
     mock_move = mocker.patch("imagecraft.services.image.shutil.move")
 
-    result = image_service.finalize_image("pc", final_path)
+    result = image_service._finalize_image("pc", final_path)
 
     mock_move.assert_called_once_with(str(hidden), final_path)
     assert result == final_path
@@ -535,6 +535,6 @@ def test_finalize_image_creates_dest(image_service, project_dir, mocker):
     final_path = project_dir / "nonexistent" / "nested" / "pc.img"
     mocker.patch("imagecraft.services.image.shutil.move")
 
-    image_service.finalize_image("pc", final_path)
+    image_service._finalize_image("pc", final_path)
 
     assert final_path.parent.exists()

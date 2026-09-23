@@ -198,7 +198,7 @@ class ImagecraftPackService(PackageService):
         finally:
             image_service.detach_images()
 
-        artifact_path = image_service.finalize_image(volume_name, path)
+        artifact_path = image_service.finalize_images(path.parent)[volume_name]
 
         filesystem_mount = self._services.get(
             "lifecycle"

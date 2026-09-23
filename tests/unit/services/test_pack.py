@@ -125,6 +125,7 @@ def test_pack_artifacts(
     mocker,
 ):
     artifact_path = tmp_path / "dest" / "pc.img"
+    artifact_dir = artifact_path.parent
 
     mocker.patch.object(mock_image_service, "create_images")
     mocker.patch.object(mock_image_service, "attach_images")
@@ -132,8 +133,8 @@ def test_pack_artifacts(
     mock_detach = mocker.patch.object(mock_image_service, "detach_images")
     mock_finalize = mocker.patch.object(
         mock_image_service,
-        "finalize_image",
-        return_value=artifact_path,
+        "finalize_images",
+        return_value={"pc": artifact_path},
     )
     mock_diskutil = mocker.patch("imagecraft.services.pack.diskutil", autospec=True)
     mock_grubutil = mocker.patch("imagecraft.services.pack.grubutil", autospec=True)
@@ -145,7 +146,7 @@ def test_pack_artifacts(
     assert mock_diskutil.format_device.call_count == 2
     mock_verify.assert_called_once()
     mock_detach.assert_called_once()
-    mock_finalize.assert_called_once_with("pc", artifact_path)
+    mock_finalize.assert_called_once_with(artifact_dir)
     mock_grubutil.setup_grub.assert_called_once()
     mock_image_cls.assert_called_once()
     mock_diskutil.create_zero_image.assert_not_called()
@@ -163,7 +164,7 @@ def test_pack_artifacts_detaches_on_error(
     mocker.patch.object(mock_image_service, "attach_images")
     mock_detach = mocker.patch.object(mock_image_service, "detach_images")
     mocker.patch.object(mock_image_service, "verify_images")
-    mocker.patch.object(mock_image_service, "finalize_image")
+    mocker.patch.object(mock_image_service, "finalize_images")
     mocker.patch(
         "imagecraft.services.pack.diskutil.format_device",
         side_effect=RuntimeError("disk full"),
