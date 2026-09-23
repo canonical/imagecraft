@@ -215,6 +215,15 @@ class EfiInstaller:
             raise errors.BootloaderToolsMissingError(
                 f"GRUB modules directory not found in rootfs: usr/lib/grub/{efi_fmt}"
             )
+        missing_core_modules = [
+            module for module in CORE_EFI_MODULES if not (modules_dir / f"{module}.mod").is_file()
+        ]
+        if missing_core_modules:
+            raise errors.BootloaderToolsMissingError(
+                "Required GRUB EFI core modules not found: "
+                + ", ".join(f"{module}.mod" for module in missing_core_modules),
+                resolution="Install the grub-efi package in the image.",
+            )
         require_chroot_binary(self.root_dir, "grub-mkimage")
 
         primary_boot = self.esp_boot_dir / f"BOOT{efi_suf}.EFI"
@@ -230,9 +239,7 @@ class EfiInstaller:
                 early_cfg_content=render_early_cfg(
                     self.search_uuid, boot_prefix=self.boot_prefix
                 ),
-                modules=[
-                    m for m in CORE_EFI_MODULES if (modules_dir / f"{m}.mod").is_file()
-                ],
+                modules=list(CORE_EFI_MODULES),
                 work_dir=f"/{Path(host_work_dir).relative_to(self.root_dir)}",
             )
             shutil.copy2(self.root_dir / chroot_output.lstrip("/"), primary_boot)

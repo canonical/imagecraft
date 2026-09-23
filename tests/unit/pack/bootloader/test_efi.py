@@ -16,11 +16,12 @@
 """Unit tests for the EFI installer."""
 
 import uuid
+from pathlib import Path
 
 import pytest
 from craft_platforms import DebianArchitecture
 from imagecraft import errors
-from imagecraft.pack.bootloader.const import EfiTier, render_early_cfg
+from imagecraft.pack.bootloader.const import CORE_EFI_MODULES, EfiTier, render_early_cfg
 from imagecraft.pack.bootloader.efi import EfiInstaller
 
 
@@ -70,6 +71,11 @@ def _add_unsigned_prebuilt(root_dir):
     (monolithic / "grubx64.efi").write_bytes(b"grub")
 
 
+def _touch_efi_core_modules(mod_dir):
+    for module in CORE_EFI_MODULES:
+        (mod_dir / f"{module}.mod").touch()
+
+
 class TestEfiTiers:
     def test_signed_tier(self, tmp_path):
         _add_signed(tmp_path / "root")
@@ -86,6 +92,22 @@ class TestEfiTiers:
         """Without any GRUB EFI modules in the rootfs, fail as tools-missing."""
         installer = _make_installer(tmp_path)
         with pytest.raises(errors.BootloaderToolsMissingError):
+            installer.install()
+
+    def test_fallback_build_requires_all_core_modules(self, tmp_path, mocker):
+        installer = _make_installer(tmp_path)
+        mod_dir = installer.root_dir / "usr/lib/grub/x86_64-efi"
+        mod_dir.mkdir(parents=True)
+        _touch_efi_core_modules(mod_dir)
+        (mod_dir / "configfile.mod").unlink()
+        mocker.patch(
+            "imagecraft.pack.bootloader.efi.require_chroot_binary",
+            return_value=Path("usr/bin/grub-mkimage"),
+        )
+
+        with pytest.raises(
+            errors.BootloaderToolsMissingError, match="configfile\\.mod"
+        ):
             installer.install()
 
     def test_boot_uuid_wiring(self, tmp_path):
