@@ -66,7 +66,6 @@ class ImagecraftPackService(PackageService):
             "volume": volume.marshal(),
             "arch": project_info.target_arch,
             "filesystem_mount": project_info.default_filesystem_mount.marshal(),
-            "grub_install_available": shutil.which("grub-install") is not None,
         }
 
     def _pack_inputs_state_path(self) -> Path:
