@@ -6,24 +6,21 @@
 [![Codecov Status][codecov-badge]][codecov-status]
 [![Code Style][ruff-badge]][ruff-site]
 
-Imagecraft is the command-line tool for building bootable disk images. It centralizes
-the definition and maintenance of images by keeping their essential details in one place
-and incorporating processes from common tools.
+Imagecraft is the command-line tool for building bootable disk images. It declares an
+image's structure, contents, and build details in a central project file named
+`imagecraft.yaml`.
 
 ## Basic usage
 
-The structure, content, and build details of an image are declared in a project file
-called `imagecraft.yaml`.
-
 In your project directory, create a minimal project file with:
 
-```
+```bash
 imagecraft init
 ```
 
 After declaring your image's essential details, pack it with:
 
-```
+```bash
 imagecraft pack
 ```
 
@@ -34,7 +31,7 @@ tutorial.
 
 ## Installation
 
-Imagecraft is available on all major Linux distributions through its snap.
+Imagecraft is available on all snap-ready Linux distributions.
 
 ```bash
 sudo snap install imagecraft --classic
