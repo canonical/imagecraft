@@ -19,7 +19,7 @@ from typing import cast
 
 import pytest
 from craft_application import ServiceFactory
-from imagecraft.application import Imagecraft
+from imagecraft.application import APP_METADATA, Imagecraft
 from imagecraft.models import Project
 
 IMAGECRAFT_YAML = """
@@ -77,6 +77,10 @@ def test_application(
     assert project.base == "bare"
     assert project.build_base == "ubuntu@22.04"
     assert project.volumes["pc"].volume_schema == "gpt"
+
+
+def test_application_disables_spread_yaml():
+    assert APP_METADATA.allow_spread_yaml is False
 
 
 GRAMMAR_IMAGECRAFT_YAML = """
