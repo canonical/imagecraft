@@ -14,6 +14,7 @@
 
 """Imagecraft Package service."""
 
+import contextlib
 import shutil
 from collections.abc import Mapping
 from pathlib import Path
@@ -27,6 +28,7 @@ from typing_extensions import override
 from imagecraft.models import Project, get_partition_name
 from imagecraft.pack import Image, diskutil, grubutil
 from imagecraft.services.image import ImageService
+from imagecraft.errors import ImagecraftError
 
 
 class ImagecraftPackService(PackageService):
@@ -66,6 +68,7 @@ class ImagecraftPackService(PackageService):
             "volume": volume.marshal(),
             "arch": project_info.target_arch,
             "filesystem_mount": project_info.default_filesystem_mount.marshal(),
+            "grub_install_available": shutil.which("grub-install") is not None,
         }
 
     def _pack_inputs_state_path(self) -> Path:
@@ -124,6 +127,11 @@ class ImagecraftPackService(PackageService):
         tmp_path.write_text(util.dump_yaml(raw_state))
         tmp_path.replace(state_path)
 
+    def _remove_artifact(self, path: Path) -> None:
+        """Remove a finalized artifact that is no longer known-good."""
+        with contextlib.suppress(FileNotFoundError):
+            path.unlink()
+
     @override
     def _app_needs_repack(self, partition: str | None = None) -> bool:
         """Determine whether pack-time inputs changed since the last pack.
@@ -160,6 +168,8 @@ class ImagecraftPackService(PackageService):
     @override
     def _pack(self, *, name: str | None = None, path: Path) -> None:
         """Pack the image artifact for the current project."""
+        self._remove_artifact(path)
+
         project = cast(Project, self._services.get("project").get())
         volume_name = self._single_volume_name()
         volume = project.volumes[volume_name]
@@ -193,19 +203,25 @@ class ImagecraftPackService(PackageService):
         finally:
             image_service.detach_images()
 
-        artifact_path = image_service.finalize_images(path.parent)[volume_name]
+        artifact_path: Path | None = None
+        try:
+            artifact_path = image_service.finalize_images(path.parent)[volume_name]
 
-        filesystem_mount = self._services.get(
-            "lifecycle"
-        ).project_info.default_filesystem_mount
-        arch = self._services.get("lifecycle").project_info.target_arch
-        image = Image(volume=volume, disk_path=artifact_path)
-        grubutil.setup_grub(
-            image=image,
-            workdir=project_dirs.work_dir,
-            arch=arch,
-            filesystem_mount=filesystem_mount,
-        )
+            filesystem_mount = self._services.get(
+                "lifecycle"
+            ).project_info.default_filesystem_mount
+            arch = self._services.get("lifecycle").project_info.target_arch
+            image = Image(volume=volume, disk_path=artifact_path)
+            grubutil.setup_grub(
+                image=image,
+                workdir=project_dirs.work_dir,
+                arch=arch,
+                filesystem_mount=filesystem_mount,
+            )
+        except (ImagecraftError, OSError, ValueError):
+            if artifact_path is not None:
+                self._remove_artifact(artifact_path)
+            raise
 
     @property
     def metadata(self) -> models.BaseMetadata:

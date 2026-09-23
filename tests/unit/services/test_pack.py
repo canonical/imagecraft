@@ -22,6 +22,7 @@ from craft_parts import ProjectDirs, ProjectInfo, ProjectVar, ProjectVarInfo
 from craft_parts.filesystem_mounts import FilesystemMount, FilesystemMounts
 from imagecraft.services.image import ImageService
 from imagecraft.services.pack import ImagecraftPackService
+from imagecraft.errors import GRUBInstallError
 
 
 @pytest.fixture(autouse=True)
@@ -176,6 +177,77 @@ def test_pack_artifacts_detaches_on_error(
         configured_pack_service.pack_artifacts()
 
     mock_detach.assert_called_once()
+
+
+def test_pack_artifacts_removes_stale_artifact_before_repacking(
+    tmp_path: Path,
+    configured_pack_service: ImagecraftPackService,
+    mock_image_service: ImageService,
+    mocker,
+):
+    artifact_path = tmp_path / "dest" / "pc.img"
+    artifact_path.parent.mkdir(parents=True, exist_ok=True)
+    artifact_path.write_text("stale image")
+
+    mocker.patch.object(mock_image_service, "create_images")
+    mocker.patch.object(mock_image_service, "attach_images")
+    mocker.patch.object(mock_image_service, "verify_images")
+    mocker.patch.object(mock_image_service, "detach_images")
+
+    def finalize_images(dest: Path) -> dict[str, Path]:
+        assert artifact_path.exists() is False
+        artifact_path.write_text("fresh image")
+        return {"pc": artifact_path}
+
+    mock_finalize = mocker.patch.object(
+        mock_image_service,
+        "finalize_images",
+        side_effect=finalize_images,
+    )
+    mocker.patch("imagecraft.services.pack.diskutil", autospec=True)
+    mocker.patch("imagecraft.services.pack.grubutil", autospec=True)
+    mocker.patch("imagecraft.services.pack.Image", autospec=True)
+
+    configured_pack_service.pack_artifacts()
+
+    mock_finalize.assert_called_once_with(artifact_path.parent)
+    assert artifact_path.read_text() == "fresh image"
+
+
+def test_pack_artifacts_removes_finalized_artifact_on_failure(
+    tmp_path: Path,
+    configured_pack_service: ImagecraftPackService,
+    mock_image_service: ImageService,
+    mocker,
+):
+    artifact_path = tmp_path / "dest" / "pc.img"
+
+    mocker.patch.object(mock_image_service, "create_images")
+    mocker.patch.object(mock_image_service, "attach_images")
+    mocker.patch.object(mock_image_service, "verify_images")
+    mocker.patch.object(mock_image_service, "detach_images")
+
+    def finalize_images(dest: Path) -> dict[str, Path]:
+        artifact_path.parent.mkdir(parents=True, exist_ok=True)
+        artifact_path.write_text("partially finalized image")
+        return {"pc": artifact_path}
+
+    mocker.patch.object(
+        mock_image_service,
+        "finalize_images",
+        side_effect=finalize_images,
+    )
+    mocker.patch("imagecraft.services.pack.diskutil", autospec=True)
+    mocker.patch(
+        "imagecraft.services.pack.grubutil.setup_grub",
+        side_effect=GRUBInstallError("grub failed"),
+    )
+    mocker.patch("imagecraft.services.pack.Image", autospec=True)
+
+    with pytest.raises(GRUBInstallError, match="grub failed"):
+        configured_pack_service.pack_artifacts()
+
+    assert artifact_path.exists() is False
 
 
 def test_write_artifacts_state_overwrites_existing_value(
