@@ -22,7 +22,7 @@ import pytest
 from craft_platforms import DebianArchitecture
 from imagecraft import errors
 from imagecraft.pack.bootloader.bios import PCBiosInstaller
-from imagecraft.pack.bootloader.chrootenv import stage_grub_modules
+from imagecraft.pack.bootloader.staging import stage_grub_modules
 
 from .test_installer import BOOT_ITEM, ROOT_ITEM, _mbr_volume
 

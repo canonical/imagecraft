@@ -30,7 +30,6 @@ from imagecraft import errors
 from imagecraft.pack.bootloader.chrootenv import (
     require_chroot_binary,
     run_checked,
-    stage_grub_modules,
 )
 from imagecraft.pack.bootloader.const import (
     CORE_EFI_MODULES,
@@ -39,6 +38,7 @@ from imagecraft.pack.bootloader.const import (
     get_arch_spec,
     render_early_cfg,
 )
+from imagecraft.pack.bootloader.staging import stage_grub_modules
 from imagecraft.pack.chroot import build_prime_chroot
 
 _CHROOT_EFI_WORK_DIR = "/tmp/grub-efi"  # noqa: S108

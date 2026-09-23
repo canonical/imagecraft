@@ -218,8 +218,9 @@ class TestFilesystemIds:
     def test_ext_partitions_get_uuids(self):
         volume = _gpt_volume([ESP_ITEM, BOOT_ITEM, ROOT_ITEM])
         installer = BootloaderInstaller(volume=volume, arch=_AMD64)
-        assert isinstance(installer.root_uuid, uuid.UUID)
-        assert isinstance(installer.boot_uuid, uuid.UUID)
+        assert str(uuid.UUID(installer.root_uuid)) == installer.root_uuid
+        assert installer.boot_uuid is not None
+        assert str(uuid.UUID(installer.boot_uuid)) == installer.boot_uuid
 
     def test_fat_boot_partition_gets_volume_id(self):
         """FAT /boot partitions get an XXXX-XXXX volume ID that mkfs.fat -i applies."""

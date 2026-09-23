@@ -45,7 +45,7 @@ from imagecraft.models.volume import (
     StructureItem,
 )
 from imagecraft.pack.bootloader.bios import PCBiosInstaller
-from imagecraft.pack.bootloader.chrootenv import stage_grub_modules
+from imagecraft.pack.bootloader.staging import stage_grub_modules
 from imagecraft.pack.bootloader.const import ArchSpec, BootMethod, get_arch_spec
 from imagecraft.pack.bootloader.efi import EfiInstaller
 from imagecraft.pack.bootloader.mkconfig import generate_grub_cfg
@@ -66,7 +66,7 @@ _DEFAULT_FSTAB_OPTIONS = "defaults,errors=remount-ro"
 _FAT_FILESYSTEMS = (FileSystem.VFAT, FileSystem.FAT16)
 
 
-def _new_filesystem_id(filesystem: FileSystem) -> UUID | str:
+def _new_filesystem_id(filesystem: FileSystem) -> str:
     """Generate a filesystem ID assignable at format time.
 
     FAT filesystems carry a 32-bit volume serial that GRUB probes as
@@ -75,7 +75,7 @@ def _new_filesystem_id(filesystem: FileSystem) -> UUID | str:
     if filesystem in _FAT_FILESYSTEMS:
         hex_id = uuid4().hex[:8].upper()
         return f"{hex_id[:4]}-{hex_id[4:]}"
-    return uuid4()
+    return str(uuid4())
 
 
 def configure_fstab(
@@ -155,12 +155,12 @@ class BootloaderInstaller:
         self.root_item = volume.root_partition
         self.esp_item = volume.esp_partition
         self.boot_item = volume.boot_partition
-        self.root_uuid: UUID | str = (
+        self.root_uuid: str = (
             _new_filesystem_id(self.root_item.filesystem)
             if self.root_item is not None
-            else uuid4()
+            else str(uuid4())
         )
-        self.boot_uuid: UUID | str | None = (
+        self.boot_uuid: str | None = (
             _new_filesystem_id(self.boot_item.filesystem)
             if self.boot_item is not None
             else None
@@ -181,15 +181,16 @@ class BootloaderInstaller:
     def resolve_boot_method(self) -> BootMethod:
         """Determine which boot method (if any) applies to this volume/arch."""
         if self.root_item is None:
-            emit.progress(
+            emit.warning(
                 "Skipping bootloader installation because no data partition was found",
-                permanent=True,
+                prefix="",
             )
             return BootMethod.NONE
 
         if self._spec is None:
-            emit.progress(
-                "Cannot install a bootloader for this architecture", permanent=True
+            emit.warning(
+                "Cannot install a bootloader for this architecture",
+                prefix="",
             )
             return BootMethod.NONE
 
@@ -202,10 +203,10 @@ class BootloaderInstaller:
         ) and self._spec.non_efi_format is not None:
             return BootMethod.BIOS
 
-        emit.progress(
+        emit.warning(
             "Skipping bootloader installation because no suitable boot "
             "partition was found",
-            permanent=True,
+            prefix="",
         )
         return BootMethod.NONE
 
@@ -284,10 +285,10 @@ class BootloaderInstaller:
         boot_dir = self._prime_dir(project_dirs, volume_name, self.boot_item)
 
         if boot_method == BootMethod.EFI and esp_dir is None:
-            emit.progress(
+            emit.warning(
                 "Skipping EFI bootloader installation because no EFI "
                 "System Partition prime directory is available",
-                permanent=True,
+                prefix="",
             )
             return BootMethod.NONE
 
@@ -330,7 +331,7 @@ class BootloaderInstaller:
                 assert self._spec.non_efi_format is not None  # noqa: S101
                 stage_grub_modules(self._root_dir, boot_dir, self._spec.non_efi_format)
         except errors.BootloaderToolsMissingError as err:
-            emit.progress(f"Skipping bootloader installation: {err}", permanent=True)
+            emit.warning(f"Skipping bootloader installation: {err}", prefix="")
             return BootMethod.NONE
 
         self._boot_method = boot_method
@@ -364,6 +365,6 @@ class BootloaderInstaller:
                 boot_item=self.boot_item,
             ).install()
         except errors.BootloaderToolsMissingError as err:
-            emit.progress(
-                f"Skipping BIOS bootloader installation: {err}", permanent=True
+            emit.warning(
+                f"Skipping BIOS bootloader installation: {err}", prefix=""
             )

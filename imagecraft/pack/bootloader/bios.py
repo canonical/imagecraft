@@ -192,8 +192,8 @@ class PCBiosInstaller:
     def install(self) -> None:
         """Build core.img and install the BIOS boot code into the disk image.
 
-        Assumes :func:`~imagecraft.pack.bootloader.chrootenv.stage_grub_modules` has already been called during
-        the pre-format staging phase.
+        Assumes :func:`~imagecraft.pack.bootloader.staging.stage_grub_modules`
+        has already been called during the pre-format staging phase.
 
         :raises errors.BootloaderToolsMissingError: If GRUB modules or tools
             aren't present in the staged rootfs, or fuse2fs isn't available

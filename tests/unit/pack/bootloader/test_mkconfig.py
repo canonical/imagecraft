@@ -34,35 +34,76 @@ class TestStripBootPrefix:
     @pytest.mark.parametrize(
         ("line", "expected"),
         [
-            (
+            pytest.param(
                 "linux /boot/vmlinuz key=/boot/key /boot/argument",
                 "linux /vmlinuz key=/boot/key /boot/argument",
+                id="linux-kernel-positional-only",
             ),
-            (
+            pytest.param(
                 'linux "/boot/kernel name" key="/boot/key name"',
                 'linux "/kernel name" key="/boot/key name"',
+                id="linux-kernel-quoted",
             ),
-            (
+            pytest.param(
                 "multiboot --quirk-bad-kludge /boot/kernel config=/boot/config",
                 "multiboot --quirk-bad-kludge /kernel config=/boot/config",
+                id="multiboot-positional-only",
             ),
-            ("module /boot/module /boot/argument", "module /module /boot/argument"),
-            ("module2 /boot/module /boot/argument", "module2 /module /boot/argument"),
-            ("multiboot2 /boot/kernel /boot/arg", "multiboot2 /kernel /boot/arg"),
-            ("devicetree /boot/board.dtb", "devicetree /board.dtb"),
-            (
+            pytest.param(
+                "module /boot/module /boot/argument",
+                "module /module /boot/argument",
+                id="module-positional-only",
+            ),
+            pytest.param(
+                "module2 /boot/module /boot/argument",
+                "module2 /module /boot/argument",
+                id="module2-positional-only",
+            ),
+            pytest.param(
+                "multiboot2 /boot/kernel /boot/arg",
+                "multiboot2 /kernel /boot/arg",
+                id="multiboot2-positional-only",
+            ),
+            pytest.param(
+                "devicetree /boot/board.dtb",
+                "devicetree /board.dtb",
+                id="devicetree-positional-only",
+            ),
+            pytest.param(
                 "initrd /boot/microcode.img '/boot/initrd name'",
                 "initrd /microcode.img '/initrd name'",
+                id="initrd-multiple-files",
             ),
-            (
+            pytest.param(
                 'loadfont ($root)/boot/font.pf2 "($root)/boot/font two.pf2"',
                 'loadfont ($root)/font.pf2 "($root)/font two.pf2"',
+                id="loadfont-root-prefixed",
             ),
-            ("initrd /boot/initrd # /boot/comment", "initrd /initrd # /boot/comment"),
-            ("initrd /boot/initrd; echo /boot/keep", "initrd /initrd; echo /boot/keep"),
-            ("linux /vmlinuz key=/boot/key", "linux /vmlinuz key=/boot/key"),
-            ("echo /boot/keep", "echo /boot/keep"),
-            ("# linux /boot/keep", "# linux /boot/keep"),
+            pytest.param(
+                "initrd /boot/initrd # /boot/comment",
+                "initrd /initrd # /boot/comment",
+                id="comments-unchanged",
+            ),
+            pytest.param(
+                "initrd /boot/initrd; echo /boot/keep",
+                "initrd /initrd; echo /boot/keep",
+                id="shell-tail-unchanged",
+            ),
+            pytest.param(
+                "linux /vmlinuz key=/boot/key",
+                "linux /vmlinuz key=/boot/key",
+                id="keyword-argument-unchanged",
+            ),
+            pytest.param(
+                "echo /boot/keep",
+                "echo /boot/keep",
+                id="non-kernel-command-unchanged",
+            ),
+            pytest.param(
+                "# linux /boot/keep",
+                "# linux /boot/keep",
+                id="comment-line-unchanged",
+            ),
         ],
     )
     def test_rewrites_only_file_operands(self, tmp_path, mocker, line, expected):
