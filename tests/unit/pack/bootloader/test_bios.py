@@ -22,6 +22,7 @@ import pytest
 from craft_platforms import DebianArchitecture
 from imagecraft import errors
 from imagecraft.pack.bootloader.bios import PCBiosInstaller
+from imagecraft.pack.bootloader.const import CORE_BIOS_MODULES
 from imagecraft.pack.bootloader.staging import stage_grub_modules
 
 from .test_installer import BOOT_ITEM, ROOT_ITEM, _mbr_volume
@@ -40,6 +41,11 @@ def _make_installer(tmp_path: Path, **kwargs) -> PCBiosInstaller:
         volume=volume,
         **kwargs,
     )
+
+
+def _touch_core_modules(mod_dir: Path) -> None:
+    for name in CORE_BIOS_MODULES:
+        (mod_dir / f"{name}.mod").touch()
 
 
 class TestPCBiosInstallerChecks:
@@ -78,8 +84,9 @@ class TestPCBiosInstallerChecks:
         )
         mod_dir = installer.root_dir / "usr/lib/grub/i386-pc"
         mod_dir.mkdir(parents=True)
-        for name in ("boot.img", "grub-bios-setup", "fat.mod", "ext2.mod"):
+        for name in ("boot.img", "grub-bios-setup"):
             (mod_dir / name).touch()
+        _touch_core_modules(mod_dir)
         mocker.patch(
             "imagecraft.pack.bootloader.bios.require_chroot_binary",
             return_value=Path("usr/bin/grub-mkimage"),
@@ -101,8 +108,9 @@ class TestPCBiosInstallerChecks:
         installer = _make_installer(tmp_path)
         mod_dir = installer.root_dir / "usr/lib/grub/i386-pc"
         mod_dir.mkdir(parents=True)
-        for name in ("boot.img", "grub-bios-setup", "ext2.mod"):
+        for name in ("boot.img", "grub-bios-setup"):
             (mod_dir / name).touch()
+        _touch_core_modules(mod_dir)
         mocker.patch(
             "imagecraft.pack.bootloader.bios.require_chroot_binary",
             return_value=Path("usr/bin/grub-mkimage"),
@@ -156,6 +164,27 @@ class TestPCBiosInstallerChecks:
         (mod_dir / "grub-bios-setup").write_bytes(b"x")
         installer = _make_installer(tmp_path)
         with pytest.raises(errors.BootloaderToolsMissingError, match="grub-mkimage"):
+            installer.install()
+
+    def test_missing_core_module(self, tmp_path, mocker):
+        installer = _make_installer(tmp_path)
+        mod_dir = installer.root_dir / "usr/lib/grub/i386-pc"
+        mod_dir.mkdir(parents=True)
+        (mod_dir / "boot.img").touch()
+        (mod_dir / "grub-bios-setup").touch()
+        _touch_core_modules(mod_dir)
+        (mod_dir / "configfile.mod").unlink()
+        mocker.patch(
+            "imagecraft.pack.bootloader.bios.require_chroot_binary",
+            return_value=Path("usr/bin/grub-mkimage"),
+        )
+        mocker.patch(
+            "imagecraft.pack.bootloader.bios.shutil.which", return_value="fuse2fs"
+        )
+
+        with pytest.raises(
+            errors.BootloaderToolsMissingError, match="configfile\\.mod"
+        ):
             installer.install()
 
     def test_dedicated_boot_uuid_changes_search_and_prefix(self, tmp_path):

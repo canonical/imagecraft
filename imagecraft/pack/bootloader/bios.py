@@ -231,7 +231,17 @@ class PCBiosInstaller:
                 resolution="Install the fuse2fs package on the build host.",
             )
 
-        modules = [m for m in CORE_BIOS_MODULES if (mod_dir / f"{m}.mod").is_file()]
+        missing_core_modules = [
+            module for module in CORE_BIOS_MODULES if not (mod_dir / f"{module}.mod").is_file()
+        ]
+        if missing_core_modules:
+            raise errors.BootloaderToolsMissingError(
+                "Required GRUB BIOS core modules not found: "
+                + ", ".join(f"{module}.mod" for module in missing_core_modules),
+                resolution="Install the grub-pc-bin package in the image.",
+            )
+
+        modules = list(CORE_BIOS_MODULES)
 
         resolved_image = self.image_path.resolve()
         image_rel = str(resolved_image).lstrip("/")
