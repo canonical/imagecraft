@@ -7,7 +7,7 @@
 [![Code Style][ruff-badge]][ruff-site]
 
 Imagecraft is the command-line tool for building bootable disk images. It declares an
-image's structure, contents, and build details in a central project file named
+image's structure, contents, and build details in a project file named
 `imagecraft.yaml`.
 
 ## Basic usage
