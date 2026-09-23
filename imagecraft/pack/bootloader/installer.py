@@ -38,6 +38,7 @@ from imagecraft.models import get_partition_name
 from imagecraft.models.project import FilesystemsDictT
 from imagecraft.models.volume import (
     FileSystem,
+    GptType,
     GPTVolume,
     HybridVolume,
     MBRVolume,
@@ -64,6 +65,16 @@ class PrimeDirs(Protocol):
 _DEFAULT_FSTAB_OPTIONS = "defaults,errors=remount-ro"
 
 _FAT_FILESYSTEMS = (FileSystem.VFAT, FileSystem.FAT16)
+
+
+def _is_esp_item(item: StructureItem | None) -> bool:
+    """Whether a structure item is an EFI System Partition."""
+    structure_type = getattr(item, "structure_type", None)
+    if isinstance(structure_type, GptType):
+        return structure_type == GptType.EFI_SYSTEM
+    if isinstance(structure_type, str) and "," in structure_type:
+        return structure_type.split(",", 1)[1].upper() == GptType.EFI_SYSTEM.value
+    return False
 
 
 def _new_filesystem_id(filesystem: FileSystem) -> str:
@@ -253,6 +264,13 @@ class BootloaderInstaller:
         elif boot_item is not self.boot_item:
             self.boot_item = boot_item
             self.boot_uuid = _new_filesystem_id(boot_item.filesystem)
+
+        if any(
+            Path(entry["mount"]) == Path("/boot/efi")
+            for entry in filesystems.get("default", [])
+        ):
+            esp_item = self._mounted_item(filesystems, volume_name, "/boot/efi")
+            self.esp_item = esp_item if _is_esp_item(esp_item) else None
 
     def prepare_rootfs(
         self,

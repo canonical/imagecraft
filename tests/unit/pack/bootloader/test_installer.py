@@ -383,7 +383,6 @@ class TestBootFstab:
         [
             ("/srv", "(volume/pc/boot)"),
             ("/boot", "(volume/pc/rootfs)"),
-            ("/boot/efi", "(volume/pc/boot)"),
         ],
     )
     def test_does_not_invent_boot_mapping(self, tmp_path, mocker, mountpoint, device):
@@ -409,6 +408,52 @@ class TestBootFstab:
         assert mock_grub_cfg.call_args.kwargs["boot_uuid"] is None
         assert mock_efi.call_args.kwargs["boot_dir"] is None
         assert mock_efi.call_args.kwargs["boot_uuid"] is None
+
+    def test_prepare_uses_mapped_esp_partition(self, tmp_path, mocker):
+        other_esp_item = {
+            **ESP_ITEM,
+            "name": "efi-alt",
+            "filesystem-label": "ESP2",
+        }
+        volume = _gpt_volume([ESP_ITEM, other_esp_item, ROOT_ITEM])
+        installer = BootloaderInstaller(volume=volume, arch=_AMD64)
+        mocker.patch.object(installer_mod, "generate_grub_cfg")
+        mock_efi = mocker.patch.object(installer_mod, "EfiInstaller")
+
+        boot_method = installer.prepare_rootfs(
+            project_dirs=FakeProjectDirs(tmp_path),
+            volume_name="pc",
+            filesystems={
+                "default": [
+                    {"mount": "/", "device": "(volume/pc/rootfs)"},
+                    {"mount": "/boot/efi", "device": "(volume/pc/efi-alt)"},
+                ]
+            },
+        )
+
+        assert boot_method == BootMethod.EFI
+        assert mock_efi.call_args.kwargs["esp_dir"] == tmp_path / "volume/pc/efi-alt"
+
+    def test_prepare_skips_invalid_esp_mapping(self, tmp_path, mocker):
+        volume = _gpt_volume([ESP_ITEM, BOOT_ITEM, ROOT_ITEM])
+        installer = BootloaderInstaller(volume=volume, arch=_AMD64)
+        mock_grub_cfg = mocker.patch.object(installer_mod, "generate_grub_cfg")
+        mock_efi = mocker.patch.object(installer_mod, "EfiInstaller")
+
+        boot_method = installer.prepare_rootfs(
+            project_dirs=FakeProjectDirs(tmp_path),
+            volume_name="pc",
+            filesystems={
+                "default": [
+                    {"mount": "/", "device": "(volume/pc/rootfs)"},
+                    {"mount": "/boot/efi", "device": "(volume/pc/boot)"},
+                ]
+            },
+        )
+
+        assert boot_method == BootMethod.NONE
+        mock_grub_cfg.assert_not_called()
+        mock_efi.assert_not_called()
 
 
 class TestConfigureFstab:
