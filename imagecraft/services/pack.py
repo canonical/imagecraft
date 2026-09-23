@@ -37,11 +37,7 @@ class ImagecraftPackService(PackageService):
     @override
     def get_artifacts(self) -> dict[str | None, Path]:
         """Get the output image artifact for the current project."""
-        project = cast(Project, self._services.get("project").get())
-        if len(project.volumes) != 1:
-            raise AssertionError("This code can only handle one volume")
-
-        volume_name, _ = next(iter(project.volumes.items()))
+        volume_name = self._single_volume_name()
         return {None: self.output_dir / f"{volume_name}.img"}
 
     def _single_volume_name(self) -> str:
