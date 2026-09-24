@@ -105,7 +105,7 @@ def fstype(request: pytest.FixtureRequest) -> FileSystem:
 def test_mount_partition_standalone(
     tmp_path: Path,
     fstype: FileSystem,
-    fakeroot: bool,  # noqa: FBT001
+    fakeroot: bool,
 ):
     if "ext" in fstype.value and shutil.which("fuse2fs") is None:
         pytest.skip("fuse2fs is not installed")
@@ -146,7 +146,7 @@ def test_mount_partition_standalone(
 def test_mount_partition_offset(
     tmp_path: Path,
     fstype: FileSystem,
-    fakeroot: bool,  # noqa: FBT001
+    fakeroot: bool,
 ):
     if "ext" in fstype.value and shutil.which("fuse2fs") is None:
         pytest.skip("fuse2fs is not installed")

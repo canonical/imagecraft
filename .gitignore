@@ -16,7 +16,8 @@ eggs/
 .eggs/
 lib/
 lib64/
-parts/
+# Only top level parts dir, otherwise this conflicts with inner dirs called parts.
+/parts/
 sdist/
 var/
 wheels/
@@ -75,6 +76,7 @@ instance/
 # Sphinx documentation
 docs/_build/
 docs/_linkcheck/
+docs/reference/gen/
 docs/spelling/
 
 # PyBuilder
@@ -148,7 +150,6 @@ dmypy.json
 
 # sphinx
 docs/warnings.txt
-docs/.sphinx/.wordlist.dic
 docs/reference/commands
 .DS_Store
 __pycache__
@@ -160,8 +161,12 @@ __pycache__
 !tests/spread/**/var/
 !tests/spread/**/var/lib/
 
-# Visual Studio Code
-.vscode/
-
+# IDE configs
+# VS Code/Codium
+/.vscode/
 # JetBrains IDEs
 /.idea/
+# Zed
+/.zed/
+# KDevelop
+/.kdev4/

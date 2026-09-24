@@ -259,7 +259,7 @@ the ``rootfs`` key:
     :language: yaml
     :class: no-copybutton
     :start-at: rootfs:
-    :end-at: '*': (overlay)/
+    :end-at: "*": (overlay)/
     :emphasize-lines: 14, 15
 
 This copies the result of the part's build step to the root of the overlay file system,

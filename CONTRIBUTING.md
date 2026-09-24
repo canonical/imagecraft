@@ -288,14 +288,15 @@ git push -u origin <branch-name>
 ```
 
 Finally, [open a PR](https://github.com/canonical/imagecraft/compare) for it on GitHub.
-If your branch has one commit, GitHub will title the PR after it. If your branch has
-more than one commit, name the PR after the most significant. Once open, reviewers are
-assigned automatically to your work.
+Format the PR title as a conventional commit. If your branch has only one commit, GitHub
+handles this automatically. If your branch has multiple commits, copy the title of the
+most important one.
+
+Once open, reviewers are assigned automatically to your work.
 
 ### Follow up for the review
 
 The Imagecraft maintainers try to review every PR in a timely manner, typically within a
-week for contributions that resolve an approved issue. While they can't guarantee
 immediate feedback, they aim to ensure that all contributions are reviewed thoroughly
 and thoughtfully.
 

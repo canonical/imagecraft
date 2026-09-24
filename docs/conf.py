@@ -2,6 +2,7 @@ import datetime
 import os
 import pathlib
 import sys
+import textwrap
 
 import craft_parts_docs  # type: ignore
 
@@ -14,8 +15,8 @@ import imagecraft
 # A complete list of built-in Sphinx configuration values:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 #
-# Our starter pack uses the custom Canonical Sphinx extension
-# to keep all documentation based on it consistent and on brand:
+# The Sphinx Stack uses the Canonical Sphinx theme to keep all documentation consistent
+# and on brand:
 # https://github.com/canonical/canonical-sphinx
 
 
@@ -52,12 +53,11 @@ ogp_site_name = project
 ogp_image = "https://assets.ubuntu.com/v1/253da317-image-document-ubuntudocs.svg"
 
 # Product favicon; shown in bookmarks, browser tabs, etc.
-# html_favicon = '.sphinx/_static/favicon.png'
+# html_favicon = '_static/favicon.png'
 
 # Dictionary of values to pass into the Sphinx context for all pages:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#confval-html_context
 html_context = {
-    # Product page URL; can be different from product docs URL
     "product_page": "github.com/canonical/imagecraft",
     # Product tag image; the orange part of your logo, shown in the page header
     # 'product_tag': '_static/tag.png',
@@ -69,20 +69,25 @@ html_context = {
     # Your documentation GitHub repository URL
     "github_url": "https://github.com/canonical/imagecraft",
     # Docs branch in the repo; used in links for viewing the source files
-    'repo_default_branch': 'main',
+    "repo_default_branch": "main",
     # Docs location in the repo; used in links for viewing the source files
     "repo_folder": "/docs/",
     # List contributors on individual pages
     "display_contributors": False,
     # Required for feedback button
-    'github_issues': 'https://github.com/canonical/imagecraft/issues',
+    "github_issues": "enabled",
+    # Passes the top-level 'author' value to the theme
+    "author": author,
+    # Documentation license information
+    "license": {
+        "name": "LGPL-3.0",
+        "url": "https://github.com/canonical/imagecraft/blob/main/LICENSE",
+    },
 }
-
-#html_extra_path = []
 
 # Enable the edit button on pages
 html_theme_options = {
-  'source_edit_link': "https://github.com/canonical/imagecraft",
+  "source_edit_link": "https://github.com/canonical/imagecraft",
 }
 
 # Project slug; see https://meta.discourse.org/t/what-is-category-slug/87897
@@ -124,8 +129,28 @@ templates_path = ["_templates"]
 
 rediraffe_redirects = "redirects.txt"
 
+# Strips '/index.html' from destination URLs when building with 'dirhtml'
+rediraffe_dir_only = True
 
-###########################g
+############################
+# sphinx-llm configuration #
+############################
+
+# This description is included in llms.txt to provide some initial context for your
+# product docs.
+llms_txt_description = textwrap.dedent(
+    """\
+    This is the documentation for Imagecraft, a craft tool used to create Ubuntu
+    bootable images. It follows the same principles as Snapcraft, but is focused on
+    creating bootable images instead.
+    """
+)
+
+# The base URL for references built by sphinx-markdown-builder.
+if os.environ.get("READTHEDOCS"):
+    markdown_http_base = html_baseurl
+
+###########################
 # Link checker exceptions #
 ###########################
 
@@ -145,18 +170,17 @@ linkcheck_ignore = [
     r"^https://rsync.samba.org",
     r"^https://ubuntu.com",
     r"^https://gitlab.com/apparmor/apparmor/",
-    # r"http://127.0.0.1:8000",
-    # r"https://apt-repo.com",
-    # # Linkcheck is unable to properly handled matrix.to URLs containing # and :
-    # # See https://github.com/sphinx-doc/sphinx/issues/13620
+    r"^https://gitlab.gnome.org",
+    # Linkcheck is unable to properly handled matrix.to URLs containing # and :
+    # See https://github.com/sphinx-doc/sphinx/issues/13620
     "https://matrix.to/#",
-    # # Entire domains to ignore due to flakiness or issues
-    # r"^https://www.gnu.org/",
-    # r"^https://ubuntu.com",
 ]
 
 # Give linkcheck multiple tries on failure
 linkcheck_retries = 20
+
+# Report timeouts as 'timeout' instead of 'broken'
+linkcheck_report_timeouts_as_broken = False
 
 
 ########################
@@ -170,14 +194,14 @@ extensions = [
     "canonical_sphinx",
     "notfound.extension",
     "sphinx_design",
-    # "sphinx_reredirects",
     # "sphinx_tabs.tabs",
     # "sphinxcontrib.jquery",
     "sphinxext.opengraph",
     # "sphinx_config_options",
     # "sphinx_contributor_listing",
     # "sphinx_filtered_toctree",
-    # "sphinx_related_links",
+    "sphinx_llm.txt",
+    "sphinx_related_links",
     "sphinx_roles",
     "sphinx_terminal",
     # "sphinx_ubuntu_images",
@@ -190,7 +214,7 @@ extensions = [
     "pydantic_kitbash",
     "sphinxcontrib.details.directive",
     "sphinx-pydantic",
-    "sphinxext.rediraffe",
+    "sphinx_rerediraffe",
     "sphinx.ext.autodoc",
     "sphinx.ext.doctest",
     "sphinx.ext.ifconfig",
@@ -275,8 +299,8 @@ rst_epilog = """
 # disable_feedback_button = True
 
 # Your manpage URL
-# manpages_url = 'https://manpages.ubuntu.com/manpages/{codename}/en/' + \
-#     'man{section}/{page}.{section}.html'
+# manpages_url = "https://manpages.ubuntu.com/manpages/{codename}/en/" + \
+#     "man{section}/{page}.{section}.html"
 
 # Specifies a reST snippet to be prepended to each .rst file
 # This defines a :center: role that centers table cell content.
@@ -300,7 +324,13 @@ if "discourse_prefix" not in html_context and "discourse" in html_context:
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "ubuntu-core": ("https://documentation.ubuntu.com/core", None),
+    "starflow": ("https://documentation.ubuntu.com/starflow/latest", None),
 }
+
+# Block Intersphinx from looking up external sources with internal references. In other
+# words, only :external+<project>... will search in other projects.
+intersphinx_disabled_reftypes = ["std:*"]
+
 
 ##############################
 # Custom Craft configuration #
