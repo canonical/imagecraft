@@ -1,5 +1,6 @@
 [[IgnoredVulns]]
 id = "GHSA-pj65-3pf6-c5q4"
+
 [[IgnoredVulns]]
 id = "GHSA-rp8m-h266-53jh"
 reason = """
