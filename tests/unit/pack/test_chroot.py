@@ -19,7 +19,7 @@ from unittest.mock import ANY, call
 
 import pytest
 from imagecraft import errors
-from imagecraft.pack.chroot import Chroot, Mount, _runner
+from imagecraft.pack.chroot import Chroot, Mount, _runner, build_prime_chroot
 
 
 def target_func(content: str) -> str:
@@ -165,6 +165,38 @@ Command '['some', 'command']' returned non-zero exit status 42. (unable to umoun
         assert mock_umount.mock_calls == [
             call(f"{new_root}/existent2", "--recursive"),
             call(f"{new_root}/existent", "--recursive"),
+        ]
+
+    def test_chroot_cleanup_removes_only_created_paths(self, new_dir):
+        new_root = Path(new_dir)
+        existing_path = new_root / "existing"
+        created_path = new_root / "created"
+        existing_path.touch()
+        created_path.touch()
+
+        chroot = Chroot(
+            path=new_root,
+            mounts=[],
+            created_paths=[created_path],
+        )
+
+        chroot._cleanup()
+
+        assert existing_path.exists()
+        assert not created_path.exists()
+
+
+class TestBuildPrimeChroot:
+    def test_tracks_only_missing_bind_targets(self, tmp_path):
+        root_dir = tmp_path / "root"
+        (root_dir / "dev").mkdir(parents=True)
+        (root_dir / "dev" / "null").touch()
+
+        chroot = build_prime_chroot(root_dir)
+
+        assert chroot.created_paths == [
+            root_dir / "dev" / "zero",
+            root_dir / "dev" / "urandom",
         ]
 
 

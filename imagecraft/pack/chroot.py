@@ -130,10 +130,14 @@ class Chroot:
 
     mounts: list[Mount]
     path: Path
+    created_paths: list[Path]
 
-    def __init__(self, *, path: Path, mounts: list[Mount]) -> None:
+    def __init__(
+        self, *, path: Path, mounts: list[Mount], created_paths: list[Path] | None = None
+    ) -> None:
         self.path = path
         self.mounts = mounts
+        self.created_paths = created_paths or []
 
     def _setup(self) -> None:
         """Chroot environment preparation."""
@@ -156,6 +160,10 @@ class Chroot:
                 if err.stderr:
                     msg += f" ({err.stderr.strip()!s})"
                 umount_errors.append(msg)
+
+        if not umount_errors:
+            for path in self.created_paths:
+                path.unlink(missing_ok=True)
 
         if umount_errors:
             raise errors.ChrootExecutionError(
@@ -192,3 +200,56 @@ class Chroot:
             raise errors.ChrootExecutionError(err)
 
         return res
+
+
+def build_prime_chroot(
+    root_dir: Path,
+    *,
+    boot_dir: Path | None = None,
+    extra_mounts: list[Mount] | None = None,
+) -> Chroot:
+    """Build a chroot rooted at a partition's prime directory.
+
+    Only the device files GRUB tooling needs are bind-mounted (rather than
+    overmounting ``/dev``, which would hide the bind targets).
+
+    :param root_dir: Prime directory of the root filesystem partition.
+    :param boot_dir: Prime directory of a dedicated ``/boot`` partition,
+        bound at ``/boot`` in the chroot. Defaults to the root partition's
+        own ``/boot`` when not given.
+    :param extra_mounts: Additional mounts to set up inside the chroot
+        (e.g. tool shims bind-mounted over the guest's binaries).
+    """
+    for mountpoint in ("proc", "sys", "dev", "tmp"):
+        (root_dir / mountpoint).mkdir(parents=True, exist_ok=True)
+
+    mounts = [
+        Mount(fstype="proc", src="proc-build", relative_mountpoint="/proc"),
+        Mount(fstype="sysfs", src="sysfs-build", relative_mountpoint="/sys"),
+    ]
+    created_paths: list[Path] = []
+    for device in ("null", "zero", "urandom"):
+        device_path = root_dir / "dev" / device
+        if not device_path.exists():
+            created_paths.append(device_path)
+        device_path.touch(exist_ok=True)
+        mounts.append(
+            Mount(
+                fstype=None,
+                src=f"/dev/{device}",
+                relative_mountpoint=f"/dev/{device}",
+                options=["--bind"],
+            )
+        )
+    if boot_dir is not None:
+        (root_dir / "boot").mkdir(exist_ok=True)
+        mounts.append(
+            Mount(
+                fstype=None,
+                src=str(boot_dir.resolve()),
+                relative_mountpoint="/boot",
+                options=["--bind"],
+            )
+        )
+    mounts.extend(extra_mounts or [])
+    return Chroot(path=root_dir, mounts=mounts, created_paths=created_paths)
