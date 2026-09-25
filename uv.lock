@@ -475,7 +475,7 @@ toml = [
 
 [[package]]
 name = "craft-application"
-version = "7.2.0"
+version = "7.2.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "annotated-types" },
@@ -498,9 +498,9 @@ dependencies = [
     { name = "snap-http" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e4/aa/592be376d6b4c066bb7bff882179478d07287c1fc65e81bdef32e0f1f514/craft_application-7.2.0.tar.gz", hash = "sha256:182646ef7febe78e1241b393f6cf2b21ec2a3dd00596d323f85c59c3bc705e11", size = 711407, upload-time = "2026-08-11T16:50:12.452Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/bf/30/9f520439e4f4a1c9ad538180b9c7057e4945c4e95994f2d2d93759202401/craft_application-7.2.1.tar.gz", hash = "sha256:86f1f35be4b447bada10305d91a252b178d20910f3d5a7d5bb8ac6d3d9810d49", size = 711352, upload-time = "2026-09-01T19:01:41.236Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/98/02/c8bb8ec7af9a9c1f7775fc5f8b4174b2ca045b7e5a2a5402fec0d7243792/craft_application-7.2.0-py3-none-any.whl", hash = "sha256:ca0e068f56137b1bb117a0ae92da84db0a9d59360f95106582c7881acb95ec61", size = 212573, upload-time = "2026-08-11T16:50:10.454Z" },
+    { url = "https://files.pythonhosted.org/packages/1c/d8/2521124ef123c9164c6f432bf401a70e31df29b7487a6459fa73470930cf/craft_application-7.2.1-py3-none-any.whl", hash = "sha256:921437c49bc9ad7978f4eb8e12e5a91d781762c6d6eb2917839710ba689d8761", size = 212608, upload-time = "2026-09-01T19:01:38.289Z" },
 ]
 
 [[package]]
@@ -571,16 +571,16 @@ wheels = [
 
 [[package]]
 name = "craft-platforms"
-version = "0.10.0"
+version = "0.12.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "annotated-types" },
     { name = "distro" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/44/78/f2c3ef342c9e9fee0127516aee113a28c487a999d35ce4aa944a58bd5939/craft_platforms-0.10.0.tar.gz", hash = "sha256:85b8630c0f7436b0832466c1dba8deb040502fdadc1d225fbed15d1e1e38f729", size = 220454, upload-time = "2025-07-17T19:35:11.436Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a0/f2/507e3b1bd017f51bea6c70205744239b62eac20c552fa0ee1f1c30019752/craft_platforms-0.12.0.tar.gz", hash = "sha256:497b6421fc5f464ee1f31da60ae1211bd3101722770afae72e0b330e54883e9d", size = 349924, upload-time = "2026-07-10T20:16:14.836Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ee/61/9985a7bd77fdafd14fd5de658877202f867802849de61f1346d7d124dcd5/craft_platforms-0.10.0-py3-none-any.whl", hash = "sha256:5be0a53a9ef6ac6341c44842378c6293b09148d371ac1a4ef26d1014b330907a", size = 30262, upload-time = "2025-07-17T19:35:09.619Z" },
+    { url = "https://files.pythonhosted.org/packages/94/d5/d7eb7180085f70756372acfc27e782affe21fda791d801cff6fc10bb047a/craft_platforms-0.12.0-py3-none-any.whl", hash = "sha256:71fff4a3aeb075df878cada38bb89b0d36c9efb5423973db7625da983b8ee6f6", size = 39405, upload-time = "2026-07-10T20:16:13.496Z" },
 ]
 
 [[package]]

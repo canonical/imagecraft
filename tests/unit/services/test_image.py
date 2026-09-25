@@ -511,3 +511,30 @@ def test_finalize_images_creates_dest(image_service, project_dir, mocker):
     image_service.finalize_images(dest)
 
     assert dest.exists()
+
+
+def test_finalize_image(image_service, project_dir, mocker):
+    hidden = project_dir / ".pc.img.tmp"
+    hidden.touch()
+    image_service._images = {"pc": hidden}
+
+    final_path = project_dir / "dest" / "pc.img"
+    mock_move = mocker.patch("imagecraft.services.image.shutil.move")
+
+    result = image_service._finalize_image("pc", final_path)
+
+    mock_move.assert_called_once_with(str(hidden), final_path)
+    assert result == final_path
+    assert final_path.parent.exists()
+
+
+def test_finalize_image_creates_dest(image_service, project_dir, mocker):
+    hidden = project_dir / ".pc.img.tmp"
+    image_service._images = {"pc": hidden}
+
+    final_path = project_dir / "nonexistent" / "nested" / "pc.img"
+    mocker.patch("imagecraft.services.image.shutil.move")
+
+    image_service._finalize_image("pc", final_path)
+
+    assert final_path.parent.exists()

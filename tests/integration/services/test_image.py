@@ -94,6 +94,19 @@ def test_finalize_images_creates_dest_dir(
     assert (dest / "pc.img").exists()
 
 
+def test_finalize_image_moves_file(image_service: ImageService, new_dir, tmp_path):
+    """_finalize_image() moves a selected image to an explicit destination."""
+    image_service.create_images()
+    hidden_path = image_service._project_dir / ".pc.img.tmp"
+    assert hidden_path.exists()
+
+    final_path = tmp_path / "output" / "custom-pc.img"
+    image_service._finalize_image("pc", final_path)
+
+    assert final_path.exists()
+    assert not hidden_path.exists()
+
+
 @pytest.mark.requires_root
 def test_attach_and_detach_images(image_service: ImageService, new_dir):
     """attach_images() attaches loop devices; detach_images() removes them."""
