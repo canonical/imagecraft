@@ -276,16 +276,15 @@ The following files comprise a complete Ubuntu Core image project for ARM64 mach
         name: core-arm64
         base: bare
         build-base: ubuntu@24.04
-        version: "0.1"
+        version: '0.1'
         summary: A minimal Ubuntu Core image for ARM64 machines.
         description: |
-          A minimal, pre-installed Ubuntu Core image for ARM64 machines written to
-          demonstrate the fundamentals of Imagecraft. Its seed partition is created
-          with the UC-prepare plugin.
+          A minimal, pre-installed Ubuntu Core image for ARM64 machines. Its seed partition is
+          created with the UC-prepare plugin.
 
         platforms:
           arm64:
-            build-on: [arm64, amd64]
+            build-on: [amd64, arm64]
             build-for: arm64
 
         volumes:
@@ -319,10 +318,21 @@ The following files comprise a complete Ubuntu Core image project for ARM64 mach
               mount: /
 
         parts:
+          import-key:
+            plugin: nil
+            source: .
+            override-build: |
+              mkdir -p /home/ubuntu/.snap/gnupg
+              chmod 700 /home/ubuntu/.snap/gnupg
+              gpg --homedir /home/ubuntu/.snap/gnupg --import $CRAFT_PART_SRC/sign.key
+
           seed:
+            after: [import-key]
             plugin: uc-prepare
             source: .
             uc-prepare-model-assert: model.assert
+            uc-prepare-preseed-sign-key: model-key
+            uc-prepare-preseed: True
             organize:
               system-seed: (volume/pc/ubuntu-seed)
 
@@ -332,12 +342,12 @@ The following files comprise a complete Ubuntu Core image project for ARM64 mach
 
         type: model
         authority-id: canonical
-        revision: 2
         series: 16
         brand-id: canonical
         model: ubuntu-core-24-arm64
         architecture: arm64
         base: core24
+        grade: signed
         snaps:
           -
             default-channel: 24/edge
@@ -363,5 +373,17 @@ The following files comprise a complete Ubuntu Core image project for ARM64 mach
             default-channel: 24/edge
             id: ASctKBEHzVt3f1pbZLoekCvcigRjtuqw
             name: console-conf
-            presence: optional
             type: app
+        timestamp: 2026-09-25T15:58:11+00:00
+        sign-key-sha3-384: j3FBN0eU1XeZ7qAuTR066Id5hZ5hcNd8uNDBH5nU2QPv4JQsVQ8LubPHu-F-L1D6
+
+        AcLBcwQAAQoAHRYhBBahy7wwOOJ/WD5geOTJRuX8A398BQJqtpqBAAoJEOTJRuX8A398YhQP/iob
+        xxwMDHuxjisizD65HH91DH9+zMntCPtaVntCmIm0nfDaCnVOPrpty1wYMikH41olcUDyVsmVPlLa
+        P8LewMVYMgy+uEeE5VOq8ep2xcFprznyyjUmOMguDeFJPWcqLaPAycxw8Qm1e9KgZT+rKqUWhBS7
+        IvQnxdJn2cr/M4V2id2SPT/YZWl47TLK3xEpEbYHtPVBc8+pgVYjE9dgsK/BVhLGvV/5ydeFrxRa
+        rKOW+L5Ov+WMNK9/mXb/baUQFqp10IKRiO6hTzsbqNabcX8CyaM9AE2/bQtw89N8WmhuE2Qrc/31
+        HyQePNx00JFuBClbq73kmBc29QHc72qt72lUOx09TuiDoh9HZ7GPhwdzS5shSqzVlUufmqNP+PSf
+        ehdLsicNpbdaxks64ssuT18lQn+mzY334euh+3/R6HRUVRQ2y01WvzSLeJNa97XVQZ6b3j9BkGvQ
+        40wnFb/3Ja26qBJrzg5t9XhSuu+X0Hm93aKl43Qh0bcKYQiSvh8E/ru6aKj0JACJYxlPu/+TROno
+        f0E39a+7fjvX4BHONAj4aThjLrKfAYl1Wze0CI00TPtvYa0hovQphXPeg4P/Hytww/CqUP+gIXhr
+        XxFUB+KYWoWkoNDOOyb79Lg995FRUPnRKk1kDXhz1OOKnZziB/MU+/Y4ljXoNBPNzcOalmwe
