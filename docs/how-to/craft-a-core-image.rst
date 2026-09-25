@@ -101,7 +101,7 @@ The command and output for the ARM64 version of the ``pc`` snap, for example, ar
 
 .. terminal::
 
-    user@host ~$ curl -s -H 'X-Ubuntu-Series: 16' -H 'X-Ubuntu-Architecture: arm64' 'https://api.snapcraft.io/api/v1/snaps/details/pc?channel=24/stable&fields=revision,channel,architecture' | jq
+    user@host ~$ curl -s -H 'X-Ubuntu-Series: 16' -H 'X-Ubuntu-Architecture: arm64' 'https://api.snapcraft.io/api/v1/snaps/details/pc?channel=24/edge&fields=revision,channel,architecture' | jq
 
     {
       "architecture": [
