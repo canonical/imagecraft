@@ -320,7 +320,6 @@ The following files comprise a complete Ubuntu Core image project for ARM64 mach
             plugin: uc-prepare
             source: .
             uc-prepare-model-assert: model.assert
-            uc-prepare-preseed: True
             organize:
               system-seed: (volume/pc/ubuntu-seed)
 
