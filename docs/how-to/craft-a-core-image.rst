@@ -1,5 +1,5 @@
 .. meta::
-    :description: How to build an Ubuntu Core image from a model assertion with Imagecraft.
+    :description: How to build an Ubuntu Core image with Imagecraft.
 
 
 .. _how-to-craft-a-core-image:
@@ -8,8 +8,8 @@ Craft an Ubuntu Core image
 ==========================
 
 Imagecraft builds Ubuntu Core images by preparing the image's seed directory from a
-model assertion. The advantage over other tools is that the ``imagecraft.yaml`` file
-gives you fine-grained control over the build process.
+model assertion. The advantage over other image tools is that the ``imagecraft.yaml``
+file gives you fine-grained control over the build process.
 
 If you're building an Ubuntu Core image from scratch, complete the
 :external+ubuntu-core:ref:`ref-create-a-model_create-a-model` and
@@ -98,7 +98,10 @@ API. Replace the architecture, name, and channel placeholders in the following c
 
 .. code-block:: bash
 
-    curl -s -H 'X-Ubuntu-Series: 16' -H 'X-Ubuntu-Architecture: <target-arch>' 'https://api.snapcraft.io/api/v1/snaps/details/<snap-name>?channel=<channel>&fields=revision,channel,architecture' | jq
+    curl -s -H 'X-Ubuntu-Series: 16' \
+            -H 'X-Ubuntu-Architecture: <target-arch>' \
+            'https://api.snapcraft.io/api/v1/snaps/details/<snap-name>?channel=<channel>&fields=revision,channel,architecture' \
+            | jq
 
 The command and output for the ARM64 version of the ``pc`` snap, for example, are:
 
