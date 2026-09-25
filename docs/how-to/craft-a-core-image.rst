@@ -105,6 +105,8 @@ API. Replace the architecture, name, and channel placeholders in the following c
 
 The command and output for the ARM64 version of the ``pc`` snap, for example, are:
 
+.. vale off
+
 .. terminal::
     :scroll:
 
@@ -121,6 +123,8 @@ The command and output for the ARM64 version of the ``pc`` snap, for example, ar
       "package_name": "pc",
       "revision": 226
     }
+
+.. vale on
 
 Download the listed revision of the gadget snap with:
 
