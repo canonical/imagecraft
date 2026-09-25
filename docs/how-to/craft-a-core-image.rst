@@ -49,7 +49,7 @@ systems with the ``platforms`` key, where each platform consists of a ``build-on
 List the CPU architectures that will build the image in the ``build-on`` key. Then, set
 the ``build-for`` key to match the top-level architecture key in your model assertion.
 
-To build an image for ARM64 machines the can be built on either an AMD64 or ARM64
+To build an image for ARM64 machines that can be built on either an AMD64 or ARM64
 machine, you'd declare the following ``platforms`` key:
 
 .. code-block:: yaml
