@@ -261,11 +261,15 @@ Now that the seed partition has been created and mounted, pack the image with:
 
 Expect the following warning when the image is packed:
 
+.. vale off
+
 .. terminal::
     :output-only:
 
     Cannot install GRUB on this rootfs: Failed to mount on /root/mount/dev: mountpoint does not exist.
     Packed pc.img
+
+.. vale on
 
 The resulting image is ready to be installed on the target hardware. The Ubuntu Core
 documentation provides installation instructions for popular devices in its
