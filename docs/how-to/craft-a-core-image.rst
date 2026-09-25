@@ -259,6 +259,14 @@ Now that the seed partition has been created and mounted, pack the image with:
 
     imagecraft pack
 
+Expect the following warning when the image is packed:
+
+.. terminal::
+    :output-only:
+
+    Cannot install GRUB on this rootfs: Failed to mount on /root/mount/dev: mountpoint does not exist.
+    Packed pc.img
+
 The resulting image is ready to be installed on the target hardware. The Ubuntu Core
 documentation provides installation instructions for popular devices in its
 :external+ubuntu-core:ref:`ref-index_how-to-deploy-an-image` guides.
