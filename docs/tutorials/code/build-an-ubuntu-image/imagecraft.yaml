@@ -1,7 +1,7 @@
 name: ubuntu-minimal
 base: bare
 build-base: ubuntu@24.04
-version: '0.1'
+version: "0.1"
 summary: A lightweight, unofficial Ubuntu image for AMD64 machines.
 description: |
   The ubuntu-minimal image is a lightweight, unofficial Ubuntu image for AMD64
@@ -50,7 +50,7 @@ parts:
       Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
       EOF
     organize:
-      '*': (overlay)/
+      "*": (overlay)/
 
   packages:
     plugin: nil
@@ -72,5 +72,4 @@ parts:
 
   login:
     plugin: nil
-    overlay-script:
-      echo "root:password" | chpasswd --root "${CRAFT_OVERLAY}"
+    overlay-script: echo "root:password" | chpasswd --root "${CRAFT_OVERLAY}"
