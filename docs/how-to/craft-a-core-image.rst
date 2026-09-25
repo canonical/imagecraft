@@ -1,5 +1,5 @@
 .. meta::
-    :description: lorem ipsum
+    :description: How to build an Ubuntu Core image from a model assertion with Imagecraft.
 
 Craft an Ubuntu Core image
 ==========================
