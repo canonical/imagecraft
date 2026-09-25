@@ -1,6 +1,9 @@
 .. meta::
     :description: How to build an Ubuntu Core image from a model assertion with Imagecraft.
 
+
+.. _how-to-craft-a-core-image:
+
 Craft an Ubuntu Core image
 ==========================
 
