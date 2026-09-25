@@ -106,6 +106,7 @@ API. Replace the architecture, name, and channel placeholders in the following c
 The command and output for the ARM64 version of the ``pc`` snap, for example, are:
 
 .. terminal::
+    :scroll:
 
     curl -s -H 'X-Ubuntu-Series: 16' \
       -H 'X-Ubuntu-Architecture: arm64' \
