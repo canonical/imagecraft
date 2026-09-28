@@ -9,6 +9,11 @@ on:
       - "renovate/*"
   pull_request:
 
+permissions:
+  actions: read
+  contents: read
+  pull-requests: read
+
 jobs:
   filter:
     runs-on: ubuntu-slim
@@ -16,10 +21,10 @@ jobs:
       source-files: ${{ steps.filter.outputs.source-files }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: filter
         with:
           # Combine multiple negation checks into a union (¬A ∧ ¬B ∧ ¬C), because individual entries are checked independently (A ∨ B ∨ C).
@@ -47,9 +52,9 @@ jobs:
     needs: filter
     with:
       source-files: ${{ needs.filter.outputs.source-files }}
-      fast-test-platforms: '["ubuntu-24.04", "ubuntu-24.04-arm"]'
+      fast-test-platforms: '["ubuntu-24.04", "ubuntu-24.04-arm", "ubuntu-26.04-arm"]'
       fast-test-python-versions: '["3.12"]'
-      slow-test-platforms: '["ubuntu-24.04", "ubuntu-24.04-arm"]'
+      slow-test-platforms: '["ubuntu-24.04", "ubuntu-24.04-arm", "ubuntu-26.04-arm"]'
       slow-test-python-versions: '["3.12"]'
       lowest-python-version: ""
       pytest-markers: requires_root

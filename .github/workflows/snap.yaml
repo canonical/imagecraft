@@ -19,10 +19,10 @@ jobs:
       source-files: ${{ steps.filter.outputs.source-files }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: filter
         with:
           # Combine multiple negation checks into a union (¬A ∧ ¬B ∧ ¬C), because individual entries are checked independently (A ∨ B ∨ C).
@@ -40,13 +40,13 @@ jobs:
           # Secrets cannot be used in conditionals, so this is our dance:
           # https://github.com/actions/runner/issues/520
           if [[ -n "${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}" && "${{ needs.filter.outputs.source-files }}" = "true" ]]; then
-            echo PUBLISH=true >> $GITHUB_OUTPUT
+            echo PUBLISH=true >> "$GITHUB_OUTPUT"
           else
-            echo PUBLISH= >> $GITHUB_OUTPUT
+            echo PUBLISH= >> "$GITHUB_OUTPUT"
           fi
       - if: steps.decisions.outputs.PUBLISH == 'true'
         name: Checkout imagecraft
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -59,10 +59,10 @@ jobs:
 
       - if: steps.decisions.outputs.PUBLISH == 'true'
         name: Upload imagecraft snap artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: snap
-          path: ${{ steps.build-imagecraft.outputs.snap }}
+          path: ${{ steps.build-imagecraft.outputs.snaps }}
 
       - name: Get branch name
         id: vars
@@ -71,7 +71,8 @@ jobs:
           then
             echo "branch=pr-${{ github.event.number }}" >> "$GITHUB_OUTPUT"
           else
-            branch=$(echo ${GITHUB_REF#refs/*/} | sed -e 's|feature/\(.*\)|\1|')
+            branch="${GITHUB_REF#refs/*/}"
+            branch="${branch#feature/}"
             echo "branch=$branch" >> "$GITHUB_OUTPUT"
           fi
 
@@ -81,5 +82,5 @@ jobs:
         env:
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
         with:
-          snap: ${{ steps.build-imagecraft.outputs.snap }}
+          snap: ${{ steps.build-imagecraft.outputs.snaps }}
           release: edge/${{ steps.vars.outputs.branch }}

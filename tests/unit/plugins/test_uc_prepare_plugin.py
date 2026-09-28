@@ -103,10 +103,11 @@ def test_get_build_commands(part_info):
 
     plugin = UcPreparePlugin(properties=properties, part_info=part_info)
 
-    assert (
-        plugin.get_build_commands()[0]
-        == f"snap prepare-image --validation=enforce model.assert {part_info.part_install_dir}"
-    )
+    assert plugin.get_build_commands() == [
+        f"rm -rf {part_info.part_build_dir}/prepare-image {part_info.part_install_dir}/system-seed",
+        f"snap prepare-image --validation=enforce model.assert {part_info.part_build_dir}/prepare-image",
+        f"mv {part_info.part_build_dir}/prepare-image/system-seed {part_info.part_install_dir}/",
+    ]
 
 
 def test_get_build_commands_with_preseed(part_info):
@@ -119,8 +120,8 @@ def test_get_build_commands_with_preseed(part_info):
     plugin = UcPreparePlugin(properties=properties, part_info=part_info)
 
     assert (
-        plugin.get_build_commands()[0]
-        == f"snap prepare-image --validation=enforce --preseed model.assert {part_info.part_install_dir}"
+        plugin.get_build_commands()[1]
+        == f"snap prepare-image --validation=enforce --preseed model.assert {part_info.part_build_dir}/prepare-image"
     )
 
 
@@ -135,8 +136,8 @@ def test_get_build_commands_with_preseed_sign_key(part_info):
     plugin = UcPreparePlugin(properties=properties, part_info=part_info)
 
     assert (
-        plugin.get_build_commands()[0]
-        == f"snap prepare-image --validation=enforce --preseed --preseed-sign-key=sign-key model.assert {part_info.part_install_dir}"
+        plugin.get_build_commands()[1]
+        == f"snap prepare-image --validation=enforce --preseed --preseed-sign-key=sign-key model.assert {part_info.part_build_dir}/prepare-image"
     )
 
 
@@ -152,8 +153,8 @@ def test_get_build_commands_with_apparmor_dir(part_info):
     plugin = UcPreparePlugin(properties=properties, part_info=part_info)
 
     assert (
-        plugin.get_build_commands()[0]
-        == f"snap prepare-image --validation=enforce --preseed --apparmor-features-dir={apparmor_features_dir} model.assert {part_info.part_install_dir}"
+        plugin.get_build_commands()[1]
+        == f"snap prepare-image --validation=enforce --preseed --apparmor-features-dir={apparmor_features_dir} model.assert {part_info.part_build_dir}/prepare-image"
     )
 
 
@@ -169,8 +170,8 @@ def test_get_build_commands_with_sysfs_overlay(part_info):
     plugin = UcPreparePlugin(properties=properties, part_info=part_info)
 
     assert (
-        plugin.get_build_commands()[0]
-        == f"snap prepare-image --validation=enforce --preseed --sysfs-overlay={sysfs_overlay} model.assert {part_info.part_install_dir}"
+        plugin.get_build_commands()[1]
+        == f"snap prepare-image --validation=enforce --preseed --sysfs-overlay={sysfs_overlay} model.assert {part_info.part_build_dir}/prepare-image"
     )
 
 
@@ -185,8 +186,8 @@ def test_get_build_commands_with_snaps(part_info):
     plugin = UcPreparePlugin(properties=properties, part_info=part_info)
 
     assert (
-        plugin.get_build_commands()[0]
-        == f"snap prepare-image --validation=enforce --snap=core24 --snap=hello-world=latest/stable model.assert {part_info.part_install_dir}"
+        plugin.get_build_commands()[1]
+        == f"snap prepare-image --validation=enforce --snap=core24 --snap=hello-world=latest/stable model.assert {part_info.part_build_dir}/prepare-image"
     )
 
 
@@ -201,8 +202,8 @@ def test_get_build_commands_with_assertions(part_info):
     plugin = UcPreparePlugin(properties=properties, part_info=part_info)
 
     assert (
-        plugin.get_build_commands()[0]
-        == f"snap prepare-image --validation=enforce --assert=system-user.assert --assert=account.assert model.assert {part_info.part_install_dir}"
+        plugin.get_build_commands()[1]
+        == f"snap prepare-image --validation=enforce --assert=system-user.assert --assert=account.assert model.assert {part_info.part_build_dir}/prepare-image"
     )
 
 
@@ -217,8 +218,8 @@ def test_get_build_commands_with_channel(part_info):
     plugin = UcPreparePlugin(properties=properties, part_info=part_info)
 
     assert (
-        plugin.get_build_commands()[0]
-        == f"snap prepare-image --validation=enforce --channel=latest/stable model.assert {part_info.part_install_dir}"
+        plugin.get_build_commands()[1]
+        == f"snap prepare-image --validation=enforce --channel=latest/stable model.assert {part_info.part_build_dir}/prepare-image"
     )
 
 
@@ -233,8 +234,8 @@ def test_get_build_commands_with_validation_enforce(part_info):
     plugin = UcPreparePlugin(properties=properties, part_info=part_info)
 
     assert (
-        plugin.get_build_commands()[0]
-        == f"snap prepare-image --validation=ignore model.assert {part_info.part_install_dir}"
+        plugin.get_build_commands()[1]
+        == f"snap prepare-image --validation=ignore model.assert {part_info.part_build_dir}/prepare-image"
     )
 
 
@@ -249,8 +250,8 @@ def test_get_build_commands_with_revisions(part_info):
     plugin = UcPreparePlugin(properties=properties, part_info=part_info)
 
     assert (
-        plugin.get_build_commands()[0]
-        == f"snap prepare-image --validation=enforce --revisions=./revisions.txt model.assert {part_info.part_install_dir}"
+        plugin.get_build_commands()[1]
+        == f"snap prepare-image --validation=enforce --revisions=./revisions.txt model.assert {part_info.part_build_dir}/prepare-image"
     )
 
 
@@ -265,8 +266,8 @@ def test_get_build_commands_with_write_revisions(part_info):
     plugin = UcPreparePlugin(properties=properties, part_info=part_info)
 
     assert (
-        plugin.get_build_commands()[0]
-        == f"snap prepare-image --validation=enforce --write-revisions={part_info.part_install_dir}/seed.manifest model.assert {part_info.part_install_dir}"
+        plugin.get_build_commands()[1]
+        == f"snap prepare-image --validation=enforce --write-revisions={part_info.part_install_dir}/seed.manifest model.assert {part_info.part_build_dir}/prepare-image"
     )
 
 
@@ -281,6 +282,6 @@ def test_get_build_commands_with_write_revisions_path(part_info):
     plugin = UcPreparePlugin(properties=properties, part_info=part_info)
 
     assert (
-        plugin.get_build_commands()[0]
-        == f"snap prepare-image --validation=enforce --write-revisions={part_info.part_install_dir}/revisions.txt model.assert {part_info.part_install_dir}"
+        plugin.get_build_commands()[1]
+        == f"snap prepare-image --validation=enforce --write-revisions={part_info.part_install_dir}/revisions.txt model.assert {part_info.part_build_dir}/prepare-image"
     )

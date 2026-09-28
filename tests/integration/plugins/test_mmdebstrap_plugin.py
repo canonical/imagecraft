@@ -20,6 +20,8 @@ from pathlib import Path
 import pytest
 from imagecraft import application
 
+from tests.conftest import is_noble
+
 
 @pytest.fixture
 def custom_project_file(default_project_file: Path):
@@ -37,6 +39,11 @@ def test_mmdebstrap_cleanup(
     monkeypatch: pytest.MonkeyPatch,
 ):
     """Test that mmdebstrap plugin cleans up /sys, /proc and /dev."""
+    if not is_noble():
+        pytest.skip(
+            "destructive-mode builds require the host series to match the "
+            "project's build-base (ubuntu@24.04)"
+        )
     monkeypatch.setattr(
         "sys.argv",
         ["imagecraft", "build", "--destructive-mode", "--verbosity", "debug"],

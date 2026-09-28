@@ -19,12 +19,7 @@ parts:
     source: .
     uc-prepare-model-assert: model.assert
     organize:
-      "system-seed/*": (volume/disk/ubuntu-seed)/
-    prime:
-      - -kernel
-      - -gadget
-      - -resolved-content
-      - -system-seed
+      system-seed: (volume/disk/ubuntu-seed)
 
 volumes:
   disk:

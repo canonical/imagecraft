@@ -45,6 +45,36 @@ APT_PACKAGES :=
 ifeq ($(shell which mtools),)
 APT_PACKAGES += mtools
 endif
+ifeq ($(shell which mkfs.vfat),)
+APT_PACKAGES += dosfstools
+endif
+ifeq ($(shell which grub-mkimage),)
+APT_PACKAGES += grub-common
+endif
+ifeq ($(shell which mke2fs),)
+APT_PACKAGES += e2fsprogs
+endif
+ifeq ($(shell which sfdisk),)
+APT_PACKAGES += fdisk
+endif
+ifeq ($(shell which fuse2fs),)
+APT_PACKAGES += fuse2fs
+endif
+ifeq ($(shell which fusefile),)
+APT_PACKAGES += fusefile
+endif
+# fusefat is only packaged for amd64 in Ubuntu 24.04 (Noble) universe repositories.
+# On newer releases it may be available across architectures, but on Noble it is only
+# available on x86_64/amd64.
+ifneq ($(VERSION_CODENAME),noble)
+ifeq ($(shell which fusefat),)
+APT_PACKAGES += fusefat
+endif
+else ifeq ($(shell uname -m),x86_64)
+ifeq ($(shell which fusefat),)
+APT_PACKAGES += fusefat
+endif
+endif
 ifeq ($(wildcard /usr/include/libxml2/libxml/xpath.h),)
 APT_PACKAGES += libxml2-dev
 endif

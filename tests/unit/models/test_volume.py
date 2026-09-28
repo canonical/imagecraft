@@ -19,6 +19,7 @@ import re
 import pytest
 from imagecraft.models import Role, Volume
 from imagecraft.models.volume import (
+    GPTStructureItem,
     GPTVolume,
     HybridVolume,
     MBRVolume,
@@ -393,7 +394,7 @@ def test_volume_invalid(
                     "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
                     "filesystem": "ext4",
                     "size": "0",
-                    "partition-number": 1,
+                    "number": 1,
                 },
                 {
                     "name": "two",
@@ -401,7 +402,7 @@ def test_volume_invalid(
                     "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
                     "filesystem": "ext4",
                     "size": "0",
-                    "partition-number": 2,
+                    "number": 2,
                 },
             ],
             id="all-partition-numbers",
@@ -423,7 +424,7 @@ def test_structure_list_success(structures: list[dict]):
                     "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
                     "filesystem": "ext4",
                     "size": "0",
-                    "partition-number": 64,
+                    "number": 64,
                 },
                 {
                     "name": "ashley",
@@ -431,11 +432,11 @@ def test_structure_list_success(structures: list[dict]):
                     "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
                     "filesystem": "ext4",
                     "size": "0",
-                    "partition-number": 64,
+                    "number": 64,
                 },
             ],
             re.escape(
-                "Value error, duplicate partition numbers (partition-number 64 shared by 'mary-kate' and 'ashley')"
+                "Value error, duplicate partition numbers (number 64 shared by 'mary-kate' and 'ashley')"
             ),
             id="duplicate-partition-numbers",
         ),
@@ -447,7 +448,7 @@ def test_structure_list_success(structures: list[dict]):
                     "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
                     "filesystem": "ext4",
                     "size": "0",
-                    "partition-number": 1,
+                    "number": 1,
                 },
                 {
                     "name": "thomas",
@@ -467,6 +468,48 @@ def test_structure_list_success(structures: list[dict]):
 def test_structure_list_errors(structures: list[dict], error_message):
     with pytest.raises(ValidationError, match=error_message):
         TypeAdapter(StructureList).validate_python(structures)
+
+
+def test_deprecated_partition_number_alias(mocker):
+    mock_warning = mocker.patch("imagecraft.models.volume.emit.warning")
+    structure = GPTStructureItem.model_validate(
+        {
+            "name": "rootfs",
+            "role": "system-data",
+            "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+            "filesystem": "ext4",
+            "size": "0",
+            "partition-number": 1,
+        }
+    )
+
+    assert structure.number == 1
+    mock_warning.assert_called_once_with(
+        "'partition-number' is deprecated; use 'number' instead."
+    )
+
+
+def test_partition_number_is_not_in_gpt_structure_schema():
+    properties = GPTStructureItem.model_json_schema()["properties"]
+
+    assert "number" in properties
+    assert "partition_number" not in properties
+    assert "partition-number" not in properties
+
+
+def test_partition_number_alias_conflicts_with_number():
+    with pytest.raises(ValidationError, match="cannot be used together"):
+        GPTStructureItem.model_validate(
+            {
+                "name": "rootfs",
+                "role": "system-data",
+                "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+                "filesystem": "ext4",
+                "size": "0",
+                "number": 1,
+                "partition-number": 2,
+            }
+        )
 
 
 # ---------------------------------------------------------------------------

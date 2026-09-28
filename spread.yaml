@@ -52,7 +52,7 @@ backends:
     type: openstack
     key: '$(HOST: echo "$OS_CREDENTIALS_STG_AMD64_PS7")'
     plan: shared.xsmall
-    halt-timeout: 3h
+    halt-timeout: 2h
     wait-timeout: 10m
     groups: [default]
     proxy: ingress-haproxy.ps7.canonical.com
@@ -64,7 +64,7 @@ backends:
   openstack-arm:
     type: openstack
     key: '$(HOST: echo "$OS_CREDENTIALS_ARM64_PS7")'
-    plan: shared.xsmall.arm64
+    plan: shared.medium.arm64
     halt-timeout: 2h
     wait-timeout: 10m
     groups: [default]
@@ -265,6 +265,7 @@ suites:
     summary: Test imagecraft plugins
   tests/spread/boot/:
     summary: Tests that boot images in QEMU
+    manual: true
   docs/tutorials/code/:
     summary: Tests the Imagecraft tutorials
     systems:
