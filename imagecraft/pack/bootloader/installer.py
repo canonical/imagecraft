@@ -46,10 +46,10 @@ from imagecraft.models.volume import (
     StructureItem,
 )
 from imagecraft.pack.bootloader.bios import PCBiosInstaller
-from imagecraft.pack.bootloader.staging import stage_grub_modules
 from imagecraft.pack.bootloader.const import ArchSpec, BootMethod, get_arch_spec
 from imagecraft.pack.bootloader.efi import EfiInstaller
 from imagecraft.pack.bootloader.mkconfig import generate_grub_cfg
+from imagecraft.pack.bootloader.staging import stage_grub_modules
 
 AnyVolume = GPTVolume | MBRVolume | HybridVolume
 
@@ -369,6 +369,7 @@ class BootloaderInstaller:
         # prepare_rootfs() sets _root_dir before _boot_method becomes BIOS.
         assert self._root_dir is not None  # noqa: S101
         assert self.arch is not None  # noqa: S101
+        assert self.root_item is not None  # noqa: S101
 
         emit.progress("Installing BIOS bootloader into the image")
         try:

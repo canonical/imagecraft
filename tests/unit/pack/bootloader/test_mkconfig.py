@@ -22,9 +22,9 @@ from pathlib import Path
 import pytest
 from imagecraft import errors
 from imagecraft.pack.bootloader.mkconfig import (
-    _generate_grub_cfg_in_chroot,
     _GRUB_PROBE_SHIM,
     _fs_internal_path,
+    _generate_grub_cfg_in_chroot,
     _strip_boot_prefix,
     generate_grub_cfg,
 )
