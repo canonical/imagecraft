@@ -343,15 +343,17 @@ class GPTStructureItem(StructureItem):
     @classmethod
     def _warn_deprecated_partition_number(cls, value: object) -> object:
         if isinstance(value, dict):
+            typed_value = typing.cast(dict[str, object], value)
             deprecated_key = "partition-number"
-            if deprecated_key in value:
-                if "number" in value:
+            if deprecated_key in typed_value:
+                if "number" in typed_value:
                     raise ValueError(
                         f"'number' and '{deprecated_key}' cannot be used together."
                     )
                 emit.warning(f"'{deprecated_key}' is deprecated; use 'number' instead.")
-                value = value.copy()
-                value["number"] = value.pop(deprecated_key)
+                typed_value = typed_value.copy()
+                typed_value["number"] = typed_value.pop(deprecated_key)
+            return typed_value
         return value
 
 

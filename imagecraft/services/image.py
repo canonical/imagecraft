@@ -302,6 +302,8 @@ class ImageService(AppService):
                     gptutil.verify_partition_tables(image_path)
                 case PartitionSchema.MBR:
                     mbrutil.verify_partition_tables(image_path)
+                case _:
+                    pass
 
     def finalize_images(self, dest: pathlib.Path) -> Mapping[str, pathlib.Path]:
         """Move hidden image files to their final destination.
