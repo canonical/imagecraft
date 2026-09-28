@@ -38,7 +38,7 @@ name of the signing key you wish to use:
 
 .. code-block:: bash
 
-    gpg --homedir ~/.snap/gnupg --export-secret-keys <key-name> sign.key
+    gpg --homedir ~/.snap/gnupg --export-secret-keys <key-name> > sign.key
 
 To make the signing key available in the build environment, copy the following part into
 your project file:

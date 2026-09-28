@@ -10,6 +10,7 @@ Imagecraft.
     :maxdepth: 1
     :hidden:
 
+    craft-a-core-image
     add-package-repositories
     configure-with-cloud-init
     include-custom-files
