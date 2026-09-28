@@ -251,7 +251,9 @@ class TestGenerateGrubCfg:
             "imagecraft.pack.bootloader.mkconfig._GRUB_DEFAULTS_SNIPPET",
             root / "etc/default/grub.d/60-imagecraft.cfg",
         )
-        mocker.patch("imagecraft.pack.bootloader.mkconfig._CHROOT_FAKE_DEVICE", fake_device)
+        mocker.patch(
+            "imagecraft.pack.bootloader.mkconfig._CHROOT_FAKE_DEVICE", fake_device
+        )
         mocker.patch(
             "imagecraft.pack.bootloader.mkconfig._CHROOT_FAKE_BOOT_DEVICE",
             fake_boot_device,

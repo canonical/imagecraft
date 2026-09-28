@@ -133,7 +133,11 @@ class Chroot:
     created_paths: list[Path]
 
     def __init__(
-        self, *, path: Path, mounts: list[Mount], created_paths: list[Path] | None = None
+        self,
+        *,
+        path: Path,
+        mounts: list[Mount],
+        created_paths: list[Path] | None = None,
     ) -> None:
         self.path = path
         self.mounts = mounts

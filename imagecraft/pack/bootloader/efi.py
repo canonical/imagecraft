@@ -216,7 +216,9 @@ class EfiInstaller:
                 f"GRUB modules directory not found in rootfs: usr/lib/grub/{efi_fmt}"
             )
         missing_core_modules = [
-            module for module in CORE_EFI_MODULES if not (modules_dir / f"{module}.mod").is_file()
+            module
+            for module in CORE_EFI_MODULES
+            if not (modules_dir / f"{module}.mod").is_file()
         ]
         if missing_core_modules:
             raise errors.BootloaderToolsMissingError(

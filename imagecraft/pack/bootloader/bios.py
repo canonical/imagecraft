@@ -174,7 +174,9 @@ class PCBiosInstaller:
         # entries, slot 4 is the synthesized extended container and logical
         # partitions are numbered from 5.
         structure_index = next(
-            i for i, entry in enumerate(self.volume.structure) if entry is self.root_item
+            i
+            for i, entry in enumerate(self.volume.structure)
+            if entry is self.root_item
         )
         if (
             self.volume.volume_schema == PartitionSchema.MBR
@@ -232,7 +234,9 @@ class PCBiosInstaller:
             )
 
         missing_core_modules = [
-            module for module in CORE_BIOS_MODULES if not (mod_dir / f"{module}.mod").is_file()
+            module
+            for module in CORE_BIOS_MODULES
+            if not (mod_dir / f"{module}.mod").is_file()
         ]
         if missing_core_modules:
             raise errors.BootloaderToolsMissingError(

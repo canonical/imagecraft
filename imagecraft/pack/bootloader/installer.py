@@ -258,7 +258,11 @@ class BootloaderInstaller:
             self.root_uuid = _new_filesystem_id(root_item.filesystem)
 
         boot_item = self._mounted_item(filesystems, volume_name, "/boot")
-        if boot_item is None or boot_item is self.root_item or boot_item is self.esp_item:
+        if (
+            boot_item is None
+            or boot_item is self.root_item
+            or boot_item is self.esp_item
+        ):
             self.boot_item = None
             self.boot_uuid = None
         elif boot_item is not self.boot_item:
@@ -384,6 +388,4 @@ class BootloaderInstaller:
                 boot_item=self.boot_item,
             ).install()
         except errors.BootloaderToolsMissingError as err:
-            emit.warning(
-                f"Skipping BIOS bootloader installation: {err}", prefix=""
-            )
+            emit.warning(f"Skipping BIOS bootloader installation: {err}", prefix="")
