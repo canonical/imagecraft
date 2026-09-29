@@ -135,6 +135,9 @@ class ImagecraftPackService(PackageService):
             try:
                 loaded_state = yaml.safe_load(state_path.read_text())
             except (OSError, yaml.YAMLError, UnicodeError):
+                emit.debug(
+                    f"Failed to read pack-input state from {str(state_path)!r}, rewriting from scratch."
+                )
                 loaded_state = None
             if isinstance(loaded_state, dict):
                 raw_state = loaded_state
