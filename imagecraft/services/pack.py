@@ -25,7 +25,6 @@ from craft_application import PackageService, models, util
 from craft_cli import emit
 from typing_extensions import override
 
-from imagecraft.errors import ImagecraftError
 from imagecraft.models import Project, get_partition_name
 from imagecraft.pack import Image, diskutil, grubutil
 from imagecraft.services.image import ImageService
@@ -218,7 +217,7 @@ class ImagecraftPackService(PackageService):
                 arch=arch,
                 filesystem_mount=filesystem_mount,
             )
-        except (ImagecraftError, OSError, ValueError):
+        except Exception:
             if artifact_path is not None:
                 self._remove_artifact(artifact_path)
             raise
