@@ -386,8 +386,6 @@ def test_app_needs_repack_when_image_grub_install_availability_changes(
     grub_install_path.unlink()
 
     assert configured_pack_service._app_needs_repack() is True
-
-
 def test_app_needs_repack_when_filesystem_mount_changes(
     configured_pack_service: ImagecraftPackService,
     tmp_path: Path,
