@@ -12,3 +12,4 @@ execute: |
   imagecraft pack --verbose --ignore=unmaintained
   test -f disk.img
   imagecraft pack 2>&1 | MATCH "Skipping pack"
+  test ! -f .disk.img.tmp
