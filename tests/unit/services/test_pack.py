@@ -283,8 +283,8 @@ def test_write_artifacts_state_persists_pack_fingerprint(
     rootfs_prime_dir: Path,
 ):
     """write_artifacts_state also records the pack-input fingerprint on disk."""
-    (rootfs_prime_dir / "usr/bin").mkdir(parents=True)
-    (rootfs_prime_dir / "usr/bin/grub-install").write_text("")
+    (rootfs_prime_dir / "usr/sbin").mkdir(parents=True)
+    (rootfs_prime_dir / "usr/sbin/grub-install").write_text("")
     artifact_path = tmp_path / "dest" / "pc.img"
     platform = configured_pack_service._build_info.platform
 
@@ -336,8 +336,8 @@ def test_app_needs_repack_when_fingerprint_unchanged(
     rootfs_prime_dir: Path,
 ):
     """No repack is required when the pack-input fingerprint hasn't changed."""
-    (rootfs_prime_dir / "usr/bin").mkdir(parents=True)
-    (rootfs_prime_dir / "usr/bin/grub-install").write_text("")
+    (rootfs_prime_dir / "usr/sbin").mkdir(parents=True)
+    (rootfs_prime_dir / "usr/sbin/grub-install").write_text("")
     artifact_path = tmp_path / "dest" / "pc.img"
     configured_pack_service.write_artifacts_state({None: artifact_path})
 
@@ -351,8 +351,8 @@ def test_app_needs_repack_reads_persisted_fingerprint_across_service_instances(
     rootfs_prime_dir: Path,
 ):
     """A fresh pack service can reuse the persisted fingerprint from work state."""
-    (rootfs_prime_dir / "usr/bin").mkdir(parents=True)
-    (rootfs_prime_dir / "usr/bin/grub-install").write_text("")
+    (rootfs_prime_dir / "usr/sbin").mkdir(parents=True)
+    (rootfs_prime_dir / "usr/sbin/grub-install").write_text("")
     artifact_path = tmp_path / "dest" / "pc.img"
     configured_pack_service.write_artifacts_state({None: artifact_path})
 
@@ -377,8 +377,8 @@ def test_app_needs_repack_when_image_grub_install_availability_changes(
     This changes GRUB installation behavior without any project file edit or
     lifecycle rerun, so it can only be caught by the fingerprint check.
     """
-    (rootfs_prime_dir / "usr/bin").mkdir(parents=True)
-    grub_install_path = rootfs_prime_dir / "usr/bin/grub-install"
+    (rootfs_prime_dir / "usr/sbin").mkdir(parents=True)
+    grub_install_path = rootfs_prime_dir / "usr/sbin/grub-install"
     grub_install_path.write_text("")
     artifact_path = tmp_path / "dest" / "pc.img"
     configured_pack_service.write_artifacts_state({None: artifact_path})
@@ -399,8 +399,8 @@ def test_app_needs_repack_when_filesystem_mount_changes(
     This is consumed only at pack time for GRUB setup, so craft-parts never
     sees it and the lifecycle won't rerun on its own when it changes.
     """
-    (rootfs_prime_dir / "usr/bin").mkdir(parents=True)
-    (rootfs_prime_dir / "usr/bin/grub-install").write_text("")
+    (rootfs_prime_dir / "usr/sbin").mkdir(parents=True)
+    (rootfs_prime_dir / "usr/sbin/grub-install").write_text("")
     artifact_path = tmp_path / "dest" / "pc.img"
     configured_pack_service.write_artifacts_state({None: artifact_path})
 
