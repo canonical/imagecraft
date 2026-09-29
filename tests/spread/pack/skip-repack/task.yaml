@@ -1,6 +1,6 @@
 summary: Pack a simple image
 
-system:
+systems:
   - ubuntu-24.04-64
 
 prepare: |
