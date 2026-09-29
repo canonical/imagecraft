@@ -110,9 +110,9 @@ class ImagecraftPackService(PackageService):
             return None
 
         try:
-            raw_state = yaml.safe_load(state_path.read_text())
+            raw_state = yaml.safe_load(state_path.read_text(encoding="utf-8"))
         except (OSError, yaml.YAMLError, UnicodeError):
-            emit.debug(f"Failed to read pack-input state from {str(state_path)!r}.")
+            emit.debug(f"Failed to read pack-input state from {state_path!r}.")
             return None
 
         if not isinstance(raw_state, dict):
@@ -133,10 +133,10 @@ class ImagecraftPackService(PackageService):
         raw_state: dict[str, Any] = {}
         if state_path.is_file():
             try:
-                loaded_state = yaml.safe_load(state_path.read_text())
+                loaded_state = yaml.safe_load(state_path.read_text(encoding="utf-8"))
             except (OSError, yaml.YAMLError, UnicodeError):
                 emit.debug(
-                    f"Failed to read pack-input state from {str(state_path)!r}, rewriting from scratch."
+                    f"Failed to read pack-input state from {state_path!r}, rewriting from scratch."
                 )
                 loaded_state = None
             if isinstance(loaded_state, dict):
@@ -152,7 +152,7 @@ class ImagecraftPackService(PackageService):
         tmp_path = state_path.with_name(
             f"{state_path.name}.{self._build_info.platform}.{id(self)}.tmp"
         )
-        tmp_path.write_text(util.dump_yaml(raw_state))
+        tmp_path.write_text(util.dump_yaml(raw_state), encoding="utf-8")
         tmp_path.replace(state_path)
 
     def _remove_artifact(self, path: Path) -> None:
