@@ -15,6 +15,7 @@
 """Imagecraft Package service."""
 
 import contextlib
+import os
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, cast
@@ -150,10 +151,13 @@ class ImagecraftPackService(PackageService):
         fingerprints[self._build_info.platform] = self._current_pack_fingerprint()
 
         tmp_path = state_path.with_name(
-            f"{state_path.name}.{self._build_info.platform}.{id(self)}.tmp"
+            f"{state_path.name}.{self._build_info.platform}.{os.getpid()}.tmp"
         )
-        tmp_path.write_text(util.dump_yaml(raw_state), encoding="utf-8")
-        tmp_path.replace(state_path)
+        try:
+            tmp_path.write_text(util.dump_yaml(raw_state), encoding="utf-8")
+            tmp_path.replace(state_path)
+        except (OSError, TypeError):
+            tmp_path.unlink(missing_ok=True)
 
     def _remove_artifact(self, path: Path) -> None:
         """Remove a finalized artifact that is no longer known-good."""
