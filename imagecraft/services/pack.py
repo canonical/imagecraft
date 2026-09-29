@@ -15,7 +15,6 @@
 """Imagecraft Package service."""
 
 import contextlib
-import shutil
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, cast
@@ -25,7 +24,7 @@ from craft_application import PackageService, models, util
 from craft_cli import emit
 from typing_extensions import override
 
-from imagecraft.models import Project, get_partition_name
+from imagecraft.models import Project, Role, get_partition_name
 from imagecraft.pack import Image, diskutil, grubutil
 from imagecraft.services.image import ImageService
 
@@ -54,21 +53,48 @@ class ImagecraftPackService(PackageService):
         """Build a fingerprint of the pack-time inputs the lifecycle can't see.
 
         Volume layout, target architecture, filesystem-mount configuration, and
-        grub-install availability all affect the resulting image, but none of
-        them are part inputs, so a change to any of them is invisible to
-        craft-parts' lifecycle planning and won't trigger a lifecycle rerun.
+        grub-install availability inside the image all affect the resulting
+        image, but none of them are part inputs, so a change to any of them is
+        invisible to craft-parts' lifecycle planning and won't trigger a
+        lifecycle rerun.
         """
         project = cast(Project, self._services.get("project").get())
         volume_name = self._single_volume_name()
         volume = project.volumes[volume_name]
         project_info = self._services.get("lifecycle").project_info
+        rootfs_prime_dir = self._rootfs_prime_dir(volume_name)
 
         return {
             "volume": volume.marshal(),
             "arch": project_info.target_arch,
             "filesystem_mount": project_info.default_filesystem_mount.marshal(),
-            "grub_install_available": shutil.which("grub-install") is not None,
+            "grub_install_available": self._image_has_grub_install(rootfs_prime_dir),
         }
+
+    def _rootfs_prime_dir(self, volume_name: str) -> Path | None:
+        """Return the prime dir for the image rootfs partition, if any."""
+        project = cast(Project, self._services.get("project").get())
+        volume = project.volumes[volume_name]
+
+        rootfs_structure = None
+        for structure_item in volume.structure:
+            if structure_item.role == Role.SYSTEM_DATA:
+                rootfs_structure = structure_item
+                break
+
+        if rootfs_structure is None:
+            return None
+
+        partition_name = get_partition_name(volume_name, rootfs_structure)
+        project_dirs = self._services.get("lifecycle").project_info.dirs
+        return project_dirs.get_prime_dir(partition=partition_name)
+
+    def _image_has_grub_install(self, rootfs_prime_dir: Path | None) -> bool:
+        """Check whether the image rootfs provides grub-install."""
+        if rootfs_prime_dir is None:
+            return False
+
+        return (rootfs_prime_dir / "usr/bin/grub-install").is_file()
 
     def _pack_inputs_state_path(self) -> Path:
         """Return the persistent pack-inputs state file path."""

@@ -239,7 +239,7 @@ def test_imagecraft_pack_rebuilds_when_grub_availability_changes(
     monkeypatch: pytest.MonkeyPatch,
     mocker,
 ):
-    """A grub-install availability change should force a repack.
+    """An image grub-install availability change should force a repack.
 
     This changes GRUB installation behavior without editing the project file
     or requiring a lifecycle rerun, so only the pack service's own repack
@@ -247,11 +247,12 @@ def test_imagecraft_pack_rebuilds_when_grub_availability_changes(
     """
     mocker.patch("imagecraft.services.pack.Image")
     mocker.patch("imagecraft.services.pack.grubutil.setup_grub")
-    mocker.patch(
-        "imagecraft.services.pack.shutil.which", return_value="/sbin/grub-install"
-    )
     project_file = project_path / "imagecraft.yaml"
     project_file.write_text(IMAGECRAFT_YAML)
+    rootfs_prime_dir = project_path / "prime" / "volume-pc-rootfs"
+    (rootfs_prime_dir / "usr" / "bin").mkdir(parents=True, exist_ok=True)
+    grub_install_path = rootfs_prime_dir / "usr" / "bin" / "grub-install"
+    grub_install_path.write_text("")
 
     def run_pack() -> int:
         Features.reset()
@@ -272,7 +273,7 @@ def test_imagecraft_pack_rebuilds_when_grub_availability_changes(
     first_mtime = artifact_path.stat().st_mtime_ns
 
     time.sleep(0.01)
-    mocker.patch("imagecraft.services.pack.shutil.which", return_value=None)
+    grub_install_path.unlink()
     second_result = run_pack()
 
     assert second_result == 0

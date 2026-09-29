@@ -110,6 +110,15 @@ def configured_pack_service(
     return pack_service
 
 
+@pytest.fixture
+def rootfs_prime_dir(configured_pack_service: ImagecraftPackService) -> Path:
+    volume_name = configured_pack_service._single_volume_name()
+    prime_dir = configured_pack_service._rootfs_prime_dir(volume_name)
+    assert prime_dir is not None
+    prime_dir.mkdir(parents=True, exist_ok=True)
+    return prime_dir
+
+
 def test_get_artifacts(
     configured_pack_service: ImagecraftPackService,
     tmp_path: Path,
@@ -271,12 +280,11 @@ def test_write_artifacts_state_persists_pack_fingerprint(
     configured_pack_service: ImagecraftPackService,
     default_factory: ServiceFactory,
     tmp_path: Path,
-    mocker,
+    rootfs_prime_dir: Path,
 ):
     """write_artifacts_state also records the pack-input fingerprint on disk."""
-    mocker.patch(
-        "imagecraft.services.pack.shutil.which", return_value="/sbin/grub-install"
-    )
+    (rootfs_prime_dir / "usr/bin").mkdir(parents=True)
+    (rootfs_prime_dir / "usr/bin/grub-install").write_text("")
     artifact_path = tmp_path / "dest" / "pc.img"
     platform = configured_pack_service._build_info.platform
 
@@ -325,12 +333,11 @@ def test_app_needs_repack_when_persisted_state_is_corrupt(
 def test_app_needs_repack_when_fingerprint_unchanged(
     configured_pack_service: ImagecraftPackService,
     tmp_path: Path,
-    mocker,
+    rootfs_prime_dir: Path,
 ):
     """No repack is required when the pack-input fingerprint hasn't changed."""
-    mocker.patch(
-        "imagecraft.services.pack.shutil.which", return_value="/sbin/grub-install"
-    )
+    (rootfs_prime_dir / "usr/bin").mkdir(parents=True)
+    (rootfs_prime_dir / "usr/bin/grub-install").write_text("")
     artifact_path = tmp_path / "dest" / "pc.img"
     configured_pack_service.write_artifacts_state({None: artifact_path})
 
@@ -341,12 +348,11 @@ def test_app_needs_repack_reads_persisted_fingerprint_across_service_instances(
     configured_pack_service: ImagecraftPackService,
     default_factory: ServiceFactory,
     tmp_path: Path,
-    mocker,
+    rootfs_prime_dir: Path,
 ):
     """A fresh pack service can reuse the persisted fingerprint from work state."""
-    mocker.patch(
-        "imagecraft.services.pack.shutil.which", return_value="/sbin/grub-install"
-    )
+    (rootfs_prime_dir / "usr/bin").mkdir(parents=True)
+    (rootfs_prime_dir / "usr/bin/grub-install").write_text("")
     artifact_path = tmp_path / "dest" / "pc.img"
     configured_pack_service.write_artifacts_state({None: artifact_path})
 
@@ -361,23 +367,23 @@ def test_app_needs_repack_reads_persisted_fingerprint_across_service_instances(
     assert fresh_pack_service._app_needs_repack() is False
 
 
-def test_app_needs_repack_when_grub_install_availability_changes(
+def test_app_needs_repack_when_image_grub_install_availability_changes(
     configured_pack_service: ImagecraftPackService,
     tmp_path: Path,
-    mocker,
+    rootfs_prime_dir: Path,
 ):
-    """A repack is required when grub-install availability changes.
+    """A repack is required when image grub-install availability changes.
 
     This changes GRUB installation behavior without any project file edit or
     lifecycle rerun, so it can only be caught by the fingerprint check.
     """
-    mocker.patch(
-        "imagecraft.services.pack.shutil.which", return_value="/sbin/grub-install"
-    )
+    (rootfs_prime_dir / "usr/bin").mkdir(parents=True)
+    grub_install_path = rootfs_prime_dir / "usr/bin/grub-install"
+    grub_install_path.write_text("")
     artifact_path = tmp_path / "dest" / "pc.img"
     configured_pack_service.write_artifacts_state({None: artifact_path})
 
-    mocker.patch("imagecraft.services.pack.shutil.which", return_value=None)
+    grub_install_path.unlink()
 
     assert configured_pack_service._app_needs_repack() is True
 
@@ -385,7 +391,7 @@ def test_app_needs_repack_when_grub_install_availability_changes(
 def test_app_needs_repack_when_filesystem_mount_changes(
     configured_pack_service: ImagecraftPackService,
     tmp_path: Path,
-    mocker,
+    rootfs_prime_dir: Path,
     default_factory: ServiceFactory,
 ):
     """A repack is required when the default filesystem-mount config changes.
@@ -393,9 +399,8 @@ def test_app_needs_repack_when_filesystem_mount_changes(
     This is consumed only at pack time for GRUB setup, so craft-parts never
     sees it and the lifecycle won't rerun on its own when it changes.
     """
-    mocker.patch(
-        "imagecraft.services.pack.shutil.which", return_value="/sbin/grub-install"
-    )
+    (rootfs_prime_dir / "usr/bin").mkdir(parents=True)
+    (rootfs_prime_dir / "usr/bin/grub-install").write_text("")
     artifact_path = tmp_path / "dest" / "pc.img"
     configured_pack_service.write_artifacts_state({None: artifact_path})
 
