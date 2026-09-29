@@ -95,7 +95,7 @@ class ImagecraftPackService(PackageService):
         if rootfs_prime_dir is None:
             return False
 
-        return (rootfs_prime_dir / "usr/bin/grub-install").is_file()
+        return (rootfs_prime_dir / "usr/sbin/grub-install").is_file()
 
     def _pack_inputs_state_path(self) -> Path:
         """Return the persistent pack-inputs state file path."""
