@@ -249,7 +249,7 @@ def test_imagecraft_pack_rebuilds_when_grub_availability_changes(
     mocker.patch("imagecraft.services.pack.grubutil.setup_grub")
     project_file = project_path / "imagecraft.yaml"
     project_file.write_text(IMAGECRAFT_YAML)
-    rootfs_prime_dir = project_path / "prime" / "volume-pc-rootfs"
+    rootfs_prime_dir = project_path / "prime"
     (rootfs_prime_dir / "usr" / "sbin").mkdir(parents=True, exist_ok=True)
     grub_install_path = rootfs_prime_dir / "usr" / "sbin" / "grub-install"
     grub_install_path.write_text("")
