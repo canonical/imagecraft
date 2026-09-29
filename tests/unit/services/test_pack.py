@@ -259,6 +259,36 @@ def test_pack_artifacts_removes_finalized_artifact_on_failure(
     assert artifact_path.exists() is False
 
 
+def test_pack_artifacts_cleans_temp_images_when_skip_repack(
+    tmp_path: Path,
+    configured_pack_service: ImagecraftPackService,
+    mock_image_service: ImageService,
+    rootfs_prime_dir: Path,
+    mocker,
+):
+    """A skipped pack should clean up temp images created during lifecycle setup."""
+    (rootfs_prime_dir / "usr/sbin").mkdir(parents=True)
+    (rootfs_prime_dir / "usr/sbin/grub-install").write_text("")
+    artifact_path = tmp_path / "dest" / "pc.img"
+    artifact_path.parent.mkdir(parents=True, exist_ok=True)
+    artifact_path.write_text("packed image")
+    configured_pack_service.write_artifacts_state({None: artifact_path})
+    temp_image_path = tmp_path / ".pc.img.tmp"
+    temp_image_path.write_text("temp image")
+    mock_image_service._images = {"pc": temp_image_path}
+    mocker.patch("imagecraft.services.image.run")
+
+    cleanup = mocker.spy(mock_image_service, "cleanup_temporary_images")
+    pack = mocker.patch.object(configured_pack_service, "_pack")
+
+    result = configured_pack_service.pack_artifacts()
+
+    assert result == {None: False}
+    cleanup.assert_called_once_with()
+    pack.assert_not_called()
+    assert temp_image_path.exists() is False
+
+
 def test_write_artifacts_state_overwrites_existing_value(
     configured_pack_service: ImagecraftPackService,
     default_factory: ServiceFactory,

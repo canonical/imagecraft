@@ -165,6 +165,17 @@ class ImagecraftPackService(PackageService):
             path.unlink()
 
     @override
+    def pack_artifacts(self) -> Mapping[str | None, bool]:
+        """Pack artifacts and clean eager temp images when packing is skipped."""
+        packed = super().pack_artifacts()
+        # The lifecycle prologue creates temp images before the repack decision,
+        # so a skipped pack would otherwise leave them behind.
+        if not all(packed.values()):
+            image_service = cast(ImageService, self._services.get("image"))
+            image_service.cleanup_temporary_images()
+        return packed
+
+    @override
     def _app_needs_repack(self, partition: str | None = None) -> bool:
         """Determine whether pack-time inputs changed since the last pack.
 
