@@ -289,6 +289,7 @@ def test_attach_images_flock_sync_and_release(image_service, project_dir, mocker
     image_service._images = {"pc": project_dir / ".pc.img.tmp"}
 
     mocker.patch.object(image_service, "_get_all_loop_devices", return_value=[])
+    mocker.patch.object(image_service, "_wait_for_partition_nodes")
     mock_run = mocker.patch("imagecraft.services.image.run")
     mock_run.return_value.stdout = "/dev/loop8\n"
     mock_flock = mocker.patch("fcntl.flock")
