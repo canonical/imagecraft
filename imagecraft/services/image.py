@@ -178,7 +178,7 @@ class ImageService(AppService):
             # udev holds LOCK_EX while it processes the device; LOCK_SH here
             # blocks until udev is done, then releases so udev is free to
             # process further events on the device.
-            with open(attached_device, "rb") as loop_fd:
+            with pathlib.Path(attached_device).open("rb") as loop_fd:
                 fcntl.flock(loop_fd, fcntl.LOCK_SH)
 
             self._loop_devices[name] = attached_device

@@ -12,12 +12,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import fcntl
 from pathlib import Path
 from subprocess import CompletedProcess
 from typing import Any
 from unittest.mock import call
 
-import fcntl
 import pytest
 from imagecraft.models import GPTVolume
 from imagecraft.pack.image import Image
@@ -50,7 +50,7 @@ class TestImage:
     def test_loopdev(self, mocker, new_dir: Path):
         mock_run = mocker.patch("imagecraft.pack.image.run", side_effect=run)
         mock_flock = mocker.patch("fcntl.flock")
-        mocker.patch("builtins.open", mocker.mock_open())
+        mocker.patch("pathlib.Path.open", mocker.mock_open())
 
         volume = GPTVolume.unmarshal(
             {
@@ -252,4 +252,3 @@ class TestImage:
         )
 
         assert image.has_boot_partition == has_boot_partition
-

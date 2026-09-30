@@ -136,7 +136,7 @@ def test_attach_images_new(image_service, project_dir, mocker):
 
     mock_run.return_value.stdout = "/dev/loop8\n"
     mock_flock = mocker.patch("fcntl.flock")
-    mocker.patch("builtins.open", return_value=mocker.MagicMock())
+    mocker.patch("pathlib.Path.open", return_value=mocker.MagicMock())
 
     with patch("atexit.register") as mock_atexit:
         devices = image_service.attach_images()
@@ -173,7 +173,7 @@ def test_attach_images_reuse(image_service, project_dir, mocker):
     mocker.patch("pathlib.Path.samefile", return_value=True)
     mock_run = mocker.patch("imagecraft.services.image.run")
     mock_flock = mocker.patch("fcntl.flock")
-    mocker.patch("builtins.open", return_value=mocker.MagicMock())
+    mocker.patch("pathlib.Path.open", return_value=mocker.MagicMock())
     mocker.patch.object(image_service, "_wait_for_partition_nodes")
 
     devices = image_service.attach_images()
@@ -202,7 +202,7 @@ def test_attach_images_stale_inode(image_service, project_dir, mocker):
     mock_run = mocker.patch("imagecraft.services.image.run")
     mock_run.return_value.stdout = "/dev/loop11\n"
     mocker.patch("fcntl.flock")
-    mocker.patch("builtins.open", return_value=mocker.MagicMock())
+    mocker.patch("pathlib.Path.open", return_value=mocker.MagicMock())
     mocker.patch.object(image_service, "_wait_for_partition_nodes")
 
     devices = image_service.attach_images()
@@ -296,7 +296,7 @@ def test_attach_images_flock_sync_and_release(image_service, project_dir, mocker
     mock_fd = mocker.MagicMock()
     mock_fd.__enter__ = mocker.MagicMock(return_value=mock_fd)
     mock_fd.__exit__ = mocker.MagicMock(return_value=False)
-    mocker.patch("builtins.open", return_value=mock_fd)
+    mocker.patch("pathlib.Path.open", return_value=mock_fd)
 
     with patch("atexit.register"):
         image_service.attach_images()

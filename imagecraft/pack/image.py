@@ -93,7 +93,7 @@ class Image:
             # udev holds LOCK_EX while it processes the new device; a shared
             # lock here blocks until udev is done, then releases immediately
             # so udev is free to process further events on the device.
-            with open(self.loop_device, "rb") as loop_fd:
+            with Path(self.loop_device).open("rb") as loop_fd:
                 fcntl.flock(loop_fd, fcntl.LOCK_SH)
         try:
             emit.debug(
