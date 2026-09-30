@@ -55,7 +55,7 @@ def test_snap_preseed_snaps_validation():
 
 def test_get_build_commands(part_info, cmd_prefix):
     properties = SnapPreseedPluginProperties.unmarshal(
-        {"snap-preseed-snaps": ["core24", "hello-world/latest/stable"]}
+        {"snap-preseed-snaps": ["core24", "hello-world@latest/stable"]}
     )
 
     plugin = SnapPreseedPlugin(properties=properties, part_info=part_info)

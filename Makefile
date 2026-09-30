@@ -4,7 +4,7 @@ PROJECT=imagecraft
 # COVERAGE_SOURCE="starcraft"
 UV_TEST_GROUPS := "--group=dev"
 UV_DOCS_GROUPS := "--group=docs"
-UV_LINT_GROUPS := "--group=lint" "--group=types"
+UV_LINT_GROUPS := "--group=lint" "--group=types" $(UV_DOCS_GROUPS)
 UV_TICS_GROUPS := "--group=tics"
 
 # If you have dev dependencies that depend on your distro version, uncomment these:
@@ -25,10 +25,13 @@ include common.mk
 PRETTIER_FILES += !.github/instructions/** !.github/skills/**
 
 .PHONY: format
-format: format-ruff format-codespell format-prettier format-pre-commit  ## Run all automatic formatters
+format: format-ruff format-codespell format-prettier format-shfmt format-tombi format-pre-commit  ## Run all automatic formatters
 
 .PHONY: lint
-lint: lint-ruff lint-codespell lint-ty lint-prettier lint-shellcheck lint-docs lint-twine lint-uv-lockfile  ## Run all linters
+lint: lint-code lint-docs lint-twine lint-uv-lockfile lint-actions  ## Run all linters
+
+.PHONY: lint-code
+lint-code: lint-ruff lint-ty lint-codespell lint-prettier lint-shfmt lint-shellcheck lint-tombi  ## Run code-specific linters
 
 .PHONY: pack
 pack: pack-pip  ## Build all packages
@@ -44,6 +47,36 @@ endif
 APT_PACKAGES :=
 ifeq ($(shell which mtools),)
 APT_PACKAGES += mtools
+endif
+ifeq ($(shell which mkfs.vfat),)
+APT_PACKAGES += dosfstools
+endif
+ifeq ($(shell which grub-mkimage),)
+APT_PACKAGES += grub-common
+endif
+ifeq ($(shell which mke2fs),)
+APT_PACKAGES += e2fsprogs
+endif
+ifeq ($(shell which sfdisk),)
+APT_PACKAGES += fdisk
+endif
+ifeq ($(shell which fuse2fs),)
+APT_PACKAGES += fuse2fs
+endif
+ifeq ($(shell which fusefile),)
+APT_PACKAGES += fusefile
+endif
+# fusefat is only packaged for amd64 in Ubuntu 24.04 (Noble) universe repositories.
+# On newer releases it may be available across architectures, but on Noble it is only
+# available on x86_64/amd64.
+ifneq ($(VERSION_CODENAME),noble)
+ifeq ($(shell which fusefat),)
+APT_PACKAGES += fusefat
+endif
+else ifeq ($(shell uname -m),x86_64)
+ifeq ($(shell which fusefat),)
+APT_PACKAGES += fusefat
+endif
 endif
 ifeq ($(wildcard /usr/include/libxml2/libxml/xpath.h),)
 APT_PACKAGES += libxml2-dev

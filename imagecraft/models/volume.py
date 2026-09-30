@@ -31,6 +31,7 @@ from craft_application.models.constraints import (
     get_validator_by_regex,
 )
 from craft_application.util import humanize_list
+from craft_cli import emit
 from craft_parts.utils.partition_utils import VALID_PARTITION_REGEX
 from pydantic import (
     AfterValidator,
@@ -326,7 +327,7 @@ class GPTStructureItem(StructureItem):
     all partitions, regardless of type.
     """
 
-    partition_number: int | None = Field(
+    number: int | None = Field(
         default=None,
         description="(Optional) The partition number for this partition.",
         ge=1,  # GPT partitions are numbered 1-128
@@ -337,6 +338,21 @@ class GPTStructureItem(StructureItem):
     If unset, partitions will start at 1 and be read in list order. If set, all
     other partitions must also explicitly set their partition number as unique integers.
     """
+
+    @model_validator(mode="before")
+    @classmethod
+    def _warn_deprecated_partition_number(cls, value: object) -> object:
+        if isinstance(value, dict):
+            deprecated_key = "partition-number"
+            if deprecated_key in value:
+                if "number" in value:
+                    raise ValueError(
+                        f"'number' and '{deprecated_key}' cannot be used together."
+                    )
+                emit.warning(f"'{deprecated_key}' is deprecated; use 'number' instead.")
+                value = value.copy()
+                value["number"] = value.pop(deprecated_key)
+        return value
 
 
 class PartitionSchema(str, enum.Enum):
@@ -355,7 +371,7 @@ class PartitionSchema(str, enum.Enum):
 def _validate_structure_items_partition_numbers(
     structures: Collection[GPTStructureItem],
 ) -> Collection[GPTStructureItem]:
-    partition_numbers = {structure.partition_number for structure in structures}
+    partition_numbers = {structure.number for structure in structures}
 
     # This could be loosened, but it would require us to generate these partition
     # numbers ourselves in a deterministic manner. This is complex since it would mean
@@ -369,7 +385,7 @@ def _validate_structure_items_partition_numbers(
                 [
                     structure.name
                     for structure in structures
-                    if structure.partition_number is None
+                    if structure.number is None
                 ],
                 conjunction="and",
             )
@@ -382,12 +398,12 @@ def _validate_structure_items_partition_numbers(
     if len(partition_numbers) < len(structures):
         number_map: dict[int | None, list[str]] = {}
         for structure in structures:
-            number_map.setdefault(structure.partition_number, []).append(structure.name)
+            number_map.setdefault(structure.number, []).append(structure.name)
         duplicate_partition_numbers = {
             number: names for number, names in number_map.items() if len(names) > 1
         }
         duplicate_messages = [
-            f"partition-number {number} shared by {humanize_list(names, 'and', sort=False)}"
+            f"number {number} shared by {humanize_list(names, 'and', sort=False)}"
             for number, names in duplicate_partition_numbers.items()
         ]
         raise ValueError(

@@ -27,6 +27,10 @@ class ImageError(ImagecraftError):
     """Raised when an error occurs when dealing with the Image class."""
 
 
+class MountError(ImagecraftError):
+    """Raised when an error occurs mounting or unmounting an image or partition."""
+
+
 class GRUBInstallError(ImagecraftError):
     """Raised when an error occurs when installing grub."""
 
@@ -52,3 +56,34 @@ class ChrootMountError(ChrootError):
 
 class ChrootExecutionError(ChrootError):
     """Raised when an error occurs when dealing with the chroot."""
+
+
+class PartitionError(ImagecraftError):
+    """Raised when an error occurs with a partition table."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        details: str | None = None,
+        resolution: str | None = None,
+        docs_url: str | None = None,
+        logpath_report: bool = False,
+        reportable: bool = False,
+        retcode: int = 1,
+        doc_slug: str | None = None,
+    ) -> None:
+        super().__init__(
+            message,
+            details=details,
+            resolution=resolution,
+            docs_url=docs_url,
+            logpath_report=logpath_report,
+            reportable=reportable,
+            retcode=retcode,
+            doc_slug=doc_slug,
+        )
+
+
+class MBRPartitionError(PartitionError):
+    """Raised when an error occurs with an MBR partition table."""

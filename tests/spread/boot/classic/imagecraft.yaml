@@ -1,0 +1,115 @@
+name: boot-test
+version: "0.1"
+summary: A test image to boot
+description: Runs a hello service and shuts down
+base: bare
+build-base: ubuntu@24.04
+
+platforms:
+  amd64:
+  arm64:
+
+filesystems:
+  default:
+    - mount: /
+      device: (volume/pc/rootfs)
+    - mount: /boot/efi/
+      device: (volume/pc/efi)
+
+parts:
+  # build a simple rootfs
+  rootfs:
+    plugin: mmdebstrap
+    mmdebstrap-variant: "minbase"
+    mmdebstrap-packages:
+      - ubuntu-server-minimal
+      - grub2-common
+      - shim-signed
+      - linux-image-generic
+    override-build: |
+      craftctl default
+      mkdir -p $CRAFT_PART_INSTALL/boot/efi
+    organize:
+      "*": (overlay)/
+
+  efi-packages:
+    plugin: nil
+    after: [rootfs]
+    override-overlay: |
+      ARCH="$(dpkg --print-architecture)"
+      if [ "$ARCH" = "amd64" ]; then
+        URL="http://archive.ubuntu.com/ubuntu"
+      else
+        URL="http://ports.ubuntu.com/ubuntu-ports"
+      fi
+
+      echo "deb $URL noble main" > /etc/apt/sources.list
+      apt-get update
+      apt-get install -y grub-efi-$ARCH
+
+  disable-cloud-init:
+    plugin: nil
+    after: [rootfs]
+    override-overlay: |
+      touch /etc/cloud/cloud-init.disabled
+
+  fstab:
+    plugin: nil
+    after: [rootfs]
+    overlay-script: |
+      cat << EOF > $CRAFT_OVERLAY/etc/fstab
+      LABEL=writable	/	ext4	discard,errors=remount-ro	0	1
+      LABEL=UEFI	/boot/efi	vfat	umask=0077,x-systemd.device-timeout=300s	0 1
+      EOF
+
+  grub-menu:
+    plugin: nil
+    after: [rootfs]
+    override-overlay: |
+      cat << 'EOF' > /etc/default/grub
+      GRUB_TIMEOUT=1
+      GRUB_TIMEOUT_STYLE=hidden
+      EOF
+
+  sentinel-service:
+    plugin: nil
+    after: [rootfs]
+    override-overlay: |
+      if [ "$(dpkg --print-architecture)" = "amd64" ]; then
+        SERIAL_CONSOLE="/dev/ttyS0"
+      else
+        SERIAL_CONSOLE="/dev/ttyAMA0"
+      fi
+
+      cat << EOF > /etc/systemd/system/boot-sentinel.service
+      [Unit]
+      Description=Boot sentinel
+      After=multi-user.target
+
+      [Service]
+      Type=oneshot
+      ExecStart=/bin/bash -c 'echo HELLO FROM IMAGECRAFT > $SERIAL_CONSOLE'
+      ExecStartPost=/sbin/poweroff
+
+      [Install]
+      WantedBy=multi-user.target
+      EOF
+
+      systemctl enable boot-sentinel.service
+
+volumes:
+  pc:
+    schema: gpt
+    structure:
+      - name: efi
+        type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
+        filesystem: vfat
+        role: system-boot
+        filesystem-label: UEFI
+        size: 256M
+      - name: rootfs
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        filesystem: ext4
+        filesystem-label: writable
+        role: system-data
+        size: 3G

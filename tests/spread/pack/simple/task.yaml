@@ -5,7 +5,7 @@ prepare: |
   sed "s/__BUILD_BASE__/${ID}@${VERSION_ID}/" imagecraft-template.yaml > imagecraft.yaml
 
 execute: |
-  imagecraft pack --verbose
+  imagecraft pack --verbose --ignore=unmaintained
   test -f disk.img
 
   # Running in destructive mode until we can fix https://github.com/canonical/imagecraft/issues/253

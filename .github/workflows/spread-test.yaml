@@ -7,36 +7,77 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  filter:
+    runs-on: ubuntu-slim
+    outputs:
+      source-files: ${{ steps.filter.outputs.source-files }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: filter
+        with:
+          # Combine multiple negation checks into a union (¬A ∧ ¬B ∧ ¬C), because individual entries are checked independently (A ∨ B ∨ C).
+          # If we ever need to filter only for docs, glob 'docs/**/*' and '**/*.md'
+          filters: |
+            source-files:
+              - '!({docs/**,*.md,**/*.md,.readthedocs.yaml})'
   snap-builds:
-    runs-on: ubuntu-24.04
+    needs: filter
     # Only build the snap for pull requests, it's not needed on release branches
     # or on master since we have launchpad build recipes which do this already
     if: ${{ github.event_name == 'pull_request' }}
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    # We add the same filter conditional to every step, because GitHub doesn't count a
+    # required-but-skipped job as complete if a matrix spawned it. Ugly workaround.
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
+        if: ${{ needs.filter.outputs.source-files == 'true' }}
         with:
           fetch-depth: 0
 
       - name: Build imagecraft snap
         uses: canonical/craft-actions/snapcraft/pack@main
         id: build-imagecraft
+        if: ${{ needs.filter.outputs.source-files == 'true' }}
 
       - name: Uploading imagecraft snap artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
+        if: ${{ needs.filter.outputs.source-files == 'true' }}
         with:
-          name: snap
+          name: snap-${{ matrix.arch }}
           path: "*.snap"
 
   spread:
-    runs-on: [self-hosted, imagecraft]
-    needs: snap-builds
+    runs-on: [self-hosted, spread-enabled]
+    needs: [snap-builds, filter]
+    if: ${{ needs.filter.outputs.source-files == 'true' }}
     strategy:
       fail-fast: false
       matrix:
         include:
           - group: ubuntu
             systems: "ubuntu-22.04-64 ubuntu-24.04-64 ubuntu-26.04-64"
+            arch: amd64
+            tests: "tests/..."
+          - group: boot
+            systems: "ubuntu-24.04-64"
+            arch: amd64
+            tests: "tests/spread/boot/..."
+          - group: boot-arm-classic
+            systems: "ubuntu-24.04-arm-64"
+            arch: arm64
+            tests: "tests/spread/boot/classic"
     steps:
       - name: Cleanup job workspace
         id: cleanup-job-workspace
@@ -44,7 +85,7 @@ jobs:
           rm -rf "${{ github.workspace }}"
           mkdir "${{ github.workspace }}"
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 2
           submodules: true
@@ -52,29 +93,29 @@ jobs:
       - name: Get previous attempt
         id: get-previous-attempt
         run: |
-          echo "previous_attempt=$(( ${{ github.run_attempt }} - 1 ))" >> $GITHUB_OUTPUT
+          echo "previous_attempt=$(( ${{ github.run_attempt }} - 1 ))" >> "$GITHUB_OUTPUT"
         shell: bash
 
       - name: Get previous cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: "${{ github.workspace }}/.test-results"
           key: "${{ github.job }}-results-${{ github.run_id }}-${{ matrix.group }}-${{ steps.get-previous-attempt.outputs.previous_attempt }}"
 
       - name: Download previsouly build artifact
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
-          name: snap
+          name: snap-${{ matrix.arch }}
 
       - name: Prepare test results env and vars
         id: prepare-test-results-env
         run: |
           # Create test results directories and save vars
           TEST_RESULTS_DIR="${{ github.workspace }}/.test-results"
-          echo "TEST_RESULTS_DIR=$TEST_RESULTS_DIR" >> $GITHUB_ENV
+          echo "TEST_RESULTS_DIR=$TEST_RESULTS_DIR" >> "$GITHUB_ENV"
 
           # Save the var with the failed tests file
-          echo "FAILED_TESTS_FILE=$TEST_RESULTS_DIR/failed-tests" >> $GITHUB_ENV
+          echo "FAILED_TESTS_FILE=$TEST_RESULTS_DIR/failed-tests" >> "$GITHUB_ENV"
 
           # Make sure the test results dirs are created
           # This step has to be after the cache is restored
@@ -87,10 +128,10 @@ jobs:
           FAILED_TESTS=""
           if [ -f "$FAILED_TESTS_FILE" ]; then
               echo "Failed tests file found"
-              FAILED_TESTS="$(cat $FAILED_TESTS_FILE)"
+              FAILED_TESTS="$(cat "$FAILED_TESTS_FILE")"
               if [ -n "$FAILED_TESTS" ]; then
                   echo "Failed tests to run: $FAILED_TESTS"
-                  echo "FAILED_TESTS=$FAILED_TESTS" >> $GITHUB_ENV
+                  echo "FAILED_TESTS=$FAILED_TESTS" >> "$GITHUB_ENV"
               fi
           fi
 
@@ -100,11 +141,11 @@ jobs:
           # Register a problem matcher to highlight spread failures
           echo "::add-matcher::.github/spread-problem-matcher.json"
 
-          BACKEND=google
+          BACKEND=openstack
           SPREAD=spread
 
           if [[ "${{ matrix.systems }}" =~ -arm- ]]; then
-            BACKEND=google-arm
+            BACKEND=openstack-arm
           fi
 
           RUN_TESTS=""
@@ -113,7 +154,7 @@ jobs:
               RUN_TESTS="$FAILED_TESTS"
           else
               for SYSTEM in ${{ matrix.systems }}; do
-                  RUN_TESTS="$RUN_TESTS $BACKEND:$SYSTEM:tests/..."
+                  RUN_TESTS="$RUN_TESTS $BACKEND:$SYSTEM:${{ matrix.tests }}"
               done
           fi
           # Run spread tests
@@ -121,6 +162,7 @@ jobs:
           # propagated; and we use a subshell as this option could trigger
           # undesired changes elsewhere
           echo "Running command: $SPREAD $RUN_TESTS"
+          # shellcheck disable=SC2086 # $RUN_TESTS intentionally expands to multiple arguments
           (set -o pipefail; $SPREAD $RUN_TESTS | tee spread.log)
 
       - name: Discard spread workers
@@ -138,15 +180,15 @@ jobs:
               echo "Running spread log parser"
               ./tools/external/utils/log-parser spread.log --output spread-results.json
 
-              BACKEND=google
+              BACKEND=openstack
               if [[ "${{ matrix.systems }}" =~ -arm- ]]; then
-                BACKEND=google-arm
+                BACKEND=openstack-arm
               fi
 
               echo "Determining which tests were executed"
               RUN_TESTS=""
               for SYSTEM in ${{ matrix.systems }}; do
-                  RUN_TESTS="$RUN_TESTS $BACKEND:$SYSTEM:tests/..."
+                  RUN_TESTS="$RUN_TESTS $BACKEND:$SYSTEM:${{ matrix.tests }}"
               done
               if [ -n "$FAILED_TESTS" ]; then
                   RUN_TESTS="$FAILED_TESTS"
@@ -164,7 +206,7 @@ jobs:
 
       - name: save spread test results to cache
         if: always()
-        uses: actions/cache/save@v5
+        uses: actions/cache/save@v6
         with:
           path: "${{ github.workspace }}/.test-results"
           key: "${{ github.job }}-results-${{ github.run_id }}-${{ matrix.group }}-${{ github.run_attempt }}"

@@ -9,12 +9,39 @@ on:
       - "renovate/*"
   pull_request:
 
+permissions:
+  actions: read
+  contents: read
+  pull-requests: read
+
 jobs:
+  filter:
+    runs-on: ubuntu-slim
+    outputs:
+      source-files: ${{ steps.filter.outputs.source-files }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: filter
+        with:
+          # Combine multiple negation checks into a union (¬A ∧ ¬B ∧ ¬C), because individual entries are checked independently (A ∨ B ∨ C).
+          # If we ever need to filter only for docs, glob 'docs/**/*' and '**/*.md'
+          filters: |
+            source-files:
+              - '!({docs/**,*.md,**/*.md,.readthedocs.yaml})'
   lint:
     uses: canonical/starflow/.github/workflows/lint-python.yaml@main
+    needs: filter
+    with:
+      source-files: ${{ needs.filter.outputs.source-files }}
   test:
     uses: canonical/starflow/.github/workflows/test-python.yaml@main
+    needs: filter
     with:
+      source-files: ${{ needs.filter.outputs.source-files }}
       lowest-python-version: ""
       fast-test-platforms: '["ubuntu-24.04"]'
       fast-test-python-versions: '["3.12", "3.13"]'
@@ -22,10 +49,12 @@ jobs:
       slow-test-python-versions: '["3.12"]'
   test-requires-root:
     uses: canonical/starflow/.github/workflows/test-python.yaml@main
+    needs: filter
     with:
-      fast-test-platforms: '["ubuntu-24.04", "ubuntu-24.04-arm"]'
+      source-files: ${{ needs.filter.outputs.source-files }}
+      fast-test-platforms: '["ubuntu-24.04", "ubuntu-24.04-arm", "ubuntu-26.04-arm"]'
       fast-test-python-versions: '["3.12"]'
-      slow-test-platforms: '["ubuntu-24.04", "ubuntu-24.04-arm"]'
+      slow-test-platforms: '["ubuntu-24.04", "ubuntu-24.04-arm", "ubuntu-26.04-arm"]'
       slow-test-python-versions: '["3.12"]'
       lowest-python-version: ""
       pytest-markers: requires_root

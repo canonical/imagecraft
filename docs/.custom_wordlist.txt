@@ -7,6 +7,7 @@ Automake
 Autotools
 backend
 backends
+Bazel
 boolean
 bootable
 Bundler
@@ -16,6 +17,7 @@ chpasswd
 cjk
 classpath
 CMake
+codenames
 colcon
 Craftctl
 crafters?
@@ -70,6 +72,9 @@ plantuml
 PNG
 PR
 prepended
+preseed
+preseeds
+preseeding
 Pygments
 pymarkdown
 QEMU
@@ -92,11 +97,14 @@ sitemapindex
 Sphinx
 Spread
 spread_test_example
+Starbase
 Starcraft
 subkey
 subproject
 subprojects
+sudo
 SVG
+sysfs
 tex
 texinfo
 texlive

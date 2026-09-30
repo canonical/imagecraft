@@ -27,18 +27,20 @@ from imagecraft.pack.gptutil import (
     create_empty_gpt_image,
     get_partition_sector_offset,
 )
+from imagecraft.pack.mbrutil import create_empty_mbr_image
 
 from imagecraft.pack.grubutil import setup_grub
 from imagecraft.pack.image import Image
 
 __all__ = [
+    "Image",
+    "SUPPORTED_SECTOR_SIZES",
     "bytes_to_sectors",
+    "create_empty_gpt_image",
+    "create_empty_mbr_image",
     "create_zero_image",
     "format_populate_partition",
-    "inject_partition_into_image",
-    "SUPPORTED_SECTOR_SIZES",
-    "create_empty_gpt_image",
     "get_partition_sector_offset",
+    "inject_partition_into_image",
     "setup_grub",
-    "Image",
 ]

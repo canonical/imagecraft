@@ -39,3 +39,4 @@ communicating with local processes, and storing user credentials.
     /common/craft-parts/explanation/filesets
     security-overview
     cryptography
+    documentation

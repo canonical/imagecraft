@@ -29,17 +29,19 @@ def validate_snap_refs(snaps: list[str]) -> list[str]:
         if snap.endswith(".snap"):
             continue
 
-        parts = snap.split("/")
+        name = snap
+        if "@" in snap:
+            name, channel = snap.split("@", 1)
+            name = name.strip()
+            channel = channel.strip()
+            if (channel_parts := channel.split("/")) and (
+                len(channel_parts) > 1
+                and not any(p in VALID_RISKS for p in channel_parts)
+                or len(channel_parts) > MAX_CHANNEL_PARTS
+            ):
+                raise ValueError(f"Invalid snap reference {snap}")
 
-        name = parts[0]
         if not (len(name) <= MAX_LEN and PROJECT_NAME_COMPILED_REGEX.match(name)):
-            raise ValueError(f"Invalid snap reference {snap}")
-
-        if (channel_parts := parts[1:]) and (
-            len(channel_parts) > 1
-            and not any(p in VALID_RISKS for p in channel_parts)
-            or len(channel_parts) > MAX_CHANNEL_PARTS
-        ):
             raise ValueError(f"Invalid snap reference {snap}")
 
     return snaps
@@ -54,7 +56,7 @@ def resolve_snap(snap: str) -> str:
     unchanged.
     """
     snap = snap.strip()
-    if "/" in snap and not snap.endswith(".snap"):
-        name, channel = snap.split("/", 1)
-        snap = f"{name}={channel}"
+    if "@" in snap:
+        name, channel = snap.split("@", 1)
+        snap = f"{name.strip()}={channel.strip()}"
     return snap

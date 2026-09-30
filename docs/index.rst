@@ -78,10 +78,12 @@ Governance and policies
     :hidden:
 
     tutorials/index
+    how-to/index
     reference/index
     explanation/index
 
 .. toctree::
     :hidden:
 
+    release-notes/index
     contribute-to-this-documentation

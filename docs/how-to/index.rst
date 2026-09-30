@@ -9,3 +9,9 @@ Imagecraft.
 .. toctree::
     :maxdepth: 1
     :hidden:
+
+    craft-a-core-image
+    add-package-repositories
+    configure-with-cloud-init
+    include-custom-files
+    pre-install-snaps

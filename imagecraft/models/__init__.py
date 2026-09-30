@@ -23,24 +23,29 @@ from imagecraft.models.project import (
 )
 
 from imagecraft.models.volume import (
-    FileSystem,
     BaseVolume,
-    GPTVolume,
-    Volume,
-    Role,
+    FileSystem,
     GPTStructureItem,
+    GPTVolume,
+    MBRVolume,
+    PartitionSchema,
+    Role,
+    Volume,
 )
 from imagecraft.models.grammar import get_grammar_aware_volume_keywords
 
 __all__ = [
+    "BaseVolume",
     "FileSystem",
-    "Project",
-    "Platform",
+    "GPTStructureItem",
     "GPTVolume",
+    "MBRVolume",
+    "PartitionSchema",
+    "Platform",
+    "Project",
+    "Role",
     "Volume",
     "VolumeFilesystemsModel",
-    "Role",
-    "GPTStructureItem",
-    "get_partition_name",
     "get_grammar_aware_volume_keywords",
+    "get_partition_name",
 ]
