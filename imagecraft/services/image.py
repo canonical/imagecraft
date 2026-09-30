@@ -157,6 +157,7 @@ class ImageService(AppService):
                         run(_LOSETUP_BIN, "-d", dev["name"])
 
             # 2. Attach a fresh device if none was found/reused.
+            fresh = not attached_device
             if not attached_device:
                 try:
                     attached_device = run(
@@ -178,8 +179,15 @@ class ImageService(AppService):
             # udev holds LOCK_EX while it processes the device; LOCK_SH here
             # blocks until udev is done, then releases so udev is free to
             # process further events on the device.
-            with pathlib.Path(attached_device).open("rb") as loop_fd:
-                fcntl.flock(loop_fd, fcntl.LOCK_SH)
+            try:
+                with pathlib.Path(attached_device).open("rb") as loop_fd:
+                    fcntl.flock(loop_fd, fcntl.LOCK_SH)
+            except OSError:
+                # A failure here leaves a freshly attached device out of
+                # _loop_devices, so detach it before propagating.
+                if fresh:
+                    run(_LOSETUP_BIN, "-d", attached_device)
+                raise
 
             self._loop_devices[name] = attached_device
             self._wait_for_partition_nodes(attached_device, name)

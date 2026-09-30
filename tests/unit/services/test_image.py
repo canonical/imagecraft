@@ -217,6 +217,46 @@ def test_attach_images_stale_inode(image_service, project_dir, mocker):
     image_service._wait_for_partition_nodes.assert_called_once_with("/dev/loop11", "pc")
 
 
+def test_attach_images_lock_failure_detaches_fresh(image_service, project_dir, mocker):
+    image_service._images = {"pc": project_dir / ".pc.img.tmp"}
+
+    mock_run = mocker.patch("imagecraft.services.image.run")
+    mocker.patch.object(image_service, "_get_all_loop_devices", return_value=[])
+    mocker.patch.object(image_service, "_wait_for_partition_nodes")
+    mock_run.return_value.stdout = "/dev/loop8\n"
+    mocker.patch("fcntl.flock")
+    mocker.patch("pathlib.Path.open", side_effect=OSError("device busy"))
+
+    with pytest.raises(OSError, match="device busy"):
+        image_service.attach_images()
+
+    mock_run.assert_any_call("losetup", "-d", "/dev/loop8")
+    assert image_service._loop_devices == {}
+
+
+def test_attach_images_lock_failure_keeps_reused(image_service, project_dir, mocker):
+    image_path = project_dir / ".pc.img.tmp"
+    image_path.touch()
+    image_service._images = {"pc": image_path}
+
+    mocker.patch.object(
+        image_service,
+        "_get_all_loop_devices",
+        return_value=[{"name": "/dev/loop9", "back-file": str(image_path)}],
+    )
+    mocker.patch("pathlib.Path.samefile", return_value=True)
+    mock_run = mocker.patch("imagecraft.services.image.run")
+    mocker.patch("fcntl.flock")
+    mocker.patch("pathlib.Path.open", side_effect=OSError("device busy"))
+    mocker.patch.object(image_service, "_wait_for_partition_nodes")
+
+    with pytest.raises(OSError, match="device busy"):
+        image_service.attach_images()
+
+    mock_run.assert_not_called()
+    assert image_service._loop_devices == {}
+
+
 def test_wait_for_partition_nodes_immediate(
     image_service, default_factory, mock_project, mocker
 ):

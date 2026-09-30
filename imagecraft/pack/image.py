@@ -89,13 +89,13 @@ class Image:
                 "--partscan",
                 self.disk_path,
             ).stdout.strip()
+        try:
             # Briefly acquire a shared lock to synchronize with udev.
             # udev holds LOCK_EX while it processes the new device; a shared
             # lock here blocks until udev is done, then releases immediately
             # so udev is free to process further events on the device.
             with Path(self.loop_device).open("rb") as loop_fd:
                 fcntl.flock(loop_fd, fcntl.LOCK_SH)
-        try:
             emit.debug(
                 f"Attached image {self.disk_path} as loop device {self.loop_device}"
             )

@@ -83,6 +83,40 @@ class TestImage:
         ]
         mock_flock.assert_called_once_with(mocker.ANY, fcntl.LOCK_SH)
 
+    def test_loopdev_lock_failure_detaches(self, mocker, new_dir: Path):
+        mock_run = mocker.patch("imagecraft.pack.image.run", side_effect=run)
+        mocker.patch("fcntl.flock")
+        mocker.patch("pathlib.Path.open", side_effect=OSError("device busy"))
+
+        volume = GPTVolume.unmarshal(
+            {
+                "schema": "gpt",
+                "structure": [
+                    {
+                        "name": "efi",
+                        "role": "system-boot",
+                        "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+                        "filesystem": "vfat",
+                        "size": "3G",
+                        "filesystem-label": "",
+                    },
+                ],
+            }
+        )
+        disk_path = Path(new_dir, "pc.img")
+        disk_path.touch(exist_ok=True)
+        image = Image(volume=volume, disk_path=disk_path)
+
+        with pytest.raises(OSError, match="device busy"):
+            with image.attach_loopdev():
+                pass
+
+        assert mock_run.mock_calls == [
+            call("losetup", "--find", "--show", "--partscan", disk_path),
+            call("losetup", "--json"),
+            call("losetup", "-d", "/dev/loop99"),
+        ]
+
     @pytest.mark.parametrize(
         ("volume_data", "has_data_partition"),
         [
