@@ -83,6 +83,10 @@ def _install_boot_code_in_chroot(
         early_cfg.write_text(early_cfg_content)
         device_map = work_dir / "device.map"
         device_map.write_text(device_map_content)
+        core_img_backup = work_dir / "core.img.backup"
+        had_previous_core_img = core_img.exists()
+        if had_previous_core_img:
+            shutil.copy2(core_img, core_img_backup)
         try:
             proc = run_checked(
                 [
@@ -114,8 +118,11 @@ def _install_boot_code_in_chroot(
             )
             output.append(proc.stdout + proc.stderr)
         finally:
-            # These live inside the disk image's filesystem; don't leak them.
-            core_img.unlink(missing_ok=True)
+            if had_previous_core_img:
+                shutil.copy2(core_img_backup, core_img)
+            else:
+                # These live inside the disk image's filesystem; don't leak them.
+                core_img.unlink(missing_ok=True)
     return "".join(output).strip()
 
 
@@ -191,18 +198,8 @@ class PCBiosInstaller:
             * gptutil.SECTOR_SIZE_512
         )
 
-    def install(self) -> None:
-        """Build core.img and install the BIOS boot code into the disk image.
-
-        Assumes :func:`~imagecraft.pack.bootloader.staging.stage_grub_modules`
-        has already been called during the pre-format staging phase.
-
-        :raises errors.BootloaderToolsMissingError: If GRUB modules or tools
-            aren't present in the staged rootfs, or fuse2fs isn't available
-            on the host.
-        """
-        mod_dir_rel = f"usr/lib/grub/{self.grub_format}"
-        mod_dir = self.root_dir / mod_dir_rel
+    def _check_prerequisites(self, mod_dir: Path, mod_dir_rel: str) -> None:
+        """Verify that all required host tools, rootfs modules and binaries exist."""
         if not mod_dir.is_dir():
             raise errors.BootloaderToolsMissingError(
                 f"GRUB BIOS modules directory not found: {mod_dir}"
@@ -226,12 +223,30 @@ class PCBiosInstaller:
                 f"grub-bios-setup not found in the staged rootfs: {mod_dir_rel}",
                 resolution="Install the grub-pc-bin package in the image.",
             )
-        mkimage_rel = require_chroot_binary(self.root_dir, "grub-mkimage")
+        if self.root_item.filesystem not in (FileSystem.EXT3, FileSystem.EXT4):
+            raise errors.BootloaderToolsMissingError(
+                f"BIOS bootloader requires an ext2/3/4 root filesystem, got {self.root_item.filesystem.value}"
+            )
         if shutil.which("fuse2fs") is None:
             raise errors.BootloaderToolsMissingError(
                 "fuse2fs not found on the build host",
                 resolution="Install the fuse2fs package on the build host.",
             )
+
+    def install(self) -> None:
+        """Build core.img and install the BIOS boot code into the disk image.
+
+        Assumes :func:`~imagecraft.pack.bootloader.staging.stage_grub_modules`
+        has already been called during the pre-format staging phase.
+
+        :raises errors.BootloaderToolsMissingError: If GRUB modules or tools
+            aren't present in the staged rootfs, or fuse2fs isn't available
+            on the host.
+        """
+        mod_dir_rel = f"usr/lib/grub/{self.grub_format}"
+        mod_dir = self.root_dir / mod_dir_rel
+        self._check_prerequisites(mod_dir, mod_dir_rel)
+        mkimage_rel = require_chroot_binary(self.root_dir, "grub-mkimage")
 
         missing_core_modules = [
             module

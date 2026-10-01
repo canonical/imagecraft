@@ -18,7 +18,7 @@ import logging
 import multiprocessing
 import os
 import subprocess
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from multiprocessing.connection import Connection
 from pathlib import Path
 from typing import Any
@@ -210,6 +210,7 @@ def build_prime_chroot(
     root_dir: Path,
     *,
     boot_dir: Path | None = None,
+    extra_partition_mounts: Sequence[tuple[str, Path]] | None = None,
     extra_mounts: list[Mount] | None = None,
 ) -> Chroot:
     """Build a chroot rooted at a partition's prime directory.
@@ -221,6 +222,8 @@ def build_prime_chroot(
     :param boot_dir: Prime directory of a dedicated ``/boot`` partition,
         bound at ``/boot`` in the chroot. Defaults to the root partition's
         own ``/boot`` when not given.
+    :param extra_partition_mounts: Additional partition prime directories mapped
+        from the project's filesystem definition, as (mountpoint, prime_dir).
     :param extra_mounts: Additional mounts to set up inside the chroot
         (e.g. tool shims bind-mounted over the guest's binaries).
     """
@@ -245,15 +248,21 @@ def build_prime_chroot(
                 options=["--bind"],
             )
         )
-    if boot_dir is not None:
-        (root_dir / "boot").mkdir(exist_ok=True)
+
+    partition_mounts = list(extra_partition_mounts or [])
+    if boot_dir and not any(Path(m[0]) == Path("/boot") for m in partition_mounts):
+        partition_mounts.append(("/boot", boot_dir))
+
+    for mnt, src in sorted(partition_mounts, key=lambda m: len(Path(m[0]).parts)):
+        (root_dir / mnt.lstrip("/")).mkdir(parents=True, exist_ok=True)
         mounts.append(
             Mount(
                 fstype=None,
-                src=str(boot_dir.resolve()),
-                relative_mountpoint="/boot",
+                src=str(src.resolve()),
+                relative_mountpoint=f"/{mnt.lstrip('/')}",
                 options=["--bind"],
             )
         )
+
     mounts.extend(extra_mounts or [])
     return Chroot(path=root_dir, mounts=mounts, created_paths=created_paths)

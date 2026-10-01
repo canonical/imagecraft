@@ -21,6 +21,7 @@ partitions are formatted and embedded by ``diskutil.format_device``.
 
 import shutil
 import tempfile
+from collections.abc import Sequence
 from pathlib import Path
 from uuid import UUID
 
@@ -104,6 +105,7 @@ class EfiInstaller:
         root_uuid: UUID | str,
         arch: DebianArchitecture,
         boot_dir: Path | None = None,
+        extra_partition_mounts: Sequence[tuple[str, Path]] | None = None,
         boot_uuid: UUID | str | None = None,
     ) -> None:
         """Initialize the EFI installer.
@@ -115,12 +117,15 @@ class EfiInstaller:
         :param boot_dir: Prime directory that corresponds to ``/boot``.
             Defaults to ``root_dir / "boot"`` when ``/boot`` isn't a
             dedicated partition.
+        :param extra_partition_mounts: Additional partition prime directories mapped
+            from the project's filesystem definition, as (mountpoint, prime_dir).
         :param boot_uuid: UUID that will be assigned to the dedicated
             ``/boot`` partition's filesystem, if any.
         """
         self.root_dir = root_dir
         self.esp_dir = esp_dir
         self.boot_dir = boot_dir or root_dir / "boot"
+        self.extra_partition_mounts = extra_partition_mounts
         self.search_uuid = str(boot_uuid or root_uuid)
         self.boot_prefix = "/grub" if boot_uuid else "/boot/grub"
         self.spec: ArchSpec = get_arch_spec(arch)
@@ -226,11 +231,18 @@ class EfiInstaller:
                 + ", ".join(f"{module}.mod" for module in missing_core_modules),
                 resolution="Install the grub-efi package in the image.",
             )
-        require_chroot_binary(self.root_dir, "grub-mkimage")
+        extra_search_dirs = [
+            src_dir for _, src_dir in (self.extra_partition_mounts or [])
+        ]
+        require_chroot_binary(
+            self.root_dir, "grub-mkimage", extra_search_dirs=extra_search_dirs
+        )
 
         primary_boot = self.esp_boot_dir / f"BOOT{efi_suf}.EFI"
 
-        chroot = build_prime_chroot(self.root_dir)
+        chroot = build_prime_chroot(
+            self.root_dir, extra_partition_mounts=self.extra_partition_mounts
+        )
         with tempfile.TemporaryDirectory(
             dir=self.root_dir / "tmp", prefix="imagecraft-grub-efi-"
         ) as host_work_dir:

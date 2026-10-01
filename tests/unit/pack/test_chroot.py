@@ -199,6 +199,26 @@ class TestBuildPrimeChroot:
             root_dir / "dev" / "urandom",
         ]
 
+    def test_mounts_extra_partition_mounts_in_depth_order(self, tmp_path):
+        root_dir = tmp_path / "root"
+        usr_dir = tmp_path / "usr"
+        usr_local_dir = tmp_path / "usr_local"
+        usr_dir.mkdir()
+        usr_local_dir.mkdir()
+
+        chroot = build_prime_chroot(
+            root_dir,
+            extra_partition_mounts=[
+                ("/usr/local", usr_local_dir),
+                ("/usr", usr_dir),
+            ],
+        )
+
+        mount_points = [m._relative_mountpoint for m in chroot.mounts]
+        assert "/usr" in mount_points
+        assert "/usr/local" in mount_points
+        assert mount_points.index("/usr") < mount_points.index("/usr/local")
+
 
 @pytest.fixture
 def relative_path():

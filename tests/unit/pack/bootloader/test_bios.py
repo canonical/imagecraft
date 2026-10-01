@@ -15,13 +15,17 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Unit tests for the BIOS (non-EFI) installer."""
 
+import subprocess
 import uuid
 from pathlib import Path
 
 import pytest
 from craft_platforms import DebianArchitecture
 from imagecraft import errors
-from imagecraft.pack.bootloader.bios import PCBiosInstaller
+from imagecraft.pack.bootloader.bios import (
+    PCBiosInstaller,
+    _install_boot_code_in_chroot,
+)
 from imagecraft.pack.bootloader.const import CORE_BIOS_MODULES
 from imagecraft.pack.bootloader.staging import stage_grub_modules
 
@@ -149,6 +153,19 @@ class TestPCBiosInstallerChecks:
         with pytest.raises(errors.BootloaderToolsMissingError, match="boot.img"):
             installer.install()
 
+    def test_non_ext_root_raises(self, tmp_path):
+        volume = _mbr_volume([{**ROOT_ITEM, "type": "0C", "filesystem": "vfat"}])
+        installer = _make_installer(tmp_path, volume=volume)
+        mod_dir = installer.root_dir / "usr/lib/grub/i386-pc"
+        mod_dir.mkdir(parents=True)
+        (mod_dir / "fat.mod").touch()
+        (mod_dir / "boot.img").touch()
+        (mod_dir / "grub-bios-setup").touch()
+        with pytest.raises(
+            errors.BootloaderToolsMissingError, match="requires an ext2/3/4 root"
+        ):
+            installer.install()
+
     def test_missing_bios_setup(self, tmp_path):
         mod_dir = tmp_path / "root" / "usr" / "lib" / "grub" / "i386-pc"
         mod_dir.mkdir(parents=True)
@@ -237,6 +254,40 @@ class TestRootPartitionOffset:
         installer = _make_installer(tmp_path, volume=_mbr_volume(items))
         part_num, _ = self._offset(mocker, installer)
         assert part_num == 5
+
+
+def test_install_boot_code_in_chroot_preserves_existing_core_img(tmp_path, mocker):
+    mocker.patch(
+        "imagecraft.pack.bootloader.bios.run_checked",
+        return_value=subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="", stderr=""
+        ),
+    )
+    mod_dir = tmp_path / "usr/lib/grub/i386-pc"
+    mod_dir.mkdir(parents=True)
+    core_img = mod_dir / "core.img"
+    core_img.write_bytes(b"EXISTING_CORE_DATA")
+
+    real_path = Path
+    mocker.patch(
+        "imagecraft.pack.bootloader.bios.Path",
+        side_effect=lambda p: (
+            tmp_path / str(p).lstrip("/") if str(p).startswith("/usr") else real_path(p)
+        ),
+    )
+
+    _install_boot_code_in_chroot(
+        grub_format="i386-pc",
+        mkimage_path="/usr/bin/grub-mkimage",
+        boot_prefix="/boot/grub",
+        early_cfg_content="early",
+        device_map_content="device_map",
+        image_path="/disk.img",
+        modules=["biosdisk"],
+    )
+
+    assert core_img.is_file()
+    assert core_img.read_bytes() == b"EXISTING_CORE_DATA"
 
 
 class TestStageGrubModules:

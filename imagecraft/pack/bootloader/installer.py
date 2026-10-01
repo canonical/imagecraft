@@ -25,6 +25,7 @@ Coordinates the two phases of bootloader installation:
    final disk image has been assembled; BIOS targets only.
 """
 
+import contextlib
 import re
 from pathlib import Path
 from typing import Protocol
@@ -100,7 +101,9 @@ def configure_fstab(
 
     Preserve the other fields of an existing entry.
     """
-    fstab_path = root_dir / "etc" / "fstab"
+    fstab_path = (
+        root_dir / "fstab" if root_dir.name == "etc" else root_dir / "etc" / "fstab"
+    )
     fstab_path.parent.mkdir(parents=True, exist_ok=True)
     str_uuid = str(filesystem_uuid)
     is_root = mountpoint == "/"
@@ -306,6 +309,21 @@ class BootloaderInstaller:
         esp_dir = self._prime_dir(project_dirs, volume_name, self.esp_item)
         boot_dir = self._prime_dir(project_dirs, volume_name, self.boot_item)
 
+        extra_partition_mounts: list[tuple[str, Path]] = []
+        etc_dir: Path | None = None
+        for entry in filesystems.get("default", []):
+            mount = entry.get("mount", "")
+            if mount in ("", "/"):
+                continue
+            with contextlib.suppress(Exception):
+                part_dir = project_dirs.get_prime_dir(
+                    partition=str(entry["device"]).strip("()")
+                )
+                if part_dir != self._root_dir:
+                    if Path(mount) == Path("/etc"):
+                        etc_dir = part_dir
+                    extra_partition_mounts.append((mount, part_dir))
+
         if boot_method == BootMethod.EFI and esp_dir is None:
             emit.warning(
                 "Skipping EFI bootloader installation because no EFI "
@@ -315,13 +333,12 @@ class BootloaderInstaller:
             return BootMethod.NONE
 
         emit.progress("Preparing bootloader files")
-        configure_fstab(
-            self._root_dir, self.root_uuid, filesystem=self.root_item.filesystem
-        )
+        fstab_dir = etc_dir or self._root_dir
+        configure_fstab(fstab_dir, self.root_uuid, filesystem=self.root_item.filesystem)
         if self.boot_item is not None:
             assert self.boot_uuid is not None  # noqa: S101
             configure_fstab(
-                self._root_dir,
+                fstab_dir,
                 self.boot_uuid,
                 mountpoint="/boot",
                 filesystem=self.boot_item.filesystem,
@@ -334,6 +351,7 @@ class BootloaderInstaller:
                 self._root_dir,
                 self.root_uuid,
                 boot_dir=boot_dir,
+                extra_partition_mounts=extra_partition_mounts,
                 boot_uuid=self.boot_uuid,
                 partition_map=partition_map,
             )
@@ -345,6 +363,7 @@ class BootloaderInstaller:
                     root_uuid=self.root_uuid,
                     arch=self.arch,
                     boot_dir=boot_dir,
+                    extra_partition_mounts=extra_partition_mounts,
                     boot_uuid=self.boot_uuid,
                 ).install()
             elif boot_method == BootMethod.BIOS:

@@ -15,6 +15,7 @@
 """Shared helpers for running GRUB tooling in a prime-directory chroot."""
 
 import subprocess
+from collections.abc import Sequence
 from pathlib import Path
 
 from imagecraft import errors
@@ -27,17 +28,23 @@ _CHROOT_SEARCH_DIRS = ("usr/sbin", "usr/bin", "sbin", "bin")
 _CHROOT_PATH = ":".join(f"/{d}" for d in _CHROOT_SEARCH_DIRS)
 
 
-def require_chroot_binary(root_dir: Path, name: str) -> Path:
+def require_chroot_binary(
+    root_dir: Path,
+    name: str,
+    *,
+    extra_search_dirs: Sequence[Path] | None = None,
+) -> Path:
     """Ensure a tool binary exists in the guest rootfs (on the chroot PATH).
 
     :return: The binary's path relative to the rootfs.
     :raises errors.BootloaderToolsMissingError: If the binary isn't present
         in the staged rootfs.
     """
-    for prefix in _CHROOT_SEARCH_DIRS:
-        candidate = Path(prefix) / name
-        if (root_dir / candidate).is_file():
-            return candidate
+    for base in (root_dir, *(extra_search_dirs or ())):
+        for prefix in _CHROOT_SEARCH_DIRS:
+            candidate = Path(prefix) / name
+            if (base / candidate).is_file():
+                return candidate
     raise errors.BootloaderToolsMissingError(
         f"{name} not found in the staged rootfs",
         resolution="Install the relevant GRUB packages in the image.",

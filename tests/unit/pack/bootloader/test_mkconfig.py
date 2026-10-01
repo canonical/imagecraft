@@ -284,6 +284,25 @@ class TestGenerateGrubCfg:
         assert fake_boot_device.read_text() == "keep boot"
         assert by_uuid_dir.is_dir()
 
+    def test_generate_grub_cfg_preserves_existing_probe_log(self, tmp_path, mocker):
+        root_dir = tmp_path / "root"
+        (root_dir / "usr/sbin").mkdir(parents=True)
+        (root_dir / "usr/sbin/grub-probe").touch()
+        (root_dir / "usr/sbin/grub-mkconfig").touch()
+        (root_dir / "tmp").mkdir(parents=True)
+        existing_log = root_dir / "tmp/grub-probe-shim.log"
+        existing_log.write_text("PREEXISTING_LOG_CONTENT")
+
+        mock_chroot = mocker.patch(
+            "imagecraft.pack.bootloader.mkconfig.build_prime_chroot"
+        )
+        mock_chroot.return_value.execute.return_value = ""
+
+        generate_grub_cfg(root_dir, str(uuid.uuid4()))
+
+        assert existing_log.is_file()
+        assert existing_log.read_text() == "PREEXISTING_LOG_CONTENT"
+
 
 class TestRenderEarlyCfg:
     def test_shared_boot_stub(self):

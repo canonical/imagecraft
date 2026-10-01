@@ -434,6 +434,49 @@ class TestBootFstab:
         assert boot_method == BootMethod.EFI
         assert mock_efi.call_args.kwargs["esp_dir"] == tmp_path / "volume/pc/efi-alt"
 
+    def test_prepare_mounts_all_filesystem_mappings_and_targets_etc(
+        self, tmp_path, mocker
+    ):
+        etc_item = {
+            "name": "etc",
+            "type": ROOT_ITEM["type"],
+            "filesystem": "ext4",
+            "role": "system-data",
+            "size": "100M",
+        }
+        usr_item = {
+            "name": "usr",
+            "type": ROOT_ITEM["type"],
+            "filesystem": "ext4",
+            "role": "system-data",
+            "size": "1G",
+        }
+        volume = _gpt_volume([ESP_ITEM, ROOT_ITEM, etc_item, usr_item])
+        installer = BootloaderInstaller(volume=volume, arch=_AMD64)
+        mock_grub_cfg = mocker.patch.object(installer_mod, "generate_grub_cfg")
+        mocker.patch.object(installer_mod, "EfiInstaller")
+
+        installer.prepare_rootfs(
+            project_dirs=FakeProjectDirs(tmp_path),
+            volume_name="pc",
+            filesystems={
+                "default": [
+                    {"mount": "/", "device": "(volume/pc/rootfs)"},
+                    {"mount": "/etc", "device": "(volume/pc/etc)"},
+                    {"mount": "/usr", "device": "(volume/pc/usr)"},
+                    {"mount": "/boot/efi", "device": "(volume/pc/efi)"},
+                ]
+            },
+        )
+
+        assert (tmp_path / "volume/pc/etc/fstab").is_file()
+        assert not (tmp_path / "volume/pc/rootfs/etc/fstab").exists()
+
+        extra_mounts = mock_grub_cfg.call_args.kwargs["extra_partition_mounts"]
+        assert ("/etc", tmp_path / "volume/pc/etc") in extra_mounts
+        assert ("/usr", tmp_path / "volume/pc/usr") in extra_mounts
+        assert ("/boot/efi", tmp_path / "volume/pc/efi") in extra_mounts
+
     def test_prepare_skips_invalid_esp_mapping(self, tmp_path, mocker):
         volume = _gpt_volume([ESP_ITEM, BOOT_ITEM, ROOT_ITEM])
         installer = BootloaderInstaller(volume=volume, arch=_AMD64)

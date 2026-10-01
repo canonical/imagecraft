@@ -31,8 +31,9 @@ import contextlib
 import os
 import re
 import tempfile
+from collections.abc import Sequence
 from pathlib import Path
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from craft_cli import emit
 
@@ -47,7 +48,6 @@ _GRUB_DEFAULTS_SNIPPET = Path("/etc/default/grub.d/60-imagecraft.cfg")
 # device identity in the generated config comes from the UUID overrides.
 _CHROOT_FAKE_DEVICE = Path("/image")
 _CHROOT_FAKE_BOOT_DEVICE = Path("/image-boot")
-_SHIM_LOG = Path("/tmp/grub-probe-shim.log")  # noqa: S108
 
 # grub.cfg directives that carry paths into the /boot filesystem. With a
 # dedicated /boot partition those paths must be relative to the boot
@@ -234,6 +234,7 @@ def generate_grub_cfg(
     root_uuid: UUID | str,
     *,
     boot_dir: Path | None = None,
+    extra_partition_mounts: Sequence[tuple[str, Path]] | None = None,
     boot_uuid: UUID | str | None = None,
     partition_map: str = "gpt",
 ) -> Path:
@@ -244,6 +245,8 @@ def generate_grub_cfg(
         baked into the config's ``root=`` and ``search --fs-uuid`` values.
     :param boot_dir: Prime directory of a dedicated ``/boot`` partition,
         bound at ``/boot`` in the chroot.
+    :param extra_partition_mounts: Additional partition prime directories mapped
+        from the project's filesystem definition, as (mountpoint, prime_dir).
     :param boot_uuid: UUID that will be assigned to the dedicated ``/boot``
         partition's filesystem, if any.
     :param partition_map: The image's partition table format as GRUB calls
@@ -252,8 +255,13 @@ def generate_grub_cfg(
     :raises errors.BootloaderToolsMissingError: If grub-mkconfig isn't
         present in the staged rootfs.
     """
-    require_chroot_binary(root_dir, "grub-mkconfig")
-    probe_rel = require_chroot_binary(root_dir, "grub-probe")
+    extra_search_dirs = [src_dir for _, src_dir in (extra_partition_mounts or [])]
+    require_chroot_binary(
+        root_dir, "grub-mkconfig", extra_search_dirs=extra_search_dirs
+    )
+    probe_rel = require_chroot_binary(
+        root_dir, "grub-probe", extra_search_dirs=extra_search_dirs
+    )
 
     root_uuid_str = str(root_uuid)
     boot_uuid_str = str(boot_uuid or root_uuid)
@@ -275,8 +283,10 @@ def generate_grub_cfg(
         "GRUB_DISABLE_OS_PROBER=true\n"
     )
 
+    shim_log_name = f"grub-probe-shim-{uuid4().hex}.log"
+    chroot_shim_log = Path(f"/tmp/{shim_log_name}")  # noqa: S108
     shim_content = _GRUB_PROBE_SHIM % {
-        "shim_log": _SHIM_LOG,
+        "shim_log": chroot_shim_log,
         "root_device": _CHROOT_FAKE_DEVICE,
         "boot_device": fake_boot_device,
         "root_uuid": root_uuid_str,
@@ -298,7 +308,12 @@ def generate_grub_cfg(
             options=["--bind"],
         )
     ]
-    chroot = build_prime_chroot(root_dir, boot_dir=boot_dir, extra_mounts=extra_mounts)
+    chroot = build_prime_chroot(
+        root_dir,
+        boot_dir=boot_dir,
+        extra_partition_mounts=extra_partition_mounts,
+        extra_mounts=extra_mounts,
+    )
     try:
         mkconfig_output = chroot.execute(
             target=_generate_grub_cfg_in_chroot,
@@ -308,7 +323,7 @@ def generate_grub_cfg(
         )
     finally:
         shim_path.unlink(missing_ok=True)
-        shim_log = root_dir / _SHIM_LOG.relative_to("/")
+        shim_log = root_dir / "tmp" / shim_log_name
         if shim_log.is_file():
             emit.debug(
                 "grub-probe shim answered: "
