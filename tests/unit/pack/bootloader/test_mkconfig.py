@@ -27,6 +27,7 @@ from imagecraft.pack.bootloader.mkconfig import (
     _generate_grub_cfg_in_chroot,
     _strip_boot_prefix,
     generate_grub_cfg,
+    render_early_cfg,
 )
 
 
@@ -282,3 +283,17 @@ class TestGenerateGrubCfg:
         assert fake_device.read_text() == "keep root"
         assert fake_boot_device.read_text() == "keep boot"
         assert by_uuid_dir.is_dir()
+
+
+class TestRenderEarlyCfg:
+    def test_shared_boot_stub(self):
+        root_uuid = uuid.uuid4()
+        content = render_early_cfg(root_uuid)
+        assert f"search.fs_uuid {root_uuid} root" in content
+        assert "($root)'/boot/grub'" in content
+
+    def test_dedicated_boot_stub(self):
+        boot_uuid = uuid.uuid4()
+        content = render_early_cfg(boot_uuid, boot_prefix="/grub")
+        assert f"search.fs_uuid {boot_uuid} root" in content
+        assert "($root)'/grub'" in content

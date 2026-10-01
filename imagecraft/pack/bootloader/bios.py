@@ -48,8 +48,8 @@ from imagecraft.pack.bootloader.chrootenv import (
 from imagecraft.pack.bootloader.const import (
     CORE_BIOS_MODULES,
     get_arch_spec,
-    render_early_cfg,
 )
+from imagecraft.pack.bootloader.mkconfig import render_early_cfg
 from imagecraft.pack.chroot import Mount, build_prime_chroot
 from imagecraft.utils.mount import ExtFuseMount
 

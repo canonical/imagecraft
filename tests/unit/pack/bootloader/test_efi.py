@@ -21,22 +21,8 @@ from pathlib import Path
 import pytest
 from craft_platforms import DebianArchitecture
 from imagecraft import errors
-from imagecraft.pack.bootloader.const import CORE_EFI_MODULES, EfiTier, render_early_cfg
+from imagecraft.pack.bootloader.const import CORE_EFI_MODULES, EfiTier
 from imagecraft.pack.bootloader.efi import EfiInstaller
-
-
-class TestRenderEarlyCfg:
-    def test_shared_boot_stub(self):
-        root_uuid = uuid.uuid4()
-        content = render_early_cfg(root_uuid)
-        assert f"search.fs_uuid {root_uuid} root" in content
-        assert "($root)'/boot/grub'" in content
-
-    def test_dedicated_boot_stub(self):
-        boot_uuid = uuid.uuid4()
-        content = render_early_cfg(boot_uuid, boot_prefix="/grub")
-        assert f"search.fs_uuid {boot_uuid} root" in content
-        assert "($root)'/grub'" in content
 
 
 def _make_installer(tmp_path, **kwargs) -> EfiInstaller:

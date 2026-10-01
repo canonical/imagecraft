@@ -37,8 +37,8 @@ from imagecraft.pack.bootloader.const import (
     ArchSpec,
     EfiTier,
     get_arch_spec,
-    render_early_cfg,
 )
+from imagecraft.pack.bootloader.mkconfig import render_early_cfg
 from imagecraft.pack.bootloader.staging import stage_grub_modules
 from imagecraft.pack.chroot import build_prime_chroot
 

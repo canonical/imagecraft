@@ -12,12 +12,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Shared constants, enums, and the early-config renderer for the bootloader package."""
+"""Shared constants and enums for the bootloader package."""
 
 import enum
 from dataclasses import dataclass
 from typing import Final
-from uuid import UUID
 
 from craft_platforms import DebianArchitecture
 
@@ -46,25 +45,6 @@ class EfiTier(str, enum.Enum):
 
     FALLBACK_BUILD = "fallback_build"
     """Standalone EFI binary assembled with grub-mkimage."""
-
-
-def render_early_cfg(
-    search_uuid: UUID | str, *, boot_prefix: str = "/boot/grub"
-) -> str:
-    """Render the early GRUB search stub configuration.
-
-    :param search_uuid: UUID of the filesystem holding the GRUB configuration
-        (the root filesystem, or the dedicated ``/boot`` partition when one
-        exists).
-    :param boot_prefix: Path of the GRUB directory relative to the searched
-        filesystem's root (``/boot/grub``, or ``/grub`` when ``/boot`` is a
-        dedicated partition).
-    """
-    return (
-        f"search.fs_uuid {search_uuid} root\n"
-        f"set prefix=($root)'{boot_prefix}'\n"
-        "configfile $prefix/grub.cfg\n"
-    )
 
 
 @dataclass(frozen=True)

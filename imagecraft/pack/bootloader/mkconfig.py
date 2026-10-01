@@ -325,3 +325,22 @@ def generate_grub_cfg(
         emit.debug(mkconfig_output)
     emit.debug(f"Generated {grub_cfg_path} with grub-mkconfig")
     return grub_cfg_path
+
+
+def render_early_cfg(
+    search_uuid: UUID | str, *, boot_prefix: str = "/boot/grub"
+) -> str:
+    """Render the early GRUB search stub configuration.
+
+    :param search_uuid: UUID of the filesystem holding the GRUB configuration
+        (the root filesystem, or the dedicated ``/boot`` partition when one
+        exists).
+    :param boot_prefix: Path of the GRUB directory relative to the searched
+        filesystem's root (``/boot/grub``, or ``/grub`` when ``/boot`` is a
+        dedicated partition).
+    """
+    return (
+        f"search.fs_uuid {search_uuid} root\n"
+        f"set prefix=($root)'{boot_prefix}'\n"
+        "configfile $prefix/grub.cfg\n"
+    )
