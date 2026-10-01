@@ -245,9 +245,16 @@ class TestStageGrubModules:
         mod_dir = root / "usr" / "lib" / "grub" / "i386-pc"
         mod_dir.mkdir(parents=True)
         (mod_dir / "normal.mod").write_bytes(b"x")
+        font_file = root / "usr" / "share" / "grub" / "unicode.pf2"
+        font_file.parent.mkdir(parents=True)
+        font_file.write_bytes(b"fontdata")
+
         stage_grub_modules(root, None, "i386-pc")
         target = root / "boot" / "grub" / "i386-pc"
         assert (target / "normal.mod").is_file()
+        assert (
+            root / "boot" / "grub" / "fonts" / "unicode.pf2"
+        ).read_bytes() == b"fontdata"
 
     def test_copies_modules_to_dedicated_boot(self, tmp_path):
         root = tmp_path / "root"
