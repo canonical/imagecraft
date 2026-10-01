@@ -133,8 +133,10 @@ class ImageService(AppService):
                     },
                     target_dir=target_dir,
                 )
-                devices = vdev.mount()
+                # Register before mount so the rollback below owns devices
+                # mounted before a mid-mount failure and can retry them.
                 new_managers[name] = vdev
+                devices = vdev.mount()
                 emit.debug(f"Provided virtual devices for {image_path}: {devices}")
             self._vdev_managers.update(new_managers)
         except Exception:

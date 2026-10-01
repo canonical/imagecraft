@@ -309,7 +309,11 @@ class VirtualDeviceManager:
         except Exception:
             if part_file is not None:
                 part_file.unlink(missing_ok=True)
-            self.unmount()
+            # Rollback unmount errors must not mask the original failure;
+            # devices that failed to unmount stay registered so the caller
+            # (which owns this manager) can retry unmount().
+            with contextlib.suppress(Exception):
+                self.unmount()
             raise
 
         return dict(self._mounted)
