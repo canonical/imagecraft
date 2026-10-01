@@ -100,8 +100,13 @@ def mkfsfat16_device(request, content, device):
 def mcopy(request, content, imagepath):
     return [
         "bash",
+        "-O",
+        "dotglob",
         "-c",
-        f"mcopy -n -o -s -i{str(imagepath)} {str(content)}/* ::",
+        'mcopy -n -o -s -i"$1" "$2"/* ::',
+        "bash",
+        str(imagepath),
+        str(content),
     ]
 
 
@@ -109,8 +114,13 @@ def mcopy(request, content, imagepath):
 def mcopy_device(request, content, device):
     return [
         "bash",
+        "-O",
+        "dotglob",
         "-c",
-        f"mcopy -n -o -s -i{str(device)} {str(content)}/* ::",
+        'mcopy -n -o -s -i"$1" "$2"/* ::',
+        "bash",
+        str(device),
+        str(content),
     ]
 
 
