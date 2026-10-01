@@ -134,7 +134,7 @@ def _metadata_path(
         base_dir = project_dirs.get_stage_dir(partition=partition_name)
     else:
         base_dir = project_dirs.get_prime_dir(partition=partition_name)
-    return base_dir / configured_pack_service._metadata_relative_path()
+    return base_dir / configured_pack_service._METADATA_RELATIVE_PATH
 
 
 def _mock_pack_dependencies(
