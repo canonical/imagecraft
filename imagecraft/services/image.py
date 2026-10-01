@@ -140,9 +140,16 @@ class ImageService(AppService):
                 emit.debug(f"Provided virtual devices for {image_path}: {devices}")
             self._vdev_managers.update(new_managers)
         except Exception:
-            for vdev in new_managers.values():
-                with contextlib.suppress(Exception):
+            for name, vdev in new_managers.items():
+                try:
                     vdev.unmount()
+                except Exception:  # noqa: BLE001, PERF203
+                    # Retain the manager so detach_images()/atexit can retry
+                    # the devices it could not unmount.
+                    self._vdev_managers[name] = vdev
+            if self._vdev_managers and not self._atexit_registered:
+                atexit.register(self.detach_images)
+                self._atexit_registered = True
             raise
 
         if not self._atexit_registered:
@@ -177,10 +184,17 @@ class ImageService(AppService):
         # Unmount first so the virtual devices do not keep the deleted inodes
         # mapped.
         self.detach_images()
-        for image_path in self._images.values():
+        # Only remove images whose devices fully detached; a busy FUSE
+        # device must keep its backing file and the service must keep the
+        # state needed to retry.
+        remaining = dict(self._images)
+        for name in self._vdev_managers:
+            remaining.pop(name, None)
+        for name, image_path in remaining.items():
             image_path.unlink(missing_ok=True)
-
-        self._images = None
+            del self._images[name]
+        if not self._images:
+            self._images = None
 
     def get_device_paths(self) -> Mapping[str, pathlib.Path]:
         """Return a mapping of device paths for all volumes and partitions.
