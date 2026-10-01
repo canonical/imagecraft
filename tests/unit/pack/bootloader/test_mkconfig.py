@@ -41,9 +41,19 @@ class TestStripBootPrefix:
                 id="linux-kernel-positional-only",
             ),
             pytest.param(
+                "linuxefi /boot/vmlinuz key=/boot/key",
+                "linuxefi /vmlinuz key=/boot/key",
+                id="linuxefi-kernel-positional-only",
+            ),
+            pytest.param(
                 'linux "/boot/kernel name" key="/boot/key name"',
                 'linux "/kernel name" key="/boot/key name"',
                 id="linux-kernel-quoted",
+            ),
+            pytest.param(
+                "initrdefi /boot/initrd.img",
+                "initrdefi /initrd.img",
+                id="initrdefi-positional-only",
             ),
             pytest.param(
                 "multiboot --quirk-bad-kludge /boot/kernel config=/boot/config",

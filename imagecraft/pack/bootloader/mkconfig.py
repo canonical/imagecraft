@@ -54,7 +54,9 @@ _SHIM_LOG = Path("/tmp/grub-probe-shim.log")  # noqa: S108
 # filesystem's root (i.e. the /boot prefix is stripped).
 _BOOT_PATH_DIRECTIVES = (
     "linux",
+    "linuxefi",
     "initrd",
+    "initrdefi",
     "devicetree",
     "multiboot2",
     "multiboot",
