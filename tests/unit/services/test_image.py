@@ -303,6 +303,27 @@ def test_detach_images_retry(image_service, mocker):
     assert image_service._loop_devices == {}
 
 
+def test_cleanup_temporary_images(image_service, project_dir, mocker):
+    hidden = project_dir / ".pc.img.tmp"
+    hidden.touch()
+    image_service._images = {"pc": hidden}
+    mock_detach = mocker.patch.object(image_service, "detach_images")
+
+    image_service.cleanup_temporary_images()
+
+    mock_detach.assert_called_once_with()
+    assert not hidden.exists()
+    assert image_service._images is None
+
+
+def test_cleanup_temporary_images_noop(image_service, mocker):
+    mock_detach = mocker.patch.object(image_service, "detach_images")
+
+    image_service.cleanup_temporary_images()
+
+    mock_detach.assert_not_called()
+
+
 def test_get_loop_paths(image_service, default_factory, mock_project, mocker):
     image_service._loop_devices = {"pc": "/dev/loop8"}
     mocker.patch.object(
