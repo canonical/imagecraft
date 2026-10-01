@@ -240,6 +240,22 @@ class ImageService(AppService):
                         f"Failed to detach loop device {device} after 10 seconds."
                     )
 
+    def cleanup_temporary_images(self) -> None:
+        """Remove any on-disk temporary images tracked by this service.
+
+        This is intended for flows that created temp images eagerly but later
+        skipped final packing, so no finalize step will move them away.
+        """
+        if self._images is None:
+            return
+
+        # Detach first so loop devices don't keep deleted inodes alive.
+        self.detach_images()
+        for image_path in self._images.values():
+            image_path.unlink(missing_ok=True)
+
+        self._images = None
+
     def _get_partition_numbers(
         self, volume: GPTVolume | MBRVolume | HybridVolume
     ) -> dict[str, int]:
@@ -313,7 +329,7 @@ class ImageService(AppService):
         """
         images = dict(self.get_images())
         dest.mkdir(parents=True, exist_ok=True)
-        for name, hidden_path in list(images.items()):
+        for name, hidden_path in images.items():
             final_path = dest / f"{name}.img"
             shutil.move(str(hidden_path), final_path)
             emit.debug(f"Finalized image {name!r} -> {final_path}")
