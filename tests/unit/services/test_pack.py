@@ -20,7 +20,8 @@ import yaml
 from craft_application import ServiceFactory
 from craft_parts import ProjectDirs, ProjectInfo, ProjectVar, ProjectVarInfo
 from craft_parts.filesystem_mounts import FilesystemMount, FilesystemMounts
-from imagecraft.errors import GRUBInstallError
+from imagecraft.errors import BootloaderError
+from imagecraft.models import Project
 from imagecraft.services.image import ImageService
 from imagecraft.services.pack import ImagecraftPackService
 
@@ -132,6 +133,7 @@ def test_pack_artifacts(
     tmp_path: Path,
     configured_pack_service: ImagecraftPackService,
     mock_image_service: ImageService,
+    default_factory: ServiceFactory,
     mocker,
 ):
     artifact_path = tmp_path / "dest" / "pc.img"
@@ -147,8 +149,9 @@ def test_pack_artifacts(
         return_value={"pc": artifact_path},
     )
     mock_diskutil = mocker.patch("imagecraft.services.pack.diskutil", autospec=True)
-    mock_grubutil = mocker.patch("imagecraft.services.pack.grubutil", autospec=True)
-    mock_image_cls = mocker.patch("imagecraft.services.pack.Image", autospec=True)
+    mock_bootloader_cls = mocker.patch(
+        "imagecraft.services.pack.BootloaderInstaller", autospec=True
+    )
 
     result = configured_pack_service.pack_artifacts()
 
@@ -157,8 +160,20 @@ def test_pack_artifacts(
     mock_verify.assert_called_once()
     mock_detach.assert_called_once()
     mock_finalize.assert_called_once_with(artifact_dir)
-    mock_grubutil.setup_grub.assert_called_once()
-    mock_image_cls.assert_called_once()
+
+    # Bootloader staged before formatting, and boot code patched after
+    mock_bootloader_cls.assert_called_once()
+    mock_bootloader = mock_bootloader_cls.return_value
+    mock_bootloader.prepare_rootfs.assert_called_once_with(
+        project_dirs=default_factory.get("lifecycle").project_info.dirs,
+        volume_name="pc",
+        filesystems=cast(Project, default_factory.get("project").get()).filesystems,
+    )
+    mock_bootloader.install_image_boot_code.assert_called_once_with(
+        image_path=artifact_path,
+    )
+
+    # Old functions must NOT be called
     mock_diskutil.create_zero_image.assert_not_called()
     mock_diskutil.inject_partition_into_image.assert_not_called()
     mock_diskutil.format_populate_partition.assert_not_called()
@@ -179,8 +194,7 @@ def test_pack_artifacts_detaches_on_error(
         "imagecraft.services.pack.diskutil.format_device",
         side_effect=RuntimeError("disk full"),
     )
-    mocker.patch("imagecraft.services.pack.grubutil", autospec=True)
-    mocker.patch("imagecraft.services.pack.Image", autospec=True)
+    mocker.patch("imagecraft.services.pack.BootloaderInstaller", autospec=True)
 
     with pytest.raises(RuntimeError, match="disk full"):
         configured_pack_service.pack_artifacts()
@@ -214,8 +228,7 @@ def test_pack_artifacts_removes_stale_artifact_before_repacking(
         side_effect=finalize_images,
     )
     mocker.patch("imagecraft.services.pack.diskutil", autospec=True)
-    mocker.patch("imagecraft.services.pack.grubutil", autospec=True)
-    mocker.patch("imagecraft.services.pack.Image", autospec=True)
+    mocker.patch("imagecraft.services.pack.BootloaderInstaller", autospec=True)
 
     configured_pack_service.pack_artifacts()
 
@@ -248,12 +261,11 @@ def test_pack_artifacts_removes_finalized_artifact_on_failure(
     )
     mocker.patch("imagecraft.services.pack.diskutil", autospec=True)
     mocker.patch(
-        "imagecraft.services.pack.grubutil.setup_grub",
-        side_effect=GRUBInstallError("grub failed"),
+        "imagecraft.services.pack.BootloaderInstaller.install_image_boot_code",
+        side_effect=BootloaderError("boot code install failed"),
     )
-    mocker.patch("imagecraft.services.pack.Image", autospec=True)
 
-    with pytest.raises(GRUBInstallError, match="grub failed"):
+    with pytest.raises(BootloaderError, match="boot code install failed"):
         configured_pack_service.pack_artifacts()
 
     assert artifact_path.exists() is False

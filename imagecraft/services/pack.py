@@ -1,4 +1,4 @@
-# Copyright 2023-2025 Canonical Ltd.
+# Copyright 2023-2026 Canonical Ltd.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 3 as
@@ -26,7 +26,8 @@ from craft_cli import emit
 from typing_extensions import override
 
 from imagecraft.models import Project, Role, get_partition_name
-from imagecraft.pack import Image, diskutil, grubutil
+from imagecraft.pack import diskutil
+from imagecraft.pack.bootloader import BootloaderInstaller
 from imagecraft.services.image import ImageService
 
 
@@ -226,7 +227,20 @@ class ImagecraftPackService(PackageService):
         project_dirs = self._services.get("lifecycle").project_info.dirs
         loop_paths = image_service.get_loop_paths()
 
+        arch = self._services.get("lifecycle").project_info.target_arch
+        bootloader = BootloaderInstaller(volume=volume, arch=arch)
+
+        # Pre-format staging: write bootloader files (fstab, grub.cfg, EFI
+        # binaries) into the root/ESP prime directories *before* formatting,
+        # so mke2fs/mkfs.vfat embed them directly.
         try:
+            bootloader.prepare_rootfs(
+                project_dirs=project_dirs,
+                volume_name=volume_name,
+                filesystems=project.filesystems,
+            )
+            partition_uuids = bootloader.partition_uuids
+
             for structure_item in volume.structure:
                 partition_name = get_partition_name(volume_name, structure_item)
                 emit.progress(f"Preparing partition {partition_name}")
@@ -240,6 +254,7 @@ class ImagecraftPackService(PackageService):
                     fstype=structure_item.filesystem,
                     label=structure_item.filesystem_label,
                     content_dir=partition_prime_dir,
+                    uuid=partition_uuids.get(structure_item.name),
                 )
 
             image_service.verify_images()
@@ -250,17 +265,10 @@ class ImagecraftPackService(PackageService):
         try:
             artifact_path = image_service.finalize_images(path.parent)[volume_name]
 
-            filesystem_mount = self._services.get(
-                "lifecycle"
-            ).project_info.default_filesystem_mount
-            arch = self._services.get("lifecycle").project_info.target_arch
-            image = Image(volume=volume, disk_path=artifact_path)
-            grubutil.setup_grub(
-                image=image,
-                workdir=project_dirs.work_dir,
-                arch=arch,
-                filesystem_mount=filesystem_mount,
-            )
+            # Post-format: for BIOS targets, install the boot code into the raw
+            # disk image (fuse2fs mount + grub-bios-setup). No-op for
+            # EFI/unsupported targets.
+            bootloader.install_image_boot_code(image_path=artifact_path)
         except Exception:
             if artifact_path is not None:
                 self._remove_artifact(artifact_path)

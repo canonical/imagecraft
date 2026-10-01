@@ -3,7 +3,12 @@ summary: Pack an image with GRUB and a dedicated boot partition
 systems: [ubuntu-24.04-64]
 
 execute: |
-  GRUB_INSTALL_LOG="Setting up GRUB in the image"
+  TMPDIR="$(mktemp -d)"
+  TMP_MOUNT=${TMPDIR}/mount
+  mkdir -p ${TMP_MOUNT}
+  echo ${TMP_MOUNT} >> tmpmount.txt
+
+  GRUB_INSTALL_LOG="Preparing bootloader files"
 
   imagecraft pack --verbosity verbose --destructive-mode 2>&1 >/dev/null | MATCH "$GRUB_INSTALL_LOG"
 
@@ -14,7 +19,50 @@ execute: |
   MATCH "Generating grub configuration file" "$imagecraft_log_file"
   MATCH "Adding boot menu entry for UEFI Firmware Settings" "$imagecraft_log_file"
 
+  IMG_NAME=pc.img
+  test -f ${IMG_NAME}
+
+  LOOP=$(losetup --find --show --partscan ${IMG_NAME})
+  echo $LOOP > loop.txt
+
+  count=0
+  until ls -d "$LOOP"p* >/dev/null 2>&1; do
+    count=$((count + 1))
+    if [ "$count" -ge 100 ]; then
+      echo "Timed out waiting for $LOOP partition devices" >&2
+      exit 1
+    fi
+    sleep 0.1
+  done
+
+  mkdir ${TMP_MOUNT}/p2
+  mount "${LOOP}p2" ${TMP_MOUNT}/p2
+
+  BOOT_CFG=${TMP_MOUNT}/p2/grub/grub.cfg
+  test -f "$BOOT_CFG"
+  NOMATCH "/boot/" "$BOOT_CFG"
+
+  KERNEL_PATH=$(awk '$1 ~ /^linux(efi)?$/ { print $2; exit }' "$BOOT_CFG")
+  INITRD_PATH=$(awk '$1 == "initrd" { print $2; exit }' "$BOOT_CFG")
+
+  test -n "$KERNEL_PATH"
+  test -n "$INITRD_PATH"
+  test -f "${TMP_MOUNT}/p2${KERNEL_PATH}"
+  test -f "${TMP_MOUNT}/p2${INITRD_PATH}"
+
 restore: |
+  if [ -f loop.txt -a -f tmpmount.txt ]; then
+      LOOP="$(cat loop.txt)"
+      TMP_MOUNT="$(cat tmpmount.txt)"
+
+      mount --make-rprivate ${TMP_MOUNT}/p2 || true
+      umount --recursive ${TMP_MOUNT}/p2 || true
+
+      losetup -d "$LOOP"
+      sync
+      losetup -l | NOMATCH "$LOOP"
+      rm loop.txt
+  fi
   imagecraft clean --destructive-mode
   rm -rf pc.img || true
 
@@ -22,3 +70,10 @@ debug: |
   df -h
   du -h -d 1 /tmp/
   mount -l
+  if [ -f loop.txt ]; then
+      cat loop.txt
+  fi
+  if [ -f tmpmount.txt ]; then
+      cat tmpmount.txt
+  fi
+  losetup -l
