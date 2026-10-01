@@ -90,10 +90,16 @@ def mbr_volume():
     )
 
 
-def test_virtual_offset_device_mount_success(mock_run, tmp_path: Path):
+@pytest.fixture
+def offset_device(mock_run, tmp_path: Path) -> VirtualOffsetDevice:
+    """A VirtualOffsetDevice over a 1 MiB offset, 64 MiB slice."""
     disk_path = tmp_path / "disk.img"
     disk_path.touch()
-    vdev = VirtualOffsetDevice(disk_path, offset=1048576, size=67108864)
+    return VirtualOffsetDevice(disk_path, offset=1048576, size=67108864)
+
+
+def test_virtual_offset_device_mount_success(offset_device, mock_run, tmp_path: Path):
+    vdev = offset_device
 
     assert not vdev.is_mounted
     part_file = vdev.mount()
@@ -104,7 +110,7 @@ def test_virtual_offset_device_mount_success(mock_run, tmp_path: Path):
     mock_run.assert_called_once_with(
         "fusefile",
         str(part_file),
-        f"{disk_path.resolve()}/1048576+67108864",
+        f"{vdev.disk_path.resolve()}/1048576+67108864",
     )
 
     assert vdev.mount() == part_file
@@ -115,46 +121,37 @@ def test_virtual_offset_device_mount_success(mock_run, tmp_path: Path):
     mock_run.assert_called_with("fusermount", "-u", str(part_file))
 
 
-def test_virtual_offset_device_mount_failure(mock_run, tmp_path: Path):
-    disk_path = tmp_path / "disk.img"
+def test_virtual_offset_device_mount_failure(offset_device, mock_run):
     mock_run.side_effect = subprocess.CalledProcessError(1, "fusefile")
-    vdev = VirtualOffsetDevice(disk_path, offset=1048576, size=67108864)
 
     with pytest.raises(
         errors.MountError, match="Failed to create virtual offset device"
     ):
-        vdev.mount()
+        offset_device.mount()
 
-    assert not vdev.is_mounted
-    assert vdev.part_file is None
+    assert not offset_device.is_mounted
+    assert offset_device.part_file is None
 
 
-def test_virtual_offset_device_unmount_lazy(mock_run, tmp_path: Path):
-    disk_path = tmp_path / "disk.img"
-    vdev = VirtualOffsetDevice(disk_path, offset=1048576, size=67108864)
-    part_file = vdev.mount()
+def test_virtual_offset_device_unmount_lazy(offset_device, mock_run):
+    part_file = offset_device.mount()
 
-    vdev.unmount(lazy=True)
-    assert not vdev.is_mounted
+    offset_device.unmount(lazy=True)
+    assert not offset_device.is_mounted
     mock_run.assert_called_with("fusermount", "-u", "-z", str(part_file))
 
 
-def test_virtual_offset_device_unmount_not_mounted(mock_run, tmp_path: Path):
-    disk_path = tmp_path / "disk.img"
-    vdev = VirtualOffsetDevice(disk_path, offset=1048576, size=67108864)
-    vdev.unmount()
+def test_virtual_offset_device_unmount_not_mounted(offset_device, mock_run):
+    offset_device.unmount()
     mock_run.assert_not_called()
 
 
-def test_virtual_offset_device_context_manager(mock_run, tmp_path: Path):
-    disk_path = tmp_path / "disk.img"
-    vdev = VirtualOffsetDevice(disk_path, offset=1048576, size=67108864)
-
-    with vdev as part_file:
-        assert vdev.is_mounted
+def test_virtual_offset_device_context_manager(offset_device, mock_run):
+    with offset_device as part_file:
+        assert offset_device.is_mounted
         assert part_file.name == "part.img"
 
-    assert not vdev.is_mounted
+    assert not offset_device.is_mounted
     mock_run.assert_called_with("fusermount", "-u", str(part_file))
 
 
@@ -217,18 +214,17 @@ def test_virtual_device_manager_unmount_not_mounted(vdev_manager, mock_run):
     mock_run.assert_not_called()
 
 
-def test_virtual_device_manager_mount_failure_rolls_back(mock_run, tmp_path: Path):
-    disk_path = tmp_path / "pc.img"
-    disk_path.touch()
+def test_virtual_device_manager_mount_failure_rolls_back(
+    vdev_manager, mock_run, tmp_path: Path
+):
     mock_run.side_effect = [
         CompletedProcess(args=[], returncode=0, stdout=""),
         subprocess.CalledProcessError(1, "fusefile"),
         CompletedProcess(args=[], returncode=0, stdout=""),
     ]
-    vdev = VirtualDeviceManager(disk_path, SLICES, tmp_path / ".devices")
 
     with pytest.raises(errors.MountError, match="Failed to create virtual device"):
-        vdev.mount()
+        vdev_manager.mount()
 
     # The device that did mount is unmounted, and no files are left behind.
     mock_run.assert_called_with(
