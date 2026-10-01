@@ -25,7 +25,12 @@ from craft_application import PackageService, models, util
 from craft_cli import emit
 from typing_extensions import override
 
-from imagecraft.models import Project, Role, get_partition_name
+from imagecraft.models import (
+    Project,
+    Role,
+    get_partition_name,
+    is_bios_boot_partition,
+)
 from imagecraft.pack import diskutil
 from imagecraft.pack.bootloader import BootloaderInstaller
 from imagecraft.services.image import ImageService
@@ -219,21 +224,20 @@ class ImagecraftPackService(PackageService):
         volume = project.volumes[volume_name]
 
         image_service = cast(ImageService, self._services.get("image"))
-        # Both calls are idempotent — the prologue hook will have run them
-        # already during the lifecycle, but pack may be called standalone.
-        image_service.create_images()
-        image_service.attach_images()
-
-        project_dirs = self._services.get("lifecycle").project_info.dirs
-        loop_paths = image_service.get_loop_paths()
-
-        arch = self._services.get("lifecycle").project_info.target_arch
-        bootloader = BootloaderInstaller(volume=volume, arch=arch)
-
-        # Pre-format staging: write bootloader files (fstab, grub.cfg, EFI
-        # binaries) into the root/ESP prime directories *before* formatting,
-        # so mke2fs/mkfs.vfat embed them directly.
         try:
+            # Both calls are idempotent — the prologue hook will have run them
+            # already during the lifecycle, but pack may be called standalone.
+            image_service.create_images()
+            image_service.attach_images()
+            device_paths = image_service.get_device_paths()
+
+            project_dirs = self._services.get("lifecycle").project_info.dirs
+            arch = self._services.get("lifecycle").project_info.target_arch
+            bootloader = BootloaderInstaller(volume=volume, arch=arch)
+
+            # Pre-format staging: write bootloader files (fstab, grub.cfg, EFI
+            # binaries) into the root/ESP prime directories *before* formatting,
+            # so mke2fs/mkfs.vfat embed them directly.
             bootloader.prepare_rootfs(
                 project_dirs=project_dirs,
                 volume_name=volume_name,
@@ -242,15 +246,17 @@ class ImagecraftPackService(PackageService):
             partition_uuids = bootloader.partition_uuids
 
             for structure_item in volume.structure:
+                if is_bios_boot_partition(structure_item):
+                    continue
                 partition_name = get_partition_name(volume_name, structure_item)
                 emit.progress(f"Preparing partition {partition_name}")
                 partition_prime_dir = project_dirs.get_prime_dir(
                     partition=partition_name
                 )
-                loop_path = Path(loop_paths[f"{volume_name}/{structure_item.name}"])
+                partition_device = device_paths[f"{volume_name}/{structure_item.name}"]
 
                 diskutil.format_device(
-                    device_path=loop_path,
+                    device_path=partition_device,
                     fstype=structure_item.filesystem,
                     label=structure_item.filesystem_label,
                     content_dir=partition_prime_dir,

@@ -16,31 +16,22 @@
 
 import atexit
 import contextlib
-import json
 import pathlib
 import shutil
-import subprocess
-import time
 from collections.abc import Mapping
-from typing import Any, cast
+from typing import cast
 
 from craft_application import AppMetadata, AppService, ServiceFactory
-from craft_cli import CraftError, emit
+from craft_cli import emit
 
+from imagecraft import errors
 from imagecraft.models import Project
-from imagecraft.models.volume import (
-    GPTVolume,
-    HybridVolume,
-    MBRVolume,
-    PartitionSchema,
-)
+from imagecraft.models.volume import PartitionSchema
 from imagecraft.pack import gptutil, mbrutil
-from imagecraft.subprocesses import run
+from imagecraft.utils.mount import VirtualDeviceManager
 
-_LOSETUP_BIN = "losetup"
-
-# Maximum time to wait for kernel-created loop partition nodes to appear.
-_PARTSCAN_TIMEOUT_SECONDS = 10.0
+# Directory, relative to the project, holding the virtual partition devices.
+DEVICES_DIR = ".devices"
 
 
 class ImageService(AppService):
@@ -57,7 +48,7 @@ class ImageService(AppService):
         self._project_dir = project_dir
         self._sector_size = gptutil.SECTOR_SIZE_512
         self._images: dict[str, pathlib.Path] | None = None
-        self._loop_devices: dict[str, str] = {}
+        self._vdev_managers: dict[str, VirtualDeviceManager] = {}
         self._atexit_registered = False
 
     def get_images(self) -> Mapping[str, pathlib.Path]:
@@ -108,136 +99,68 @@ class ImageService(AppService):
 
         return self._images
 
-    def _get_all_loop_devices(self) -> list[dict[str, Any]]:
-        """Return a list of all loop devices on the system."""
-        try:
-            result = run(_LOSETUP_BIN, "--json")
-            return cast(list[dict[str, Any]], json.loads(result.stdout)["loopdevices"])
-        except (subprocess.CalledProcessError, KeyError, json.JSONDecodeError):
-            return []
+    def attach_images(self) -> None:
+        """Provide virtual devices for all created images.
 
-    def attach_images(self) -> Mapping[str, str]:
-        """Attach all created images as loop devices.
+        Each volume is exposed as its raw image file, and each of its
+        partitions as a fusefile virtual device under the project's
+        ``.devices`` directory. No loop devices or elevated privileges are
+        involved. This method is idempotent.
 
-        This method is idempotent. It will reuse existing loop devices if they
-        are already attached to the correct files, and clean up stale devices
-        pointing to deleted inodes.
+        Use :meth:`get_device_paths` to obtain the resulting paths.
 
-        Upon return, the partition device nodes for every attached image are
-        guaranteed to exist on disk.
+        :raises ValueError: If images have not been created yet.
+        :raises errors.MountError: If a virtual device cannot be created.
         """
-        if self._loop_devices:
-            return self._loop_devices
+        if self._vdev_managers:
+            return
 
         if self._images is None:
             raise ValueError("Images must be created before attaching.")
 
-        all_devices = self._get_all_loop_devices()
+        project = cast(Project, self._services.get("project").get())
+        target_dir = self._project_dir / DEVICES_DIR
 
-        for name, image_path in self._images.items():
-            attached_device: str | None = None
-
-            # 1. Check for existing devices pointing to this file.
-            for dev in all_devices:
-                back_file = pathlib.Path(dev["back-file"])
-                try:
-                    if image_path.samefile(back_file):
-                        attached_device = dev["name"]
-                        emit.debug(
-                            f"Reusing existing loop device {attached_device} for {image_path}"
-                        )
-                        break
-                except FileNotFoundError:
-                    # Stale inode: file deleted and recreated.
-                    if back_file == image_path:
-                        emit.debug(
-                            f"Detaching stale loop device {dev['name']} for {image_path}"
-                        )
-                        run(_LOSETUP_BIN, "-d", dev["name"])
-
-            # 2. Attach a fresh device if none was found/reused.
-            if not attached_device:
-                try:
-                    attached_device = run(
-                        _LOSETUP_BIN,
-                        "--find",
-                        "--show",
-                        "--partscan",
-                        str(image_path),
-                    ).stdout.strip()
-                    emit.debug(f"Attached {image_path} as {attached_device}")
-                except subprocess.CalledProcessError as err:
-                    raise CraftError(
-                        f"Failed to attach loop device for {image_path}.",
-                        details=str(err),
-                        resolution="Ensure loop devices are available and you have sufficient permissions (sudo).",
-                    ) from err
-
-            self._loop_devices[name] = attached_device
-            self._wait_for_partition_nodes(attached_device, name)
+        new_managers: dict[str, VirtualDeviceManager] = {}
+        try:
+            for name, image_path in self._images.items():
+                slices = gptutil.get_partition_slices(image_path, project.volumes[name])
+                vdev = VirtualDeviceManager(
+                    image_path=image_path,
+                    slices={
+                        f"{name}_{part}": part_slice
+                        for part, part_slice in slices.items()
+                    },
+                    target_dir=target_dir,
+                )
+                devices = vdev.mount()
+                new_managers[name] = vdev
+                emit.debug(f"Provided virtual devices for {image_path}: {devices}")
+            self._vdev_managers.update(new_managers)
+        except Exception:
+            for vdev in new_managers.values():
+                with contextlib.suppress(Exception):
+                    vdev.unmount()
+            raise
 
         if not self._atexit_registered:
             atexit.register(self.detach_images)
             self._atexit_registered = True
 
-        return self._loop_devices
-
-    def _wait_for_partition_nodes(self, device: str, volume_name: str) -> None:
-        """Wait for a loop device's partition nodes to be created by the kernel.
-
-        After losetup sets up a device with ``--partscan``, the partition device
-        nodes (``/dev/loopXpN``) are created asynchronously by devtmpfs/udev, so
-        they may not be visible yet when losetup returns. Consumers of
-        :meth:`get_loop_paths` expect those nodes to exist immediately.
-
-        :raises CraftError: If the expected partition nodes do not appear within
-            the timeout.
-        """
-        project = cast(Project, self._services.get("project").get())
-        volume = project.volumes[volume_name]
-        part_numbers = sorted(set(self._get_partition_numbers(volume).values()))
-        expected_nodes = [pathlib.Path(f"{device}p{number}") for number in part_numbers]
-
-        deadline = time.monotonic() + _PARTSCAN_TIMEOUT_SECONDS
-        while missing := [node for node in expected_nodes if not node.exists()]:
-            if time.monotonic() > deadline:
-                raise CraftError(
-                    f"Partition devices did not appear for {device}: "
-                    f"{[str(node) for node in missing]}.",
-                    details=(
-                        "The kernel creates loop-device partition nodes asynchronously."
-                    ),
-                    resolution=(
-                        "Verify that udev is running and that the image has a "
-                        "valid partition table."
-                    ),
-                )
-            time.sleep(0.1)
-
     def detach_images(self) -> None:
-        """Detach all attached loop devices.
+        """Unmount all virtual devices.
 
-        Includes a retry loop for busy devices. Safe to call as an atexit handler.
+        Failures are reported as warnings rather than raised, so this is safe
+        to call from a ``finally`` block or as an atexit handler.
         """
-        for name, device in list(self._loop_devices.items()):
-            success = False
-            start_time = time.monotonic()
-            while time.monotonic() - start_time < 10:  # noqa: PLR2004 (10 seconds)
-                try:
-                    run(_LOSETUP_BIN, "-d", device)
-                    success = True
-                    break
-                except Exception:  # noqa: BLE001
-                    time.sleep(1)
-
-            if success:
-                del self._loop_devices[name]
-                with contextlib.suppress(Exception):
-                    emit.debug(f"Detached loop device {device} for {name}")
-            else:
+        for name, vdev in list(self._vdev_managers.items()):
+            try:
+                vdev.unmount()
+                del self._vdev_managers[name]
+            except Exception as err:  # noqa: BLE001, PERF203
                 with contextlib.suppress(Exception):
                     emit.warning(
-                        f"Failed to detach loop device {device} after 10 seconds."
+                        f"Failed to unmount the virtual devices of {name}: {err}"
                     )
 
     def cleanup_temporary_images(self) -> None:
@@ -249,59 +172,46 @@ class ImageService(AppService):
         if self._images is None:
             return
 
-        # Detach first so loop devices don't keep deleted inodes alive.
+        # Unmount first so the virtual devices do not keep the deleted inodes
+        # mapped.
         self.detach_images()
         for image_path in self._images.values():
             image_path.unlink(missing_ok=True)
 
         self._images = None
 
-    def _get_partition_numbers(
-        self, volume: GPTVolume | MBRVolume | HybridVolume
-    ) -> dict[str, int]:
-        """Return a mapping of partition name to disk partition number for a volume.
+    def get_device_paths(self) -> Mapping[str, pathlib.Path]:
+        """Return a mapping of device paths for all volumes and partitions.
 
-        For GPT and plain MBR (≤4 partitions), numbers are 1-based positions,
-        respecting any explicit partition number on the structure item.
-        For MBR with extended partitions (>4), the first 3 are primaries (1-3),
-        slot 4 is the synthesised extended container, and logical partitions
-        start at 5.
+        Keys use the format 'volume_name' for volumes and
+        'volume_name/structure_name' for partitions. Volume values are the
+        raw image files; partition values are the virtual partition devices
+        created by :meth:`attach_images`.
+
+        :returns: An empty mapping if no images are attached.
         """
-        structure = volume.structure
-        needs_extended = (
-            volume.volume_schema == PartitionSchema.MBR
-            and len(structure) > mbrutil.MAX_PRIMARY_SLOTS
-        )
-        result: dict[str, int] = {}
-        for i, item in enumerate(structure, start=1):
-            if needs_extended and i > mbrutil.PRIMARY_SLOTS_WITH_EXTENDED:
-                # Skip slot 4 (extended container) — logicals start at 5
-                part_num = i + 1
-            else:
-                part_num = getattr(item, "number", None) or i
-            result[item.name] = part_num
-        return result
-
-    def get_loop_paths(self) -> Mapping[str, str]:
-        """Return a mapping of loop device paths for all volumes and their partitions.
-
-        Keys use the format 'volume_name' for volume devices and
-        'volume_name/structure_name' for partition devices.
-        Values are paths like '/dev/loop8' and '/dev/loop8p1'.
-        """
-        if not self._loop_devices:
+        if not self._vdev_managers or self._images is None:
             return {}
 
         project = cast(Project, self._services.get("project").get())
-        mapping: dict[str, str] = {}
+        mapping: dict[str, pathlib.Path] = {}
 
-        for vol_name, loop_dev in self._loop_devices.items():
-            mapping[vol_name] = loop_dev
-            volume = project.volumes[vol_name]
-            part_numbers = self._get_partition_numbers(volume)
-            for structure in volume.structure:
-                part_num = part_numbers[structure.name]
-                mapping[f"{vol_name}/{structure.name}"] = f"{loop_dev}p{part_num}"
+        for vol_name, vdev in self._vdev_managers.items():
+            mapping[vol_name] = self._images[vol_name]
+            devices = vdev.devices
+            for structure in project.volumes[vol_name].structure:
+                key = f"{vol_name}_{structure.name}"
+                if key not in devices:
+                    # A partially unmounted volume stays registered so a
+                    # later detach can retry it. Reporting an incomplete
+                    # mapping here would let pack format a partition that
+                    # is no longer backed by a device file, so fail loudly
+                    # instead.
+                    raise errors.MountError(
+                        f"Virtual device for partition {key} is not mounted; "
+                        f"volume {vol_name} was only partially attached"
+                    )
+                mapping[f"{vol_name}/{structure.name}"] = devices[key]
 
         return mapping
 

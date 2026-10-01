@@ -12,14 +12,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import pathlib
-import subprocess
+import contextlib
 from typing import cast
 from unittest.mock import MagicMock, patch
 
 import pytest
 from craft_application import ServiceFactory
-from craft_cli import CraftError
+from imagecraft import errors
 from imagecraft.models import Project, Volume
 from imagecraft.models.volume import GPTStructureItem, MBRVolume, PartitionSchema
 from imagecraft.services.image import ImageService
@@ -30,12 +29,42 @@ def image_service(default_factory: ServiceFactory):
     svc = cast(ImageService, default_factory.get("image"))
     yield svc
     # Prevent atexit handlers registered during tests from firing with real devices.
-    svc._loop_devices.clear()
+    for vdev in svc._vdev_managers.values():
+        with contextlib.suppress(Exception):
+            vdev.unmount()
+    svc._vdev_managers.clear()
 
 
 @pytest.fixture
 def project_dir(image_service: ImageService):
     return image_service._project_dir
+
+
+@pytest.fixture
+def attachable(
+    image_service, default_factory, mock_project, project_dir, mocker
+) -> MagicMock:
+    """ImageService with one image created and the virtual devices mocked out.
+
+    Yields the ``VirtualDeviceManager`` mock so tests can set ``mount()``'s
+    return value or side effect.
+    """
+    image_service._images = {"pc": project_dir / ".pc.img.tmp"}
+    mocker.patch.object(
+        default_factory.get("project"), "get", return_value=mock_project
+    )
+    mocker.patch(
+        "imagecraft.pack.gptutil.get_partition_slices",
+        return_value={"efi": (1048576, 524288), "rootfs": (1572864, 1073741824)},
+    )
+    mock_vdev = mocker.patch(
+        "imagecraft.services.image.VirtualDeviceManager", autospec=True
+    )
+    mock_vdev.return_value.mount.return_value = {
+        "pc_efi": project_dir / ".devices" / "pc_efi.img",
+        "pc_rootfs": project_dir / ".devices" / "pc_rootfs.img",
+    }
+    return mock_vdev
 
 
 @pytest.fixture
@@ -125,182 +154,102 @@ def test_create_images_idempotent(image_service, default_factory, mock_project, 
         mock_get.assert_called_once()  # Only called once
 
 
-def test_attach_images_new(image_service, project_dir, mocker):
-    image_service._images = {"pc": project_dir / ".pc.img.tmp"}
-
-    mock_run = mocker.patch("imagecraft.services.image.run")
-    # Mock _get_all_loop_devices returns empty
-    mocker.patch.object(image_service, "_get_all_loop_devices", return_value=[])
-    mocker.patch.object(image_service, "_wait_for_partition_nodes")
-
-    mock_run.return_value.stdout = "/dev/loop8\n"
-
+def test_attach_images_new(attachable, image_service, project_dir, mocker):
     with patch("atexit.register") as mock_atexit:
-        devices = image_service.attach_images()
+        image_service.attach_images()
 
-        assert devices == {"pc": "/dev/loop8"}
-        mock_run.assert_called_with(
-            "losetup",
-            "--find",
-            "--show",
-            "--partscan",
-            str(project_dir / ".pc.img.tmp"),
-        )
-        mock_atexit.assert_called_once_with(image_service.detach_images)
-        image_service._wait_for_partition_nodes.assert_called_once_with(
-            "/dev/loop8", "pc"
-        )
-
-
-def test_attach_images_reuse(image_service, project_dir, mocker):
-    image_path = project_dir / ".pc.img.tmp"
-    image_path.touch()
-    image_service._images = {"pc": image_path}
-
-    # Mock existing loop device
-    mocker.patch.object(
-        image_service,
-        "_get_all_loop_devices",
-        return_value=[{"name": "/dev/loop9", "back-file": str(image_path)}],
+    assert list(image_service._vdev_managers) == ["pc"]
+    attachable.assert_called_once_with(
+        image_path=project_dir / ".pc.img.tmp",
+        slices={
+            "pc_efi": (1048576, 524288),
+            "pc_rootfs": (1572864, 1073741824),
+        },
+        target_dir=project_dir / ".devices",
     )
-
-    # Mock samefile to return True
-    mocker.patch("pathlib.Path.samefile", return_value=True)
-    mock_run = mocker.patch("imagecraft.services.image.run")
-    mocker.patch.object(image_service, "_wait_for_partition_nodes")
-
-    devices = image_service.attach_images()
-
-    assert devices == {"pc": "/dev/loop9"}
-    mock_run.assert_not_called()  # Should not call losetup attach
-    image_service._wait_for_partition_nodes.assert_called_once_with("/dev/loop9", "pc")
+    mock_atexit.assert_called_once_with(image_service.detach_images)
 
 
-def test_attach_images_stale_inode(image_service, project_dir, mocker):
-    image_path = project_dir / ".pc.img.tmp"
-    image_path.touch()
-    image_service._images = {"pc": image_path}
+def test_attach_images_is_idempotent(attachable, image_service):
+    image_service.attach_images()
+    first_managers = dict(image_service._vdev_managers)
+    image_service.attach_images()
 
-    # Mock existing loop device
-    mocker.patch.object(
-        image_service,
-        "_get_all_loop_devices",
-        return_value=[{"name": "/dev/loop10", "back-file": str(image_path)}],
-    )
-
-    # Mock samefile to raise FileNotFoundError (stale inode)
-    mocker.patch("pathlib.Path.samefile", side_effect=FileNotFoundError)
-    mock_run = mocker.patch("imagecraft.services.image.run")
-    mock_run.return_value.stdout = "/dev/loop11\n"
-    mocker.patch.object(image_service, "_wait_for_partition_nodes")
-
-    devices = image_service.attach_images()
-
-    assert devices == {"pc": "/dev/loop11"}
-    # Should detach stale
-    mock_run.assert_any_call("losetup", "-d", "/dev/loop10")
-    # Should attach new
-    mock_run.assert_any_call(
-        "losetup", "--find", "--show", "--partscan", str(image_path)
-    )
-    image_service._wait_for_partition_nodes.assert_called_once_with("/dev/loop11", "pc")
+    assert image_service._vdev_managers == first_managers
+    assert attachable.call_count == 1
 
 
-def test_wait_for_partition_nodes_immediate(
-    image_service, default_factory, mock_project, mocker
+def test_attach_images_uncreated(image_service):
+    with pytest.raises(ValueError, match="Images must be created before attaching"):
+        image_service.attach_images()
+
+
+def test_attach_images_failure(attachable, image_service):
+    attachable.return_value.mount.side_effect = errors.MountError("no fuse for you")
+
+    with pytest.raises(errors.MountError, match="no fuse for you"):
+        image_service.attach_images()
+
+    assert image_service._vdev_managers == {}
+
+
+def test_attach_images_multivolume_failure_rolls_back(
+    image_service, default_factory, mock_project, project_dir, mocker
 ):
-    """Partition nodes that already exist require no waiting."""
+    image_service._images = {
+        "vol1": project_dir / ".vol1.img.tmp",
+        "vol2": project_dir / ".vol2.img.tmp",
+    }
+    mock_project.volumes = {"vol1": mocker.Mock(), "vol2": mocker.Mock()}
     mocker.patch.object(
         default_factory.get("project"), "get", return_value=mock_project
     )
+    mocker.patch("imagecraft.pack.gptutil.get_partition_slices", return_value={})
 
-    exists_calls: list[str] = []
+    mock_vdev1 = mocker.Mock()
+    mock_vdev2 = mocker.Mock()
+    mock_vdev2.mount.side_effect = errors.MountError("vol2 mount failed")
 
-    def fake_exists(self):
-        exists_calls.append(str(self))
-        return True
-
-    mocker.patch.object(pathlib.Path, "exists", autospec=True, side_effect=fake_exists)
-    mock_sleep = mocker.patch("time.sleep")
-
-    image_service._wait_for_partition_nodes("/dev/loop8", "pc")
-
-    assert sorted(exists_calls) == ["/dev/loop8p1", "/dev/loop8p2"]
-    mock_sleep.assert_not_called()
-
-
-def test_wait_for_partition_nodes_after_delay(
-    image_service, default_factory, mock_project, mocker
-):
-    """The wait polls until all partition nodes appear."""
-    mocker.patch.object(
-        default_factory.get("project"), "get", return_value=mock_project
-    )
-    mocker.patch("imagecraft.services.image.time.monotonic", side_effect=[0, 0.5])
-    mock_sleep = mocker.patch("time.sleep")
-
-    p1_polls = 0
-
-    def fake_exists(self):
-        nonlocal p1_polls
-        if str(self).endswith("p1"):
-            p1_polls += 1
-            return p1_polls > 1  # Appear after the first poll.
-        return True
-
-    mocker.patch.object(pathlib.Path, "exists", autospec=True, side_effect=fake_exists)
-
-    image_service._wait_for_partition_nodes("/dev/loop8", "pc")
-
-    assert p1_polls == 2
-    mock_sleep.assert_called_once_with(0.1)
-
-
-def test_wait_for_partition_nodes_timeout(
-    image_service, default_factory, mock_project, mocker
-):
-    """A CraftError is raised when partition nodes never appear."""
-    mocker.patch.object(
-        default_factory.get("project"), "get", return_value=mock_project
-    )
-    mocker.patch("imagecraft.services.image.time.monotonic", side_effect=[0, 11])
-    mocker.patch("time.sleep")
-    mocker.patch.object(
-        pathlib.Path, "exists", autospec=True, side_effect=lambda self: False
+    mocker.patch(
+        "imagecraft.services.image.VirtualDeviceManager",
+        side_effect=[mock_vdev1, mock_vdev2],
     )
 
-    with pytest.raises(CraftError, match="did not appear for /dev/loop8"):
-        image_service._wait_for_partition_nodes("/dev/loop8", "pc")
+    with pytest.raises(errors.MountError, match="vol2 mount failed"):
+        image_service.attach_images()
+
+    mock_vdev1.mount.assert_called_once()
+    mock_vdev1.unmount.assert_called_once()
+    assert image_service._vdev_managers == {}
 
 
-def test_detach_images_success(image_service, mocker):
-    image_service._loop_devices = {"pc": "/dev/loop8"}
-    mock_run = mocker.patch("imagecraft.services.image.run")
+def test_detach_images_unmounts_managers(image_service, project_dir, mocker):
+    mock_vdev = mocker.Mock()
+    mock_vdev.unmount = mocker.Mock()
+    image_service._vdev_managers = {"pc": mock_vdev}
 
     image_service.detach_images()
 
-    mock_run.assert_called_once_with("losetup", "-d", "/dev/loop8")
-    assert image_service._loop_devices == {}
+    mock_vdev.unmount.assert_called_once_with()
+    assert image_service._vdev_managers == {}
 
 
-def test_detach_images_retry(image_service, mocker):
-    image_service._loop_devices = {"pc": "/dev/loop8"}
-    mock_run = mocker.patch("imagecraft.services.image.run")
-
-    # Fail twice, then succeed
-    mock_run.side_effect = [
-        subprocess.CalledProcessError(1, "losetup"),
-        subprocess.CalledProcessError(1, "losetup"),
-        MagicMock(),
-    ]
-
-    mocker.patch("time.monotonic", side_effect=[0, 1, 2, 3, 4])
-    mocker.patch("time.sleep")
+def test_detach_images_warns_on_failure(image_service, project_dir, mocker):
+    """A failing unmount is reported, not raised, and manager is retained for retry."""
+    mock_vdev = mocker.Mock()
+    mock_vdev.unmount.side_effect = errors.MountError("device is busy")
+    image_service._vdev_managers = {"pc": mock_vdev}
+    mock_warning = mocker.patch("imagecraft.services.image.emit.warning")
 
     image_service.detach_images()
 
-    assert mock_run.call_count == 3
-    assert image_service._loop_devices == {}
+    assert "device is busy" in mock_warning.call_args[0][0]
+    assert image_service._vdev_managers == {"pc": mock_vdev}
+
+    # Subsequent successful unmount clears the manager
+    mock_vdev.unmount.side_effect = None
+    image_service.detach_images()
+    assert image_service._vdev_managers == {}
 
 
 def test_cleanup_temporary_images(image_service, project_dir, mocker):
@@ -324,121 +273,48 @@ def test_cleanup_temporary_images_noop(image_service, mocker):
     mock_detach.assert_not_called()
 
 
-def test_get_loop_paths(image_service, default_factory, mock_project, mocker):
-    image_service._loop_devices = {"pc": "/dev/loop8"}
+def test_get_device_paths(
+    image_service, default_factory, mock_project, project_dir, mocker
+):
+    image_service._images = {"pc": project_dir / ".pc.img.tmp"}
     mocker.patch.object(
         default_factory.get("project"), "get", return_value=mock_project
     )
+    mock_vdev = mocker.Mock()
+    mock_vdev.devices = {
+        "pc_efi": project_dir / ".devices" / "pc_efi.img",
+        "pc_rootfs": project_dir / ".devices" / "pc_rootfs.img",
+    }
+    image_service._vdev_managers = {"pc": mock_vdev}
 
-    mapping = image_service.get_loop_paths()
+    mapping = image_service.get_device_paths()
 
     assert mapping == {
-        "pc": "/dev/loop8",
-        "pc/efi": "/dev/loop8p1",
-        "pc/rootfs": "/dev/loop8p2",
+        "pc": project_dir / ".pc.img.tmp",
+        "pc/efi": project_dir / ".devices" / "pc_efi.img",
+        "pc/rootfs": project_dir / ".devices" / "pc_rootfs.img",
     }
 
 
-def test_get_loop_paths_mbr_plain(image_service, default_factory, mocker):
-    """MBR with ≤4 partitions: numbers are plain 1-based positions."""
-    vol = MBRVolume.unmarshal(
-        {
-            "schema": "mbr",
-            "structure": [
-                {
-                    "name": "boot",
-                    "role": "system-boot",
-                    "type": "83",
-                    "filesystem": "ext4",
-                    "size": "256M",
-                },
-                {
-                    "name": "rootfs",
-                    "role": "system-data",
-                    "type": "83",
-                    "filesystem": "ext4",
-                    "size": "5G",
-                },
-            ],
-        }
-    )
-    mock_project = MagicMock(spec=Project)
-    mock_project.volumes = {"pi": vol}
+def test_get_device_paths_unattached(image_service):
+    assert image_service.get_device_paths() == {}
+
+
+def test_get_device_paths_raises_on_partial_attach(
+    image_service, default_factory, mock_project, project_dir, mocker
+):
+    """A partially unmounted volume must not yield a silently incomplete map."""
     mocker.patch.object(
         default_factory.get("project"), "get", return_value=mock_project
     )
-    image_service._loop_devices = {"pi": "/dev/loop8"}
+    image_service._images = {"pc": project_dir / ".pc.img.tmp"}
+    vdev = mocker.Mock()
+    # efi is gone; rootfs is still mounted.
+    vdev.devices = {"pc_rootfs": project_dir / ".devices" / "pc_rootfs.img"}
+    image_service._vdev_managers = {"pc": vdev}
 
-    mapping = image_service.get_loop_paths()
-
-    assert mapping == {
-        "pi": "/dev/loop8",
-        "pi/boot": "/dev/loop8p1",
-        "pi/rootfs": "/dev/loop8p2",
-    }
-
-
-def test_get_loop_paths_mbr_extended(image_service, default_factory, mocker):
-    """MBR with >4 partitions: logical partitions start at 5, skipping slot 4."""
-    vol = MBRVolume.unmarshal(
-        {
-            "schema": "mbr",
-            "structure": [
-                {
-                    "name": "boot",
-                    "role": "system-boot",
-                    "type": "83",
-                    "filesystem": "ext4",
-                    "size": "256M",
-                },
-                {
-                    "name": "p2",
-                    "role": "system-boot",
-                    "type": "83",
-                    "filesystem": "ext4",
-                    "size": "256M",
-                },
-                {
-                    "name": "p3",
-                    "role": "system-boot",
-                    "type": "83",
-                    "filesystem": "ext4",
-                    "size": "256M",
-                },
-                {
-                    "name": "logical1",
-                    "role": "system-boot",
-                    "type": "83",
-                    "filesystem": "ext4",
-                    "size": "256M",
-                },
-                {
-                    "name": "logical2",
-                    "role": "system-data",
-                    "type": "83",
-                    "filesystem": "ext4",
-                    "size": "1G",
-                },
-            ],
-        }
-    )
-    mock_project = MagicMock(spec=Project)
-    mock_project.volumes = {"pi": vol}
-    mocker.patch.object(
-        default_factory.get("project"), "get", return_value=mock_project
-    )
-    image_service._loop_devices = {"pi": "/dev/loop8"}
-
-    mapping = image_service.get_loop_paths()
-
-    assert mapping == {
-        "pi": "/dev/loop8",
-        "pi/boot": "/dev/loop8p1",
-        "pi/p2": "/dev/loop8p2",
-        "pi/p3": "/dev/loop8p3",
-        "pi/logical1": "/dev/loop8p5",
-        "pi/logical2": "/dev/loop8p6",
-    }
+    with pytest.raises(errors.MountError, match="pc_efi"):
+        image_service.get_device_paths()
 
 
 def test_verify_images_gpt(

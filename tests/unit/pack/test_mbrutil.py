@@ -15,9 +15,10 @@
 import subprocess
 
 import pytest
+from craft_cli.errors import CraftError
 from imagecraft.errors import MBRPartitionError
 from imagecraft.models.volume import MBRVolume
-from imagecraft.pack import diskutil, mbrutil
+from imagecraft.pack import diskutil, gptutil, mbrutil
 
 MiB = 1024**2
 GiB = 1024**3
@@ -419,3 +420,140 @@ def test_verify_partition_tables_raises_on_sfdisk_failure(mocker, tmp_path):
     with pytest.raises(MBRPartitionError, match="failed to read") as exc_info:
         mbrutil.verify_partition_tables(imagepath)
     assert exc_info.value.details == "sfdisk: cannot open"
+
+
+# MBR partitions have no names, so slices come from the numbers in the node names
+# that gptutil's sfdisk reader recovers. The layout a volume produces is
+# _VOLUME_FOUR_PARTS: starts of 1 MiB, 257 MiB, 769 MiB and 1793 MiB.
+_FOUR_PRIMARY_SFDISK_JSON = """
+{
+   "partitiontable": {
+      "label": "dos",
+      "device": "example/packt/disk.img",
+      "unit": "sectors",
+      "sectorsize": 512,
+      "partitions": [
+         {
+            "node": "example/packt/disk.img1",
+            "start": 2048,
+            "size": 524288,
+            "type": "83"
+         },{
+            "node": "example/packt/disk.img2",
+            "start": 526336,
+            "size": 1048576,
+            "type": "83"
+         },{
+            "node": "example/packt/disk.img3",
+            "start": 1574912,
+            "size": 2097152,
+            "type": "83"
+         },{
+            "node": "example/packt/disk.img4",
+            "start": 3672064,
+            "size": 8388608,
+            "type": "83"
+         }
+      ]
+   }
+}
+"""
+
+# MBR volumes with more than 4 structures put the first 3 in primary slots 1-3,
+# an extended container in slot 4, and the rest in logical slots 5 and 6, each
+# preceded by a 1 MiB EBR.
+_EXTENDED_SFDISK_JSON = """
+{
+   "partitiontable": {
+      "label": "dos",
+      "device": "example/packt/disk.img",
+      "unit": "sectors",
+      "sectorsize": 512,
+      "partitions": [
+         {
+            "node": "example/packt/disk.img1",
+            "start": 2048,
+            "size": 524288,
+            "type": "0C"
+         },{
+            "node": "example/packt/disk.img2",
+            "start": 526336,
+            "size": 1048576,
+            "type": "83"
+         },{
+            "node": "example/packt/disk.img3",
+            "start": 1574912,
+            "size": 2097152,
+            "type": "83"
+         },{
+            "node": "example/packt/disk.img4",
+            "start": 3672064,
+            "size": 8392704,
+            "type": "05"
+         },{
+            "node": "example/packt/disk.img5",
+            "start": 3674112,
+            "size": 4194304,
+            "type": "83"
+         },{
+            "node": "example/packt/disk.img6",
+            "start": 7870464,
+            "size": 4194304,
+            "type": "83"
+         }
+      ]
+   }
+}
+"""
+
+
+def _fake_sfdisk_table(mocker, stdout):
+    """Patch the sfdisk reader, which lives in gptutil for both schemas."""
+    return mocker.patch(
+        "imagecraft.pack.gptutil.subprocess.run",
+        autospec=True,
+        side_effect=[subprocess.CompletedProcess(args=[], returncode=0, stdout=stdout)],
+    )
+
+
+@pytest.mark.parametrize(
+    ("sfdisk_json", "volume_data", "expected"),
+    [
+        pytest.param(
+            _FOUR_PRIMARY_SFDISK_JSON,
+            _VOLUME_FOUR_PARTS,
+            {
+                "boot": (1 * MiB, 256 * MiB),
+                "swap": (257 * MiB, 512 * MiB),
+                "home": (769 * MiB, 1 * GiB),
+                "rootfs": (1793 * MiB, 4 * GiB),
+            },
+            id="four_primaries",
+        ),
+        pytest.param(
+            _EXTENDED_SFDISK_JSON,
+            _VOLUME_EXTENDED,
+            {
+                "boot": (1 * MiB, 256 * MiB),
+                "swap": (257 * MiB, 512 * MiB),
+                "home": (769 * MiB, 1 * GiB),
+                "logical1": (1794 * MiB, 2 * GiB),
+                "logical2": (3843 * MiB, 2 * GiB),
+            },
+            id="extended_and_logicals",
+        ),
+    ],
+)
+def test_get_partition_slices_mbr(mocker, tmp_path, sfdisk_json, volume_data, expected):
+    _fake_sfdisk_table(mocker, sfdisk_json)
+    layout = MBRVolume.unmarshal(volume_data)
+    assert gptutil.get_partition_slices(tmp_path, layout) == expected
+
+
+def test_get_partition_slices_mbr_missing_logical(mocker, tmp_path):
+    """A volume with more structures than the table has partitions fails."""
+    _fake_sfdisk_table(mocker, _FOUR_PRIMARY_SFDISK_JSON)
+    layout = MBRVolume.unmarshal(_VOLUME_EXTENDED)
+
+    with pytest.raises(CraftError, match="No partition number 5 in"):
+        gptutil.get_partition_slices(tmp_path, layout)

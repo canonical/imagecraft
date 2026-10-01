@@ -15,6 +15,7 @@
 import subprocess
 from pathlib import Path
 from subprocess import CompletedProcess
+from unittest.mock import call as mocker_call
 
 import pytest
 from imagecraft import errors
@@ -24,6 +25,7 @@ from imagecraft.utils.mount import (
     CompositeMount,
     ExtFuseMount,
     FatFuseMount,
+    VirtualDeviceManager,
     VirtualOffsetDevice,
     mount_partition,
     mount_volume,
@@ -154,6 +156,173 @@ def test_virtual_offset_device_context_manager(mock_run, tmp_path: Path):
 
     assert not vdev.is_mounted
     mock_run.assert_called_with("fusermount", "-u", str(part_file))
+
+
+SLICES = {"pc_efi": (1048576, 524288), "pc_rootfs": (1048576 + 524288, 1048576)}
+
+
+@pytest.fixture
+def vdev_manager(mock_run, tmp_path: Path):
+    disk_path = tmp_path / "pc.img"
+    disk_path.touch()
+    return VirtualDeviceManager(disk_path, SLICES, tmp_path / ".devices")
+
+
+def test_virtual_device_manager_mount(vdev_manager, mock_run, tmp_path: Path):
+    devices = vdev_manager.mount()
+
+    assert devices == {
+        "pc_efi": tmp_path / ".devices" / "pc_efi.img",
+        "pc_rootfs": tmp_path / ".devices" / "pc_rootfs.img",
+    }
+    for part_file in devices.values():
+        assert part_file.is_file()
+    assert mock_run.call_args_list == [
+        mocker_call(
+            "fusefile", str(devices["pc_efi"]), f"{tmp_path}/pc.img/1048576+524288"
+        ),
+        mocker_call(
+            "fusefile",
+            str(devices["pc_rootfs"]),
+            f"{tmp_path}/pc.img/1572864+1048576",
+        ),
+    ]
+
+    # Idempotent: an already mounted manager does not mount again.
+    assert vdev_manager.mount() == devices
+    assert mock_run.call_count == 2
+
+
+@pytest.mark.parametrize(
+    ("lazy", "call_prefix"),
+    [
+        pytest.param(False, ("fusermount", "-u"), id="normal"),
+        pytest.param(True, ("fusermount", "-u", "-z"), id="lazy"),
+    ],
+)
+def test_virtual_device_manager_unmount(
+    vdev_manager, mock_run, tmp_path: Path, *, lazy: bool, call_prefix: tuple[str, ...]
+):
+    devices = vdev_manager.mount()
+
+    vdev_manager.unmount(lazy=lazy)
+
+    for part_file in devices.values():
+        mock_run.assert_any_call(*call_prefix, str(part_file))
+    assert not (tmp_path / ".devices").exists()
+
+
+def test_virtual_device_manager_unmount_not_mounted(vdev_manager, mock_run):
+    vdev_manager.unmount()
+    mock_run.assert_not_called()
+
+
+def test_virtual_device_manager_mount_failure_rolls_back(mock_run, tmp_path: Path):
+    disk_path = tmp_path / "pc.img"
+    disk_path.touch()
+    mock_run.side_effect = [
+        CompletedProcess(args=[], returncode=0, stdout=""),
+        subprocess.CalledProcessError(1, "fusefile"),
+        CompletedProcess(args=[], returncode=0, stdout=""),
+    ]
+    vdev = VirtualDeviceManager(disk_path, SLICES, tmp_path / ".devices")
+
+    with pytest.raises(errors.MountError, match="Failed to create virtual device"):
+        vdev.mount()
+
+    # The device that did mount is unmounted, and no files are left behind.
+    mock_run.assert_called_with(
+        "fusermount", "-u", str(tmp_path / ".devices/pc_efi.img")
+    )
+    assert not (tmp_path / ".devices").exists()
+
+
+def test_virtual_device_manager_unmount_reports_errors(mocker, vdev_manager, mock_run):
+    devices = vdev_manager.mount()
+    mocker.patch("imagecraft.utils.mount.time.sleep")  # don't wait out the retries
+    mock_run.side_effect = subprocess.CalledProcessError(1, "fusermount")
+
+    with pytest.raises(
+        errors.MountError, match="Errors occurred during virtual device"
+    ):
+        vdev_manager.unmount()
+
+    # Every device is attempted, but failed mounts and directory are retained.
+    commands = [args for args, _ in mock_run.call_args_list]
+    for part_file in devices.values():
+        assert ("fusermount", "-u", str(part_file)) in commands
+        assert part_file.is_file()
+    assert vdev_manager.devices == devices
+    assert vdev_manager.target_dir.exists()
+
+
+def test_virtual_device_manager_unmount_shared_target_dir(mock_run, tmp_path: Path):
+    target_dir = tmp_path / ".devices"
+    disk1 = tmp_path / "d1.img"
+    disk2 = tmp_path / "d2.img"
+    disk1.touch()
+    disk2.touch()
+
+    vdev1 = VirtualDeviceManager(disk1, {"vol1_part": (0, 1024)}, target_dir)
+    vdev2 = VirtualDeviceManager(disk2, {"vol2_part": (0, 1024)}, target_dir)
+
+    devs1 = vdev1.mount()
+    devs2 = vdev2.mount()
+
+    assert devs1["vol1_part"].is_file()
+    assert devs2["vol2_part"].is_file()
+
+    # Unmounting vdev1 removes only its own file; vdev2's file and dir remain.
+    vdev1.unmount()
+    assert not devs1["vol1_part"].exists()
+    assert devs2["vol2_part"].is_file()
+    assert target_dir.exists()
+
+    # Unmounting vdev2 removes its file and now cleans up the empty target_dir.
+    vdev2.unmount()
+    assert not devs2["vol2_part"].exists()
+    assert not target_dir.exists()
+
+
+def test_virtual_device_manager_unmount_partial_failure_retry(
+    mocker, vdev_manager, mock_run, tmp_path: Path
+):
+    devices = vdev_manager.mount()
+    mocker.patch("imagecraft.utils.mount.time.sleep")
+
+    # First unmount: pc_efi succeeds, pc_rootfs fails
+    def mock_fusermount(*args, **kwargs):
+        if str(devices["pc_rootfs"]) in args:
+            raise subprocess.CalledProcessError(1, "fusermount")
+        return CompletedProcess(args=args, returncode=0, stdout="")
+
+    mock_run.side_effect = mock_fusermount
+
+    with pytest.raises(errors.MountError):
+        vdev_manager.unmount()
+
+    assert not devices["pc_efi"].exists()
+    assert devices["pc_rootfs"].is_file()
+    assert set(vdev_manager.devices) == {"pc_rootfs"}
+    assert (tmp_path / ".devices").exists()
+
+    # Retry unmount: now pc_rootfs succeeds
+    mock_run.side_effect = None
+    mock_run.return_value = CompletedProcess(args=[], returncode=0, stdout="")
+    vdev_manager.unmount()
+
+    assert not devices["pc_rootfs"].exists()
+    assert vdev_manager.devices == {}
+    assert not (tmp_path / ".devices").exists()
+
+
+def test_virtual_device_manager_context_manager(vdev_manager, mock_run, tmp_path: Path):
+    with vdev_manager as devices:
+        assert (tmp_path / ".devices/pc_efi.img").is_file()
+        assert set(devices) == set(SLICES)
+
+    assert not (tmp_path / ".devices").exists()
+    mock_run.assert_any_call("fusermount", "-u", str(devices["pc_efi"]))
 
 
 def test_ext_fuse_mount_standalone(mock_run, tmp_path: Path):
