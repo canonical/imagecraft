@@ -2,6 +2,8 @@ name: Run a spread test of the generated snap
 
 on: [pull_request]
 
+permissions: {}
+
 concurrency:
   group: ${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
@@ -9,13 +11,17 @@ concurrency:
 jobs:
   filter:
     runs-on: ubuntu-slim
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       source-files: ${{ steps.filter.outputs.source-files }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
       - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: filter
         with:
@@ -29,6 +35,8 @@ jobs:
     # Only build the snap for pull requests, it's not needed on release branches
     # or on master since we have launchpad build recipes which do this already
     if: ${{ github.event_name == 'pull_request' }}
+    permissions:
+      contents: read
     strategy:
       matrix:
         include:
@@ -41,18 +49,19 @@ jobs:
     # required-but-skipped job as complete if a matrix spawned it. Ugly workaround.
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: ${{ needs.filter.outputs.source-files == 'true' }}
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Build imagecraft snap
-        uses: canonical/craft-actions/snapcraft/pack@main
+        uses: canonical/craft-actions/snapcraft/pack@57ce4083bf8bfad3ea1aacd8fb9474eff4480732
         id: build-imagecraft
         if: ${{ needs.filter.outputs.source-files == 'true' }}
 
       - name: Uploading imagecraft snap artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: ${{ needs.filter.outputs.source-files == 'true' }}
         with:
           name: snap-${{ matrix.arch }}
@@ -62,6 +71,8 @@ jobs:
     runs-on: [self-hosted, spread-enabled]
     needs: [snap-builds, filter]
     if: ${{ needs.filter.outputs.source-files == 'true' }}
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -85,10 +96,11 @@ jobs:
           rm -rf "${{ github.workspace }}"
           mkdir "${{ github.workspace }}"
 
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 2
           submodules: true
+          persist-credentials: false
 
       - name: Get previous attempt
         id: get-previous-attempt
@@ -97,13 +109,13 @@ jobs:
         shell: bash
 
       - name: Get previous cache
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: "${{ github.workspace }}/.test-results"
           key: "${{ github.job }}-results-${{ github.run_id }}-${{ matrix.group }}-${{ steps.get-previous-attempt.outputs.previous_attempt }}"
 
       - name: Download previsouly build artifact
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: snap-${{ matrix.arch }}
 
@@ -206,7 +218,7 @@ jobs:
 
       - name: save spread test results to cache
         if: always()
-        uses: actions/cache/save@v6
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: "${{ github.workspace }}/.test-results"
           key: "${{ github.job }}-results-${{ github.run_id }}-${{ matrix.group }}-${{ github.run_attempt }}"
