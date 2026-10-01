@@ -15,7 +15,7 @@ from typing import cast
 
 import pytest
 from craft_application import ServiceFactory
-from imagecraft.models import Project
+from imagecraft.models import GPTStructureItem, Project
 from imagecraft.services.image import ImageService
 from imagecraft.services.pack import ImagecraftPackService
 
@@ -112,3 +112,65 @@ def test_pack_detaches_on_error(
         pack_service.pack(prime_dir=tmp_path / "prime", dest=dest_path)
 
     mock_detach.assert_called_once()
+
+
+def test_pack_skips_bios_boot_partition(
+    tmp_path,
+    enable_features,
+    default_factory: ServiceFactory,
+    pack_service: ImagecraftPackService,
+    mock_image_service: ImageService,
+    mocker,
+):
+    """A raw BIOS Boot partition is not formatted, and prime contents are ignored."""
+    project = cast(Project, default_factory.get("project").get())
+    bios_boot_item = GPTStructureItem.unmarshal(
+        {
+            "name": "bios-boot",
+            "type": "21686148-6449-6E6F-744E-656564454649",
+            "size": "1M",
+            "role": "system-boot",
+            "filesystem": "vfat",
+        }
+    )
+    volume = project.volumes["pc"]
+    mocker.patch.object(volume, "structure", [bios_boot_item, *volume.structure])
+
+    project_dirs = default_factory.get("lifecycle").project_info.dirs
+    bios_prime_dir = tmp_path / "bios_prime"
+    bios_prime_dir.mkdir(parents=True)
+    (bios_prime_dir / "stray_file.txt").touch()
+    mocker.patch.dict(project_dirs.prime_dirs, {"volume/pc/bios-boot": bios_prime_dir})
+    mocker.patch.object(
+        project_dirs,
+        "_partitions",
+        [*project_dirs._partitions, "volume/pc/bios-boot"],
+    )
+
+    mocker.patch.object(mock_image_service, "create_images")
+    mocker.patch.object(mock_image_service, "attach_images")
+    mocker.patch.object(mock_image_service, "verify_images")
+    mocker.patch.object(mock_image_service, "detach_images")
+    mocker.patch.object(
+        mock_image_service,
+        "finalize_images",
+        return_value={"pc": tmp_path / "dest" / "pc.img"},
+    )
+    mock_diskutil = mocker.patch("imagecraft.services.pack.diskutil", autospec=True)
+    mocker.patch("imagecraft.services.pack.BootloaderInstaller", autospec=True)
+    mock_warning = mocker.patch("imagecraft.services.pack.emit.warning")
+
+    pack_service.pack(prime_dir=tmp_path / "prime", dest=tmp_path / "dest")
+
+    # format_device is called for efi and rootfs, NOT for bios-boot
+    assert mock_diskutil.format_device.call_count == 2
+    formatted_devices = [
+        call.kwargs["device_path"]
+        for call in mock_diskutil.format_device.call_args_list
+    ]
+    assert tmp_path / ".devices" / "pc_bios-boot.img" not in formatted_devices
+    assert mock_warning.call_count == 1
+    assert (
+        "Ignoring prime contents for raw BIOS boot partition"
+        in mock_warning.call_args[0][0]
+    )

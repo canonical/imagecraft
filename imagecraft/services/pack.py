@@ -14,6 +14,7 @@
 
 """Imagecraft Package service."""
 
+import contextlib
 from pathlib import Path
 from typing import cast
 
@@ -68,6 +69,20 @@ class ImagecraftPackService(PackageService):
 
             for structure_item in volume.structure:
                 partition_name = get_partition_name(volume_name, structure_item)
+                if structure_item.is_bios_boot:
+                    with contextlib.suppress(Exception):
+                        partition_prime_dir = project_dirs.get_prime_dir(
+                            partition=partition_name
+                        )
+                        if partition_prime_dir.is_dir() and any(
+                            partition_prime_dir.iterdir()
+                        ):
+                            emit.warning(
+                                f"Ignoring prime contents for raw BIOS boot partition {partition_name}",
+                                prefix="",
+                            )
+                    continue
+
                 emit.progress(f"Preparing partition {partition_name}")
                 partition_prime_dir = project_dirs.get_prime_dir(
                     partition=partition_name

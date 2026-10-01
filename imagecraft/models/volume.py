@@ -276,6 +276,11 @@ class StructureItem(CraftBaseModel):
             self.filesystem_label = self.name
         return self
 
+    @property
+    def is_bios_boot(self) -> bool:
+        """Whether this partition is a raw BIOS boot partition."""
+        return _gpt_type_of(self) == GptType.BIOS_BOOT
+
 
 class MBRStructureItem(StructureItem):
     """An item on an MBR-schema volume."""
@@ -538,7 +543,7 @@ class BaseVolume(CraftBaseModel):
                 for item in self.structure
                 if item.role == Role.SYSTEM_BOOT
                 and item is not esp_item
-                and _gpt_type_of(item) != GptType.BIOS_BOOT
+                and not item.is_bios_boot
             ),
             None,
         )
@@ -546,7 +551,7 @@ class BaseVolume(CraftBaseModel):
     @property
     def has_bios_boot_partition(self) -> bool:
         """Whether the volume has a raw BIOS Boot partition (for core.img)."""
-        return any(_gpt_type_of(item) == GptType.BIOS_BOOT for item in self.structure)
+        return any(item.is_bios_boot for item in self.structure)
 
 
 class GPTVolume(BaseVolume):
