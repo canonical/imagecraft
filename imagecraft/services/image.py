@@ -112,11 +112,17 @@ class ImageService(AppService):
         :raises ValueError: If images have not been created yet.
         :raises errors.MountError: If a virtual device cannot be created.
         """
-        if self._vdev_managers:
-            return
-
         if self._images is None:
             raise ValueError("Images must be created before attaching.")
+
+        if self._vdev_managers:
+            missing = set(self._images) - set(self._vdev_managers)
+            if not missing:
+                return
+            raise errors.MountError(
+                f"Virtual devices for {sorted(missing)} are not attached; "
+                "call detach_images() and retry"
+            )
 
         project = cast(Project, self._services.get("project").get())
         target_dir = self._project_dir / DEVICES_DIR
