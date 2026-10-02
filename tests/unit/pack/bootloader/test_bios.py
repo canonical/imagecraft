@@ -174,12 +174,15 @@ class TestPCBiosInstallerChecks:
         with pytest.raises(errors.BootloaderToolsMissingError, match="grub-bios-setup"):
             installer.install()
 
-    def test_missing_mkimage(self, tmp_path):
+    def test_missing_mkimage(self, tmp_path, mocker):
         mod_dir = tmp_path / "root" / "usr" / "lib" / "grub" / "i386-pc"
         mod_dir.mkdir(parents=True)
         (mod_dir / "boot.img").write_bytes(b"x" * 512)
         (mod_dir / "grub-bios-setup").write_bytes(b"x")
         installer = _make_installer(tmp_path)
+        mocker.patch(
+            "imagecraft.pack.bootloader.bios.shutil.which", return_value="fuse2fs"
+        )
         with pytest.raises(errors.BootloaderToolsMissingError, match="grub-mkimage"):
             installer.install()
 

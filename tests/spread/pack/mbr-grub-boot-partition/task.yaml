@@ -3,6 +3,9 @@ summary: Pack an MBR image with GRUB and a dedicated boot partition
 systems: [ubuntu-24.04-64]
 
 execute: |
+  #shellcheck source=tests/spread/tools.sh
+  . "$PROJECT_PATH/tests/spread/tools.sh"
+
   GRUB_INSTALL_LOG="Preparing bootloader files"
 
   imagecraft pack --verbosity verbose --destructive-mode 2>&1 >/dev/null | MATCH "$GRUB_INSTALL_LOG"
@@ -13,7 +16,18 @@ execute: |
   # Also check GRUB configuration was generated
   MATCH "Generating grub configuration file" "$imagecraft_log_file"
 
+  IMG_NAME=pc.img
+  test -f ${IMG_NAME}
+
+  TMP_MOUNT=$(tools.mount_image "${IMG_NAME}")
+
+  tools.check_partition_metadata "${TMP_MOUNT}" "p1"
+
 restore: |
+  #shellcheck source=tests/spread/tools.sh
+  . "$PROJECT_PATH/tests/spread/tools.sh"
+
+  tools.umount_image
   imagecraft clean --destructive-mode
   rm -rf pc.img || true
 
@@ -21,3 +35,10 @@ debug: |
   df -h
   du -h -d 1 /tmp/
   mount -l
+  if [ -f loop.txt ]; then
+      cat loop.txt
+  fi
+  if [ -f tmpmount.txt ]; then
+      cat tmpmount.txt
+  fi
+  losetup -l

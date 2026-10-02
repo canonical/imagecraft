@@ -3,10 +3,8 @@ summary: Pack an image with GRUB and a dedicated boot partition
 systems: [ubuntu-24.04-64]
 
 execute: |
-  TMPDIR="$(mktemp -d)"
-  TMP_MOUNT=${TMPDIR}/mount
-  mkdir -p ${TMP_MOUNT}
-  echo ${TMP_MOUNT} >> tmpmount.txt
+  #shellcheck source=tests/spread/tools.sh
+  . "$PROJECT_PATH/tests/spread/tools.sh"
 
   GRUB_INSTALL_LOG="Preparing bootloader files"
 
@@ -22,21 +20,9 @@ execute: |
   IMG_NAME=pc.img
   test -f ${IMG_NAME}
 
-  LOOP=$(losetup --find --show --partscan ${IMG_NAME})
-  echo $LOOP > loop.txt
+  TMP_MOUNT=$(tools.mount_image "${IMG_NAME}")
 
-  count=0
-  until ls -d "$LOOP"p* >/dev/null 2>&1; do
-    count=$((count + 1))
-    if [ "$count" -ge 100 ]; then
-      echo "Timed out waiting for $LOOP partition devices" >&2
-      exit 1
-    fi
-    sleep 0.1
-  done
-
-  mkdir ${TMP_MOUNT}/p2
-  mount "${LOOP}p2" ${TMP_MOUNT}/p2
+  tools.check_partition_metadata "${TMP_MOUNT}" "p1"
 
   BOOT_CFG=${TMP_MOUNT}/p2/grub/grub.cfg
   test -f "$BOOT_CFG"
@@ -51,18 +37,10 @@ execute: |
   test -f "${TMP_MOUNT}/p2${INITRD_PATH}"
 
 restore: |
-  if [ -f loop.txt -a -f tmpmount.txt ]; then
-      LOOP="$(cat loop.txt)"
-      TMP_MOUNT="$(cat tmpmount.txt)"
+  #shellcheck source=tests/spread/tools.sh
+  . "$PROJECT_PATH/tests/spread/tools.sh"
 
-      mount --make-rprivate ${TMP_MOUNT}/p2 || true
-      umount --recursive ${TMP_MOUNT}/p2 || true
-
-      losetup -d "$LOOP"
-      sync
-      losetup -l | NOMATCH "$LOOP"
-      rm loop.txt
-  fi
+  tools.umount_image
   imagecraft clean --destructive-mode
   rm -rf pc.img || true
 
