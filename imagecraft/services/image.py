@@ -322,7 +322,9 @@ class ImageService(AppService):
     def finalize_images(self, dest: pathlib.Path) -> Mapping[str, pathlib.Path]:
         """Move hidden image files to their final destination.
 
-        Moves each .{name}.img.tmp to dest/{name}.img.
+        Move each .{name}.img.tmp to dest/{name}.img. Finalization consumes the
+        tracked temporary image set so callers must recreate images before new
+        image-service operations.
 
         :param dest: Directory to move the final images into.
         :returns: a Mapping of the image names to their paths.
@@ -334,7 +336,6 @@ class ImageService(AppService):
             shutil.move(str(hidden_path), final_path)
             emit.debug(f"Finalized image {name!r} -> {final_path}")
             images[name] = final_path
-        # Finalization consumes the tracked temporary image set; callers must
-        # recreate images before any later image-service operations.
+
         self._images = None
         return images
