@@ -57,7 +57,9 @@ parts:
       echo "boot files" > $CRAFT_OVERLAY/boot/c
 """
 
-IMAGECRAFT_YAML = IMAGECRAFT_YAML_COMMON + """
+IMAGECRAFT_YAML = (
+    IMAGECRAFT_YAML_COMMON
+    + """
 
 filesystems:
   default:
@@ -83,8 +85,11 @@ volumes:
         role: system-data
         size: 512M
 """
+)
 
-IMAGECRAFT_YAML_NO_EFI = IMAGECRAFT_YAML_COMMON + """
+IMAGECRAFT_YAML_NO_EFI = (
+    IMAGECRAFT_YAML_COMMON
+    + """
 
 filesystems:
   default:
@@ -110,8 +115,11 @@ volumes:
         role: system-data
         size: 512M
 """
+)
 
-IMAGECRAFT_YAML_FIRST_PARTITION_FALLBACK = IMAGECRAFT_YAML_COMMON + """
+IMAGECRAFT_YAML_FIRST_PARTITION_FALLBACK = (
+    IMAGECRAFT_YAML_COMMON
+    + """
 
 filesystems:
   default:
@@ -137,6 +145,7 @@ volumes:
         role: system-data
         size: 512M
 """
+)
 
 
 def _run_pack(app_metadata, monkeypatch: pytest.MonkeyPatch) -> int:
