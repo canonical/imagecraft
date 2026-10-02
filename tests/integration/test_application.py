@@ -28,7 +28,7 @@ from imagecraft.utils.mount import mount_volume
 
 from tests.conftest import is_noble_non_amd64
 
-IMAGECRAFT_YAML = """
+IMAGECRAFT_YAML_COMMON = """
 name: ubuntu-server-amd64
 version: "24.04.20241217"
 summary: A test image
@@ -57,6 +57,9 @@ parts:
     after: [rootfs]
     overlay-script: |
       echo "boot files" > $CRAFT_OVERLAY/boot/c
+"""
+
+IMAGECRAFT_YAML = IMAGECRAFT_YAML_COMMON + """
 
 filesystems:
   default:
@@ -81,31 +84,23 @@ volumes:
         filesystem-label: writable
         role: system-data
         size: 512M
-
 """
 
-IMAGECRAFT_YAML_NO_EFI = IMAGECRAFT_YAML.replace(
-    """      - name: efi
-        type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
-        filesystem: vfat
-        filesystem-label: system-boot
-        size: 512M
-        role: system-boot
-      - name: rootfs
-""",
-    """      - name: ubuntu-seed
-        type: EBD0A0A2-B9E5-4433-87C0-68B6B72699C7
-        filesystem: vfat
-        filesystem-label: system-boot
-        size: 512M
-        role: system-boot
-      - name: rootfs
-""",
-).replace("(volume/pc/efi)", "(volume/pc/ubuntu-seed)")
+IMAGECRAFT_YAML_NO_EFI = IMAGECRAFT_YAML_COMMON + """
 
-IMAGECRAFT_YAML_FIRST_PARTITION_FALLBACK = IMAGECRAFT_YAML.replace(
-    """      - name: efi
-        type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
+filesystems:
+  default:
+  - mount: /
+    device: (volume/pc/rootfs)
+  - mount: /boot/
+    device: (volume/pc/ubuntu-seed)
+
+volumes:
+  pc:
+    schema: gpt
+    structure:
+      - name: ubuntu-seed
+        type: EBD0A0A2-B9E5-4433-87C0-68B6B72699C7
         filesystem: vfat
         filesystem-label: system-boot
         size: 512M
@@ -116,8 +111,22 @@ IMAGECRAFT_YAML_FIRST_PARTITION_FALLBACK = IMAGECRAFT_YAML.replace(
         filesystem-label: writable
         role: system-data
         size: 512M
-""",
-    """      - name: data
+"""
+
+IMAGECRAFT_YAML_FIRST_PARTITION_FALLBACK = IMAGECRAFT_YAML_COMMON + """
+
+filesystems:
+  default:
+  - mount: /
+    device: (volume/pc/rootfs)
+  - mount: /boot/
+    device: (volume/pc/data)
+
+volumes:
+  pc:
+    schema: gpt
+    structure:
+      - name: data
         type: EBD0A0A2-B9E5-4433-87C0-68B6B72699C7
         filesystem: vfat
         filesystem-label: data
@@ -129,8 +138,7 @@ IMAGECRAFT_YAML_FIRST_PARTITION_FALLBACK = IMAGECRAFT_YAML.replace(
         filesystem-label: writable
         role: system-data
         size: 512M
-""",
-).replace("(volume/pc/efi)", "(volume/pc/data)")
+"""
 
 
 def _run_pack(app_metadata, monkeypatch: pytest.MonkeyPatch) -> int:
