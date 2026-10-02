@@ -184,7 +184,7 @@ class ImagecraftPackService(PackageService):
             if get_partition_name(volume_name, structure_item) == partition_name:
                 return structure_item.filesystem
 
-        raise AssertionError(f"Unknown partition {partition_name!r}")
+        raise ValueError(f"Unknown partition {partition_name!r}")
 
     def _metadata_path_supports_permissions(self, partition_name: str) -> bool:
         """Return True when the metadata path is on a filesystem with Unix mode bits."""
