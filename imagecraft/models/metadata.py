@@ -29,7 +29,7 @@ class ImageMetadata(CraftBaseModel):
 
     name: str
     base: str
-    build_base: str | None = Field(default=None, alias="build-base")
+    build_base: str | None = None
     platform: str
     architecture: str
     volumes: dict[str, VolumeMetadata]
@@ -39,4 +39,4 @@ class ImageMetadata(CraftBaseModel):
     description: str | None = None
     contact: list[str] | None = None
     issues: list[str] | None = None
-    source_code: str | None = Field(default=None, alias="source-code")
+    source_code: str | None = None
