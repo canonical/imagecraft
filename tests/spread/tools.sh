@@ -63,8 +63,9 @@ tools.check_metadata() {
   local metadata_file="$1"
 
   test -f "${metadata_file}"
-  # -e makes yq exit non-zero if the file doesn't parse or the field is absent
-  yq -e '.name | length > 0' "${metadata_file}"
+  # -e makes yq exit non-zero if the file doesn't parse or the field is absent.
+  # Feed the file through stdin to avoid problems with strict snap restrictions.
+  yq -e '.name | length > 0' <"${metadata_file}"
 }
 
 tools.check_partition_metadata() {
