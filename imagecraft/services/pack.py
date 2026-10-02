@@ -112,7 +112,11 @@ class ImagecraftPackService(PackageService):
         )
 
     def _metadata_volume_artifact(self) -> tuple[str, str]:
-        """Return the metadata volume key and format for the primary artifact."""
+        """Return the output artifact filename and format for the primary artifact.
+
+        Per specification, ``metadata.yaml`` ``volumes`` are mapped by emitted artifact
+        filename, not by the project volume name.
+        """
         artifact_path = self.get_artifacts()[None]
         artifact_name = artifact_path.name
         artifact_suffix = artifact_path.suffix.lower()

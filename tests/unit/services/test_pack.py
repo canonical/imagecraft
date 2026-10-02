@@ -222,6 +222,15 @@ def test_render_image_metadata_uses_artifact_extension_for_volume_format(
     assert metadata["volumes"] == {"pc.vhd": {"format": "vhd"}}
 
 
+def test_metadata_volume_artifact_uses_output_filename_key(
+    configured_pack_service: ImagecraftPackService,
+):
+    artifact_name, artifact_format = configured_pack_service._metadata_volume_artifact()
+
+    assert artifact_name == "pc.img"
+    assert artifact_format == "raw"
+
+
 def test_render_image_metadata_normalizes_scalar_project_metadata(
     configured_pack_service: ImagecraftPackService,
 ):
