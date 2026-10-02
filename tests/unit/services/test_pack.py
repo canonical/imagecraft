@@ -191,18 +191,15 @@ def test_render_image_metadata(
     assert "source-code" not in metadata
 
 
-def test_render_image_metadata_omits_build_base_matching_base(
+def test_render_image_metadata_includes_build_base(
     configured_pack_service: ImagecraftPackService,
 ):
-    """ST181 only requires build-base when it differs from base."""
     project = cast(Project, configured_pack_service._services.get("project").get())
-    # Bypass validation: no currently valid project has matching bases.
-    object.__setattr__(project, "build_base", project.base)
 
     metadata = yaml.safe_load(configured_pack_service._render_image_metadata())
 
     assert metadata["base"] == "bare"
-    assert "build-base" not in metadata
+    assert metadata["build-base"] == "devel"
 
 
 def test_render_image_metadata_uses_artifact_extension_for_volume_format(

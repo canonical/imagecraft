@@ -96,9 +96,7 @@ class ImagecraftPackService(PackageService):
         return ImageMetadata(
             name=project.name,
             base=project.base,
-            build_base=(
-                project.build_base if project.build_base != project.base else None
-            ),
+            build_base=project.build_base,
             platform=self._build_info.platform,
             architecture=project_info.target_arch,
             title=project.title,
