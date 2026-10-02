@@ -29,6 +29,7 @@ APP_METADATA = AppMetadata(
     enable_for_grammar=True,
     always_repack=False,
     check_supported_base=True,
+    allow_spread_yaml=False,
 )
 
 
