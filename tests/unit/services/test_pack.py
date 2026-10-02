@@ -23,7 +23,12 @@ from craft_parts import ProjectDirs, ProjectInfo, ProjectVar, ProjectVarInfo
 from craft_parts.filesystem_mounts import FilesystemMount, FilesystemMounts
 from imagecraft.errors import GRUBInstallError
 from imagecraft.models import Project
-from imagecraft.models.volume import GPTStructureItem, GptType, Role
+from imagecraft.models.volume import (
+    GPTStructureItem,
+    GptType,
+    HybridStructureItem,
+    Role,
+)
 from imagecraft.services.image import ImageService
 from imagecraft.services.pack import ImagecraftPackService
 from pydantic import AnyUrl, TypeAdapter
@@ -267,6 +272,35 @@ def test_select_metadata_partition_prefers_efi(
         ],
     )
     assert configured_pack_service._select_metadata_partition() == "volume/pc/efi"
+
+
+def test_select_metadata_partition_prefers_hybrid_efi_type(
+    configured_pack_service: ImagecraftPackService,
+):
+    project = cast(Project, configured_pack_service._services.get("project").get())
+    volume = cast(object, project.volumes["pc"])
+    object.__setattr__(
+        volume,
+        "structure",
+        [
+            HybridStructureItem(
+                name="seed",
+                structure_type="0C,C12A7328-F81F-11D2-BA4B-00A0C93EC93B",
+                role=Role.SYSTEM_SEED,
+                size="256M",
+                filesystem="vfat",
+            ),
+            HybridStructureItem(
+                name="rootfs",
+                structure_type="83,0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+                role=Role.SYSTEM_DATA,
+                size="1G",
+                filesystem="ext4",
+            ),
+        ],
+    )
+
+    assert configured_pack_service._select_metadata_partition() == "volume/pc/seed"
 
 
 def test_select_metadata_partition_falls_back_to_system_boot(

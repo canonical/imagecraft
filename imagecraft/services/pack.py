@@ -152,8 +152,14 @@ class ImagecraftPackService(PackageService):
         volume = project.volumes[volume_name]
 
         for structure_item in volume.structure:
-            if getattr(structure_item, "structure_type", None) == GptType.EFI_SYSTEM:
+            structure_type = getattr(structure_item, "structure_type", None)
+            if structure_type == GptType.EFI_SYSTEM:
                 return get_partition_name(volume_name, structure_item)
+
+            if structure_type is not None:
+                _, _, gpt_type = structure_type.partition(",")
+                if gpt_type.upper() == GptType.EFI_SYSTEM.value:
+                    return get_partition_name(volume_name, structure_item)
 
         for structure_item in volume.structure:
             if structure_item.role == Role.SYSTEM_BOOT:
