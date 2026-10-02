@@ -23,8 +23,6 @@ import pytest
 from craft_application import ServiceFactory
 from craft_parts import Features, callbacks
 from imagecraft import application
-from imagecraft.models import GPTVolume, MBRVolume
-from imagecraft.utils.mount import mount_volume
 
 from tests.conftest import is_noble_non_amd64
 
