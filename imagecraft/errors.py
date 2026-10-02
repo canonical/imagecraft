@@ -23,16 +23,22 @@ class ImagecraftError(CraftError):
     """Base class for all imagecraft errors."""
 
 
-class ImageError(ImagecraftError):
-    """Raised when an error occurs when dealing with the Image class."""
-
-
 class MountError(ImagecraftError):
     """Raised when an error occurs mounting or unmounting an image or partition."""
 
 
-class GRUBInstallError(ImagecraftError):
-    """Raised when an error occurs when installing grub."""
+class BootloaderError(ImagecraftError):
+    """Raised when an error occurs when installing the bootloader."""
+
+
+class BootloaderToolsMissingError(BootloaderError):
+    """Raised when GRUB tools or module files aren't present in the build environment.
+
+    Distinct from other :class:`BootloaderError` failures (e.g. insufficient
+    space to embed core.img) so callers can gracefully skip bootloader
+    installation instead of failing the whole ``pack`` operation, matching
+    the historical behaviour of the loop-device/chroot based installer.
+    """
 
 
 class ChrootError(ImagecraftError):
