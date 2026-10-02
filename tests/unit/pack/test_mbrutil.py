@@ -517,6 +517,30 @@ def _fake_sfdisk_table(mocker, stdout):
 
 
 @pytest.mark.parametrize(
+    ("volume_data", "missing_partnum", "table_json"),
+    [
+        # Four primaries, but the volume asks for six structures, so the first
+        # logical slot (5) has no partition in the table.
+        pytest.param(
+            _VOLUME_EXTENDED,
+            5,
+            _FOUR_PRIMARY_SFDISK_JSON,
+            id="missing_first_logical",
+        ),
+    ],
+)
+def test_get_partition_slices_mbr_missing_logical(
+    mocker, tmp_path, volume_data, missing_partnum, table_json
+):
+    """A volume with more structures than the table has partitions fails."""
+    _fake_sfdisk_table(mocker, table_json)
+    layout = MBRVolume.unmarshal(volume_data)
+
+    with pytest.raises(CraftError, match=f"No partition number {missing_partnum} in"):
+        gptutil.get_partition_slices(tmp_path, layout)
+
+
+@pytest.mark.parametrize(
     ("sfdisk_json", "volume_data", "expected"),
     [
         pytest.param(
@@ -548,12 +572,3 @@ def test_get_partition_slices_mbr(mocker, tmp_path, sfdisk_json, volume_data, ex
     _fake_sfdisk_table(mocker, sfdisk_json)
     layout = MBRVolume.unmarshal(volume_data)
     assert gptutil.get_partition_slices(tmp_path, layout) == expected
-
-
-def test_get_partition_slices_mbr_missing_logical(mocker, tmp_path):
-    """A volume with more structures than the table has partitions fails."""
-    _fake_sfdisk_table(mocker, _FOUR_PRIMARY_SFDISK_JSON)
-    layout = MBRVolume.unmarshal(_VOLUME_EXTENDED)
-
-    with pytest.raises(CraftError, match="No partition number 5 in"):
-        gptutil.get_partition_slices(tmp_path, layout)
