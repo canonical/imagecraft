@@ -11,8 +11,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-import re
-
 import pytest
 from craft_application import ServiceFactory
 from imagecraft.services.image import ImageService
@@ -25,7 +23,7 @@ def image_service(default_factory: ServiceFactory, enable_features):
     svc = default_factory.get("image")
     assert isinstance(svc, ImageService)
     yield svc
-    svc._loop_devices.clear()
+    svc.detach_images()
 
 
 def test_create_images_produces_hidden_files(image_service: ImageService, new_dir):
@@ -96,45 +94,54 @@ def test_finalize_images_creates_dest_dir(
 
 @pytest.mark.requires_root
 def test_attach_and_detach_images(image_service: ImageService, new_dir):
-    """attach_images() attaches loop devices; detach_images() removes them."""
+    """attach_images() provides virtual devices; detach_images() removes them."""
     image_service.create_images()
     image_service.attach_images()
 
-    assert "pc" in image_service._loop_devices
-    loop_dev = image_service._loop_devices["pc"]
-    assert loop_dev.startswith("/dev/loop")
+    assert "pc" in image_service._vdev_managers
+    devices = image_service._vdev_managers["pc"].devices
+    assert set(devices) == {"pc_efi", "pc_rootfs"}
+    for part_file in devices.values():
+        assert part_file.is_file()
 
     image_service.detach_images()
-    assert image_service._loop_devices == {}
+
+    assert image_service._vdev_managers == {}
+    assert not (image_service._project_dir / ".devices").exists()
 
 
 @pytest.mark.requires_root
 def test_attach_images_is_idempotent(image_service: ImageService, new_dir):
-    """Calling attach_images() twice reuses the existing loop device."""
+    """Calling attach_images() twice reuses the existing virtual devices."""
     image_service.create_images()
     image_service.attach_images()
-    first_device = dict(image_service._loop_devices)
+    first_devices = dict(image_service._vdev_managers["pc"].devices)
 
     image_service.attach_images()
-    assert image_service._loop_devices == first_device
+    assert image_service._vdev_managers["pc"].devices == first_devices
 
     image_service.detach_images()
 
 
 @pytest.mark.requires_root
-def test_get_partition_loop_paths(image_service: ImageService, new_dir):
-    """get_loop_paths() returns volume and partition paths."""
+def test_get_partition_device_paths(image_service: ImageService, new_dir):
+    """get_device_paths() returns the image file and virtual partition files."""
     image_service.create_images()
     image_service.attach_images()
 
-    paths = image_service.get_loop_paths()
+    paths = image_service.get_device_paths()
 
-    # Volume-level device
-    assert "pc" in paths
-    assert re.match(r"^/dev/loop[0-9]+$", paths["pc"])
+    # Volume-level device is the raw image file.
+    assert paths["pc"] == image_service._project_dir / ".pc.img.tmp"
+    assert paths["pc"].is_file()
 
-    # default_project_yaml has efi (p1) and rootfs (p2)
-    assert paths["pc/efi"].endswith("p1")
-    assert paths["pc/rootfs"].endswith("p2")
+    # default_project_yaml has efi and rootfs partitions
+    assert paths["pc/efi"] == image_service._project_dir / ".devices" / "pc_efi.img"
+    assert (
+        paths["pc/rootfs"] == image_service._project_dir / ".devices" / "pc_rootfs.img"
+    )
+    for key in ("pc/efi", "pc/rootfs"):
+        assert paths[key].is_file()
+        assert paths[key].stat().st_size > 0
 
     image_service.detach_images()

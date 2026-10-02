@@ -20,6 +20,7 @@ import pytest
 from imagecraft.models import FileSystem, GPTVolume, MBRVolume
 from imagecraft.pack import diskutil, gptutil, mbrutil
 from imagecraft.utils.mount import (
+    VirtualDeviceManager,
     mount_partition,
     mount_volume,
 )
@@ -30,7 +31,7 @@ from tests.conftest import is_noble_non_amd64
 @pytest.fixture(
     params=[
         pytest.param(False, marks=pytest.mark.requires_root, id="as_root"),
-        pytest.param(True, id="with_fakeroot"),
+        pytest.param(True, marks=pytest.mark.requires_root, id="with_fakeroot"),
     ]
 )
 def fakeroot(request: pytest.FixtureRequest) -> bool:
@@ -285,3 +286,51 @@ def test_volume_mount(
         assert (
             rootfs / "boot" / "efi" / "EFI" / "BOOT" / "grubx64.efi"
         ).read_bytes() == b"GRUB_BINARY"
+
+
+@pytest.mark.requires_root
+def test_virtual_device_manager(tmp_path: Path):
+    if shutil.which("fusefile") is None:
+        pytest.skip("fusefile is not installed")
+
+    disk_path = tmp_path / "pc.img"
+    sector = gptutil.SECTOR_SIZE_512
+    slices = {
+        "pc_efi": (2048 * sector, 32 * 1024**2),
+        "pc_rootfs": ((2048 + 65536) * sector, 64 * 1024**2),
+    }
+    with disk_path.open("wb") as f:
+        f.truncate(max(offset + size for offset, size in slices.values()))
+
+    # Write near the end of the rootfs slice, where an off-by-one in the
+    # partition's extent would show up.
+    payload = b"PARTITION_CONTENT"
+    payload_offset = slices["pc_rootfs"][0] + slices["pc_rootfs"][1] - len(payload)
+
+    vdev = VirtualDeviceManager(disk_path, slices, tmp_path / ".devices")
+
+    with vdev as devices:
+        for name, part_file in devices.items():
+            # Each virtual device is a file of the partition's size.
+            assert part_file.is_file()
+            assert part_file.stat().st_size == slices[name][1]
+
+        # fusefile does not implement truncate, so the virtual devices are
+        # written to in "r+b" mode rather than with write_bytes().
+        with devices["pc_rootfs"].open("r+b") as f:
+            # The virtual device spans only the partition, so the payload's
+            # offset within the image is its offset from the end of the file.
+            f.seek(-len(payload), os.SEEK_END)
+            f.write(payload)
+        with devices["pc_efi"].open("r+b") as f:
+            f.write(b"EFI" * 100)
+
+    # Unmounting removes the virtual devices and their directory.
+    assert not (tmp_path / ".devices").exists()
+
+    # The writes landed in the backing image at the requested offsets.
+    with disk_path.open("rb") as f:
+        f.seek(payload_offset)
+        assert f.read(len(payload)) == payload
+        f.seek(slices["pc_efi"][0])
+        assert f.read(300) == b"EFI" * 100

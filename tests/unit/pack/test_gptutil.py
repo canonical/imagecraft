@@ -392,3 +392,78 @@ def test_verify_partition_tables(mocker, tmp_path):
         e.value.details
         == "The backup GPT table is corrupt, but the primary appears OK, so that will be used."
     )
+
+
+_SECTOR = gptutil.SECTOR_SIZE_512
+
+# Implicitly numbered, matching _TWO_PART_SFDISK_JSON (slots 1 and 2).
+_TWO_PART_GPT = {
+    "schema": "gpt",
+    "structure": [
+        {
+            "name": "efi",
+            "role": "system-boot",
+            "type": "C12A7328-F81F-11D2-BA4B-00A0C93EC93B",
+            "filesystem": "vfat",
+            "size": "256M",
+        },
+        {
+            "name": "rootfs",
+            "role": "system-data",
+            "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+            "filesystem": "ext4",
+            "size": "6G",
+        },
+    ],
+}
+
+# Explicitly numbered, matching _SPARSE_SFDISK_JSON (slots 2 and 5).
+_SPARSE_NUMBERED_GPT = {
+    "schema": "gpt",
+    "structure": [
+        {
+            "name": "efi",
+            "role": "system-boot",
+            "type": "C12A7328-F81F-11D2-BA4B-00A0C93EC93B",
+            "filesystem": "vfat",
+            "size": "256M",
+            "number": 2,
+        },
+        {
+            "name": "rootfs",
+            "role": "system-data",
+            "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+            "filesystem": "ext4",
+            "size": "6G",
+            "number": 5,
+        },
+    ],
+}
+
+
+@pytest.mark.parametrize(
+    ("fixture_name", "raw_layout"),
+    [
+        pytest.param("fake_sfdisk", _TWO_PART_GPT, id="implicit_numbers"),
+        pytest.param("fake_sfdisk_sparse", _SPARSE_NUMBERED_GPT, id="explicit_numbers"),
+    ],
+)
+def test_get_partition_slices_gpt(request, tmp_path, fixture_name, raw_layout):
+    """Slices are reported in bytes, converted from sfdisk's sector units."""
+    request.getfixturevalue(fixture_name)
+    layout = GPTVolume.unmarshal(raw_layout)
+    assert gptutil.get_partition_slices(tmp_path, layout) == {
+        "efi": (2048 * _SECTOR, 524288 * _SECTOR),
+        "rootfs": (526336 * _SECTOR, 12582912 * _SECTOR),
+    }
+
+
+@pytest.mark.parametrize("fixture_name", ["fake_sfdisk_sparse", "fake_sfdisk_empty"])
+def test_get_partition_slices_unnumbered_partition_absent(
+    request, tmp_path, fixture_name
+):
+    """A partition slot not present in the table raises CraftError."""
+    request.getfixturevalue(fixture_name)
+    layout = GPTVolume.unmarshal(_TWO_PART_GPT)
+    with pytest.raises(CraftError, match="No partition number 1 in"):
+        gptutil.get_partition_slices(tmp_path, layout)

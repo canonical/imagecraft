@@ -36,8 +36,7 @@ class BootloaderToolsMissingError(BootloaderError):
 
     Distinct from other :class:`BootloaderError` failures (e.g. insufficient
     space to embed core.img) so callers can gracefully skip bootloader
-    installation instead of failing the whole ``pack`` operation, matching
-    the historical behaviour of the loop-device/chroot based installer.
+    installation instead of failing the whole ``pack`` operation.
     """
 
 

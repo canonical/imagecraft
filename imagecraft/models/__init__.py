@@ -31,6 +31,7 @@ from imagecraft.models.volume import (
     PartitionSchema,
     Role,
     Volume,
+    is_bios_boot_partition,
 )
 from imagecraft.models.grammar import get_grammar_aware_volume_keywords
 
@@ -48,4 +49,5 @@ __all__ = [
     "VolumeFilesystemsModel",
     "get_grammar_aware_volume_keywords",
     "get_partition_name",
+    "is_bios_boot_partition",
 ]

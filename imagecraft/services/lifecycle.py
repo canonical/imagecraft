@@ -68,14 +68,20 @@ class ImagecraftLifecycleService(LifecycleService):
         callbacks.register_prologue(self._prologue_hook)
 
     def _prologue_hook(self, project_info: ProjectInfo) -> None:
-        """Create images and export loop device paths as environment variables."""
+        """Create images and export device paths as environment variables.
+
+        Every volume is exported as ``CRAFT_VOLUME_<VOLUME>``, pointing at its
+        raw image file, and every partition as
+        ``CRAFT_VOLUME_<VOLUME>_<PARTITION>``, pointing at the virtual
+        partition device that parts use to format and populate it.
+        """
         image_service = cast(ImageService, self._services.get("image"))
         image_service.create_images()
         image_service.attach_images()
 
-        for key, path in image_service.get_loop_paths().items():
+        for key, path in image_service.get_device_paths().items():
             env_key = f"CRAFT_VOLUME_{key.upper().replace('/', '_').replace('-', '_')}"
-            project_info.global_environment[env_key] = path
+            project_info.global_environment[env_key] = str(path)
 
     @override
     def _exec(self, actions: list[Action]) -> None:
