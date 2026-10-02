@@ -15,7 +15,6 @@
 """Image metadata models."""
 
 from craft_application.models import CraftBaseModel
-from pydantic import Field
 
 
 class VolumeMetadata(CraftBaseModel):
