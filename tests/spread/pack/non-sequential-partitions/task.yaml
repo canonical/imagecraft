@@ -15,9 +15,9 @@ execute: |
     ERROR "Expected and actual partitions don't match.\n Expected:\n${expected_partitions}\n Actual:\n${actual_partitions}"
   fi
 
-  TMP_MOUNT=$(tools.mount_image disk.img)
+  TMP_MOUNT=$(tools.mount_image "disk.img")
 
-  tools.check_metadata ${TMP_MOUNT}/p13/.image/metadata.yaml
+  tools.check_partition_metadata "${TMP_MOUNT}" "p13"
 
 restore: |
   #shellcheck source=tests/spread/tools.sh

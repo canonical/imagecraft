@@ -19,9 +19,9 @@ execute: |
   IMG_NAME=pc.img
   test -f ${IMG_NAME}
 
-  TMP_MOUNT=$(tools.mount_image ${IMG_NAME})
+  TMP_MOUNT=$(tools.mount_image "${IMG_NAME}")
 
-  tools.check_metadata ${TMP_MOUNT}/p1/.image/metadata.yaml
+  tools.check_partition_metadata "${TMP_MOUNT}" "p1"
 
 restore: |
   #shellcheck source=tests/spread/tools.sh

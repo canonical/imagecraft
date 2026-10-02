@@ -67,6 +67,13 @@ tools.check_metadata() {
   yq -e '.name | length > 0' "${metadata_file}"
 }
 
+tools.check_partition_metadata() {
+  local mount_root="$1"
+  local partition_name="$2"
+
+  tools.check_metadata "${mount_root}/${partition_name}/.image/metadata.yaml"
+}
+
 tools.umount_image() {
   if [ -f loop.txt -a -f tmpmount.txt ]; then
     local loop_dev

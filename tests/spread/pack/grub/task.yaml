@@ -26,12 +26,12 @@ execute: |
   # Check that work dirs *do* exist
   test -d parts -a -d stage -a -d prime
 
-  TMP_MOUNT=$(tools.mount_image ${IMG_NAME})
+  TMP_MOUNT=$(tools.mount_image "${IMG_NAME}")
 
   # Rootfs is on p2; verify override-overlay changed the mounted filesystem.
-  grep -q "^testuser:" ${TMP_MOUNT}/p2/etc/passwd
+  grep -q "^testuser:" "${TMP_MOUNT}/p2/etc/passwd"
 
-  tools.check_metadata ${TMP_MOUNT}/p1/.image/metadata.yaml
+  tools.check_partition_metadata "${TMP_MOUNT}" "p1"
 
 restore: |
   #shellcheck source=tests/spread/tools.sh
