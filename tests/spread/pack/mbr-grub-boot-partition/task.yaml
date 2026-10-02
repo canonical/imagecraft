@@ -6,7 +6,7 @@ execute: |
   #shellcheck source=tests/spread/tools.sh
   . "$PROJECT_PATH/tests/spread/tools.sh"
 
-  GRUB_INSTALL_LOG="Setting up GRUB in the image"
+  GRUB_INSTALL_LOG="Preparing bootloader files"
 
   imagecraft pack --verbosity verbose --destructive-mode 2>&1 >/dev/null | MATCH "$GRUB_INSTALL_LOG"
 

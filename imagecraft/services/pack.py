@@ -1,4 +1,4 @@
-# Copyright 2023-2025 Canonical Ltd.
+# Copyright 2023-2026 Canonical Ltd.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 3 as
@@ -34,7 +34,8 @@ from imagecraft.models import (
     get_partition_name,
 )
 from imagecraft.models.volume import GptType
-from imagecraft.pack import Image, diskutil, grubutil
+from imagecraft.pack import diskutil
+from imagecraft.pack.bootloader import BootloaderInstaller
 from imagecraft.services.image import ImageService
 
 
@@ -461,69 +462,77 @@ class ImagecraftPackService(PackageService):
         metadata_partition = self._select_metadata_partition()
         metadata_yaml = self._render_image_metadata()
 
-        self._remove_stale_metadata_files(metadata_partition, metadata_yaml)
-        self._assert_no_metadata_conflict(metadata_partition)
+        image_service = cast(ImageService, self._services.get("image"))
+        # Both calls are idempotent — the prologue hook will have run them
+        # already during the lifecycle, but pack may be called standalone.
+        image_service.create_images()
+        image_service.attach_images()
+
+        project_dirs = self._services.get("lifecycle").project_info.dirs
+        loop_paths = image_service.get_loop_paths()
+
+        arch = self._services.get("lifecycle").project_info.target_arch
+        bootloader = BootloaderInstaller(volume=volume, arch=arch)
+        metadata_cleanup_needed = False
+
+        # Pre-format staging: write bootloader files (fstab, grub.cfg, EFI
+        # binaries) into the root/ESP prime directories *before* formatting,
+        # so mke2fs/mkfs.vfat embed them directly.
         try:
+            self._remove_stale_metadata_files(metadata_partition, metadata_yaml)
+            self._assert_no_metadata_conflict(metadata_partition)
+            metadata_cleanup_needed = True
             # Inside the try so a partially written file is also cleaned up;
             # the conflict check above guarantees the path was ours to use.
             self._inject_metadata_file(metadata_partition, metadata_yaml)
 
-            image_service = cast(ImageService, self._services.get("image"))
-            # Both calls are idempotent — the prologue hook will have run them
-            # already during the lifecycle, but pack may be called standalone.
-            image_service.create_images()
-            image_service.attach_images()
+            bootloader.prepare_rootfs(
+                project_dirs=project_dirs,
+                volume_name=volume_name,
+                filesystems=project.filesystems,
+            )
+            partition_uuids = bootloader.partition_uuids
 
-            project_dirs = self._services.get("lifecycle").project_info.dirs
-            loop_paths = image_service.get_loop_paths()
-
-            try:
-                for structure_item in volume.structure:
-                    partition_name = get_partition_name(volume_name, structure_item)
-                    emit.progress(f"Preparing partition {partition_name}")
-                    partition_prime_dir = project_dirs.get_prime_dir(
-                        partition=partition_name
-                    )
-                    loop_path = Path(loop_paths[f"{volume_name}/{structure_item.name}"])
-
-                    diskutil.format_device(
-                        device_path=loop_path,
-                        fstype=structure_item.filesystem,
-                        label=structure_item.filesystem_label,
-                        content_dir=partition_prime_dir,
-                    )
-
-                image_service.verify_images()
-            finally:
-                image_service.detach_images()
-
-            artifact_path: Path | None = None
-            try:
-                artifact_path = image_service.finalize_images(path.parent)[volume_name]
-
-                filesystem_mount = self._services.get(
-                    "lifecycle"
-                ).project_info.default_filesystem_mount
-                arch = self._services.get("lifecycle").project_info.target_arch
-                image = Image(volume=volume, disk_path=artifact_path)
-                grubutil.setup_grub(
-                    image=image,
-                    workdir=project_dirs.work_dir,
-                    arch=arch,
-                    filesystem_mount=filesystem_mount,
+            for structure_item in volume.structure:
+                partition_name = get_partition_name(volume_name, structure_item)
+                emit.progress(f"Preparing partition {partition_name}")
+                partition_prime_dir = project_dirs.get_prime_dir(
+                    partition=partition_name
                 )
-            except Exception:
-                if artifact_path is not None:
-                    self._remove_artifact(artifact_path)
-                raise
+                loop_path = Path(loop_paths[f"{volume_name}/{structure_item.name}"])
+
+                diskutil.format_device(
+                    device_path=loop_path,
+                    fstype=structure_item.filesystem,
+                    label=structure_item.filesystem_label,
+                    content_dir=partition_prime_dir,
+                    uuid=partition_uuids.get(structure_item.name),
+                )
+
+            image_service.verify_images()
         finally:
             # The metadata only needs to exist while partitions are populated;
             # don't leave it in prime after the pack, even when interrupted.
             # A cleanup failure must not mask the original pack error.
-            try:
-                self._remove_metadata_file(metadata_partition)
-            except OSError as err:
-                emit.debug(f"Failed to remove generated image metadata: {err}")
+            if metadata_cleanup_needed:
+                try:
+                    self._remove_metadata_file(metadata_partition)
+                except OSError as err:
+                    emit.debug(f"Failed to remove generated image metadata: {err}")
+            image_service.detach_images()
+
+        artifact_path: Path | None = None
+        try:
+            artifact_path = image_service.finalize_images(path.parent)[volume_name]
+
+            # Post-format: for BIOS targets, install the boot code into the raw
+            # disk image (fuse2fs mount + grub-bios-setup). No-op for
+            # EFI/unsupported targets.
+            bootloader.install_image_boot_code(image_path=artifact_path)
+        except Exception:
+            if artifact_path is not None:
+                self._remove_artifact(artifact_path)
+            raise
 
     @property
     def metadata(self) -> models.BaseMetadata:

@@ -6,7 +6,7 @@ execute: |
   #shellcheck source=tests/spread/tools.sh
   . "$PROJECT_PATH/tests/spread/tools.sh"
 
-  GRUB_INSTALL_LOG="Setting up GRUB in the image"
+  GRUB_INSTALL_LOG="Preparing bootloader files"
 
   imagecraft pack --verbosity verbose --destructive-mode 2>&1 >/dev/null | MATCH "$GRUB_INSTALL_LOG"
 
@@ -23,6 +23,18 @@ execute: |
   TMP_MOUNT=$(tools.mount_image ${IMG_NAME})
 
   tools.check_metadata ${TMP_MOUNT}/p1/.image/metadata.yaml
+
+  BOOT_CFG=${TMP_MOUNT}/p2/grub/grub.cfg
+  test -f "$BOOT_CFG"
+  NOMATCH "/boot/" "$BOOT_CFG"
+
+  KERNEL_PATH=$(awk '$1 ~ /^linux(efi)?$/ { print $2; exit }' "$BOOT_CFG")
+  INITRD_PATH=$(awk '$1 == "initrd" { print $2; exit }' "$BOOT_CFG")
+
+  test -n "$KERNEL_PATH"
+  test -n "$INITRD_PATH"
+  test -f "${TMP_MOUNT}/p2${KERNEL_PATH}"
+  test -f "${TMP_MOUNT}/p2${INITRD_PATH}"
 
 restore: |
   #shellcheck source=tests/spread/tools.sh

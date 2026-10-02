@@ -205,13 +205,10 @@ def test_imagecraft_pack(
     imagecraft_app: application.Imagecraft,
     monkeypatch: pytest.MonkeyPatch,
     check,
-    mocker,
 ):
     """Test imagecraft."""
     monkeypatch.setenv("CRAFT_DEBUG", "1")
 
-    mocker.patch("imagecraft.services.pack.Image")
-    mocker.patch("imagecraft.services.pack.grubutil.setup_grub")
     project_file = project_path / "imagecraft.yaml"
     project_file.write_text(IMAGECRAFT_YAML)
 
@@ -359,8 +356,7 @@ def test_imagecraft_pack_skips_when_unchanged(
     mocker,
 ):
     """A second pack should skip rebuilding an unchanged image."""
-    mocker.patch("imagecraft.services.pack.Image")
-    mocker.patch("imagecraft.services.pack.grubutil.setup_grub")
+    mocker.patch("imagecraft.services.pack.BootloaderInstaller.install_image_boot_code")
     project_file = project_path / "imagecraft.yaml"
     project_file.write_text(IMAGECRAFT_YAML)
 
@@ -398,8 +394,7 @@ def test_imagecraft_pack_rebuilds_when_pack_inputs_change(
     mocker,
 ):
     """A pack-input change should force a later pack to rebuild the image."""
-    mocker.patch("imagecraft.services.pack.Image")
-    mocker.patch("imagecraft.services.pack.grubutil.setup_grub")
+    mocker.patch("imagecraft.services.pack.BootloaderInstaller.install_image_boot_code")
     project_file = project_path / "imagecraft.yaml"
     project_file.write_text(IMAGECRAFT_YAML)
 
@@ -445,8 +440,7 @@ def test_imagecraft_pack_rebuilds_when_grub_availability_changes(
     or requiring a lifecycle rerun, so only the pack service's own repack
     detection (not the framework's generic checks) can catch it.
     """
-    mocker.patch("imagecraft.services.pack.Image")
-    mocker.patch("imagecraft.services.pack.grubutil.setup_grub")
+    mocker.patch("imagecraft.services.pack.BootloaderInstaller.install_image_boot_code")
     project_file = project_path / "imagecraft.yaml"
     project_file.write_text(IMAGECRAFT_YAML)
     rootfs_prime_dir = project_path / "prime"
