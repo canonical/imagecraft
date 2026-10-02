@@ -481,7 +481,16 @@ def _gpt_type_of(item: StructureItem) -> GptType | None:
 
 
 def is_bios_boot_partition(item: StructureItem) -> bool:
-    """Return whether the item is a raw BIOS Boot partition for GRUB core.img."""
+    """Return whether the item is a raw BIOS Boot partition for GRUB core.img.
+
+    A BIOS Boot partition is a raw embedding area rather than a filesystem, so
+    it is neither formatted nor populated from prime. Callers that iterate a
+    volume's structure to format or mount each partition should skip items
+    this returns True for.
+
+    :param item: Structure item to classify.
+    :returns: True if the item's partition type is the BIOS Boot GUID.
+    """
     return _gpt_type_of(item) == GptType.BIOS_BOOT
 
 
