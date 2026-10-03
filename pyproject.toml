@@ -6,11 +6,11 @@ authors = [{ name = "Canonical Ltd.", email = "snapcraft@lists.snapcraft.io" }]
 dependencies = [
   # To use a dev version of a craft library:
   # craft-lib @ git+https://github.com/canonical/craft-lib@ref
-  "craft-application~=7.2.0",
-  "craft-cli~=3.2.0",
+  "craft-application~=7.5.0",
+  "craft-cli~=3.4.1",
   "craft-grammar~=2.3.0",
   "craft-parts~=2.37.1",
-  "craft-platforms~=0.10.0",
+  "craft-platforms~=0.12.0",
   "craft-providers~=3.7.1",
   "pydantic~=2.12.5",
   "pygit2>=1.13.0,<1.15.0; python_version=='3.12'",  # pin pygit2 to versions compatible with libgit2-1.7 for core24
