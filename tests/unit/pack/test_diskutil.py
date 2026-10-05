@@ -53,7 +53,16 @@ def _mkfsfat16_cmd(content, target):
 
 
 def _mcopy_cmd(content, target):
-    return ["bash", "-c", f"mcopy -n -o -s -i{target} {content}/* ::"]
+    return [
+        "bash",
+        "-O",
+        "dotglob",
+        "-c",
+        'mcopy -n -o -s -i"$1" "$2"/* ::',
+        "bash",
+        str(target),
+        str(content),
+    ]
 
 
 @pytest.fixture

@@ -171,13 +171,22 @@ def _format_populate_fat_partition(  # pylint: disable=too-many-arguments
         # If we invoke mcopy directly, the sh wrapper will quote the
         # source path because it contains a wildcard. This will confuse
         # mcopy. Instead, we wrap the call in bash to get it to
-        # remove the quotes. Mcopy will fail if the content directory is
-        # empty.
+        # expand the wildcard itself, including hidden entries.
         # Note that the documentation for mcopy's -i flag can be hard to find - some is here:
         # https://www.gnu.org/software/mtools/manual/mtools.html#drive-letters
-        mcopy_cmd = f"mcopy -n -o -s -i{str(partitionpath)} {content_dir}/* ::"
         with emit.open_stream("Copying files to partition") as stream:
-            run("bash", "-c", mcopy_cmd, stdout=stream, stderr=stream)
+            run(
+                "bash",
+                "-O",
+                "dotglob",
+                "-c",
+                'mcopy -n -o -s -i"$1" "$2"/* ::',
+                "bash",
+                str(partitionpath),
+                str(content_dir),
+                stdout=stream,
+                stderr=stream,
+            )
 
 
 def format_device(

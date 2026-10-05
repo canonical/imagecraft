@@ -15,6 +15,7 @@
 #  with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Integration tests for the application as a whole."""
 
+import shutil
 import time
 from pathlib import Path
 
@@ -23,7 +24,9 @@ from craft_application import ServiceFactory
 from craft_parts import Features, callbacks
 from imagecraft import application
 
-IMAGECRAFT_YAML = """
+from tests.conftest import is_noble_non_amd64
+
+IMAGECRAFT_YAML_COMMON = """
 name: ubuntu-server-amd64
 version: "24.04.20241217"
 summary: A test image
@@ -52,6 +55,11 @@ parts:
     after: [rootfs]
     overlay-script: |
       echo "boot files" > $CRAFT_OVERLAY/boot/c
+"""
+
+IMAGECRAFT_YAML = (
+    IMAGECRAFT_YAML_COMMON
+    + """
 
 filesystems:
   default:
@@ -76,8 +84,91 @@ volumes:
         filesystem-label: writable
         role: system-data
         size: 512M
-
 """
+)
+
+IMAGECRAFT_YAML_NO_EFI = (
+    IMAGECRAFT_YAML_COMMON
+    + """
+
+filesystems:
+  default:
+  - mount: /
+    device: (volume/pc/rootfs)
+  - mount: /boot/
+    device: (volume/pc/ubuntu-seed)
+
+volumes:
+  pc:
+    schema: gpt
+    structure:
+      - name: ubuntu-seed
+        type: EBD0A0A2-B9E5-4433-87C0-68B6B72699C7
+        filesystem: vfat
+        filesystem-label: system-boot
+        size: 512M
+        role: system-boot
+      - name: rootfs
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        filesystem: ext4
+        filesystem-label: writable
+        role: system-data
+        size: 512M
+"""
+)
+
+IMAGECRAFT_YAML_FIRST_PARTITION_FALLBACK = (
+    IMAGECRAFT_YAML_COMMON
+    + """
+
+filesystems:
+  default:
+  - mount: /
+    device: (volume/pc/rootfs)
+  - mount: /boot/
+    device: (volume/pc/data)
+
+volumes:
+  pc:
+    schema: gpt
+    structure:
+      - name: data
+        type: EBD0A0A2-B9E5-4433-87C0-68B6B72699C7
+        filesystem: vfat
+        filesystem-label: data
+        size: 512M
+        role: system-data
+      - name: rootfs
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        filesystem: ext4
+        filesystem-label: writable
+        role: system-data
+        size: 512M
+"""
+)
+
+
+def _run_pack(app_metadata, monkeypatch: pytest.MonkeyPatch) -> int:
+    Features.reset()
+    callbacks.unregister_all()
+    service_factory = ServiceFactory(app=app_metadata)
+    imagecraft_app = application.Imagecraft(app_metadata, service_factory)
+    monkeypatch.setattr(
+        "sys.argv",
+        ["imagecraft", "pack", "--destructive-mode", "--verbosity", "debug"],
+    )
+    return imagecraft_app.run()
+
+
+def _skip_if_mount_helpers_unavailable() -> None:
+    if is_noble_non_amd64():
+        pytest.skip("fusefat is unavailable on noble on non-amd64 architectures")
+    if (
+        shutil.which("fuse2fs") is None
+        or shutil.which("fusefat") is None
+        or shutil.which("fusefile") is None
+    ):
+        pytest.skip("Required FUSE binaries are not installed")
 
 
 @pytest.fixture
