@@ -547,7 +547,7 @@ toml = [
 
 [[package]]
 name = "craft-application"
-version = "7.2.0"
+version = "7.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "annotated-types" },
@@ -570,9 +570,9 @@ dependencies = [
     { name = "snap-http" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e4/aa/592be376d6b4c066bb7bff882179478d07287c1fc65e81bdef32e0f1f514/craft_application-7.2.0.tar.gz", hash = "sha256:182646ef7febe78e1241b393f6cf2b21ec2a3dd00596d323f85c59c3bc705e11", size = 711407, upload-time = "2026-08-11T16:50:12.452Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/76/29/f20207aec16d26a5d0a433b2be9f49349870c9e4523ec2486816121c56e2/craft_application-7.5.0.tar.gz", hash = "sha256:6a2b33d4760815442d6e4cab8491960dc8da5e2c8b8111b32695a563a3282620", size = 732793, upload-time = "2026-10-02T16:42:09.473Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/98/02/c8bb8ec7af9a9c1f7775fc5f8b4174b2ca045b7e5a2a5402fec0d7243792/craft_application-7.2.0-py3-none-any.whl", hash = "sha256:ca0e068f56137b1bb117a0ae92da84db0a9d59360f95106582c7881acb95ec61", size = 212573, upload-time = "2026-08-11T16:50:10.454Z" },
+    { url = "https://files.pythonhosted.org/packages/97/71/023fcb4c238961b5d0a6c61a04df4a06aa70cefd56e3fef2e90a4ffb4f40/craft_application-7.5.0-py3-none-any.whl", hash = "sha256:3c70e46906b9b7bbba510ebed9ee29c76b1e95a47401d50b44a14f1b9b4727b8", size = 218209, upload-time = "2026-10-02T16:42:06.017Z" },
 ]
 
 [[package]]
@@ -595,18 +595,17 @@ wheels = [
 
 [[package]]
 name = "craft-cli"
-version = "3.2.0"
+version = "3.4.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jinja2" },
-    { name = "overrides" },
     { name = "platformdirs" },
     { name = "pywin32", marker = "sys_platform == 'win32' or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-resolute' and extra == 'group-10-imagecraft-dev-stonking')" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/35/0a/f1612fe57295b6a69ff256dbd0826b90f70b27dda90988f972fa6f8968cc/craft_cli-3.2.0.tar.gz", hash = "sha256:557345bf1d82e93d6525f35837ddd2b216de4152f5572306ec59d805231d348b", size = 198962, upload-time = "2025-09-09T20:13:02.372Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b2/97/55e3a42aed3c8ee408dca292c7736080161d6bcfd6d21a8374b74be90f63/craft_cli-3.4.1.tar.gz", hash = "sha256:e4396695e89f15fbd06255a78b38a362006cd711266d926c2b6cd2a546af61a5", size = 231519, upload-time = "2026-06-17T13:07:15.671Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f0/b4/a1ced3b96007d84792a4b031d71f1007e274794747f2597f79e3071853f0/craft_cli-3.2.0-py3-none-any.whl", hash = "sha256:4889c0f4a8275703e86b7fa7ce6fbdb65f6fb47158d4f8d24b0fcbb63fa25afa", size = 46959, upload-time = "2025-09-09T20:13:00.659Z" },
+    { url = "https://files.pythonhosted.org/packages/56/d4/22381efb16c8479ecd1fe73e59511a44033b5e78e40499a32a153e7eaef5/craft_cli-3.4.1-py3-none-any.whl", hash = "sha256:78702bb254a63dd8a30841fe9773f77676a3acace8b4c363f7dce135d354a107", size = 47241, upload-time = "2026-06-17T13:07:13.789Z" },
 ]
 
 [[package]]
@@ -643,16 +642,16 @@ wheels = [
 
 [[package]]
 name = "craft-platforms"
-version = "0.10.0"
+version = "0.12.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "annotated-types" },
     { name = "distro" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/44/78/f2c3ef342c9e9fee0127516aee113a28c487a999d35ce4aa944a58bd5939/craft_platforms-0.10.0.tar.gz", hash = "sha256:85b8630c0f7436b0832466c1dba8deb040502fdadc1d225fbed15d1e1e38f729", size = 220454, upload-time = "2025-07-17T19:35:11.436Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a0/f2/507e3b1bd017f51bea6c70205744239b62eac20c552fa0ee1f1c30019752/craft_platforms-0.12.0.tar.gz", hash = "sha256:497b6421fc5f464ee1f31da60ae1211bd3101722770afae72e0b330e54883e9d", size = 349924, upload-time = "2026-07-10T20:16:14.836Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ee/61/9985a7bd77fdafd14fd5de658877202f867802849de61f1346d7d124dcd5/craft_platforms-0.10.0-py3-none-any.whl", hash = "sha256:5be0a53a9ef6ac6341c44842378c6293b09148d371ac1a4ef26d1014b330907a", size = 30262, upload-time = "2025-07-17T19:35:09.619Z" },
+    { url = "https://files.pythonhosted.org/packages/94/d5/d7eb7180085f70756372acfc27e782affe21fda791d801cff6fc10bb047a/craft_platforms-0.12.0-py3-none-any.whl", hash = "sha256:71fff4a3aeb075df878cada38bb89b0d36c9efb5423973db7625da983b8ee6f6", size = 39405, upload-time = "2026-07-10T20:16:13.496Z" },
 ]
 
 [[package]]
@@ -943,11 +942,11 @@ types = [
 
 [package.metadata]
 requires-dist = [
-    { name = "craft-application", specifier = "~=7.2.0" },
-    { name = "craft-cli", specifier = "~=3.2.0" },
+    { name = "craft-application", specifier = "~=7.5.0" },
+    { name = "craft-cli", specifier = "~=3.4.1" },
     { name = "craft-grammar", specifier = "~=2.3.0" },
     { name = "craft-parts", specifier = "~=2.37.1" },
-    { name = "craft-platforms", specifier = "~=0.10.0" },
+    { name = "craft-platforms", specifier = "~=0.12.0" },
     { name = "craft-providers", specifier = "~=3.7.1" },
     { name = "pydantic", specifier = "~=2.13.5" },
     { name = "pygit2", marker = "python_full_version == '3.12.*'", specifier = ">=1.13.0,<1.15.0" },
