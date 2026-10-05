@@ -117,6 +117,7 @@ class ImageService(AppService):
         if self._vdev_managers:
             missing = set(self._images) - set(self._vdev_managers)
             if not missing:
+                self.get_device_paths()
                 return
             emit.debug(
                 f"Partially-attached state: present={sorted(self._vdev_managers)}, missing={sorted(missing)}"

@@ -64,6 +64,7 @@ def attachable(
         "pc_efi": project_dir / ".devices" / "pc_efi.img",
         "pc_rootfs": project_dir / ".devices" / "pc_rootfs.img",
     }
+    mock_vdev.return_value.devices = mock_vdev.return_value.mount.return_value
     return mock_vdev
 
 
@@ -232,6 +233,22 @@ def test_attach_images_raises_on_partial_attach(image_service, project_dir, mock
 
     with pytest.raises(
         errors.MountError, match="Unexpected partially-attached state found."
+    ):
+        image_service.attach_images()
+
+
+def test_attach_images_raises_on_partial_volume_attach(
+    attachable, image_service, project_dir, mocker
+):
+    image_service._vdev_managers = {
+        "pc": mocker.Mock(
+            devices={"pc_efi": project_dir / ".devices" / "pc_efi.img"}
+        )
+    }
+
+    with pytest.raises(
+        errors.MountError,
+        match="Virtual device for partition pc_rootfs is not mounted",
     ):
         image_service.attach_images()
 

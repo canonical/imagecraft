@@ -31,7 +31,7 @@ from tests.conftest import is_noble_non_amd64
 @pytest.fixture(
     params=[
         pytest.param(False, marks=pytest.mark.requires_root, id="as_root"),
-        pytest.param(True, marks=pytest.mark.requires_root, id="with_fakeroot"),
+        pytest.param(True, id="with_fakeroot"),
     ]
 )
 def fakeroot(request: pytest.FixtureRequest) -> bool:
