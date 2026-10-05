@@ -276,7 +276,7 @@ class VirtualDeviceManager:
         self._mounted: dict[str, Path] = {}
 
     @property
-    def devices(self) -> Mapping[str, Path]:
+    def devices(self) -> dict[str, Path]:
         """Return the mounted virtual device files, by partition name."""
         return dict(self._mounted)
 

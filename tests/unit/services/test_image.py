@@ -223,6 +223,19 @@ def test_attach_images_multivolume_failure_rolls_back(
     assert image_service._vdev_managers == {}
 
 
+def test_attach_images_raises_on_partial_attach(image_service, project_dir, mocker):
+    image_service._images = {
+        "vol1": project_dir / ".vol1.img.tmp",
+        "vol2": project_dir / ".vol2.img.tmp",
+    }
+    image_service._vdev_managers = {"vol1": mocker.Mock()}
+
+    with pytest.raises(
+        errors.MountError, match="Unexpected partially-attached state found."
+    ):
+        image_service.attach_images()
+
+
 def test_detach_images_unmounts_managers(image_service, project_dir, mocker):
     mock_vdev = mocker.Mock()
     mock_vdev.unmount = mocker.Mock()

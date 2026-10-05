@@ -104,8 +104,7 @@ class ImageService(AppService):
 
         Each volume is exposed as its raw image file, and each of its
         partitions as a fusefile virtual device under the project's
-        ``.devices`` directory. No loop devices or elevated privileges are
-        involved. This method is idempotent.
+        ``.devices`` directory. This method is idempotent.
 
         Use :meth:`get_device_paths` to obtain the resulting paths.
 
@@ -119,10 +118,10 @@ class ImageService(AppService):
             missing = set(self._images) - set(self._vdev_managers)
             if not missing:
                 return
-            raise errors.MountError(
-                f"Virtual devices for {sorted(missing)} are not attached; "
-                "call detach_images() and retry"
+            emit.debug(
+                f"Partially-attached state: present={sorted(self._vdev_managers)}, missing={sorted(missing)}"
             )
+            raise errors.MountError("Unexpected partially-attached state found.")
 
         project = cast(Project, self._services.get("project").get())
         target_dir = self._project_dir / DEVICES_DIR
