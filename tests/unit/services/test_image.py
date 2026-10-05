@@ -393,6 +393,23 @@ def test_finalize_images(image_service, project_dir, mocker):
     assert dest.exists()
 
 
+def test_finalize_images_with_mounted_devices(image_service, project_dir, mocker):
+    hidden = project_dir / ".pc.img.tmp"
+    hidden.touch()
+    image_service._images = {"pc": hidden}
+    image_service._vdev_managers = {"pc": mocker.Mock()}
+    dest = project_dir / "dest"
+    mock_move = mocker.patch("imagecraft.services.image.shutil.move")
+
+    with pytest.raises(errors.MountError, match="virtual devices remain mounted"):
+        image_service.finalize_images(dest)
+
+    mock_move.assert_not_called()
+    assert image_service._images == {"pc": hidden}
+    assert hidden.exists()
+    assert not dest.exists()
+
+
 def test_finalize_images_multiple_volumes(image_service, project_dir, mocker):
     hidden_pc = project_dir / ".pc.img.tmp"
     hidden_rpi = project_dir / ".rpi.img.tmp"

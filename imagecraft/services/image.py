@@ -260,6 +260,11 @@ class ImageService(AppService):
         :param dest: Directory to move the final images into.
         :returns: a Mapping of the image names to their paths.
         """
+        if self._vdev_managers:
+            raise errors.MountError(
+                "Cannot finalize images while virtual devices remain mounted."
+            )
+
         images = dict(self.get_images())
         dest.mkdir(parents=True, exist_ok=True)
         for name, hidden_path in images.items():
