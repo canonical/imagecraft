@@ -158,7 +158,7 @@ def _mock_pack_dependencies(
     mocker.patch.object(
         mock_image_service,
         "attach_images",
-        return_value=mock_image_service.get_device_paths.return_value,
+        return_value=mock_image_service.get_device_paths(),
     )
     mocker.patch.object(mock_image_service, "verify_images")
     mocker.patch.object(mock_image_service, "detach_images")
@@ -702,7 +702,7 @@ def test_pack_artifacts(
     mocker.patch.object(
         mock_image_service,
         "attach_images",
-        return_value=mock_image_service.get_device_paths.return_value,
+        return_value=mock_image_service.get_device_paths(),
     )
     mock_verify = mocker.patch.object(mock_image_service, "verify_images")
     mock_detach = mocker.patch.object(mock_image_service, "detach_images")
@@ -762,7 +762,7 @@ def test_pack_artifacts_detaches_on_error(
     mocker.patch.object(
         mock_image_service,
         "attach_images",
-        return_value=mock_image_service.get_device_paths.return_value,
+        return_value=mock_image_service.get_device_paths(),
     )
     mock_detach = mocker.patch.object(mock_image_service, "detach_images")
     mocker.patch.object(mock_image_service, "verify_images")
@@ -807,7 +807,7 @@ def test_pack_artifacts_skips_bios_boot_partition_formatting(
     mocker.patch.object(
         mock_image_service,
         "attach_images",
-        return_value=mock_image_service.get_device_paths.return_value,
+        return_value=mock_image_service.get_device_paths(),
     )
     mocker.patch.object(mock_image_service, "verify_images")
     mocker.patch.object(mock_image_service, "detach_images")
@@ -840,7 +840,7 @@ def test_pack_artifacts_cleans_generated_metadata_on_error(
     mocker.patch.object(
         mock_image_service,
         "attach_images",
-        return_value=mock_image_service.get_device_paths.return_value,
+        return_value=mock_image_service.get_device_paths(),
     )
     mocker.patch.object(mock_image_service, "detach_images")
     mocker.patch.object(mock_image_service, "verify_images")
@@ -872,7 +872,7 @@ def test_pack_artifacts_removes_stale_artifact_before_repacking(
     mocker.patch.object(
         mock_image_service,
         "attach_images",
-        return_value=mock_image_service.get_device_paths.return_value,
+        return_value=mock_image_service.get_device_paths(),
     )
     mocker.patch.object(mock_image_service, "verify_images")
     mocker.patch.object(mock_image_service, "detach_images")
@@ -908,7 +908,7 @@ def test_pack_artifacts_removes_finalized_artifact_on_failure(
     mocker.patch.object(
         mock_image_service,
         "attach_images",
-        return_value=mock_image_service.get_device_paths.return_value,
+        return_value=mock_image_service.get_device_paths(),
     )
     mocker.patch.object(mock_image_service, "verify_images")
     mocker.patch.object(mock_image_service, "detach_images")
