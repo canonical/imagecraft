@@ -3,17 +3,26 @@ summary: Test snap-preseed plugin
 systems: [ubuntu-24.04-64]
 
 execute: |
+  #shellcheck source=tests/spread/tools.sh
+  . "$PROJECT_PATH/tests/spread/tools.sh"
+
   imagecraft pack --verbose
 
   test -f disk.img
 
-  test -d prime/var/lib/snapd/seed/
-  test -f prime/var/lib/snapd/seed/snaps/hello-world_*.snap
-  test -f prime/var/lib/snapd/seed/snaps/core_*.snap
+  TMP_MOUNT=$(tools.mount_image "disk.img")
 
-  unsquashfs -d core-snap prime/var/lib/snapd/seed/snaps/core_*.snap --extract-file meta/snap.yaml
+  test -d "${TMP_MOUNT}"/p1/var/lib/snapd/seed/
+  test -f "${TMP_MOUNT}"/p1/var/lib/snapd/seed/snaps/hello-world_*.snap
+  test -f "${TMP_MOUNT}"/p1/var/lib/snapd/seed/snaps/core_*.snap
+
+  unsquashfs -d core-snap "${TMP_MOUNT}"/p1/var/lib/snapd/seed/snaps/core_*.snap --extract-file meta/snap.yaml
   grep -q "armhf" core-snap/meta/snap.yaml
 
 restore: |
+  #shellcheck source=tests/spread/tools.sh
+  . "$PROJECT_PATH/tests/spread/tools.sh"
+
+  tools.umount_image
   rm -rf disk.img core-snap
   imagecraft clean
