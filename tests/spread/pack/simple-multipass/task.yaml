@@ -4,7 +4,7 @@ systems:
   - ubuntu-22.04-64
   - ubuntu-24.04-64
   # - ubuntu-26.04-64  # Disabled until multipass 1.17 is released
-  - ubuntu-26.10-64
+  # - ubuntu-26.10-64
 
 environment:
   CRAFT_BUILD_ENVIRONMENT: multipass

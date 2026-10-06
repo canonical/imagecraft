@@ -50,10 +50,10 @@ backends:
           image: snapd-spread/ubuntu-26.04-64
           storage: 45G
           workers: 1
-      - ubuntu-26.10-64:
-          image: snapd-spread/ubuntu-26.10-64
-          storage: 45G
-          workers: 1
+      # - ubuntu-26.10-64:
+      #     image: snapd-spread/ubuntu-26.10-64
+      #     storage: 45G
+      #     workers: 1
 
   openstack-dev:
     type: openstack
@@ -117,8 +117,8 @@ backends:
       - ubuntu-26.04-64:
           storage: 45G
           workers: 1
-      - ubuntu-26.10-64:
-          workers: 2
+      # - ubuntu-26.10-64:
+      #     workers: 2
 
   qemu:
     memory: 4G
