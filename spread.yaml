@@ -101,7 +101,7 @@ backends:
   openstack-local:
     type: openstack
     key: '$(HOST: echo "${OS_CREDENTIALS_LOCAL:-$HOME/.openstack-spread-creds}")'
-    plan: m1.medium
+    plan: m1.large
     halt-timeout: 2h
     wait-timeout: 10m
     volume-auto-delete: true
