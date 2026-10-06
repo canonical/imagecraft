@@ -107,15 +107,12 @@ backends:
     volume-auto-delete: true
     systems:
       - ubuntu-22.04-64:
-          storage: 45G
           workers: 1
       - ubuntu-24.04-64:
-          storage: 45G
           workers: 1
       - ubuntu-25.10-64:
           workers: 2
       - ubuntu-26.04-64:
-          storage: 45G
           workers: 1
       # - ubuntu-26.10-64:
       #     workers: 2
