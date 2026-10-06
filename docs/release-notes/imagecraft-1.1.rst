@@ -51,7 +51,7 @@ What's new
 Imagecraft 1.1 brings the following features, integrations, and improvements.
 
 Rootless partition management with :vale-ignore:`fusefile`
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Imagecraft now uses ``fusefile`` to create and access virtual partition block devices directly from
 raw disk image files. This replaces the use of host loop devices (``losetup``) for partition operations,
