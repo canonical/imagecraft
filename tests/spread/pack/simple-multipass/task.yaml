@@ -19,6 +19,6 @@ execute: |
   test -f disk.img
 
 restore: |
-  snap remove --no-wait --purge multipass
   imagecraft clean
+  snap remove --no-wait --purge multipass
   rm -f disk.img imagecraft.yaml
