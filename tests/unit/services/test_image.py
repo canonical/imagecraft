@@ -241,9 +241,7 @@ def test_attach_images_raises_on_partial_volume_attach(
     attachable, image_service, project_dir, mocker
 ):
     image_service._vdev_managers = {
-        "pc": mocker.Mock(
-            devices={"pc_efi": project_dir / ".devices" / "pc_efi.img"}
-        )
+        "pc": mocker.Mock(devices={"pc_efi": project_dir / ".devices" / "pc_efi.img"})
     }
 
     with pytest.raises(
