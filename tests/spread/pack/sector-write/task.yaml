@@ -1,4 +1,4 @@
-summary: Data written to sectors outside partitions via the loop device is preserved
+summary: Data written to sectors outside partitions of the volume is preserved
 
 execute: |
   imagecraft pack --verbose --ignore=unmaintained --destructive-mode

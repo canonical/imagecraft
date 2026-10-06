@@ -20,7 +20,7 @@ import shutil
 import subprocess
 import tempfile
 import time
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from types import TracebackType
 
@@ -92,6 +92,16 @@ def _unmount_path(
 
     if last_err is not None:
         raise last_err
+
+
+def _fusefile_spec(image_path: Path, offset: int, size: int) -> str:
+    """Return the fusefile spec for a byte range of a disk image.
+
+    :param image_path: Path to the disk image.
+    :param offset: Byte offset of the range within the image.
+    :param size: Byte length of the range.
+    """
+    return f"{image_path.resolve()}/{offset}+{size}"
 
 
 class BaseMount(abc.ABC):
@@ -193,7 +203,7 @@ class VirtualOffsetDevice(BaseMount):
         self.part_file = Path(self._temp_dir.name) / "part.img"
         self.part_file.touch()
 
-        spec = f"{self.disk_path.resolve()}/{self.offset}+{self.size}"
+        spec = _fusefile_spec(self.disk_path, self.offset, self.size)
         emit.debug(f"Mounting virtual offset device {self.part_file} from {spec}")
 
         try:
@@ -229,6 +239,129 @@ class VirtualOffsetDevice(BaseMount):
     def _cleanup(self) -> None:
         super()._cleanup()
         self.part_file = None
+
+
+class VirtualDeviceManager:
+    """Expose every partition of a volume as a virtual file of a disk image.
+
+    Each slice of the volume becomes a regular file of the partition's size,
+    whose contents are the corresponding byte range of the disk image, created
+    with `fusefile`. Consumers can therefore format and populate partitions
+    with ordinary file tools, without loop devices, elevated privileges or
+    partition table parsing.
+
+    This is deliberately not a :class:`BaseMount`: it manages several
+    devices at once and has no single mountpoint.
+
+    :param image_path: Path to the disk image holding the partitions.
+    :param slices: Mapping of partition name to (start_bytes, size_bytes). Each
+        name is used as a virtual file's stem, so a volume-prefixed name such as
+        ``pc_rootfs`` becomes ``<target_dir>/pc_rootfs.img``.
+    :param target_dir: Directory to create the virtual device files in.
+    """
+
+    image_path: Path
+    slices: Mapping[str, tuple[int, int]]
+    target_dir: Path
+
+    def __init__(
+        self,
+        image_path: Path,
+        slices: Mapping[str, tuple[int, int]],
+        target_dir: Path,
+    ) -> None:
+        self.image_path = image_path
+        self.slices = slices
+        self.target_dir = target_dir
+        self._mounted: dict[str, Path] = {}
+
+    @property
+    def devices(self) -> dict[str, Path]:
+        """Return the mounted virtual device files, by partition name."""
+        return dict(self._mounted)
+
+    def mount(self) -> dict[str, Path]:
+        """Create a virtual device for every slice of the volume.
+
+        This method is idempotent: devices that are already mounted are reused.
+
+        :returns: Mapping of partition name to its virtual device file.
+        :raises errors.MountError: If a virtual device cannot be created. The
+            devices mounted so far are unmounted before the error propagates.
+        """
+        if self._mounted:
+            return dict(self._mounted)
+
+        self.target_dir.mkdir(parents=True, exist_ok=True)
+        part_file: Path | None = None
+        try:
+            for partname, (offset, size) in self.slices.items():
+                part_file = self.target_dir / f"{partname}.img"
+                part_file.touch()
+                spec = _fusefile_spec(self.image_path, offset, size)
+                emit.debug(f"Mounting virtual device {part_file} from {spec}")
+                _try_fuse_command(
+                    ["fusefile", str(part_file), spec],
+                    err_msg=f"Failed to create virtual device for {partname}",
+                )
+                self._mounted[partname] = part_file
+                part_file = None
+        except Exception:
+            if part_file is not None:
+                part_file.unlink(missing_ok=True)
+            # Rollback unmount errors must not mask the original failure;
+            # devices that failed to unmount stay registered so the caller
+            # (which owns this manager) can retry unmount().
+            with contextlib.suppress(Exception):
+                self.unmount()
+            raise
+
+        return dict(self._mounted)
+
+    def unmount(self, *, lazy: bool = False) -> None:
+        """Unmount all virtual devices and remove their files.
+
+        :param lazy: If True, request lazy/detach unmount.
+        :raises errors.MountError: If any virtual device fails to unmount.
+        """
+        unmount_errors: list[Exception] = []
+        for partname, part_file in list(self._mounted.items()):
+            try:
+                _unmount_path(
+                    part_file,
+                    lazy=lazy,
+                    prefer_fuse2=True,
+                    retries=30,
+                    err_msg=f"Failed to unmount virtual device {part_file}",
+                )
+                part_file.unlink(missing_ok=True)
+            except Exception as err:  # noqa: BLE001, PERF203
+                # Leave the device registered so a later unmount() retries it.
+                unmount_errors.append(err)
+            else:
+                del self._mounted[partname]
+
+        if not self._mounted:
+            with contextlib.suppress(OSError):
+                self.target_dir.rmdir()
+
+        if unmount_errors:
+            raise errors.MountError(
+                f"Errors occurred during virtual device unmount: {unmount_errors}"
+            )
+
+    def __enter__(self) -> dict[str, Path]:
+        """Enter context manager."""
+        return self.mount()
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        """Exit context manager."""
+        self.unmount()
 
 
 class BasePartitionMount(BaseMount):

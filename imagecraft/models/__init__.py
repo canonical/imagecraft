@@ -21,6 +21,7 @@ from imagecraft.models.project import (
     VolumeFilesystemsModel,
     get_partition_name,
 )
+from imagecraft.models.metadata import ImageMetadata, VolumeMetadata
 
 from imagecraft.models.volume import (
     BaseVolume,
@@ -31,12 +32,14 @@ from imagecraft.models.volume import (
     PartitionSchema,
     Role,
     Volume,
+    is_bios_boot_partition,
 )
 from imagecraft.models.grammar import get_grammar_aware_volume_keywords
 
 __all__ = [
     "BaseVolume",
     "FileSystem",
+    "ImageMetadata",
     "GPTStructureItem",
     "GPTVolume",
     "MBRVolume",
@@ -44,8 +47,10 @@ __all__ = [
     "Platform",
     "Project",
     "Role",
+    "VolumeMetadata",
     "Volume",
     "VolumeFilesystemsModel",
     "get_grammar_aware_volume_keywords",
     "get_partition_name",
+    "is_bios_boot_partition",
 ]

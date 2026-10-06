@@ -3,15 +3,13 @@ summary: Pack an MBR image with GRUB (no dedicated boot partition)
 systems: [ubuntu-24.04-64]
 
 execute: |
-  TMPDIR="$(mktemp -d)"
-  TMP_MOUNT=${TMPDIR}/mount
-  mkdir -p ${TMP_MOUNT}
-  echo ${TMP_MOUNT} >> tmpmount.txt
+  #shellcheck source=tests/spread/tools.sh
+  . "$PROJECT_PATH/tests/spread/tools.sh"
 
   # Check that work dirs *don't* exist
   test ! -d parts -a ! -d stage -a ! -d prime
 
-  GRUB_INSTALL_LOG="Setting up GRUB in the image"
+  GRUB_INSTALL_LOG="Preparing bootloader files"
 
   imagecraft pack --verbosity verbose --destructive-mode 2>&1 >/dev/null | MATCH "$GRUB_INSTALL_LOG"
 
@@ -27,48 +25,18 @@ execute: |
   # Check that work dirs *do* exist
   test -d parts -a -d stage -a -d prime
 
-  LOOP=$(losetup --find --show --partscan ${IMG_NAME})
-  echo $LOOP > loop.txt
-
-  # Partition devices are created asynchronously by the kernel after the
-  # partscan ioctl; wait for them to appear before using them.
-  count=0
-  until ls -d "$LOOP"p* >/dev/null 2>&1; do
-    count=$((count + 1))
-    if [ "$count" -ge 100 ]; then
-      echo "Timed out waiting for $LOOP partition devices" >&2
-      exit 1
-    fi
-    sleep 0.1
-  done
-
-  for l in $(ls -d "$LOOP"p*)
-  do
-      p=${l#"$LOOP"}
-      mkdir ${TMP_MOUNT}/$p
-      mount $l ${TMP_MOUNT}/$p || true
-  done
+  TMP_MOUNT=$(tools.mount_image "${IMG_NAME}")
 
   # rootfs is the only partition (p1) — check that override-overlay ran successfully
-  grep -q "^testuser:" ${TMP_MOUNT}/p1/etc/passwd
+  grep -q "^testuser:" "${TMP_MOUNT}/p1/etc/passwd"
+
+  tools.check_partition_metadata "${TMP_MOUNT}" "p1"
 
 restore: |
-  if [ -f loop.txt -a -f tmpmount.txt ]; then
-      LOOP="$(cat loop.txt)"
-      TMP_MOUNT="$(cat tmpmount.txt)"
+  #shellcheck source=tests/spread/tools.sh
+  . "$PROJECT_PATH/tests/spread/tools.sh"
 
-      for l in `ls -d "$LOOP"p*`
-      do
-          p=${l#"$LOOP"}
-          mount --make-rprivate ${TMP_MOUNT}/$p || true
-          umount --recursive ${TMP_MOUNT}/$p || true
-      done
-
-      losetup -d "$LOOP"
-      sync
-      losetup -l | NOMATCH "$LOOP"
-      rm loop.txt
-  fi
+  tools.umount_image
   imagecraft clean --destructive-mode
   rm -rf pc.img || true
 

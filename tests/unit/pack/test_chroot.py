@@ -19,7 +19,7 @@ from unittest.mock import ANY, call
 
 import pytest
 from imagecraft import errors
-from imagecraft.pack.chroot import Chroot, Mount, _runner
+from imagecraft.pack.chroot import Chroot, Mount, _runner, build_prime_chroot
 
 
 def target_func(content: str) -> str:
@@ -166,6 +166,58 @@ Command '['some', 'command']' returned non-zero exit status 42. (unable to umoun
             call(f"{new_root}/existent2", "--recursive"),
             call(f"{new_root}/existent", "--recursive"),
         ]
+
+    def test_chroot_cleanup_removes_only_created_paths(self, new_dir):
+        new_root = Path(new_dir)
+        existing_path = new_root / "existing"
+        created_path = new_root / "created"
+        existing_path.touch()
+        created_path.touch()
+
+        chroot = Chroot(
+            path=new_root,
+            mounts=[],
+            created_paths=[created_path],
+        )
+
+        chroot._cleanup()
+
+        assert existing_path.exists()
+        assert not created_path.exists()
+
+
+class TestBuildPrimeChroot:
+    def test_tracks_only_missing_bind_targets(self, tmp_path):
+        root_dir = tmp_path / "root"
+        (root_dir / "dev").mkdir(parents=True)
+        (root_dir / "dev" / "null").touch()
+
+        chroot = build_prime_chroot(root_dir)
+
+        assert chroot.created_paths == [
+            root_dir / "dev" / "zero",
+            root_dir / "dev" / "urandom",
+        ]
+
+    def test_mounts_extra_partition_mounts_in_depth_order(self, tmp_path):
+        root_dir = tmp_path / "root"
+        usr_dir = tmp_path / "usr"
+        usr_local_dir = tmp_path / "usr_local"
+        usr_dir.mkdir()
+        usr_local_dir.mkdir()
+
+        chroot = build_prime_chroot(
+            root_dir,
+            extra_partition_mounts=[
+                ("/usr/local", usr_local_dir),
+                ("/usr", usr_dir),
+            ],
+        )
+
+        mount_points = [m._relative_mountpoint for m in chroot.mounts]
+        assert "/usr" in mount_points
+        assert "/usr/local" in mount_points
+        assert mount_points.index("/usr") < mount_points.index("/usr/local")
 
 
 @pytest.fixture

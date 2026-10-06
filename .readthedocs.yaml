@@ -9,9 +9,7 @@ version: 2
 sphinx:
   builder: dirhtml
   configuration: docs/conf.py
-  # These are the warnings currently shown
-  # WARNING: The local Git repository could not be found.
-  fail_on_warning: false
+  fail_on_warning: true
 
 # Optionally build your docs in additional formats such as PDF
 # formats:
@@ -32,7 +30,7 @@ build:
     create_environment:
       - uv venv "${READTHEDOCS_VIRTUALENV_PATH}"
     install:
-      - make setup-docs VENVDIR="${READTHEDOCS_VIRTUALENV_PATH}" UV_PROJECT_ENVIRONMENT="${READTHEDOCS_VIRTUALENV_PATH}"
+      - make setup-docs DOCS_VENVDIR="${READTHEDOCS_VIRTUALENV_PATH}" UV_PROJECT_ENVIRONMENT="${READTHEDOCS_VIRTUALENV_PATH}"
     build:
       html:
-        - make docs VENVDIR="${READTHEDOCS_VIRTUALENV_PATH}" UV_PROJECT_ENVIRONMENT="${READTHEDOCS_VIRTUALENV_PATH}" BUILDDIR="$READTHEDOCS_OUTPUT/html/"
+        - make docs DOCS_VENVDIR="${READTHEDOCS_VIRTUALENV_PATH}" UV_PROJECT_ENVIRONMENT="${READTHEDOCS_VIRTUALENV_PATH}" DOCS_BUILDDIR="$READTHEDOCS_OUTPUT/html/"

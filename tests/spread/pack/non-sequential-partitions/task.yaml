@@ -1,6 +1,9 @@
 summary: Pack an image with non-sequential partition numbers.
 
 execute: |
+  #shellcheck source=tests/spread/tools.sh
+  . "$PROJECT_PATH/tests/spread/tools.sh"
+
   imagecraft pack --verbose --ignore=unmaintained
 
   test -f disk.img
@@ -11,3 +14,15 @@ execute: |
   if [[ "${expected_partitions}" != "${actual_partitions}" ]] ; then
     ERROR "Expected and actual partitions don't match.\n Expected:\n${expected_partitions}\n Actual:\n${actual_partitions}"
   fi
+
+  TMP_MOUNT=$(tools.mount_image "disk.img")
+
+  tools.check_partition_metadata "${TMP_MOUNT}" "p13"
+
+restore: |
+  #shellcheck source=tests/spread/tools.sh
+  . "$PROJECT_PATH/tests/spread/tools.sh"
+
+  tools.umount_image
+  imagecraft clean --destructive-mode
+  rm -rf disk.img || true

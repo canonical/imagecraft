@@ -15,13 +15,18 @@
 #  with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Integration tests for the application as a whole."""
 
+import shutil
+import time
 from pathlib import Path
 
 import pytest
-from craft_parts import Features
+from craft_application import ServiceFactory
+from craft_parts import Features, callbacks
 from imagecraft import application
 
-IMAGECRAFT_YAML = """
+from tests.conftest import is_noble_non_amd64
+
+IMAGECRAFT_YAML_COMMON = """
 name: ubuntu-server-amd64
 version: "24.04.20241217"
 summary: A test image
@@ -50,6 +55,11 @@ parts:
     after: [rootfs]
     overlay-script: |
       echo "boot files" > $CRAFT_OVERLAY/boot/c
+"""
+
+IMAGECRAFT_YAML = (
+    IMAGECRAFT_YAML_COMMON
+    + """
 
 filesystems:
   default:
@@ -74,8 +84,91 @@ volumes:
         filesystem-label: writable
         role: system-data
         size: 512M
-
 """
+)
+
+IMAGECRAFT_YAML_NO_EFI = (
+    IMAGECRAFT_YAML_COMMON
+    + """
+
+filesystems:
+  default:
+  - mount: /
+    device: (volume/pc/rootfs)
+  - mount: /boot/
+    device: (volume/pc/ubuntu-seed)
+
+volumes:
+  pc:
+    schema: gpt
+    structure:
+      - name: ubuntu-seed
+        type: EBD0A0A2-B9E5-4433-87C0-68B6B72699C7
+        filesystem: vfat
+        filesystem-label: system-boot
+        size: 512M
+        role: system-boot
+      - name: rootfs
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        filesystem: ext4
+        filesystem-label: writable
+        role: system-data
+        size: 512M
+"""
+)
+
+IMAGECRAFT_YAML_FIRST_PARTITION_FALLBACK = (
+    IMAGECRAFT_YAML_COMMON
+    + """
+
+filesystems:
+  default:
+  - mount: /
+    device: (volume/pc/rootfs)
+  - mount: /boot/
+    device: (volume/pc/data)
+
+volumes:
+  pc:
+    schema: gpt
+    structure:
+      - name: data
+        type: EBD0A0A2-B9E5-4433-87C0-68B6B72699C7
+        filesystem: vfat
+        filesystem-label: data
+        size: 512M
+        role: system-data
+      - name: rootfs
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        filesystem: ext4
+        filesystem-label: writable
+        role: system-data
+        size: 512M
+"""
+)
+
+
+def _run_pack(app_metadata, monkeypatch: pytest.MonkeyPatch) -> int:
+    Features.reset()
+    callbacks.unregister_all()
+    service_factory = ServiceFactory(app=app_metadata)
+    imagecraft_app = application.Imagecraft(app_metadata, service_factory)
+    monkeypatch.setattr(
+        "sys.argv",
+        ["imagecraft", "pack", "--destructive-mode", "--verbosity", "debug"],
+    )
+    return imagecraft_app.run()
+
+
+def _skip_if_mount_helpers_unavailable() -> None:
+    if is_noble_non_amd64():
+        pytest.skip("fusefat is unavailable on noble on non-amd64 architectures")
+    if (
+        shutil.which("fuse2fs") is None
+        or shutil.which("fusefat") is None
+        or shutil.which("fusefile") is None
+    ):
+        pytest.skip("Required FUSE binaries are not installed")
 
 
 @pytest.fixture
@@ -127,13 +220,10 @@ def test_imagecraft_pack(
     imagecraft_app: application.Imagecraft,
     monkeypatch: pytest.MonkeyPatch,
     check,
-    mocker,
 ):
     """Test imagecraft."""
     monkeypatch.setenv("CRAFT_DEBUG", "1")
 
-    mocker.patch("imagecraft.services.pack.Image")
-    mocker.patch("imagecraft.services.pack.grubutil.setup_grub")
     project_file = project_path / "imagecraft.yaml"
     project_file.write_text(IMAGECRAFT_YAML)
 
@@ -146,3 +236,130 @@ def test_imagecraft_pack(
     assert result == 0
 
     check.is_true((project_path / "pc.img").is_file())
+
+
+@pytest.mark.slow
+@pytest.mark.requires_root
+def test_imagecraft_pack_skips_when_unchanged(
+    project_path: Path,
+    app_metadata,
+    monkeypatch: pytest.MonkeyPatch,
+    mocker,
+):
+    """A second pack should skip rebuilding an unchanged image."""
+    mocker.patch("imagecraft.services.pack.BootloaderInstaller.install_image_boot_code")
+    project_file = project_path / "imagecraft.yaml"
+    project_file.write_text(IMAGECRAFT_YAML)
+
+    def run_pack() -> int:
+        Features.reset()
+        callbacks.unregister_all()
+        service_factory = ServiceFactory(app=app_metadata)
+        imagecraft_app = application.Imagecraft(app_metadata, service_factory)
+        return imagecraft_app.run()
+
+    monkeypatch.setattr(
+        "sys.argv",
+        ["imagecraft", "pack", "--destructive-mode", "--verbosity", "debug"],
+    )
+    first_result = run_pack()
+
+    assert first_result == 0
+
+    artifact_path = project_path / "pc.img"
+    first_mtime = artifact_path.stat().st_mtime_ns
+
+    time.sleep(0.01)
+    second_result = run_pack()
+
+    assert second_result == 0
+    assert artifact_path.stat().st_mtime_ns == first_mtime
+
+
+@pytest.mark.slow
+@pytest.mark.requires_root
+def test_imagecraft_pack_rebuilds_when_pack_inputs_change(
+    project_path: Path,
+    app_metadata,
+    monkeypatch: pytest.MonkeyPatch,
+    mocker,
+):
+    """A pack-input change should force a later pack to rebuild the image."""
+    mocker.patch("imagecraft.services.pack.BootloaderInstaller.install_image_boot_code")
+    project_file = project_path / "imagecraft.yaml"
+    project_file.write_text(IMAGECRAFT_YAML)
+
+    def run_pack() -> int:
+        Features.reset()
+        callbacks.unregister_all()
+        service_factory = ServiceFactory(app=app_metadata)
+        imagecraft_app = application.Imagecraft(app_metadata, service_factory)
+        return imagecraft_app.run()
+
+    monkeypatch.setattr(
+        "sys.argv",
+        ["imagecraft", "pack", "--destructive-mode", "--verbosity", "debug"],
+    )
+    first_result = run_pack()
+
+    assert first_result == 0
+
+    artifact_path = project_path / "pc.img"
+    first_mtime = artifact_path.stat().st_mtime_ns
+
+    time.sleep(0.01)
+    project_file.write_text(
+        IMAGECRAFT_YAML.replace("mount: /boot/", "mount: /boot/efi/")
+    )
+    second_result = run_pack()
+
+    assert second_result == 0
+    assert artifact_path.stat().st_mtime_ns > first_mtime
+
+
+@pytest.mark.slow
+@pytest.mark.requires_root
+def test_imagecraft_pack_rebuilds_when_grub_availability_changes(
+    project_path: Path,
+    app_metadata,
+    monkeypatch: pytest.MonkeyPatch,
+    mocker,
+):
+    """An image grub-install availability change should force a repack.
+
+    This changes GRUB installation behavior without editing the project file
+    or requiring a lifecycle rerun, so only the pack service's own repack
+    detection (not the framework's generic checks) can catch it.
+    """
+    mocker.patch("imagecraft.services.pack.BootloaderInstaller.install_image_boot_code")
+    project_file = project_path / "imagecraft.yaml"
+    project_file.write_text(IMAGECRAFT_YAML)
+    rootfs_prime_dir = project_path / "prime"
+    (rootfs_prime_dir / "usr" / "sbin").mkdir(parents=True, exist_ok=True)
+    grub_install_path = rootfs_prime_dir / "usr" / "sbin" / "grub-install"
+    grub_install_path.write_text("")
+
+    def run_pack() -> int:
+        Features.reset()
+        callbacks.unregister_all()
+        service_factory = ServiceFactory(app=app_metadata)
+        imagecraft_app = application.Imagecraft(app_metadata, service_factory)
+        return imagecraft_app.run()
+
+    monkeypatch.setattr(
+        "sys.argv",
+        ["imagecraft", "pack", "--destructive-mode", "--verbosity", "debug"],
+    )
+    first_result = run_pack()
+
+    assert first_result == 0
+
+    artifact_path = project_path / "pc.img"
+    first_mtime = artifact_path.stat().st_mtime_ns
+
+    time.sleep(0.01)
+    grub_install_path.unlink()
+    second_result = run_pack()
+
+    assert second_result == 0
+    assert artifact_path.stat().st_mtime_ns > first_mtime
