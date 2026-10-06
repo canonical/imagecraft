@@ -15,6 +15,12 @@ Current releases
 ----------------
 
 
+Imagecraft 1.1
+~~~~~~~~~~~~~~
+
+- :ref:`Imagecraft 1.1 release notes <release-notes-imagecraft-1-1>`
+
+
 Imagecraft 1.0
 ~~~~~~~~~~~~~~
 
