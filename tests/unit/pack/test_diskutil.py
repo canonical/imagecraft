@@ -31,8 +31,8 @@ def content(tmp_path):
 
 @pytest.fixture
 def device(tmp_path):
-    """A pre-existing block device (simulated as a file)."""
-    device_path = tmp_path / "loop0p1"
+    """A pre-existing partition device (simulated as a file)."""
+    device_path = tmp_path / "partition_dev.img"
     device_path.touch()
     return device_path
 

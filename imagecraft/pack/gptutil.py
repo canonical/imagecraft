@@ -12,7 +12,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Utility functions for GPT-formatted disks."""
+"""Utility functions for GPT-formatted disks.
+
+`sfdisk` reports GPT and MBR partition tables the same way, so the helpers that
+read them back are shared by both schemas regardless of where they live.
+"""
 
 import json
 import re
@@ -22,8 +26,8 @@ from typing import Any, cast
 
 from craft_cli import CraftError, emit
 
-from imagecraft.models import GPTVolume, Role
-from imagecraft.pack import diskutil
+from imagecraft.models import GPTVolume, PartitionSchema, Role, Volume
+from imagecraft.pack import diskutil, mbrutil
 from imagecraft.subprocesses import run
 
 # pylint: disable=no-member
@@ -278,6 +282,66 @@ def get_partition_size_sectors_by_number(imagepath: Path, partnum: int) -> int:
     :raises CalledProcessError: If sfdisk fails.
     """
     return cast(int, _get_partition_info_by_number(imagepath, partnum)["size"])
+
+
+def _get_structure_partition_numbers(volume: Volume) -> dict[str, int]:
+    """Return a mapping of structure name to 1-based disk partition number.
+
+    For GPT and plain MBR (4 or fewer partitions) the number is the structure
+    item's explicit `number` if it has one, and its position in the structure
+    list otherwise. MBR tables only have 4 primary slots, so a volume with more
+    than 4 structures puts the first 3 in slots 1-3, a synthesised extended
+    container in slot 4, and the remaining items become logical partitions
+    numbered from 5.
+    """
+    structure = volume.structure
+    needs_extended = (
+        volume.volume_schema == PartitionSchema.MBR
+        and len(structure) > mbrutil.MAX_PRIMARY_SLOTS
+    )
+    numbers: dict[str, int] = {}
+    for position, structure_item in enumerate(structure, start=1):
+        if needs_extended and position > mbrutil.PRIMARY_SLOTS_WITH_EXTENDED:
+            numbers[structure_item.name] = position + 1
+        else:
+            numbers[structure_item.name] = (
+                getattr(structure_item, "number", None) or position
+            )
+    return numbers
+
+
+def get_partition_slices(
+    image_path: Path, volume: Volume
+) -> dict[str, tuple[int, int]]:
+    """Return the byte slice each structure item occupies in the image.
+
+    The slices are read back from the partition table with `sfdisk --json` so
+    that they describe the image as actually written, rather than the layout
+    as requested.
+
+    :param image_path: Path to the disk image.
+    :param volume: Volume whose structure items are looked up.
+    :returns: Mapping of structure name to (start_bytes, size_bytes).
+    :raises CraftError: If a structure item has no partition in the table.
+    :raises CalledProcessError: If sfdisk fails.
+    """
+    table = _get_partition_table(image_path)
+    sector_size = int(table.get("sectorsize", SECTOR_SIZE_512))
+    entries = {
+        number: entry
+        for entry in table.get("partitions", [])
+        if (number := _partition_node_number(table, entry)) is not None
+    }
+    slices: dict[str, tuple[int, int]] = {}
+    for partname, partnum in _get_structure_partition_numbers(volume).items():
+        if partnum not in entries:
+            raise CraftError(f"No partition number {partnum} in {image_path}")
+        entry = entries[partnum]
+        slices[partname] = (
+            cast(int, entry["start"]) * sector_size,
+            cast(int, entry["size"]) * sector_size,
+        )
+    return slices
 
 
 def verify_partition_tables(imagepath: Path) -> None:

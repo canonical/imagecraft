@@ -95,10 +95,10 @@ def test_lifecycle_prologue_hook(
     mocker,
 ):
     mock_image_service = MagicMock()
-    mock_image_service.get_loop_paths.return_value = {
-        "pc": "/dev/loop8",
-        "pc/efi": "/dev/loop8p1",
-        "pc/rootfs": "/dev/loop8p2",
+    mock_image_service.attach_images.return_value = {
+        "pc": Path("/project/.pc.img.tmp"),
+        "pc/efi": Path("/project/.devices/pc_efi.img"),
+        "pc/rootfs": Path("/project/.devices/pc_rootfs.img"),
     }
     mocker.patch.object(
         lifecycle_service._services, "get", return_value=mock_image_service
@@ -110,9 +110,9 @@ def test_lifecycle_prologue_hook(
     lifecycle_service._prologue_hook(project_info)
 
     assert project_info.global_environment == {
-        "CRAFT_VOLUME_PC": "/dev/loop8",
-        "CRAFT_VOLUME_PC_EFI": "/dev/loop8p1",
-        "CRAFT_VOLUME_PC_ROOTFS": "/dev/loop8p2",
+        "CRAFT_VOLUME_PC": "/project/.pc.img.tmp",
+        "CRAFT_VOLUME_PC_EFI": "/project/.devices/pc_efi.img",
+        "CRAFT_VOLUME_PC_ROOTFS": "/project/.devices/pc_rootfs.img",
     }
     mock_image_service.create_images.assert_called_once()
     mock_image_service.attach_images.assert_called_once()

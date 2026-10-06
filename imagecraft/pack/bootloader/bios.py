@@ -177,7 +177,7 @@ class PCBiosInstaller:
         """Return the byte offset of the root (system-data) partition in the image."""
         # GPT items may declare an explicit partition number; MBR items are
         # numbered by structure order. Mirrors
-        # ImageService._get_partition_numbers: with more than four MBR
+        # gptutil._get_structure_partition_numbers: with more than four MBR
         # entries, slot 4 is the synthesized extended container and logical
         # partitions are numbered from 5.
         structure_index = next(

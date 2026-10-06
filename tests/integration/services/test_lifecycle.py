@@ -14,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import pathlib
-import re
 from typing import cast
 
 import pytest
@@ -50,6 +49,7 @@ def test_lifecycle_prologue_hook(
     # The project_info is what craft-parts passes to the prologue hook
     # We can get it from the manager after setup()
     project_info = lifecycle_service._lcm._project_info
+    image_service = cast(ImageService, default_factory.get("image"))
 
     try:
         # Trigger the prologue hook manually for verification
@@ -61,16 +61,16 @@ def test_lifecycle_prologue_hook(
         assert "CRAFT_VOLUME_PC_EFI" in project_info.global_environment
         assert "CRAFT_VOLUME_PC_ROOTFS" in project_info.global_environment
 
-        volume_path = project_info.global_environment["CRAFT_VOLUME_PC"]
-        efi_path = project_info.global_environment["CRAFT_VOLUME_PC_EFI"]
-        rootfs_path = project_info.global_environment["CRAFT_VOLUME_PC_ROOTFS"]
+        env = project_info.global_environment
+        volume_path = pathlib.Path(env["CRAFT_VOLUME_PC"])
+        efi_path = pathlib.Path(env["CRAFT_VOLUME_PC_EFI"])
+        rootfs_path = pathlib.Path(env["CRAFT_VOLUME_PC_ROOTFS"])
 
-        assert pathlib.Path(volume_path).exists()
-        assert re.match("^/dev/loop[0-9]+$", volume_path)
-        assert pathlib.Path(efi_path).exists()
-        assert re.match("^/dev/loop[0-9]+p1$", efi_path)
-        assert pathlib.Path(rootfs_path).exists()
-        assert re.match("^/dev/loop[0-9]+p2$", rootfs_path)
-
+        assert volume_path == image_service.get_images()["pc"]
+        assert volume_path.is_file()
+        assert efi_path.is_file()
+        assert rootfs_path.is_file()
+        assert len({volume_path, efi_path, rootfs_path}) == 3
+        assert efi_path.parent == rootfs_path.parent != volume_path.parent
     finally:
-        cast(ImageService, default_factory.get("image")).detach_images()
+        image_service.detach_images()
