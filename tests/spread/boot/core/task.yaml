@@ -15,6 +15,9 @@ prepare: |
   fi
 
 execute: |
+  #shellcheck source=tests/spread/tools.sh
+  . "$PROJECT_PATH/tests/spread/tools.sh"
+
   cd sentinel && snapcraft pack --build-for=$TARGET_ARCH --destructive-mode && cd ..
   mv sentinel/sentinel_*_$TARGET_ARCH.snap ./sentinel.snap
 
@@ -23,11 +26,13 @@ execute: |
   imagecraft pack
 
   if [ "$SPREAD_VARIANT" = "pi" ]; then
-    unsquashfs -q -d kernel prime/snaps/pi-kernel_*.snap \
+    TMP_MOUNT=$(tools.mount_image "pc.img")
+    unsquashfs -q -d kernel "${TMP_MOUNT}"/p1/snaps/pi-kernel_*.snap \
       kernel.img initrd.img dtbs/broadcom/bcm2710-rpi-3-b.dtb
     gunzip -c kernel/kernel.img > kernel/Kernel
 
-    SYSTEM_LABEL=$(ls prime/systems | head -n1)
+    SYSTEM_LABEL=$(ls "${TMP_MOUNT}"/p1/systems | head -n1)
+    tools.umount_image
     truncate -s 4G pc.img
     for mode in install run; do
       if [ "$mode" = install ]; then
@@ -74,6 +79,10 @@ execute: |
   MATCH "HELLO FROM SENTINEL SNAP" output.log
 
 restore: |
+  #shellcheck source=tests/spread/tools.sh
+  . "$PROJECT_PATH/tests/spread/tools.sh"
+
+  tools.umount_image
   imagecraft clean || true
   rm -f pc.img output.log /tmp/uefi_vars.fd sentinel.snap
   rm -rf kernel
