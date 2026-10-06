@@ -11,6 +11,19 @@ environment:
 
 prepare: |
   snap install multipass --channel=latest/beta
+
+  # Wait for multipassd to initialize and write its root certificate
+  count=0
+  until [ -f /var/snap/multipass/common/data/multipassd/multipass_root_cert.pem ] && multipass version >/dev/null 2>&1; do
+    count=$((count + 1))
+    if [ "$count" -ge 30 ]; then
+      echo "Timed out waiting for multipass daemon to initialize" >&2
+      journalctl -u snap.multipass.multipassd.service --no-pager -n 50 || true
+      exit 1
+    fi
+    sleep 1
+  done
+
   . /etc/os-release
   sed "s/__BUILD_BASE__/${ID}@${VERSION_ID}/" imagecraft-template.yaml > imagecraft.yaml
 
