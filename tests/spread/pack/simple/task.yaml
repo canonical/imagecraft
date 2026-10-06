@@ -1,13 +1,33 @@
 summary: Pack a simple image
 
+environment:
+  CRAFT_BUILD_ENVIRONMENT/lxd: lxd
+  CRAFT_BUILD_ENVIRONMENT/host: host
+  CRAFT_BUILD_ENVIRONMENT/destructive:
+
 prepare: |
   . /etc/os-release
   sed "s/__BUILD_BASE__/${ID}@${VERSION_ID}/" imagecraft-template.yaml > imagecraft.yaml
 
 execute: |
-  imagecraft pack --verbose --ignore=unmaintained
+  EXTRA_FLAGS=""
+  if [ "$SPREAD_VARIANT" = "destructive" ]; then
+    EXTRA_FLAGS="--destructive-mode"
+  fi
+
+  imagecraft pack --verbose --ignore=unmaintained $EXTRA_FLAGS
   test -f disk.img
 
-  # Running in destructive mode until we can fix https://github.com/canonical/imagecraft/issues/253
-  # test ! -d parts -a ! -d stage -a ! -d prime
-  test -d parts -a -d stage -a -d prime
+  if [ "$SPREAD_VARIANT" = "host" ] || [ "$SPREAD_VARIANT" = "destructive" ]; then
+    test -d parts -a -d stage -a -d prime
+  else
+    test ! -d parts -a ! -d stage -a ! -d prime
+  fi
+
+restore: |
+  EXTRA_FLAGS=""
+  if [ "$SPREAD_VARIANT" = "destructive" ]; then
+    EXTRA_FLAGS="--destructive-mode"
+  fi
+  imagecraft clean $EXTRA_FLAGS
+  rm -f disk.img imagecraft.yaml

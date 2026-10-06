@@ -20,7 +20,7 @@ execute: |
 
   cp ${SPREAD_VARIANT}/* .
 
-  imagecraft pack --destructive-mode
+  imagecraft pack
 
   if [ "$SPREAD_VARIANT" = "pi" ]; then
     unsquashfs -q -d kernel prime/snaps/pi-kernel_*.snap \
@@ -74,7 +74,7 @@ execute: |
   MATCH "HELLO FROM SENTINEL SNAP" output.log
 
 restore: |
-  imagecraft clean --destructive-mode || true
+  imagecraft clean || true
   rm -f pc.img output.log /tmp/uefi_vars.fd sentinel.snap
   rm -rf kernel
 

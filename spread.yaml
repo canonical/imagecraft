@@ -5,9 +5,8 @@ path: /home/imagecraft
 environment:
   LANG: "C.UTF-8"
   LANGUAGE: "en"
-  # build the snap with lxd
   PROJECT_PATH: /home/imagecraft
-  CRAFT_BUILD_ENVIRONMENT: host # Build in destructive mode until we can solve https://github.com/canonical/imagecraft/issues/253
+  CRAFT_BUILD_ENVIRONMENT: lxd
   SNAPD_TESTING_TOOLS: $PROJECT_PATH/tools/external/tools
   PATH: /snap/bin:$PATH:$SNAPD_TESTING_TOOLS
 
@@ -35,6 +34,10 @@ backends:
       NO_PROXY: "127.0.0.1,127.0.0.53,localhost"
       NTP_SERVER: "ntp.ps7.internal"
     systems: &openstack-systems
+      - ubuntu-20.04-64:
+          image: snapd-spread/ubuntu-20.04-64-hwe
+          storage: 45G
+          workers: 1
       - ubuntu-22.04-64:
           image: snapd-spread/ubuntu-22.04-64
           storage: 45G
@@ -45,6 +48,10 @@ backends:
           workers: 1
       - ubuntu-26.04-64:
           image: snapd-spread/ubuntu-26.04-64
+          storage: 45G
+          workers: 1
+      - ubuntu-26.10-64:
+          image: snapd-spread/ubuntu-26.10-64
           storage: 45G
           workers: 1
 
@@ -90,6 +97,28 @@ backends:
     volume-auto-delete: true
     environment: *openstack-env
     systems: *openstack-arm-systems
+
+  openstack-local:
+    type: openstack
+    key: '$(HOST: echo "${OS_CREDENTIALS_LOCAL:-$HOME/.openstack-spread-creds}")'
+    plan: m1.medium
+    halt-timeout: 2h
+    wait-timeout: 10m
+    volume-auto-delete: true
+    systems:
+      - ubuntu-22.04-64:
+          storage: 45G
+          workers: 1
+      - ubuntu-24.04-64:
+          storage: 45G
+          workers: 1
+      - ubuntu-25.10-64:
+          workers: 2
+      - ubuntu-26.04-64:
+          storage: 45G
+          workers: 1
+      - ubuntu-26.10-64:
+          workers: 2
 
   qemu:
     memory: 4G
@@ -201,7 +230,7 @@ prepare: |
 
   # Make sure ssh service is restarted after it is killed by spread (pkill -o -HUP sshd)
   # during the machine setup in google systems. For more details see lp:2011458
-  if [ "$SPREAD_BACKEND" = "openstack" ] && ! systemctl is-active ssh; then
+  if [[ "$SPREAD_BACKEND" == openstack* ]] && ! systemctl is-active ssh; then
       systemctl restart ssh
   fi
 
@@ -228,8 +257,35 @@ prepare: |
 
   # Setup lxd
   tests.pkgs remove lxd
-  snap install multipass --channel=latest/stable
-  snap install lxd --channel=latest/stable
+
+  # Select older LXD channels for older bases.
+  . /etc/os-release
+  case "${VERSION_ID}" in
+    [0-9][24680].10 | [0-9][13579].*)  # Use the latest track for interim releases.
+      lxd_channel="latest/beta"
+      ;;
+    20.04)
+      lxd_channel="4.0/beta"
+      ;;
+    22.04)
+      lxd_channel="5.0/beta"
+      ;;
+    24.04)
+      lxd_channel="5.21/beta"
+      ;;
+    26.04)
+      lxd_channel="6/beta"
+      ;;
+    *)
+      echo "Please select an LXD channel for this LTS release!" >> /dev/stderr
+      # exit 1
+      ;;
+  esac
+  if snap list lxd; then
+    snap refresh --channel=${lxd_channel} lxd
+  else
+    snap install --channel=${lxd_channel} lxd
+  fi
 
   # Hold snap refreshes for 24h.
   snap set system refresh.hold="$(date --date=tomorrow +%Y-%m-%dT%H:%M:%S%:z)"

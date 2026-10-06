@@ -3,7 +3,7 @@ summary: Test snap-preseed plugin
 systems: [ubuntu-24.04-64]
 
 execute: |
-  imagecraft pack --verbose --destructive-mode
+  imagecraft pack --verbose
 
   test -f disk.img
 
@@ -16,4 +16,4 @@ execute: |
 
 restore: |
   rm -rf disk.img core-snap
-  imagecraft clean --destructive-mode
+  imagecraft clean
