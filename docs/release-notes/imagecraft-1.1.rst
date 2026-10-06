@@ -60,15 +60,15 @@ enabling unprivileged and safer partition manipulation.
 Metadata inside generated images
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Generated images now include an ``.image/metadata.yaml`` file in each partition.
+Generated images now include an ``.image/metadata.yaml`` file in the main volume.
 This metadata documents the Imagecraft version, project name, architecture, and
 generation timestamp, enabling inspection and traceability of packed image artifacts.
 
 Direct bootloader configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Bootloader installation and configuration now operate directly on the target partition filesystem structures
-without requiring intermediate system mounts or loop-device attachments.
+Bootloader files and configuration are staged in the target partition filesystems before formatting. For BIOS
+targets, boot code is installed after image assembly through a FUSE mount of the root partition.
 
 
 Minor features
