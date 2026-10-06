@@ -3,12 +3,21 @@ summary: Test mmdebstrap plugin
 systems: [ubuntu-24.04-64]
 
 execute: |
+  #shellcheck source=tests/spread/tools.sh
+  . "$PROJECT_PATH/tests/spread/tools.sh"
+
   imagecraft pack --verbose
 
   test -f pc.img
 
-  test -x prime/usr/bin/curl
+  TMP_MOUNT=$(tools.mount_image "pc.img")
+
+  test -x "${TMP_MOUNT}"/p1/usr/bin/curl
 
 restore: |
+  #shellcheck source=tests/spread/tools.sh
+  . "$PROJECT_PATH/tests/spread/tools.sh"
+
+  tools.umount_image
   imagecraft clean
   rm -rf pc.img || true
