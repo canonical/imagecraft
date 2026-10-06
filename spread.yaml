@@ -240,9 +240,9 @@ prepare: |
       exit 1
   fi
   tests.pkgs install snapd libc6-dev git make fdisk jq
-  QEMU_PKGS="binfmt-support qemu-user-static"
-  if [[ "$SPREAD_SYSTEM" == ubuntu-26.04* ]]; then
-    QEMU_PKGS="qemu-user-binfmt"
+  QEMU_PKGS="qemu-user-binfmt"
+  if [[ "$SPREAD_SYSTEM" == ubuntu-2[024].* ]]; then
+    QEMU_PKGS="binfmt-support qemu-user-static"
   fi
   if [[ ! "$SPREAD_BACKEND" == *-arm* ]]; then
       tests.pkgs install gcc-multilib $QEMU_PKGS
