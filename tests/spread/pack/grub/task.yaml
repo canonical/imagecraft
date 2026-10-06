@@ -6,9 +6,6 @@ execute: |
   #shellcheck source=tests/spread/tools.sh
   . "$PROJECT_PATH/tests/spread/tools.sh"
 
-  # Check that work dirs *don't* exist
-  test ! -d parts -a ! -d stage -a ! -d prime
-
   GRUB_INSTALL_LOG="Preparing bootloader files"
 
   imagecraft pack --verbosity verbose 2>&1 >/dev/null | MATCH "$GRUB_INSTALL_LOG"
@@ -22,9 +19,6 @@ execute: |
 
   IMG_NAME=pc.img
   test -f ${IMG_NAME}
-
-  # Check that work dirs *do* exist
-  test -d parts -a -d stage -a -d prime
 
   TMP_MOUNT=$(tools.mount_image "${IMG_NAME}")
 

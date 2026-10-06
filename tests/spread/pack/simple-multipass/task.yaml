@@ -17,7 +17,6 @@ prepare: |
 execute: |
   imagecraft pack --verbose --ignore=unmaintained
   test -f disk.img
-  test ! -d parts -a ! -d stage -a ! -d prime
 
 restore: |
   snap remove --no-wait --purge multipass

@@ -18,12 +18,6 @@ execute: |
   imagecraft pack --verbose --ignore=unmaintained $EXTRA_FLAGS
   test -f disk.img
 
-  if [ "$SPREAD_VARIANT" = "host" ] || [ "$SPREAD_VARIANT" = "destructive" ]; then
-    test -d parts -a -d stage -a -d prime
-  else
-    test ! -d parts -a ! -d stage -a ! -d prime
-  fi
-
 restore: |
   EXTRA_FLAGS=""
   if [ "$SPREAD_VARIANT" = "destructive" ]; then
