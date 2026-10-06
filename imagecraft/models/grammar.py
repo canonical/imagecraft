@@ -18,19 +18,8 @@
 
 from typing import Any
 
-import pydantic
-from craft_application.models.base import alias_generator
+from craft_application.models.grammar import _GrammarAwareModel
 from craft_grammar.models import Grammar  # type: ignore[import-untyped]
-from pydantic import ConfigDict
-
-
-class _GrammarAwareModel(pydantic.BaseModel):
-    model_config = ConfigDict(
-        validate_assignment=True,
-        extra="allow",
-        alias_generator=alias_generator,
-        populate_by_name=True,
-    )
 
 
 class _GrammarAwareVolume(_GrammarAwareModel):
