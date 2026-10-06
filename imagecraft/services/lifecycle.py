@@ -77,9 +77,9 @@ class ImagecraftLifecycleService(LifecycleService):
         """
         image_service = cast(ImageService, self._services.get("image"))
         image_service.create_images()
-        image_service.attach_images()
+        device_paths = image_service.attach_images()
 
-        for key, path in image_service.get_device_paths().items():
+        for key, path in device_paths.items():
             env_key = f"CRAFT_VOLUME_{key.upper().replace('/', '_').replace('-', '_')}"
             project_info.global_environment[env_key] = str(path)
 

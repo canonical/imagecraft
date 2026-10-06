@@ -99,14 +99,14 @@ class ImageService(AppService):
 
         return self._images
 
-    def attach_images(self) -> None:
+    def attach_images(self) -> Mapping[str, pathlib.Path]:
         """Provide virtual devices for all created images.
 
         Each volume is exposed as its raw image file, and each of its
         partitions as a fusefile virtual device under the project's
         ``.devices`` directory. This method is idempotent.
 
-        Use :meth:`get_device_paths` to obtain the resulting paths.
+        :returns: Paths to each volume image and partition device.
 
         :raises ValueError: If images have not been created yet.
         :raises errors.MountError: If a virtual device cannot be created.
@@ -117,8 +117,7 @@ class ImageService(AppService):
         if self._vdev_managers:
             missing = set(self._images) - set(self._vdev_managers)
             if not missing:
-                self.get_device_paths()
-                return
+                return self.get_device_paths()
             emit.debug(
                 f"Partially-attached state: present={sorted(self._vdev_managers)}, missing={sorted(missing)}"
             )
@@ -161,6 +160,8 @@ class ImageService(AppService):
         if not self._atexit_registered:
             atexit.register(self.detach_images)
             self._atexit_registered = True
+
+        return self.get_device_paths()
 
     def detach_images(self) -> None:
         """Unmount all virtual devices.

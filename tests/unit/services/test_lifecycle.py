@@ -95,7 +95,7 @@ def test_lifecycle_prologue_hook(
     mocker,
 ):
     mock_image_service = MagicMock()
-    mock_image_service.get_device_paths.return_value = {
+    mock_image_service.attach_images.return_value = {
         "pc": Path("/project/.pc.img.tmp"),
         "pc/efi": Path("/project/.devices/pc_efi.img"),
         "pc/rootfs": Path("/project/.devices/pc_rootfs.img"),

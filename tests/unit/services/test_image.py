@@ -157,9 +157,14 @@ def test_create_images_idempotent(image_service, default_factory, mock_project, 
 
 def test_attach_images_new(attachable, image_service, project_dir, mocker):
     with patch("atexit.register") as mock_atexit:
-        image_service.attach_images()
+        device_paths = image_service.attach_images()
 
     assert list(image_service._vdev_managers) == ["pc"]
+    assert device_paths == {
+        "pc": project_dir / ".pc.img.tmp",
+        "pc/efi": project_dir / ".devices" / "pc_efi.img",
+        "pc/rootfs": project_dir / ".devices" / "pc_rootfs.img",
+    }
     attachable.assert_called_once_with(
         image_path=project_dir / ".pc.img.tmp",
         slices={
@@ -172,11 +177,12 @@ def test_attach_images_new(attachable, image_service, project_dir, mocker):
 
 
 def test_attach_images_is_idempotent(attachable, image_service):
-    image_service.attach_images()
+    first_paths = image_service.attach_images()
     first_managers = dict(image_service._vdev_managers)
-    image_service.attach_images()
+    second_paths = image_service.attach_images()
 
     assert image_service._vdev_managers == first_managers
+    assert second_paths == first_paths
     assert attachable.call_count == 1
 
 

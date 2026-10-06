@@ -469,8 +469,7 @@ class ImagecraftPackService(PackageService):
             # Both calls are idempotent — the prologue hook will have run them
             # already during the lifecycle, but pack may be called standalone.
             image_service.create_images()
-            image_service.attach_images()
-            device_paths = image_service.get_device_paths()
+            device_paths = image_service.attach_images()
 
             project_dirs = self._services.get("lifecycle").project_info.dirs
             arch = self._services.get("lifecycle").project_info.target_arch
