@@ -26,6 +26,7 @@ from craft_application.errors import CraftValidationError
 from craft_application.models import CraftBaseModel
 from craft_application.models import Platform as BasePlatform
 from craft_application.models import Project as BaseProject
+from craft_parts.utils import partition_utils
 from craft_providers import bases
 from pydantic import (
     AfterValidator,
@@ -41,7 +42,7 @@ from imagecraft.models.volume import (
     VolumeName,
 )
 
-DEFAULT_FILESYSTEM_MOUNT = "default"
+DEFAULT_FILESYSTEM_MOUNT = partition_utils.DEFAULT_PARTITION
 
 
 class Platform(BasePlatform):
@@ -220,6 +221,7 @@ class VolumeFilesystemsModel(CraftBaseModel, extra="ignore"):
             raise ValueError(
                 f"device {default_alias} associated to the root does not reference a valid partition"
             )
+        partition_utils.validate_partition_names(partitions)
         return partitions
 
 
