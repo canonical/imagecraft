@@ -6,20 +6,23 @@ authors = [{ name = "Canonical Ltd.", email = "snapcraft@lists.snapcraft.io" }]
 dependencies = [
   # To use a dev version of a craft library:
   # craft-lib @ git+https://github.com/canonical/craft-lib@ref
-  "craft-application~=7.3",
-  "craft-cli~=3.0",
-  "craft-grammar~=2.3",
+  "craft-application~=7.5.0",
+  "craft-cli~=3.4.1",
+  "craft-grammar~=2.3.0",
   "craft-parts~=2.37.1",
   "craft-platforms~=0.12.0",
   "craft-providers~=3.7.1",
   "pydantic~=2.13.5",
   "pygit2>=1.13.0,<1.15.0; python_version=='3.12'",  # pin pygit2 to versions compatible with libgit2-1.7 for core24
-  "pygit2>=1.19.0,<1.20.0; python_version=='3.14'",  # Ubuntu 26.04 and core26
+  "pygit2>=1.19.0,<1.21.0; python_version=='3.14'",  # Ubuntu 26.04 and core26
 ]
 classifiers = [
-  "Development Status :: 1 - Planning",
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: Developers",
+  "Operating System :: POSIX :: Linux",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.14",
 ]
 license = { file = "LICENSE" }
 requires-python = ">=3.11"
