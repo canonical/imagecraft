@@ -185,6 +185,11 @@ prepare: |
     # to use a proxy with it. Came from:
     # https://github.com/canonical/snapd/blob/619cc925793591348db21bb45fa4af65288d2c42/tests/lib/prepare.sh#L90
     tools.setup_snapd_proxy
+
+    # Other systemd services (e.g. multipass) need these set as well.
+    systemctl set-environment http_proxy="$http_proxy"
+    systemctl set-environment https_proxy="$https_proxy"
+    systemctl set-environment no_proxy="$no_proxy"
   fi
 
   # if the 'tools' directory inside the submodule does not exist, then assume the submodule is empty
