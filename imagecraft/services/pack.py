@@ -331,8 +331,7 @@ class ImagecraftPackService(PackageService):
             return None
 
         partition_name = get_partition_name(volume_name, rootfs_structure)
-        project_dirs = self._services.get("lifecycle").project_info.dirs
-        return project_dirs.get_prime_dir(partition=partition_name)
+        return self._prime_dir_for(partition_name)
 
     def _image_has_grub_install(self, rootfs_prime_dir: Path | None) -> bool:
         """Check whether the image rootfs provides grub-install."""
