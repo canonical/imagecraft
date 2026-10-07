@@ -1,5 +1,9 @@
 summary: Pack a simple image using multipass
 
+# Set to manual because we need separate work to get multipass working in PS7 openstack.
+# https://github.com/canonical/imagecraft/actions/runs/37652119163/job/112907630917?pr=467
+manual: true
+
 systems:
   - ubuntu-22.04-64
   - ubuntu-24.04-64
