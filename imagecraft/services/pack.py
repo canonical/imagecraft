@@ -20,7 +20,6 @@ from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import Any, cast
 
-import yaml
 from craft_application import PackageService, models, util
 from craft_cli import CraftError, emit
 from typing_extensions import override
@@ -143,9 +142,8 @@ class ImagecraftPackService(PackageService):
     def _render_image_metadata(self) -> str:
         """Render deterministic metadata YAML."""
         metadata = self._build_image_metadata()
-        return yaml.safe_dump(
+        return util.dump_yaml(
             metadata.model_dump(by_alias=True, exclude_none=True),
-            sort_keys=False,
             allow_unicode=False,
         )
 
@@ -354,8 +352,8 @@ class ImagecraftPackService(PackageService):
             return None
 
         try:
-            raw_state = yaml.safe_load(state_path.read_text(encoding="utf-8"))
-        except (OSError, yaml.YAMLError, UnicodeError):
+            raw_state = util.safe_yaml_load(state_path.read_text(encoding="utf-8"))
+        except (OSError, CraftError, UnicodeError):
             emit.debug(f"Failed to read pack-input state from {state_path!r}.")
             return None
 
@@ -377,8 +375,10 @@ class ImagecraftPackService(PackageService):
         raw_state: dict[str, Any] = {}
         if state_path.is_file():
             try:
-                loaded_state = yaml.safe_load(state_path.read_text(encoding="utf-8"))
-            except (OSError, yaml.YAMLError, UnicodeError):
+                loaded_state = util.safe_yaml_load(
+                    state_path.read_text(encoding="utf-8")
+                )
+            except (OSError, CraftError, UnicodeError):
                 emit.debug(
                     f"Failed to read pack-input state from {state_path!r}, rewriting from scratch."
                 )
