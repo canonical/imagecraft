@@ -8,16 +8,10 @@ execute: |
   mkdir -p ${TMP_MOUNT}
   echo ${TMP_MOUNT} >> tmpmount.txt
 
-  # Check that work dirs *don't* exist
-  test ! -d parts -a ! -d stage -a ! -d prime
-
-  imagecraft pack --verbose --destructive-mode
+  imagecraft pack --verbose
 
   IMG_NAME=pc.img
   test -f ${IMG_NAME}
-
-  # Check that work dirs *do* exist
-  test -d parts -a -d stage -a -d prime
 
   losetup --find --show --partscan ${IMG_NAME}
   losetup -a | grep ${IMG_NAME} | cut -f1 -d: >> loop.txt
@@ -51,7 +45,7 @@ restore: |
       losetup -l | NOMATCH "$LOOP"
       rm loop.txt
   fi
-  imagecraft clean --destructive-mode
+  imagecraft clean
   rm -rf pc.img || true
 
 debug: |

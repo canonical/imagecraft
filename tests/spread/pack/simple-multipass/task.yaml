@@ -1,0 +1,41 @@
+summary: Pack a simple image using multipass
+
+# Set to manual because we need separate work to get multipass working in PS7 openstack.
+# https://github.com/canonical/imagecraft/actions/runs/37652119163/job/112907630917?pr=467
+manual: true
+
+systems:
+  - ubuntu-22.04-64
+  - ubuntu-24.04-64
+  # - ubuntu-26.04-64  # Disabled until multipass 1.17 is released
+  # - ubuntu-26.10-64
+
+environment:
+  CRAFT_BUILD_ENVIRONMENT: multipass
+
+prepare: |
+  snap install multipass --channel=latest/beta
+
+  # Wait for multipassd to initialize and write its root certificate
+  count=0
+  until [ -f /var/snap/multipass/common/data/multipassd/multipass_root_cert.pem ] && multipass version >/dev/null 2>&1; do
+    count=$((count + 1))
+    if [ "$count" -ge 30 ]; then
+      echo "Timed out waiting for multipass daemon to initialize" >&2
+      journalctl -u snap.multipass.multipassd.service --no-pager -n 50 || true
+      exit 1
+    fi
+    sleep 1
+  done
+
+  . /etc/os-release
+  sed "s/__BUILD_BASE__/${ID}@${VERSION_ID}/" imagecraft-template.yaml > imagecraft.yaml
+
+execute: |
+  imagecraft pack --verbose --ignore=unmaintained
+  test -f disk.img
+
+restore: |
+  imagecraft clean
+  snap remove --no-wait --purge multipass
+  rm -f disk.img imagecraft.yaml

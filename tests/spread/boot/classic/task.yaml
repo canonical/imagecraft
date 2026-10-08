@@ -14,7 +14,7 @@ prepare: |
   fi
 
 execute: |
-  imagecraft pack --destructive-mode
+  imagecraft pack
 
   ARCH=$(dpkg --print-architecture)
   if [ "$ARCH" = "amd64" ]; then
@@ -47,7 +47,7 @@ execute: |
   MATCH "HELLO FROM IMAGECRAFT" output.log
 
 restore: |
-  imagecraft clean --destructive-mode || true
+  imagecraft clean || true
   rm -f pc.img output.log /tmp/uefi_vars.fd
 
 debug: |

@@ -16,19 +16,8 @@ filesystems:
 parts:
   # build a simple rootfs
   rootfs:
-    plugin: nil
-    build-packages: ["mmdebstrap"]
-    override-build: |
-      mmdebstrap --arch $CRAFT_ARCH_BUILD_FOR \
-       --mode=root \
-       --format=dir \
-       --variant=minbase \
-       --include=apt \
-       noble \
-       $CRAFT_PART_INSTALL/ \
-       http://archive.ubuntu.com/ubuntu/
-      # mmdebstrap filled /dev with special files. Clean it.
-      rm -r $CRAFT_PART_INSTALL/dev/*
+    plugin: mmdebstrap
+    mmdebstrap-variant: minbase
     organize:
       "*": (overlay)/
 

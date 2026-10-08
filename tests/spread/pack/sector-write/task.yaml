@@ -1,7 +1,7 @@
 summary: Data written to sectors outside partitions of the volume is preserved
 
 execute: |
-  imagecraft pack --verbose --ignore=unmaintained --destructive-mode
+  imagecraft pack --verbose --ignore=unmaintained
   test -f disk.img
 
   # Verify that sector 100 is actually in the gap between the GPT partition
@@ -13,5 +13,5 @@ execute: |
   dd if=disk.img bs=512 skip=100 count=1 status=none | MATCH 'IMAGECRAFT_SECTOR_WRITE_TEST'
 
 restore: |
-  imagecraft clean --destructive-mode
+  imagecraft clean
   rm -f disk.img

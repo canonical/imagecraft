@@ -6,12 +6,9 @@ execute: |
   #shellcheck source=tests/spread/tools.sh
   . "$PROJECT_PATH/tests/spread/tools.sh"
 
-  # Check that work dirs *don't* exist
-  test ! -d parts -a ! -d stage -a ! -d prime
-
   GRUB_INSTALL_LOG="Preparing bootloader files"
 
-  imagecraft pack --verbosity verbose --destructive-mode 2>&1 >/dev/null | MATCH "$GRUB_INSTALL_LOG"
+  imagecraft pack --verbosity verbose 2>&1 >/dev/null | MATCH "$GRUB_INSTALL_LOG"
 
   # Check that the message was actually written to the logfile.
   imagecraft_log_file=$(find /root/.local/state/imagecraft/log/ -name 'imagecraft*.log' | sort -n | tail -n1)
@@ -21,9 +18,6 @@ execute: |
 
   IMG_NAME=pc.img
   test -f ${IMG_NAME}
-
-  # Check that work dirs *do* exist
-  test -d parts -a -d stage -a -d prime
 
   TMP_MOUNT=$(tools.mount_image "${IMG_NAME}")
 
@@ -37,7 +31,7 @@ restore: |
   . "$PROJECT_PATH/tests/spread/tools.sh"
 
   tools.umount_image
-  imagecraft clean --destructive-mode
+  imagecraft clean
   rm -rf pc.img || true
 
 debug: |

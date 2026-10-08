@@ -58,3 +58,25 @@ def test_mmdebstrap_cleanup(
         path = install_dir / subdir
         if path.exists():
             assert list(path.iterdir()) == []
+
+
+@pytest.mark.slow
+@pytest.mark.requires_root
+def test_mmdebstrap_real_build(
+    custom_project_file: Path,
+    imagecraft_app: application.Imagecraft,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """Test that the plugin builds where device nodes cannot be created."""
+    if not is_noble():
+        pytest.skip(
+            "destructive-mode builds require the host series to match the "
+            "project's build-base (ubuntu@24.04)"
+        )
+    monkeypatch.setattr(
+        "sys.argv",
+        ["imagecraft", "build", "--destructive-mode", "--verbosity", "debug"],
+    )
+    result = imagecraft_app.run()
+
+    assert result == 0

@@ -87,6 +87,7 @@ class MmdebstrapPlugin(Plugin):
 
         cmd: list[str] = [
             "mmdebstrap",
+            "--verbose",
             f"--arch={self._part_info.target_arch}",
             "--mode=root",
             f"--variant={options.mmdebstrap_variant}",
