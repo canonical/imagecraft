@@ -14,7 +14,6 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from craft_parts.plugins import register
 from craft_parts.plugins.plugins import PluginType
 
 from .mmdebstrap_plugin import MmdebstrapPlugin
@@ -32,8 +31,3 @@ def get_app_plugins() -> dict[str, PluginType]:
         "snap-preseed": SnapPreseedPlugin,
         "uc-prepare": UcPreparePlugin,
     }
-
-
-def setup_plugins() -> None:
-    """Register plugins specific to imagecraft."""
-    register(get_app_plugins())
