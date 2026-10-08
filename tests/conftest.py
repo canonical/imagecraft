@@ -51,12 +51,6 @@ def is_noble_non_amd64() -> bool:
     return is_noble()
 
 
-@pytest.fixture
-def host_is_noble() -> bool:
-    """Fixture indicating if the host system is Ubuntu Noble."""
-    return is_noble()
-
-
 def pytest_runtest_setup(item: pytest.Item) -> None:
     """Skip tests marked requires_root when not running as root."""
     if item.get_closest_marker("requires_root") and os.geteuid() != 0:
@@ -107,7 +101,9 @@ def enable_features(reset_features):
 
 @pytest.fixture(autouse=True, scope="session")
 def setup_plugins():
-    plugins.setup_plugins()
+    from craft_parts.plugins import register  # noqa: PLC0415
+
+    register(plugins.get_app_plugins())
 
 
 @pytest.fixture(autouse=True, scope="session")
