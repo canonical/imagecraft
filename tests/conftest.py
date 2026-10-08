@@ -101,7 +101,9 @@ def enable_features(reset_features):
 
 @pytest.fixture(autouse=True, scope="session")
 def setup_plugins():
-    plugins.setup_plugins()
+    from craft_parts.plugins import register  # noqa: PLC0415
+
+    register(plugins.get_app_plugins())
 
 
 @pytest.fixture(autouse=True, scope="session")
