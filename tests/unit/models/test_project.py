@@ -16,7 +16,6 @@
 
 import io
 import pathlib
-from pathlib import Path
 
 import pytest
 import yaml
@@ -178,10 +177,6 @@ pytestmark = [pytest.mark.usefixtures("enable_features")]
 @pytest.fixture
 def yaml_loaded_data():
     return util.safe_yaml_load(io.StringIO(IMAGECRAFT_YAML_GENERIC))
-
-
-def load_project_yaml(yaml_loaded_data) -> Project:
-    return Project.from_yaml_data(yaml_loaded_data, Path("imagecraft.yaml"))
 
 
 @pytest.mark.parametrize(

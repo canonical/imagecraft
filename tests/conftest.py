@@ -51,12 +51,6 @@ def is_noble_non_amd64() -> bool:
     return is_noble()
 
 
-@pytest.fixture
-def host_is_noble() -> bool:
-    """Fixture indicating if the host system is Ubuntu Noble."""
-    return is_noble()
-
-
 def pytest_runtest_setup(item: pytest.Item) -> None:
     """Skip tests marked requires_root when not running as root."""
     if item.get_closest_marker("requires_root") and os.geteuid() != 0:
