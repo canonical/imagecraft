@@ -251,6 +251,8 @@ prepare: |
     lxc config set core.proxy_http $HTTP_PROXY
     lxc config set core.proxy_https $HTTPS_PROXY
     lxc config set core.proxy_ignore_hosts $NO_PROXY
+    snap set multipass proxy.http="$HTTP_PROXY"
+    snap set multipass proxy.https="${HTTPS_PROXY:-$HTTP_PROXY}"
   fi
 
   snap install --classic --dangerous imagecraft_*.snap
