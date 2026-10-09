@@ -3,7 +3,7 @@ version: "1.0"
 summary: Test uc-prepare plugin
 description: Test uc-prepare plugin
 base: bare
-build-base: ubuntu@24.04
+build-base: __BUILD_BASE__
 
 platforms:
   amd64:
