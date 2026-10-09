@@ -17,5 +17,7 @@ execute: |
   test -x "$IMAGE_DIR"/p1/usr/bin/curl
 
 restore: |
+  . "${PROJECT_PATH}/tests/spread/tools.sh"
+  tools.umount_image
   imagecraft clean
   rm -f pc.img
