@@ -1,19 +1,29 @@
 summary: Test snap-preseed plugin
 
-systems: [ubuntu-24.04-64]
+environment:
+  CRAFT_BUILD_ENVIRONMENT: lxd # Test in lxd rather than destructive mode.
+
+prepare: |
+  . /etc/os-release
+  sed "s/__BUILD_BASE__/${ID}@${VERSION_ID}/" imagecraft-template.yaml > imagecraft.yaml
 
 execute: |
-  imagecraft pack --verbose --destructive-mode
+  imagecraft pack --ignore=unmaintained
 
   test -f disk.img
 
-  test -d prime/var/lib/snapd/seed/
-  test -f prime/var/lib/snapd/seed/snaps/hello-world_*.snap
-  test -f prime/var/lib/snapd/seed/snaps/core_*.snap
+  . "${PROJECT_PATH}/tests/spread/tools.sh"
+  IMAGE_DIR=$(tools.mount_image disk.img)
 
-  unsquashfs -d core-snap prime/var/lib/snapd/seed/snaps/core_*.snap --extract-file meta/snap.yaml
+  test -d "$IMAGE_DIR"/p1/var/lib/snapd/seed/
+  test -f "$IMAGE_DIR"/p1/var/lib/snapd/seed/snaps/hello-world_*.snap
+  test -f "$IMAGE_DIR"/p1/var/lib/snapd/seed/snaps/core_*.snap
+
+  unsquashfs -d core-snap "$IMAGE_DIR"/p1/var/lib/snapd/seed/snaps/core_*.snap --extract-file meta/snap.yaml
   grep -q "armhf" core-snap/meta/snap.yaml
 
 restore: |
+  . "${PROJECT_PATH}/tests/spread/tools.sh"
+  tools.umount_image
   rm -rf disk.img core-snap
-  imagecraft clean --destructive-mode
+  imagecraft clean
