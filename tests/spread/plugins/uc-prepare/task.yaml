@@ -1,17 +1,38 @@
 summary: Test uc-prepare plugin
 
-systems: [ubuntu-24.04-64]
+systems:
+  # We can only run this on systems that are also snap bases, and when we do that
+  # we need to get a new Ubuntu Core assertion file from
+  # https://github.com/canonical/models/
+  - ubuntu-22.04-64
+  - ubuntu-24.04-64
+  - ubuntu-26.04-64
+
+environment:
+  CRAFT_BUILD_ENVIRONMENT: lxd # Test in lxd rather than destructive mode.
+
+prepare: |
+  . /etc/os-release
+  sed "s/__BUILD_BASE__/${ID}@${VERSION_ID}/" imagecraft-template.yaml > imagecraft.yaml
+  cp "model-${ID}@${VERSION_ID}.assert" model.assert
 
 execute: |
-  imagecraft pack --verbose --destructive-mode
+  imagecraft pack --ignore=unmaintained
 
   test -f disk.img
 
-  test -f prime/snaps/pc_*.snap
-  test -f prime/snaps/pc-kernel_*.snap
-  test -f prime/snaps/core24_*.snap
-  test -f prime/snaps/snapd_*.snap
+  . "${PROJECT_PATH}/tests/spread/tools.sh"
+  IMAGE_DIR=$(tools.mount_image disk.img)
+  test -f "$IMAGE_DIR"/p1/snaps/pc_*.snap
+  test -f "$IMAGE_DIR"/p1/snaps/pc-kernel_*.snap
+  test -f "$IMAGE_DIR"/p1/snaps/snapd_*.snap
+
+  . /etc/os-release
+  core_version="${VERSION_ID:0:2}"
+  test -f "$IMAGE_DIR/p1/snaps/core${core_version}"_*.snap
 
 restore: |
-  rm -rf disk.img
-  imagecraft clean --destructive-mode
+  . "${PROJECT_PATH}/tests/spread/tools.sh"
+  tools.umount_image
+  imagecraft clean
+  rm -f disk.img imagecraft.yaml model.assert
