@@ -6,7 +6,7 @@ tools.setup_snapd_proxy() {
   local SNAPD_CONFD="/etc/systemd/system/snapd.service.d"
   mkdir -p "$SNAPD_CONFD"
 
-  cat <<EOF > ${SNAPD_CONFD}/proxy.conf
+  cat <<EOF >${SNAPD_CONFD}/proxy.conf
 [Service]
 Environment=HTTPS_PROXY="$HTTPS_PROXY" HTTP_PROXY="$HTTPS_PROXY" https_proxy="$HTTPS_PROXY" http_proxy="$HTTPS_PROXY" NO_PROXY="$NO_PROXY" no_proxy="$NO_PROXY"
 EOF
@@ -24,12 +24,12 @@ tools.mount_image() {
   local mount_root="${tmp_dir}/mount"
   mkdir -p "${mount_root}"
 
-  echo "${mount_root}" > tmpmount.txt
-  echo "${tmp_dir}" > tmpdir.txt
+  echo "${mount_root}" >tmpmount.txt
+  echo "${tmp_dir}" >tmpdir.txt
 
   local loop_dev
   loop_dev=$(losetup --find --show --partscan "${img_path}")
-  echo "${loop_dev}" > loop.txt
+  echo "${loop_dev}" >loop.txt
 
   # Partition devices are created asynchronously by the kernel after the
   # partscan ioctl; wait for them to appear before using them.
@@ -98,6 +98,14 @@ tools.umount_image() {
 
     losetup -d "${loop_dev}" || true
     sync
+    . /etc/os-release
+    if [[ "${VERSION_CODENAME}" == "jammy" ]]; then
+      # On Jammy, it takes a tick or two after sync for the device to actually
+      # get removed. Sleeping for a second and syncing is more than enough time
+      # to work around it.
+      sleep 1
+      sync
+    fi
     losetup -l | NOMATCH "${loop_dev}"
     rm -f loop.txt
   fi
