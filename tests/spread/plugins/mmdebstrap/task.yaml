@@ -20,4 +20,4 @@ restore: |
   . "${PROJECT_PATH}/tests/spread/tools.sh"
   tools.umount_image
   imagecraft clean
-  rm -f pc.img
+  rm -f pc.img imagecraft.yaml
