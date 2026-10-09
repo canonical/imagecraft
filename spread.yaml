@@ -273,6 +273,18 @@ suites:
     summary: Test imagecraft packing
   tests/spread/plugins/:
     summary: Test imagecraft plugins
+    prepare-each: |
+      . /etc/os-release
+      sed "s/__BUILD_BASE__/${ID}@${VERSION_ID}/" imagecraft-template.yaml > imagecraft.yaml
+    restore-each: |
+      . "${PROJECT_PATH}/tests/spread/tools.sh"
+      tools.umount_image
+      imagecraft clean
+      rm -f imagecraft.yaml
+    environment:
+      # We're still globally testing in destructive mode.
+      # For the plugins though we should do it in lxd.
+      CRAFT_BUILD_ENVIRONMENT: lxd
   tests/spread/boot/:
     summary: Tests that boot images in QEMU
     manual: true

@@ -8,12 +8,8 @@ systems:
   - ubuntu-24.04-64
   - ubuntu-26.04-64
 
-environment:
-  CRAFT_BUILD_ENVIRONMENT: lxd # Test in lxd rather than destructive mode.
-
 prepare: |
   . /etc/os-release
-  sed "s/__BUILD_BASE__/${ID}@${VERSION_ID}/" imagecraft-template.yaml > imagecraft.yaml
   cp "model-${ID}@${VERSION_ID}.assert" model.assert
 
 execute: |
@@ -32,7 +28,4 @@ execute: |
   test -f "$IMAGE_DIR/p1/snaps/core${core_version}"_*.snap
 
 restore: |
-  . "${PROJECT_PATH}/tests/spread/tools.sh"
-  tools.umount_image
-  imagecraft clean
-  rm -f disk.img imagecraft.yaml model.assert
+  rm -f disk.img model.assert
