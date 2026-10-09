@@ -10,11 +10,13 @@ environment:
   CRAFT_BUILD_ENVIRONMENT: host # Build in destructive mode until we can solve https://github.com/canonical/imagecraft/issues/253
   SNAPD_TESTING_TOOLS: $PROJECT_PATH/tools/external/tools
   PATH: /snap/bin:$PATH:$SNAPD_TESTING_TOOLS
+  CRAFT_VERBOSITY: debug
 
 exclude:
   - .github
   - .venv
   - .*_cache
+  - .git
 
 backends:
   openstack:
@@ -242,6 +244,14 @@ prepare: |
 
   lxd waitready --timeout=30
   lxd init --auto
+
+  if [ -n "${HTTP_PROXY:-}" ]; then
+    # Lxd either can't access or doesn't fallback to the environment variables,
+    # so we must set them. This is needed to download remote images.
+    lxc config set core.proxy_http $HTTP_PROXY
+    lxc config set core.proxy_https $HTTPS_PROXY
+    lxc config set core.proxy_ignore_hosts $NO_PROXY
+  fi
 
   snap install --classic --dangerous imagecraft_*.snap
 

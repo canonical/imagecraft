@@ -1,0 +1,10 @@
+#!/snap/core24/current/bin/bash
+# Fake mknod that prevents accidental use of mknod in LXD containers.
+# Created to prevent mmdebstrap from using mknod in containers.
+
+if [ -S /dev/lxd/sock ]; then
+    echo "no mknod in lxd!"
+    exit 124
+else
+    exec /usr/bin/mknod "$@"
+fi

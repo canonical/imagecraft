@@ -3,7 +3,7 @@ version: "0.1"
 summary: Test mmdebstrap plugin
 description: Test for mmdebstrap rootfs creation
 base: bare
-build-base: ubuntu@24.04
+build-base: __BUILD_BASE__
 
 platforms:
   amd64:
@@ -30,4 +30,4 @@ volumes:
         filesystem: ext4
         filesystem-label: writable
         role: system-data
-        size: 1G
+        size: 2G
