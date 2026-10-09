@@ -1,7 +1,28 @@
 summary: Data written to sectors outside partitions of the volume is preserved
 
+environment:
+  CRAFT_BUILD_ENVIRONMENT/lxd: lxd
+  CRAFT_BUILD_ENVIRONMENT/multipass: multipass
+  CRAFT_BUILD_ENVIRONMENT/destructive: host
+
+prepare: |
+  . /etc/os-release
+  sed "s/__BUILD_BASE__/${ID}@${VERSION_ID}/" imagecraft-template.yaml > imagecraft.yaml
+
+  rm -rf disk.img
+
 execute: |
-  imagecraft pack --verbose --ignore=unmaintained --destructive-mode
+  . /etc/os-release
+  if [[ "${CRAFT_BUILD_ENVIRONMENT}" == "multipass" && "${VERSION_CODENAME}" == "questing" ]]; then
+    echo "Skipping because multipass doesn't have a questing VM"
+    exit 0
+  fi
+  if [[ "${CRAFT_BUILD_ENVIRONMENT}" == "multipass" && "${VERSION_CODENAME}" == "resolute" ]]; then
+    echo "Skipping because multipass doesn't have a resolute VM"
+    exit 0
+  fi
+
+  imagecraft pack --verbose --ignore=unmaintained
   test -f disk.img
 
   # Verify that sector 100 is actually in the gap between the GPT partition
@@ -13,5 +34,5 @@ execute: |
   dd if=disk.img bs=512 skip=100 count=1 status=none | MATCH 'IMAGECRAFT_SECTOR_WRITE_TEST'
 
 restore: |
-  imagecraft clean --destructive-mode
-  rm -f disk.img
+  rm -rf disk.img parts stage prime
+  imagecraft clean
