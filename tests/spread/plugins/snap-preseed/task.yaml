@@ -1,12 +1,5 @@
 summary: Test snap-preseed plugin
 
-environment:
-  CRAFT_BUILD_ENVIRONMENT: lxd # Test in lxd rather than destructive mode.
-
-prepare: |
-  . /etc/os-release
-  sed "s/__BUILD_BASE__/${ID}@${VERSION_ID}/" imagecraft-template.yaml > imagecraft.yaml
-
 execute: |
   imagecraft pack --ignore=unmaintained
 
@@ -23,7 +16,4 @@ execute: |
   grep -q "armhf" core-snap/meta/snap.yaml
 
 restore: |
-  . "${PROJECT_PATH}/tests/spread/tools.sh"
-  tools.umount_image
   rm -rf disk.img core-snap
-  imagecraft clean
