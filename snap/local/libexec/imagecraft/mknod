@@ -6,5 +6,5 @@ if [ -S /dev/lxd/sock ]; then
     echo "no mknod in lxd!"
     exit 124
 else
-    exec mknod $@
+    exec /usr/bin/mknod "$@"
 fi
