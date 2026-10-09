@@ -1,14 +1,21 @@
 summary: Test mmdebstrap plugin
 
-systems: [ubuntu-24.04-64]
+environment:
+  CRAFT_BUILD_ENVIRONMENT: lxd # Test in lxd rather than destructive mode.
+
+prepare: |
+  . /etc/os-release
+  sed "s/__BUILD_BASE__/${ID}@${VERSION_ID}/" imagecraft-template.yaml > imagecraft.yaml
 
 execute: |
-  imagecraft pack --verbose
+  imagecraft pack --ignore=unmaintained
 
   test -f pc.img
 
-  test -x prime/usr/bin/curl
+  . "${PROJECT_PATH}/tests/spread/tools.sh"
+  IMAGE_DIR=$(tools.mount_image pc.img)
+  test -x "$IMAGE_DIR"/p1/usr/bin/curl
 
 restore: |
-  imagecraft clean --destructive-mode
-  rm -rf pc.img || true
+  imagecraft clean
+  rm -f pc.img

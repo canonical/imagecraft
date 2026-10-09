@@ -10,11 +10,13 @@ environment:
   CRAFT_BUILD_ENVIRONMENT: host # Build in destructive mode until we can solve https://github.com/canonical/imagecraft/issues/253
   SNAPD_TESTING_TOOLS: $PROJECT_PATH/tools/external/tools
   PATH: /snap/bin:$PATH:$SNAPD_TESTING_TOOLS
+  CRAFT_VERBOSITY: debug
 
 exclude:
   - .github
   - .venv
   - .*_cache
+  - .git
 
 backends:
   openstack:
