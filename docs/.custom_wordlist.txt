@@ -10,6 +10,7 @@ backends
 Bazel
 boolean
 bootable
+bootloaders?
 Bundler
 Canonical('s)?
 Charmcraft
