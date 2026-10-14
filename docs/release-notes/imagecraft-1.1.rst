@@ -70,6 +70,25 @@ Direct bootloader configuration
 Bootloader files and configuration are staged in the target partition filesystems before formatting. For BIOS
 targets, boot code is installed after image assembly through a FUSE mount of the root partition.
 
+GitHub Action for packing images
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Imagecraft now has a GitHub Action that packs an image directly from a GitHub Actions workflow. The
+action installs and configures LXD and Imagecraft before packing the image at the root of the
+repository, and exposes the packed images, the Imagecraft revision, and the LXD revision as outputs.
+
+Add the action to a workflow with:
+
+.. code-block:: yaml
+
+    - name: Pack an image with Imagecraft
+      uses: canonical/craft-actions/imagecraft/pack@main
+
+For all supported inputs and outputs, see the
+`action's source <https://github.com/canonical/craft-actions/tree/main/imagecraft/pack>`_. For a
+complete example, see the `how-to guide for packing images with the GitHub
+Action <https://documentation.ubuntu.com/imagecraft/latest/how-to/pack-image-with-github-actions/>`_.
+
 
 Minor features
 --------------
