@@ -5,7 +5,7 @@ description: >
   Verifies that a part can use CRAFT_VOLUME_* to write arbitrary data to sectors
   that fall outside any partition (the gap between GPT entries and the first partition).
 base: bare
-build-base: devel
+build-base: __BUILD_BASE__
 
 platforms:
   amd64:
