@@ -4,7 +4,7 @@ import pathlib
 import sys
 import textwrap
 
-import craft_parts_docs  # type: ignore
+import craft_parts_docs
 
 import imagecraft
 
