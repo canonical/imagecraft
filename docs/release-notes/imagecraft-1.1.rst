@@ -50,12 +50,29 @@ What's new
 
 Imagecraft 1.1 brings the following features, integrations, and improvements.
 
+LXD provider
+~~~~~~~~~~~~
+
+Imagecraft 1.1 now uses LXD containers rather than Multipass virtual machines by default.
+
+If you previously chose a provider, clear the setting to return to the LXD default:
+
+.. code-block:: console
+
+    $ snap unset imagecraft provider
+
 Rootless partition management with :vale-ignore:`fusefile`
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Imagecraft now uses ``fusefile`` to create and access virtual partition block devices directly from
 raw disk image files. This replaces the use of host loop devices (``losetup``) for partition operations,
 enabling unprivileged and safer partition manipulation.
+
+Direct bootloader configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Bootloader files and configuration are staged in the target partition filesystems before formatting. For BIOS
+targets, boot code is installed after image assembly through a FUSE mount of the root partition.
 
 Metadata inside generated images
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -63,12 +80,6 @@ Metadata inside generated images
 Generated images now include an ``.image/metadata.yaml`` file in the main volume.
 This metadata documents the Imagecraft version, project name, architecture, and
 generation timestamp, enabling inspection and traceability of packed image artifacts.
-
-Direct bootloader configuration
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Bootloader files and configuration are staged in the target partition filesystems before formatting. For BIOS
-targets, boot code is installed after image assembly through a FUSE mount of the root partition.
 
 GitHub Action for packing images
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -82,10 +93,10 @@ Add the action to a workflow with:
 .. code-block:: yaml
 
     - name: Pack an image with Imagecraft
-      uses: canonical/craft-actions/imagecraft/pack@main
+      uses: canonical/craft-actions/imagecraft/pack@v1
 
-For all supported inputs and outputs, see the
-`action's source <https://github.com/canonical/craft-actions/tree/main/imagecraft/pack>`_. For a
+For all supported inputs and outputs, see the `action's README
+<https://github.com/canonical/craft-actions/blob/main/imagecraft/pack/README.md>`_. For a
 complete example, see the `how-to guide for packing images with the GitHub
 Action <https://documentation.ubuntu.com/imagecraft/latest/how-to/pack-image-with-github-actions/>`_.
 
