@@ -573,7 +573,7 @@ class GPTVolume(BaseVolume):
     )
     """The partitioning schema of the image."""
 
-    structure: GPTStructureList = Field(  # type: ignore[reportIncompatibleVariableOverride]
+    structure: GPTStructureList = Field(  # ty: ignore[invalid-mutable-override]
         min_length=1,
         description="The partitions that comprise the image.",
         examples=[
@@ -597,7 +597,7 @@ class MBRVolume(BaseVolume):
     )
     """The partitioning schema of the image."""
 
-    structure: MBRStructureList = Field(  # type: ignore[reportIncompatibleVariableOverride]
+    structure: MBRStructureList = Field(  # ty: ignore[invalid-mutable-override]
         description="The partitions that comprise the image.",
         examples=[
             "[{name: ubuntu-seed, type: 0C, filesystem: vfat, role: system-boot, size: 1200M}]"
@@ -620,7 +620,7 @@ class HybridVolume(BaseVolume):
     )
     """The partitioning schema of the image."""
 
-    structure: HybridStructureList = Field(  # type: ignore[reportIncompatibleVariableOverride]
+    structure: HybridStructureList = Field(  # ty: ignore[invalid-mutable-override]
         description="The partitions that comprise the image.",
         examples=[
             "[{name: ubuntu-seed, type: 0C,C12A7328-F81F-11D2-BA4B-00A0C93EC93B, filesystem: vfat, role: system-seed, size: 1200M}]"
