@@ -100,11 +100,12 @@ Smarter repacking
 
 Imagecraft will now skip re-packing the image if the project is unchanged.
 
-Removal of deprecated ``spread.yaml`` fallback
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Experimental ``test`` command changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Imagecraft no longer falls back to reading test project definitions from ``spread.yaml`` when
-``imagecraft-test.yaml`` is absent. Projects must define their test configuration in ``imagecraft-test.yaml``.
+The experimental ``test`` command no longer falls back to reading test project definitions
+from ``spread.yaml`` when ``imagecraft-test.yaml`` is absent. Test projects must define
+their test configuration in ``imagecraft-test.yaml``.
 
 
 Contributors
