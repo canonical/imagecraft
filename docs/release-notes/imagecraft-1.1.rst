@@ -101,7 +101,7 @@ Smarter repacking
 Imagecraft will now skip re-packing the image if the project is unchanged.
 
 Experimental ``test`` command changes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The experimental ``test`` command no longer falls back to reading test project definitions
 from ``spread.yaml`` when ``imagecraft-test.yaml`` is absent. Test projects must define
