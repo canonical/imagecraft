@@ -82,8 +82,8 @@ development keeps pace with the OS's new releases and support lifecycle.
 .. toctree::
    :maxdepth: 1
 
-   imagecraft-1.1
-   imagecraft-1.0
+   Imagecraft 1.1 <imagecraft-1.1>
+   Imagecraft 1.0 <imagecraft-1.0>
 
 
 .. release note template:
