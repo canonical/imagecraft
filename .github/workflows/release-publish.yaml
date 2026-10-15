@@ -8,6 +8,7 @@ on:
 
 jobs:
   source-wheel:
+    if: false
     runs-on: [self-hosted]
     permissions:
       contents: read
@@ -38,6 +39,7 @@ jobs:
           name: pypi-packages
           path: dist/
   github-release:
+    if: false
     needs: ["source-wheel"]
     runs-on: [self-hosted]
     permissions:

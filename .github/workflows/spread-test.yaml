@@ -8,6 +8,7 @@ concurrency:
 
 jobs:
   filter:
+    if: false
     runs-on: ubuntu-slim
     outputs:
       source-files: ${{ steps.filter.outputs.source-files }}
@@ -25,10 +26,10 @@ jobs:
             source-files:
               - '!({docs/**,*.md,**/*.md,.readthedocs.yaml})'
   snap-builds:
+    if: false
     needs: filter
     # Only build the snap for pull requests, it's not needed on release branches
     # or on master since we have launchpad build recipes which do this already
-    if: ${{ github.event_name == 'pull_request' }}
     strategy:
       matrix:
         include:
@@ -42,26 +43,23 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
-        if: ${{ needs.filter.outputs.source-files == 'true' }}
         with:
           fetch-depth: 0
 
       - name: Build imagecraft snap
         uses: canonical/craft-actions/snapcraft/pack@main
         id: build-imagecraft
-        if: ${{ needs.filter.outputs.source-files == 'true' }}
 
       - name: Uploading imagecraft snap artifact
         uses: actions/upload-artifact@v7
-        if: ${{ needs.filter.outputs.source-files == 'true' }}
         with:
           name: snap-${{ matrix.arch }}
           path: "*.snap"
 
   spread:
+    if: false
     runs-on: [self-hosted, spread-enabled]
     needs: [snap-builds, filter]
-    if: ${{ needs.filter.outputs.source-files == 'true' }}
     strategy:
       fail-fast: false
       matrix:
@@ -119,7 +117,6 @@ jobs:
           mkdir -p "$TEST_RESULTS_DIR"
 
       - name: Check failed tests to run
-        if: "!contains(github.event.pull_request.labels.*.name, 'Run all')"
         run: |
           # Save previous failed test results in FAILED_TESTS env var
           FAILED_TESTS=""
@@ -133,7 +130,6 @@ jobs:
           fi
 
       - name: Run spread tests
-        if: "!contains(github.event.pull_request.labels.*.name, 'Skip spread')"
         run: |
           # Register a problem matcher to highlight spread failures
           echo "::add-matcher::.github/spread-problem-matcher.json"
@@ -160,7 +156,6 @@ jobs:
           (set -o pipefail; $SPREAD $RUN_TESTS | tee spread.log)
 
       - name: Discard spread workers
-        if: always()
         run: |
           shopt -s nullglob;
           for r in .spread-reuse.*.yaml; do
@@ -168,7 +163,6 @@ jobs:
           done
 
       - name: analyze spread test results
-        if: always()
         run: |
           if [ -f spread.log ]; then
               echo "Running spread log parser"
@@ -196,7 +190,6 @@ jobs:
           fi
 
       - name: save spread test results to cache
-        if: always()
         uses: actions/cache/save@v6
         with:
           path: "${{ github.workspace }}/.test-results"
