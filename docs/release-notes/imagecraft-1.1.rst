@@ -6,6 +6,8 @@
 Imagecraft 1.1 release notes
 ============================
 
+21 October 2026
+
 Learn about the new features, changes, and fixes introduced in Imagecraft 1.1.
 For information about the Imagecraft release cycle, see the
 :ref:`release_policy_and_schedule`.
@@ -57,34 +59,40 @@ Imagecraft 1.1 now uses LXD containers rather than Multipass virtual machines by
 
 If you previously chose a provider, clear the setting to return to the LXD default:
 
-.. code-block:: console
+.. terminal::
 
-    $ snap unset imagecraft provider
+    snap unset imagecraft provider
 
-Rootless partition management with :vale-ignore:`fusefile`
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To configure imagecraft to use Multipass by default, run
 
-Imagecraft now uses ``fusefile`` to create and access virtual partition block devices directly from
-raw disk image files. This replaces the use of host loop devices (``losetup``) for partition operations,
-enabling unprivileged and safer partition manipulation.
+.. terminal::
 
-Direct bootloader configuration
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    snap set imagecraft provider=multipass
 
-Bootloader files and configuration are staged in the target partition filesystems before formatting. For BIOS
-targets, boot code is installed after image assembly through a FUSE mount of the root partition.
+You can also set it once with the ``CRAFT_BUILD_ENVIRONMENT`` environment variable.
+
+.. terminal::
+
+    CRAFT_BUILD_ENVIRONMENT=multipass imagecraft pack
+
+Rootless partition management with FUSE
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Imagecraft now uses FUSE rather than loop devices to expose the partitions in an image
+file. Because of this, they show up as regular files rather than block devices. This
+could affect some override scripts that expect a block device.
 
 Metadata inside generated images
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Generated images now include an ``.image/metadata.yaml`` file in the main volume.
 This metadata documents the Imagecraft version, project name, architecture, and
-generation timestamp, enabling inspection and traceability of packed image artifacts.
+generation timestamp.
 
-GitHub Action for packing images
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``canonical/craft-actions/imagecraft/pack`` GitHub action
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Imagecraft now has a GitHub Action that packs an image directly from a GitHub Actions workflow. The
+Imagecraft now has a dedicated GitHub Action for packing an image. The
 action installs and configures LXD and Imagecraft before packing the image at the root of the
 repository, and exposes the packed images, the Imagecraft revision, and the LXD revision as outputs.
 
@@ -96,9 +104,7 @@ Add the action to a workflow with:
       uses: canonical/craft-actions/imagecraft/pack@v1
 
 For all supported inputs and outputs, see the `action's README
-<https://github.com/canonical/craft-actions/blob/main/imagecraft/pack/README.md>`_. For a
-complete example, see the `how-to guide for packing images with the GitHub
-Action <https://documentation.ubuntu.com/imagecraft/latest/how-to/pack-image-with-github-actions/>`_.
+<https://github.com/canonical/craft-actions/blob/main/imagecraft/pack/README.md>`_.
 
 
 Minor features
@@ -114,8 +120,8 @@ Imagecraft will now skip re-packing the image if the project is unchanged.
 Experimental ``test`` command changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The experimental ``test`` command no longer falls back to reading test project definitions
-from ``spread.yaml`` when ``imagecraft-test.yaml`` is absent. Test projects must define
+The experimental ``test`` command no longer falls back to reading test configuration
+from ``spread.yaml`` when ``imagecraft-test.yaml`` is absent. Projects must define
 their test configuration in ``imagecraft-test.yaml``.
 
 
