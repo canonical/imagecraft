@@ -63,13 +63,13 @@ If you previously chose a provider, clear the setting to return to the LXD defau
 
     snap unset imagecraft provider
 
-To configure imagecraft to use Multipass by default, run
+To configure Imagecraft to use Multipass by default, run:
 
 .. terminal::
 
     snap set imagecraft provider=multipass
 
-You can also set it once with the ``CRAFT_BUILD_ENVIRONMENT`` environment variable.
+You can also set it for a single build with the ``CRAFT_BUILD_ENVIRONMENT`` environment variable.
 
 .. terminal::
 
@@ -135,6 +135,7 @@ We would like to express a big thank you to all the people who contributed to th
 :literalref:`@gcomneno <https://github.com/gcomneno>`,
 :literalref:`@jahn-junior <https://github.com/jahn-junior>`,
 :literalref:`@lengau <https://github.com/lengau>`,
+:literalref:`@medubelko <https://github.com/medubelko>`,
 :literalref:`@mr-cal <https://github.com/mr-cal>`,
 :literalref:`@nicolasbock-canonical <https://github.com/nicolasbock-canonical>`,
 :literalref:`@smethnani <https://github.com/smethnani>`,
