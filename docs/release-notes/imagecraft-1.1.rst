@@ -69,7 +69,7 @@ To configure Imagecraft to use Multipass by default, run:
 
     snap set imagecraft provider=multipass
 
-You can also set it for a single build with the ``CRAFT_BUILD_ENVIRONMENT`` environment variable.
+You can also set it for a single run with the ``CRAFT_BUILD_ENVIRONMENT`` environment variable.
 
 .. terminal::
 
