@@ -62,7 +62,7 @@ docs = [
   "pydantic-kitbash>=1.0.1,<2.0",
   # Missing from sphinxcontrib-details-directive, see
   # https://github.com/sphinx-contrib/sphinxcontrib-details-directive/issues/5
-  "setuptools<82.0",
+  "setuptools<84.1",
   "sphinx-lint~=1.0",
   "sphinx-pydantic==0.1.1",
   "sphinxcontrib-details-directive",
