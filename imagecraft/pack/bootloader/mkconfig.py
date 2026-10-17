@@ -54,7 +54,9 @@ _CHROOT_FAKE_BOOT_DEVICE = Path("/image-boot")
 # filesystem's root (i.e. the /boot prefix is stripped).
 _BOOT_PATH_DIRECTIVES = (
     "linux",
+    "linuxefi",
     "initrd",
+    "initrdefi",
     "devicetree",
     "multiboot2",
     "multiboot",
