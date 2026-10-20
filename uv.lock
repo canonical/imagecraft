@@ -3,8 +3,8 @@ revision = 5
 requires-python = ">=3.11"
 resolution-markers = [
     "python_full_version == '3.14.*'",
-    "python_full_version == '3.12.*'",
     "python_full_version == '3.13.*' or python_full_version >= '3.15'",
+    "python_full_version == '3.12.*'",
     "python_full_version >= '3.11.5' and python_full_version < '3.12'",
     "python_full_version < '3.11.5'",
 ]
@@ -79,7 +79,7 @@ version = "4.15.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "idna" },
-    { name = "typing-extensions", marker = "python_full_version < '3.15' or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-resolute' and extra == 'group-10-imagecraft-dev-stonking')" },
+    { name = "typing-extensions", marker = "python_full_version < '3.15'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/a9/d2/f4d173e22df740bc37b1db102b386ba719b66e95b0f0d751f556b387e6d2/anyio-4.15.1.tar.gz", hash = "sha256:9f28306018cbd6d329e64a36d58256edff76dd996fe423bc957326e578b82a94", size = 276966, upload-time = "2026-09-05T10:42:39.44Z" }
 wheels = [
@@ -109,8 +109,8 @@ name = "beautifulsoup4"
 version = "4.15.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "soupsieve", version = "2.10", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11.5' or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-resolute' and extra == 'group-10-imagecraft-dev-stonking')" },
-    { name = "soupsieve", version = "3.0.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11.5' or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-resolute' and extra == 'group-10-imagecraft-dev-stonking')" },
+    { name = "soupsieve", version = "2.10", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11.5'" },
+    { name = "soupsieve", version = "3.0.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11.5'" },
     { name = "typing-extensions" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/43/65/318323f98dbee45d42dff61d8f047181bc6f2268a9068cfad035a46be5af/beautifulsoup4-4.15.0.tar.gz", hash = "sha256:288e3ca7d54b06f2ac191970bc275c1939cb46d450b255bf6718b04aa37ab4f7", size = 632571, upload-time = "2026-06-07T16:44:20.453Z" }
@@ -132,7 +132,7 @@ name = "build"
 version = "1.6.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "os_name == 'nt' or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-resolute' and extra == 'group-10-imagecraft-dev-stonking')" },
+    { name = "colorama", marker = "os_name == 'nt'" },
     { name = "packaging" },
     { name = "pyproject-hooks" },
 ]
@@ -170,7 +170,7 @@ name = "cffi"
 version = "2.1.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pycparser", marker = "implementation_name != 'PyPy' or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-resolute' and extra == 'group-10-imagecraft-dev-stonking')" },
+    { name = "pycparser", marker = "implementation_name != 'PyPy'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/9e/ef/008a1939e372c06329a3fce4279c02f328488f3526744906eeec3da7ad5f/cffi-2.1.1.tar.gz", hash = "sha256:dd31f52ea1086513bb9df30f8fcee9b8918323ae067a3d5b78bc826a000712be", size = 530807, upload-time = "2026-08-03T21:21:18.939Z" }
 wheels = [
@@ -544,7 +544,7 @@ wheels = [
 
 [package.optional-dependencies]
 toml = [
-    { name = "tomli", marker = "python_full_version <= '3.11' or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-resolute' and extra == 'group-10-imagecraft-dev-stonking')" },
+    { name = "tomli", marker = "python_full_version <= '3.11'" },
 ]
 
 [[package]]
@@ -564,8 +564,8 @@ dependencies = [
     { name = "license-expression" },
     { name = "platformdirs" },
     { name = "pydantic" },
-    { name = "pygit2", version = "1.14.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.12.*' or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-resolute' and extra == 'group-10-imagecraft-dev-stonking')" },
-    { name = "pygit2", version = "1.19.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version != '3.12.*' or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-resolute' and extra == 'group-10-imagecraft-dev-stonking')" },
+    { name = "pygit2", version = "1.14.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.12.*'" },
+    { name = "pygit2", version = "1.19.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version != '3.12.*'" },
     { name = "pyyaml" },
     { name = "requests" },
     { name = "snap-helpers" },
@@ -602,7 +602,7 @@ source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jinja2" },
     { name = "platformdirs" },
-    { name = "pywin32", marker = "sys_platform == 'win32' or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-resolute' and extra == 'group-10-imagecraft-dev-stonking')" },
+    { name = "pywin32", marker = "sys_platform == 'win32'" },
     { name = "typing-extensions" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/b2/97/55e3a42aed3c8ee408dca292c7736080161d6bcfd6d21a8374b74be90f63/craft_cli-3.4.1.tar.gz", hash = "sha256:e4396695e89f15fbd06255a78b38a362006cd711266d926c2b6cd2a546af61a5", size = 231519, upload-time = "2026-06-17T13:07:15.671Z" }
@@ -658,7 +658,7 @@ wheels = [
 
 [[package]]
 name = "craft-providers"
-version = "3.7.1"
+version = "3.8.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "packaging" },
@@ -668,9 +668,9 @@ dependencies = [
     { name = "requests" },
     { name = "requests-unixsocket2" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/86/f5/81525f63af39d73be1fae45fc169eb036781d745a0220f95d9b7f6165549/craft_providers-3.7.1.tar.gz", hash = "sha256:473e6228720dda9f042eae8b9584a1f1c41d6fd987c0fd9db0d69609d3c5f283", size = 380268, upload-time = "2026-07-02T14:03:49.44Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/2d/87/5f58341bd8305aef586e65e34ffcd725d96aaf28352b220dd4e1e45e83d3/craft_providers-3.8.0.tar.gz", hash = "sha256:fb93e64e6e62df0e96ee9402eeb16c2f8fe699512122e196556a547b178ed271", size = 412490, upload-time = "2026-10-20T17:27:33.716Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/72/ba/c86bb1f2b356299f2971e613071bd30eef39719d372fb1e3f116b078d1ca/craft_providers-3.7.1-py3-none-any.whl", hash = "sha256:594efc39b84af865f4b3733b6658ec9e34ff6ff2bb98a1ed3785fe82d4afdc83", size = 120989, upload-time = "2026-07-02T14:03:47.659Z" },
+    { url = "https://files.pythonhosted.org/packages/30/5f/e012f5d268bde34f07a4530d24505494e23d5637aee0f139ac6f5e7d8613/craft_providers-3.8.0-py3-none-any.whl", hash = "sha256:c07a7a3c2ea41becff6de126bf7dc064690cc55042e35711b922a1b97a2a4f1a", size = 118480, upload-time = "2026-10-20T17:27:31.928Z" },
 ]
 
 [[package]]
@@ -678,7 +678,7 @@ name = "cryptography"
 version = "50.0.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "cffi", marker = "platform_python_implementation != 'PyPy' or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-resolute' and extra == 'group-10-imagecraft-dev-stonking')" },
+    { name = "cffi", marker = "platform_python_implementation != 'PyPy'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/9d/af/182eb91b0df3fe75c4d9f26fe70684569566745f6ba7e5c9c73a862c5252/cryptography-50.0.2.tar.gz", hash = "sha256:7b46165bb56eb4704e2eaaf86f3c940d19154535d9b0ca7d6d590b04060e00d5", size = 880623, upload-time = "2026-09-30T15:30:04.884Z" }
 wheels = [
@@ -852,15 +852,15 @@ dependencies = [
     { name = "craft-platforms" },
     { name = "craft-providers" },
     { name = "pydantic" },
-    { name = "pygit2", version = "1.14.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.12.*' or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-resolute' and extra == 'group-10-imagecraft-dev-stonking')" },
-    { name = "pygit2", version = "1.19.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.14.*' or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-resolute' and extra == 'group-10-imagecraft-dev-stonking')" },
+    { name = "pygit2", version = "1.14.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.12.*'" },
+    { name = "pygit2", version = "1.19.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.14.*'" },
 ]
 
 [package.optional-dependencies]
 apt = [
     { name = "python-apt", version = "2.7.7+ubuntu5", source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }, marker = "(sys_platform == 'linux' and extra == 'group-10-imagecraft-dev-noble') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-resolute' and extra == 'group-10-imagecraft-dev-stonking')" },
-    { name = "python-apt", version = "2.9.9", source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }, marker = "(sys_platform == 'linux' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-resolute' and extra == 'group-10-imagecraft-dev-stonking')" },
-    { name = "python-apt", version = "3.0.0+ubuntu1", source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }, marker = "(sys_platform == 'linux' and extra != 'group-10-imagecraft-dev-noble' and extra != 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-resolute' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-stonking')" },
+    { name = "python-apt", version = "2.9.9", source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }, marker = "(sys_platform == 'linux' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-resolute' and extra == 'group-10-imagecraft-dev-stonking')" },
+    { name = "python-apt", version = "3.0.0+ubuntu1", source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }, marker = "(sys_platform == 'linux' and extra != 'group-10-imagecraft-dev-noble' and extra != 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-resolute' and extra == 'group-10-imagecraft-dev-stonking')" },
 ]
 
 [package.dev-dependencies]
@@ -949,7 +949,7 @@ requires-dist = [
     { name = "craft-grammar", specifier = "~=2.3.0" },
     { name = "craft-parts", specifier = "~=2.37.2" },
     { name = "craft-platforms", specifier = "~=0.12.0" },
-    { name = "craft-providers", specifier = "~=3.7.1" },
+    { name = "craft-providers", specifier = "~=3.8.0" },
     { name = "pydantic", specifier = "~=2.14.0" },
     { name = "pygit2", marker = "python_full_version == '3.12.*'", specifier = ">=1.13.0,<1.15.0" },
     { name = "pygit2", marker = "python_full_version == '3.14.*'", specifier = ">=1.19.0,<1.21.0" },
@@ -1749,8 +1749,8 @@ resolution-markers = [
     "python_full_version == '3.12.*'",
 ]
 dependencies = [
-    { name = "cffi", marker = "python_full_version == '3.12.*' or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-resolute' and extra == 'group-10-imagecraft-dev-stonking')" },
-    { name = "setuptools", marker = "python_full_version == '3.12.*' or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-resolute' and extra == 'group-10-imagecraft-dev-stonking')" },
+    { name = "cffi" },
+    { name = "setuptools" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/f0/5e/6e05213a9163bad15489beda5f958500881d45889b0df01d7b8964f031bf/pygit2-1.14.1.tar.gz", hash = "sha256:ec5958571b82a6351785ca645e5394c31ae45eec5384b2fa9c4e05dde3597ad6", size = 765621, upload-time = "2024-02-10T18:49:14.699Z" }
 wheels = [
@@ -1779,7 +1779,7 @@ resolution-markers = [
     "python_full_version < '3.11.5'",
 ]
 dependencies = [
-    { name = "cffi", marker = "python_full_version != '3.12.*' or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-resolute' and extra == 'group-10-imagecraft-dev-stonking')" },
+    { name = "cffi" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/a6/44/415aa93422b4bfc21a6448acb7e16280d5f33a9a3fae38a384e37b046ae4/pygit2-1.19.3.tar.gz", hash = "sha256:a543e6d4ebb43825564935758dc234e770016fed673b84370d46ae9580558831", size = 810489, upload-time = "2026-06-13T08:06:04.982Z" }
 wheels = [
@@ -1855,7 +1855,7 @@ version = "4.1.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "astroid" },
-    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-resolute' and extra == 'group-10-imagecraft-dev-stonking')" },
+    { name = "colorama", marker = "sys_platform == 'win32'" },
     { name = "dill" },
     { name = "isort" },
     { name = "mccabe" },
@@ -1915,7 +1915,7 @@ name = "pytest"
 version = "9.1.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-resolute' and extra == 'group-10-imagecraft-dev-stonking')" },
+    { name = "colorama", marker = "sys_platform == 'win32'" },
     { name = "iniconfig" },
     { name = "packaging" },
     { name = "pluggy" },
@@ -1971,8 +1971,8 @@ version = "2.7.7+ubuntu5"
 source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }
 resolution-markers = [
     "python_full_version == '3.14.*'",
-    "python_full_version == '3.12.*'",
     "python_full_version == '3.13.*' or python_full_version >= '3.15'",
+    "python_full_version == '3.12.*'",
     "python_full_version >= '3.11.5' and python_full_version < '3.12'",
     "python_full_version < '3.11.5'",
 ]
@@ -2010,8 +2010,8 @@ version = "2.9.9"
 source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }
 resolution-markers = [
     "python_full_version == '3.14.*'",
-    "python_full_version == '3.12.*'",
     "python_full_version == '3.13.*' or python_full_version >= '3.15'",
+    "python_full_version == '3.12.*'",
     "python_full_version >= '3.11.5' and python_full_version < '3.12'",
     "python_full_version < '3.11.5'",
 ]
@@ -2027,8 +2027,8 @@ version = "3.0.0+ubuntu1"
 source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }
 resolution-markers = [
     "python_full_version == '3.14.*'",
-    "python_full_version == '3.12.*'",
     "python_full_version == '3.13.*' or python_full_version >= '3.15'",
+    "python_full_version == '3.12.*'",
     "python_full_version >= '3.11.5' and python_full_version < '3.12'",
     "python_full_version < '3.11.5'",
 ]
@@ -2406,8 +2406,8 @@ version = "3.0.3"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
     "python_full_version == '3.14.*'",
-    "python_full_version == '3.12.*'",
     "python_full_version == '3.13.*' or python_full_version >= '3.15'",
+    "python_full_version == '3.12.*'",
     "python_full_version >= '3.11.5' and python_full_version < '3.12'",
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/5e/77/2dcfa996b01702ab8fd0763d84098f6a640d6162a328f1c04c2697579a1a/soupsieve-3.0.3.tar.gz", hash = "sha256:7dcf6022eed0399eb9934a75e020148f7a2024c37b7dfcd3cf2c5505d69c364e", size = 115923, upload-time = "2026-10-12T13:21:17.696Z" }
@@ -2422,7 +2422,7 @@ source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "alabaster" },
     { name = "babel" },
-    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-resolute' and extra == 'group-10-imagecraft-dev-stonking')" },
+    { name = "colorama", marker = "sys_platform == 'win32'" },
     { name = "docutils" },
     { name = "imagesize" },
     { name = "jinja2" },
@@ -2746,7 +2746,7 @@ version = "1.8.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
-    { name = "typing-extensions", marker = "python_full_version < '3.13' or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-resolute' and extra == 'group-10-imagecraft-dev-stonking')" },
+    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/e9/0c/6efb252d091ecccd7d62048ae11f0ea35cd75a4fbaeea5e30f9c3bf91d10/starlette-1.8.0.tar.gz", hash = "sha256:1565dc0b35d5737a271ed1e0e04e949f4e81198799f216d2667b0a0fb9cf9522", size = 2730457, upload-time = "2026-10-13T07:54:39.53Z" }
 wheels = [

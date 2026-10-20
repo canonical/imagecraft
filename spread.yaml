@@ -49,6 +49,10 @@ backends:
           image: snapd-spread/ubuntu-26.04-64
           storage: 45G
           workers: 1
+      - ubuntu-26.10-64:
+          image: snapd-spread/ubuntu-26.10-64
+          storage: 45G
+          workers: 1
 
   openstack-dev:
     type: openstack
@@ -214,7 +218,7 @@ prepare: |
   fi
   tests.pkgs install snapd libc6-dev git make fdisk jq
   QEMU_PKGS="binfmt-support qemu-user-static"
-  if [[ "$SPREAD_SYSTEM" == ubuntu-26.04* ]]; then
+  if [[ "$SPREAD_SYSTEM" == ubuntu-26.* ]]; then
     QEMU_PKGS="qemu-user-binfmt"
   fi
   if [[ ! "$SPREAD_BACKEND" == *-arm* ]]; then
