@@ -206,6 +206,26 @@ def test_project_unmarshal(yaml_data):
 
 
 @pytest.mark.parametrize(
+    "build_base",
+    [
+        "ubuntu@20.04",
+        "ubuntu@22.04",
+        "ubuntu@24.04",
+        "ubuntu@25.10",
+        "ubuntu@26.04",
+        "ubuntu@26.10",
+        "devel",
+    ],
+)
+def test_project_supported_build_base(yaml_loaded_data, build_base):
+    yaml_loaded_data["build-base"] = build_base
+    project_path = pathlib.Path("myproject.yaml")
+    project = Project.from_yaml_data(yaml_loaded_data, project_path)
+
+    assert project.build_base == build_base
+
+
+@pytest.mark.parametrize(
     ("error_value", "error_class", "platforms"),
     [
         (
