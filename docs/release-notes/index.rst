@@ -57,9 +57,6 @@ numbers for major, minor, and patch versions.
       - Significance
     * - Major
       - **3**.1.2
-      - <Apps: "A change that drops support for an earlier software base.">
-
-        <Libraries: "A change that breaks compatibility with the previous
       - A change that drops support for an earlier software base.
     * - Minor
       - 3.\ **1**\ .2
