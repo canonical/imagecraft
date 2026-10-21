@@ -65,13 +65,13 @@ If you previously chose a provider, clear the setting to return to the LXD defau
 
 To build with Multipass by default, run:
 
-.. terminal::
+.. code-block:: bash
 
     snap set imagecraft provider=multipass
 
 You can also select a build provider for individual runs with the ``CRAFT_BUILD_ENVIRONMENT`` environment variable.
 
-.. terminal::
+.. code-block:: bash
 
     CRAFT_BUILD_ENVIRONMENT=multipass imagecraft pack
 
