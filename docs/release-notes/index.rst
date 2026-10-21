@@ -60,7 +60,7 @@ numbers for major, minor, and patch versions.
       - <Apps: "A change that drops support for an earlier software base.">
 
         <Libraries: "A change that breaks compatibility with the previous
-        version.">
+- A change that drops support for an earlier software base.
     * - Minor
       - 3.\ **1**\ .2
       - A new feature within the major version.
