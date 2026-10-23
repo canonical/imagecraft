@@ -74,6 +74,7 @@ BuildBaseT = typing.Annotated[
         "ubuntu@24.04",
         "ubuntu@25.10",
         "ubuntu@26.04",
+        "ubuntu@26.10",
         "devel",
     ],
     Field(
@@ -133,6 +134,9 @@ class Project(BaseProject):
     are used when assembling the image's contents, but are not included in the final
     image.
 
+    The build base must match the Ubuntu release of the system that builds the image.
+    When building in destructive mode, that system is the host.
+
     **Values**
 
     .. list-table::
@@ -148,6 +152,8 @@ class Project(BaseProject):
           - The Ubuntu 24.04 build environment.
         * - ``ubuntu@26.04``
           - The Ubuntu 26.04 build environment.
+        * - ``ubuntu@26.10``
+          - The Ubuntu 26.10 build environment.
 
     """
 

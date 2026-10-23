@@ -15,6 +15,12 @@ Current releases
 ----------------
 
 
+Imagecraft 1.1
+~~~~~~~~~~~~~~
+
+- :ref:`Imagecraft 1.1 release notes <release-notes-imagecraft-1-1>`
+
+
 Imagecraft 1.0
 ~~~~~~~~~~~~~~
 
@@ -51,10 +57,7 @@ numbers for major, minor, and patch versions.
       - Significance
     * - Major
       - **3**.1.2
-      - <Apps: "A change that drops support for an earlier software base.">
-
-        <Libraries: "A change that breaks compatibility with the previous
-        version.">
+      - A change that drops support for an earlier software base.
     * - Minor
       - 3.\ **1**\ .2
       - A new feature within the major version.
@@ -76,7 +79,8 @@ development keeps pace with the OS's new releases and support lifecycle.
 .. toctree::
    :maxdepth: 1
 
-   imagecraft-1.0
+   Imagecraft 1.1 <imagecraft-1.1>
+   Imagecraft 1.0 <imagecraft-1.0>
 
 
 .. release note template:
