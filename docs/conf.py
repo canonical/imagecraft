@@ -129,7 +129,12 @@ rediraffe_dir_only = True
 ############################
 
 # This description is included in llms.txt to provide some initial context for your
-# product docs.
+# product docs. Prefer reusing the first sentence of your home page (docs/index.rst)
+# here, so the description stays in sync with the home page.
+# If your home page does not have a sentence that works as a description yet, you can
+# write one in the form "This is the documentation for <product name>, <summary>".
+# Do not maintain a second, hand-authored description alongside the home page:
+# it will drift from the home page over time.
 llms_txt_description = textwrap.dedent(
     """\
     This is the documentation for Imagecraft, the command-line tool for building
@@ -321,6 +326,12 @@ intersphinx_mapping = {
 # Block Intersphinx from looking up external sources with internal references. In other
 # words, only :external+<project>... will search in other projects.
 intersphinx_disabled_reftypes = ["std:*"]
+
+# Exclude externally included docs from git-last-updated checks.
+# Applications and libraries should fill these in based on which common items they use.
+git_exclude_patterns = [
+    "common/craft-parts/**",
+]
 
 
 ##############################
