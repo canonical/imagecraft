@@ -67,7 +67,7 @@ Minor features
 Imagecraft 1.2 brings the following minor changes.
 
 
-<Feature A>
+<FEATURE A>
 ~~~~~~~~~~~
 
 - <Add a short description of a minor change.>
@@ -79,7 +79,7 @@ Backwards-incompatible changes
 The following changes are incompatible with previous versions of Imagecraft.
 
 
-<Removed or disabled feature B>
+<REMOVED OR DISABLED FEATURE B>
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 <Describe what changed, why, and what users should do next.>
@@ -91,7 +91,7 @@ Feature deprecations
 The following features are deprecated in Imagecraft 1.2.
 
 
-<Deprecated feature C>
+<DEPRECATED FEATURE C>
 ~~~~~~~~~~~~~~~~~~~~~~
 
 <Describe the deprecation status, alternatives, and migration guidance.>
@@ -103,7 +103,7 @@ Scheduled feature deprecations
 The following features will be deprecated in Imagecraft <planned version>.
 
 
-<Feature D>
+<FEATURE D>
 ~~~~~~~~~~~
 
 <Describe planned deprecations that have been formally announced.>
