@@ -2,6 +2,10 @@ summary: Boot classic image in QEMU
 
 systems: [ubuntu-24.04-64, ubuntu-24.04-arm-64]
 
+environment:
+  BOOT_METHOD/efi: efi
+  BOOT_METHOD/bios: bios
+
 prepare: |
   ARCH=$(dpkg --print-architecture)
   if [ "$ARCH" = "amd64" ]; then
@@ -14,25 +18,47 @@ prepare: |
   fi
 
 execute: |
-  imagecraft pack --destructive-mode
-
   ARCH=$(dpkg --print-architecture)
-  if [ "$ARCH" = "amd64" ]; then
-    QEMU_BIN="qemu-system-x86_64"
-    QEMU_ARGS=""
-    UEFI_CODE=/usr/share/OVMF/OVMF_CODE_4M.fd
-    UEFI_VARS=/usr/share/OVMF/OVMF_VARS_4M.fd
-  elif [ "$ARCH" = "arm64" ]; then
-    QEMU_BIN="qemu-system-aarch64"
-    QEMU_ARGS="-machine virt -cpu neoverse-n1"
-    UEFI_CODE=/usr/share/AAVMF/AAVMF_CODE.fd
-    UEFI_VARS=/usr/share/AAVMF/AAVMF_VARS.fd
-  else
-    echo "Unsupported arch: $ARCH"
-    exit 1
+
+  # The BIOS fallback boot code is x86-only: skip the bios variant elsewhere.
+  if [ "$BOOT_METHOD" = "bios" ] && [ "$ARCH" != "amd64" ]; then
+    echo "BIOS boot is x86-only; skipping on $ARCH"
+    exit 0
   fi
 
-  cp "$UEFI_VARS" /tmp/uefi_vars.fd
+  QEMU_ARGS=""
+  if [ "$BOOT_METHOD" = "bios" ]; then
+    # Boot with the default firmware (SeaBIOS), no UEFI pflash drives.
+    UEFI_ARGS=""
+  else
+    if [ "$ARCH" = "amd64" ]; then
+      UEFI_CODE=/usr/share/OVMF/OVMF_CODE_4M.fd
+      UEFI_VARS=/usr/share/OVMF/OVMF_VARS_4M.fd
+    elif [ "$ARCH" = "arm64" ]; then
+      QEMU_ARGS="-machine virt -cpu neoverse-n1"
+      UEFI_CODE=/usr/share/AAVMF/AAVMF_CODE.fd
+      UEFI_VARS=/usr/share/AAVMF/AAVMF_VARS.fd
+    else
+      echo "Unsupported arch: $ARCH"
+      exit 1
+    fi
+
+    cp "$UEFI_VARS" /tmp/uefi_vars.fd
+    UEFI_ARGS="-drive if=pflash,format=raw,readonly=on,file=$UEFI_CODE -drive if=pflash,format=raw,file=/tmp/uefi_vars.fd"
+  fi
+
+  imagecraft pack --destructive-mode
+
+  if [ "$BOOT_METHOD" = "bios" ]; then
+    # Check the BIOS fallback boot code was actually installed.
+    imagecraft_log_file=$(find /root/.local/state/imagecraft/log/ -name 'imagecraft*.log' | sort -n | tail -n1)
+    MATCH "Installing BIOS bootloader into the image" "$imagecraft_log_file"
+  fi
+
+  QEMU_BIN="qemu-system-x86_64"
+  if [ "$ARCH" = "arm64" ]; then
+    QEMU_BIN="qemu-system-aarch64"
+  fi
 
   $QEMU_BIN \
     $QEMU_ARGS \
@@ -40,8 +66,7 @@ execute: |
     -smp "$(nproc)" \
     -nographic \
     -m 1G \
-    -drive if=pflash,format=raw,readonly=on,file=$UEFI_CODE \
-    -drive if=pflash,format=raw,file=/tmp/uefi_vars.fd \
+    $UEFI_ARGS \
     -drive file=pc.img,format=raw,index=0,if=virtio 2>&1 | tee output.log || true
 
   MATCH "HELLO FROM IMAGECRAFT" output.log
