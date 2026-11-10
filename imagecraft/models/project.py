@@ -119,7 +119,7 @@ FilesystemsDictT = Annotated[
 class Project(BaseProject):
     """Definition of imagecraft.yaml configuration."""
 
-    base: BaseT = Field(  # ty: ignore[invalid-mutable-override]
+    base: BaseT = Field(  # ty: ignore[incompatible-mutable-override]
         description="The base layer the image is built on.",
         examples=["bare"],
     )
@@ -129,7 +129,7 @@ class Project(BaseProject):
     if overlays are used, an empty base layer.
     """
 
-    build_base: BuildBaseT  # ty: ignore[invalid-mutable-override]
+    build_base: BuildBaseT  # ty: ignore[incompatible-mutable-override]
     """The build base determines the image's build environment. This system and version
     are used when assembling the image's contents, but are not included in the final
     image.
