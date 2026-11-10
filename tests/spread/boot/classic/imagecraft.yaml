@@ -29,28 +29,24 @@ parts:
     override-build: |
       craftctl default
       mkdir -p $CRAFT_PART_INSTALL/boot/efi
-    organize:
-      "*": (overlay)/
 
-  efi-packages:
-    plugin: nil
-    after: [rootfs]
-    override-overlay: |
       if [ "$CRAFT_ARCH_BUILD_FOR" = "amd64" ]; then
         URL="http://archive.ubuntu.com/ubuntu"
       else
         URL="http://ports.ubuntu.com/ubuntu-ports"
       fi
 
-      echo "deb $URL noble main" > /etc/apt/sources.list
+      echo "deb $URL noble main" > $CRAFT_PART_INSTALL/etc/apt/sources.list
+    organize:
+      "*": (overlay)/
 
-      apt-get update
-      apt-get install -y grub-efi-$ARCH
-      # grub-pc-bin provides the i386-pc modules for the BIOS fallback boot
-      # code installed on x86 images; the package only exists on x86.
-      if [ "$ARCH" = "amd64" ]; then
-        apt-get install -y grub-pc-bin
-      fi
+  efi-packages:
+    plugin: nil
+    after: [rootfs]
+    overlay-packages:
+      - grub-efi-$CRAFT_ARCH_BUILD_FOR
+      - for amd64:
+          - grub-pc-bin
 
   disable-cloud-init:
     plugin: nil
