@@ -8,7 +8,7 @@
 Imagecraft 1.2 release notes
 ============================
 
-TBD
+(Release date TBD)
 
 Learn about the new features, changes, and fixes introduced in Imagecraft 1.2.
 For information about the Imagecraft release cycle, see the
