@@ -55,10 +55,10 @@ What's new
 Imagecraft 1.2 brings the following features, integrations, and improvements.
 
 
-<Important change>
+<IMPORTANT CHANGE>
 ~~~~~~~~~~~~~~~~~~
 
-<Describe the most important change in this release and how it affects users.>
+<DESCRIBE THE MOST IMPORTANT CHANGE AND HOW IT AFFECTS USERS>
 
 
 Minor features
