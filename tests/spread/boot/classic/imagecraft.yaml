@@ -103,7 +103,9 @@ volumes:
     schema: gpt
     structure:
       - for amd64:
-          # Raw embedding area for the BIOS fallback's core.img (x86 only).
+          # Raw embedding area for the BIOS fallback's core.img (x86 only);
+          # Filesystem is ext4 because Imagecraft doesn't yet
+          # support `filesystem: none` for raw partitions.
           - name: biosboot
             type: 21686148-6449-6E6F-744E-656564454649
             filesystem: ext4
