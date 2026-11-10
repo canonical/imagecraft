@@ -304,7 +304,7 @@ system:
 
 .. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
     :language: yaml
-    :lines: 65-72
+    :lines: 66-72
 
 Here, we used the ``overlay-script`` key to write the table to the overlay file system,
 which is referenced through the ``$CRAFT_OVERLAY`` environment variable. Keep in mind
