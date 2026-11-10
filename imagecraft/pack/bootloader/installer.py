@@ -451,16 +451,5 @@ class BootloaderInstaller:
                 boot_uuid=self.boot_uuid,
                 boot_item=self.boot_item,
             ).install()
-        except errors.BootloaderError as err:
-            if self._boot_method == BootMethod.EFI:
-                # For the EFI+BIOS-fallback path, prepare_rootfs() already
-                # verified the embedding area (MBR gap or BIOS Boot
-                # partition) and the GRUB target, so any failure — including
-                # missing tools — is a real bug and must fail the pack.
-                raise
-            # Primary BIOS installs keep the pre-existing behavior: missing
-            # tools degrade to a warning instead of failing the pack.
-            if isinstance(err, errors.BootloaderToolsMissingError):
-                emit.warning(f"Skipping BIOS bootloader installation: {err}", prefix="")
-            else:
-                raise
+        except errors.BootloaderToolsMissingError as err:
+            emit.warning(f"Skipping BIOS bootloader installation: {err}", prefix="")

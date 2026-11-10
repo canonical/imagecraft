@@ -26,8 +26,6 @@ parts:
       - grub2-common
       - shim-signed
       - linux-image-generic
-      - for amd64:
-          - grub-pc-bin
     override-build: |
       craftctl default
       mkdir -p $CRAFT_PART_INSTALL/boot/efi
@@ -48,6 +46,11 @@ parts:
       echo "deb $URL noble main" > /etc/apt/sources.list
       apt-get update
       apt-get install -y grub-efi-$ARCH
+      # grub-pc-bin provides the i386-pc modules for the BIOS fallback boot
+      # code installed on x86 images; the package only exists on x86.
+      if [ "$ARCH" = "amd64" ]; then
+        apt-get install -y grub-pc-bin
+      fi
 
   disable-cloud-init:
     plugin: nil
@@ -103,18 +106,19 @@ volumes:
   pc:
     schema: gpt
     structure:
+      - for amd64:
+          # Raw embedding area for the BIOS fallback's core.img (x86 only).
+          - name: biosboot
+            type: 21686148-6449-6E6F-744E-656564454649
+            filesystem: ext4
+            role: system-boot
+            size: 2M
       - name: efi
         type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
         filesystem: vfat
         role: system-boot
         filesystem-label: UEFI
         size: 256M
-      # Raw embedding area for the BIOS fallback's core.img (x86 only).
-      - name: biosboot
-        type: 21686148-6449-6E6F-744E-656564454649
-        filesystem: ext4
-        role: system-boot
-        size: 2M
       - name: rootfs
         type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
         filesystem: ext4
