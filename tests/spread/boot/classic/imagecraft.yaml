@@ -36,14 +36,14 @@ parts:
     plugin: nil
     after: [rootfs]
     override-overlay: |
-      ARCH="$(dpkg --print-architecture)"
-      if [ "$ARCH" = "amd64" ]; then
+      if [ "$CRAFT_ARCH_BUILD_FOR" = "amd64" ]; then
         URL="http://archive.ubuntu.com/ubuntu"
       else
         URL="http://ports.ubuntu.com/ubuntu-ports"
       fi
 
       echo "deb $URL noble main" > /etc/apt/sources.list
+
       apt-get update
       apt-get install -y grub-efi-$ARCH
       # grub-pc-bin provides the i386-pc modules for the BIOS fallback boot
