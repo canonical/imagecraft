@@ -73,18 +73,6 @@ Imagecraft 1.2 brings the following minor changes.
 - <Add a short description of a minor change.>
 
 
-Backwards-incompatible changes
-------------------------------
-
-The following changes are incompatible with previous versions of Imagecraft.
-
-
-<REMOVED OR DISABLED FEATURE B>
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-<Describe what changed, why, and what users should do next.>
-
-
 Feature deprecations
 --------------------
 
