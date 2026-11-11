@@ -53,13 +53,13 @@ To begin, let's install the Imagecraft snap. Open a terminal and run:
     :start-at: snap install imagecraft --classic
     :end-at: snap install imagecraft --classic
 
-Next, install LXD, which creates the environment for Imagecraft builds:
+Next, install and initialize LXD, which creates the environment for Imagecraft builds:
 
 .. literalinclude:: code/build-an-ubuntu-image/task.yaml
     :language: bash
     :dedent: 2
     :start-at: snap install lxd
-    :end-at: snap install lxd
+    :end-at: sudo lxd init --auto
 
 We'll run our image with QEMU. Install it with:
 
@@ -142,7 +142,8 @@ Now that we've described the image and declared its build details, we need to de
 partitions. To do so, we'll customize the ``volumes`` key.
 
 The ``volumes`` key contains a single entry, named ``disk``, that's partitioned with the
-GPT schema and populated according to its ``structure`` key.
+GPT schema and populated according to its ``structure`` key. When we pack the image
+later on, it'll be named after this volume: ``disk.img``.
 
 The image will have two partitions: a root file system and an EFI system partition. The
 first was defined for us, but we'll need to define the EFI system partition ourselves.

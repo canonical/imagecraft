@@ -3,6 +3,8 @@ summary: Test the "Build an Ubuntu image" tutorial
 execute: |
   snap install imagecraft --classic
   snap install lxd
+  sudo usermod -a -G lxd $USER
+  sudo lxd init --auto
 
   # This is what Spread runs
   apt install --yes qemu-system-x86 ovmf
