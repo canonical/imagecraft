@@ -55,10 +55,15 @@ What's new
 Imagecraft 1.2 brings the following features, integrations, and improvements.
 
 
-<IMPORTANT CHANGE>
-~~~~~~~~~~~~~~~~~~
+BIOS fallback for EFI images
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-<DESCRIBE THE MOST IMPORTANT CHANGE AND HOW IT AFFECTS USERS>
+On x86 targets (``build-for: amd64`` and ``build-for: i386``), Imagecraft now
+installs the legacy BIOS (``i386-pc``) boot code into the image in addition to
+the EFI bootloader, so images also boot on machines whose firmware lacks EFI
+support. GPT-schema volumes need a BIOS Boot partition to embed the BIOS boot
+code, and projects that install their own MBR boot code can opt out by
+declaring a structure item with the ``mbr`` role in the volume definition.
 
 
 Minor features
