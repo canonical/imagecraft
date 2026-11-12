@@ -22,11 +22,11 @@ After installing the necessary tools, we'll start building a custom Ubuntu image
 the ground up.
 
 We'll define the image's structure and content step by step. The image will be based on
-the suite of packages from Ubuntu 24.04 LTS, with some additional software that caters
+the suite of packages from Ubuntu 26.04 LTS, with some additional software that caters
 it to the tutorial.
 
-We'll end the tutorial by packaging the complete image and running it with QEMU, a
-popular machine emulator.
+We'll end the tutorial by packing the image and running it with QEMU, a popular machine
+emulator.
 
 Once you've completed the tutorial, you'll have practical experience with Imagecraft and
 a custom image you can add software to or model your next image from.
@@ -37,7 +37,7 @@ What you'll need
 
 For this tutorial, you'll need:
 
-* An AMD64 machine running Ubuntu 24.04 LTS
+* An AMD64 machine running Ubuntu 24.04 LTS or higher
 * Super user privileges on your machine
 * 10GiB of available storage
 
@@ -50,17 +50,16 @@ To begin, let's install the Imagecraft snap. Open a terminal and run:
 .. literalinclude:: code/build-an-ubuntu-image/task.yaml
     :language: bash
     :dedent: 2
-    :start-at: snap install imagecraft --beta --classic
-    :end-at: snap install imagecraft --beta --classic
+    :start-at: snap install imagecraft --classic
+    :end-at: snap install imagecraft --classic
 
-Next, let's install Multipass, which will create the build environment when it comes
-time to package the image:
+Next, install and initialize LXD, which creates the environment for Imagecraft builds:
 
 .. literalinclude:: code/build-an-ubuntu-image/task.yaml
     :language: bash
     :dedent: 2
-    :start-at: snap install multipass
-    :end-at: snap install multipass
+    :start-at: snap install lxd
+    :end-at: sudo lxd init --auto
 
 We'll run our image with QEMU. Install it with:
 
@@ -101,8 +100,8 @@ file*. Let's create one in the new project directory with the ``init`` command:
     :start-at: imagecraft init
     :end-at: imagecraft init
 
-Open the generated project file in your preferred text editor. This is where most of the
-tutorial will take place.
+Open the generated project file in your preferred text editor. This is where we'll work
+for most of the tutorial.
 
 
 .. _tutorial-describe-the-image:
@@ -126,7 +125,7 @@ scratch.
 
 The ``build-base`` key defines the operating system that's used to assemble the image.
 It does *not* affect the image's contents. It's best to build with the latest Ubuntu LTS
-release in most cases, so we left this unchanged.
+release in most cases, so we updated this to ``ubuntu@26.04``.
 
 The ``summary`` and ``description`` keys tell consumers of the image a little more
 about it. The summary is a one-line description, limited at 79 characters, while the
@@ -142,14 +141,13 @@ Define the partitions
 Now that we've described the image and declared its build details, we need to define its
 partitions. To do so, we'll customize the ``volumes`` key.
 
-The ``volumes`` key contains a single entry, named ``disk``. The ``schema`` key tells us
-that ``disk`` is partitioned with GPT, the recommended schema for most images.
-We'll define individual partitions in the ``structure`` key.
+The ``volumes`` key contains a single entry, named ``disk``, that's partitioned with the
+GPT schema and populated according to its ``structure`` key. When we pack the image
+later on, it'll be named after this volume: ``disk.img``.
 
-The image will have two partitions: a root file system and an EFI system partition. Each
-will need their own entry in the ``structure`` key. The first was defined for us
-automatically. Before we go over it, let's define the EFI system partition the image
-will boot from. Add the following highlighted lines after the ``rootfs`` partition:
+The image will have two partitions: a root file system and an EFI system partition. The
+first was defined for us, but we'll need to define the EFI system partition ourselves.
+Add the following highlighted lines after the ``rootfs`` partition:
 
 .. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
     :language: yaml
@@ -162,8 +160,8 @@ There's a lot to unpack here. Let's take a moment to go over each of the ``efi``
 partition's keys and compare them to the ``rootfs`` partition.
 
 We declared that this is the boot partition by setting the ``role`` key to
-``system-boot``. The ``rootfs`` partition's ``role`` key was set to ``system-data``,
-which tells Imagecraft that it contains the operating system.
+``system-boot``. The ``rootfs`` partition's ``role`` key was set to ``system-data`` to
+signify that it contains the operating system.
 
 We set the ``type`` key to the identifier for EFI system partitions in a GUID partition
 table. The ``rootfs`` partition was generated with the identifier for Linux file
@@ -187,8 +185,8 @@ the image's file system. Let's shift our focus to the ``filesystems`` key.
 
 The ``filesystems`` key maps the image's partitions to their mount points. It expects a
 single file system, named ``default``, that mounts a partition to the root of the image.
-The ``filesystems`` key in the project file already mounts the ``rootfs`` partition to the
-image's root, but we'll still need to mount the EFI system partition.
+The ``filesystems`` key in the project file already mounts the ``rootfs`` partition to
+the image's root, but we'll still need to mount the EFI system partition.
 
 Add the following highlighted lines to the end of the ``filesystems`` key:
 
@@ -212,10 +210,8 @@ Because we're building the image on the bare base, its file system is currently 
 directory. Let's start building it up with the ``parts`` key.
 
 *Parts* are the means by which we source packages for and manipulate the files in the
-image. They're the primary way we interact with the *overlay file system*, which is
+image. They're also the primary way we interact with the *overlay file system*, which is
 where we'll build up the image.
-
-We'll create the file system with a part that uses the mmdebstrap plugin.
 
 In the ``parts`` key, replace the template part with a new part named ``rootfs``,
 defined as follows:
@@ -223,17 +219,17 @@ defined as follows:
 .. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
     :language: yaml
     :start-at: parts:
-    :end-at: noble
+    :end-at: resolute
 
-The ``mmdebstrap-suite`` key is specific to the mmdebstrap plugin and specifies the
-package suite to bootstrap. To get the packages that are shipped with Ubuntu 24.04 LTS,
-we set the suite to ``noble``.
+The mmdebstrap plugin bootstraps a Debian root file system from the specified package
+suite. To get the packages that shipped with Ubuntu 26.04 LTS, we set the
+``mmdebstrap-suite`` key to ``resolute``.
 
-The plugin removes the default sources configuration files, which limit us to the system
-packages from the ``noble`` suite's ``main`` component. If we want to install anything
-more than essential system packages, we'll need to add a new sources configuration file.
-We also still need to create the /boot/efi/ directory we mounted the ``efi`` partition
-to.
+The mmdebstrap plugin removes the default sources configuration files, which limit us to
+the system packages from the ``resolute`` suite's ``main`` component. If we want to
+install anything but essential system packages, we'll need to add a new sources
+configuration file. We also still need to create the /boot/efi/ directory we mounted the
+``efi`` partition to.
 
 Add the following ``override-build`` key to the part:
 
@@ -248,12 +244,11 @@ extend the part's build instead of overriding it, we started the script with ``c
 default``, which runs the plugin's default commands.
 
 Now, when we install packages into the image, we'll be able to access the other
-components in the ``noble`` suite.
+components in the ``resolute`` suite.
 
 At this point, the file system only exists in the ``rootfs`` part. To get it into the
-final image, we'll need to copy it into the overlay file system. We can do so with the
-``organize`` key and the ``(overlay)/`` prefix. Add the following highlighted lines to
-the ``rootfs`` key:
+final image, we'll need to copy it into the overlay file system. Add the following
+highlighted lines to the ``rootfs`` key:
 
 .. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
     :language: yaml
@@ -271,26 +266,26 @@ thereby securing its place in the final image.
 Add essential packages
 ----------------------
 
-We'll need some additional packages for the image to be bootable. Let's define a new
-part to source them. In this case, we don't need any special behavior, so we'll set the
-``plugin`` key to ``nil``. Add a new part named ``packages``, defined as follows:
+The image still needs some additional packages to be bootable. Let's define a new
+part to source them:
 
 .. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
     :language: yaml
     :lines: 55-64
 
-With the exception of ``sl``, these packages add system essentials such as the kernel,
-core utilities, and boot loader. You won't need to worry about ``sl`` until we run the
-image later on.
+In this case, the part doesn't need any special behavior, so we set its ``plugin`` key
+to ``nil``.
+
+With the exception of ``sl``, which you don't need to worry about until later, these
+packages add system essentials such as the kernel, core utilities, and boot loader.
 
 
 Create the file system table
 ----------------------------
 
-If we tried to boot the image now, its partitions wouldn't be mounted. This is because
-Imagecraft requires that we create our file system table manually. The content of this
-table is similar to what we declared in the ``filesystems`` key, with some additional
-configuration.
+If we tried to boot the image now, its partitions wouldn't be mounted because
+Imagecraft requires that we create the file system table manually. The content of this
+table is similar to what we declared in the ``filesystems`` key.
 
 With how we set up the partitions and mount points, the table will read:
 
@@ -300,17 +295,17 @@ With how we set up the partitions and mount points, the table will read:
     LABEL=root        /            ext4    discard,errors=remount-ro    0    1
     LABEL=uefi        /boot/efi/   vfat    umask=0077                   0    1
 
-The first three columns should look familiar—these are the labels, mount points, and
+The first three columns should look familiar---these are the labels, mount points, and
 file system types we declared for our partitions. The last three columns declare each
 partition's active mount options, whether we want to dump the partition's utility
 backup, and the file system check order.
 
-Let's create a part that writes this to the ``/etc/fstab/`` directory in the overlay
-file system. Add a new part named ``fstab``, defined as follows:
+Let's create a part that writes this to the ``/etc/fstab`` file in the overlay file
+system:
 
 .. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
     :language: yaml
-    :lines: 65-72
+    :lines: 66-72
 
 Here, we used the ``overlay-script`` key to write the table to the overlay file system,
 which is referenced through the ``$CRAFT_OVERLAY`` environment variable. Keep in mind
@@ -330,7 +325,7 @@ For the purposes of this tutorial, we'll set up a ``login`` part that runs the
 ``chpasswd`` command in the overlay file system. This should *not* be done in images
 built for production environments.
 
-Add a new part named ``login``, defined as follows:
+Add the following part:
 
 .. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
     :language: yaml
@@ -349,13 +344,13 @@ Save and close the ``imagecraft.yaml`` file.
 Pack the image
 --------------
 
-To isolate the image build from your machine, we'll pack the image in a Multipass VM.
+To isolate the image build from your machine, we'll pack the image in a LXD container.
 Open a new terminal in the ``ubuntu-minimal/`` project directory and run:
 
 .. literalinclude:: code/build-an-ubuntu-image/task.yaml
     :language: bash
     :dedent: 2
-    :start-at: snap set imagecraft provider=multipass
+    :start-at: imagecraft pack
     :end-at: imagecraft pack
 
 The packing process takes around ten minutes. When your terminal shows the following
@@ -402,12 +397,12 @@ following login prompt:
 
     imagecraft-ubuntu-minimal-amd64-49807517 login:
 
-As you may recall from the ``login`` part, the default username is ``root`` and the password
-is ``password``. Enter these into the QEMU shell now.
+As you may recall from the ``login`` part, the default username is ``root`` and the
+password is ``password``. Enter these into the QEMU shell now.
 
 By booting and logging in to the image, we've verified the presence of its essential
-packages. To ensure the packages from the extra components of the ``noble`` suite are in
-place, let's run the ``sl`` command in the QEMU shell.
+packages. To ensure the packages from the extra components of the ``resolute`` suite are
+in place, let's run the ``sl`` command in the QEMU shell.
 
 .. terminal::
     :output-only:
@@ -442,8 +437,8 @@ This marks the end of this image's journey. If you'd like to develop your crafti
 skills further, you can customize the image or even build a new one from scratch.
 
 If you create an image for a new system or architecture, we encourage you to share it
-with us on `Matrix <https://matrix.to/#/#starcraft-development:ubuntu.com>`__. We'd love
-to see what you come up with.
+with us on `Matrix <https://matrix.to/#/#imagecraft:ubuntu.com>`__. We'd love to see
+what you come up with.
 
 If you'd like to share any feedback on Imagecraft or this tutorial, please `open an
 issue <https://github.com/canonical/imagecraft/issues/new/choose>`__. We appreciate your
