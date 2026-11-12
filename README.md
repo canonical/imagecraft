@@ -25,8 +25,8 @@ imagecraft pack
 ```
 
 If you want to learn more about this workflow by working directly with the tool, follow
-along with the [Build an Ubuntu
-image](https://ubuntu.com/docs/imagecraft/latest/tutorials/build-an-ubuntu-image/)
+along with the [Craft an Ubuntu
+image](https://ubuntu.com/docs/imagecraft/latest/tutorials/craft-an-ubuntu-image/)
 tutorial.
 
 ## Installation
