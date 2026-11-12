@@ -2,12 +2,12 @@
     :description: Learn how to build a custom Ubuntu image with Imagecraft.
 
 
-.. _tutorial-build-an-ubuntu-image:
+.. _tutorial-craft-an-ubuntu-image:
 
-Build an Ubuntu image
+Craft an Ubuntu image
 =====================
 
-In this tutorial, we'll build a custom Ubuntu image for AMD64 machines. We'll work
+In this tutorial, we'll craft a custom Ubuntu image for AMD64 machines. We'll work
 through everything from the initial project setup to the image's first boot.
 
 The tutorial takes about 25 minutes to complete. It doesn't require an intimate
@@ -47,7 +47,7 @@ Install prerequisites
 
 To begin, let's install the Imagecraft snap. Open a terminal and run:
 
-.. literalinclude:: code/build-an-ubuntu-image/task.yaml
+.. literalinclude:: code/craft-an-ubuntu-image/task.yaml
     :language: bash
     :dedent: 2
     :start-at: snap install imagecraft --classic
@@ -55,7 +55,7 @@ To begin, let's install the Imagecraft snap. Open a terminal and run:
 
 Next, install and initialize LXD, which creates the environment for Imagecraft builds:
 
-.. literalinclude:: code/build-an-ubuntu-image/task.yaml
+.. literalinclude:: code/craft-an-ubuntu-image/task.yaml
     :language: bash
     :dedent: 2
     :start-at: snap install lxd
@@ -63,7 +63,7 @@ Next, install and initialize LXD, which creates the environment for Imagecraft b
 
 We'll run our image with QEMU. Install it with:
 
-.. literalinclude:: code/build-an-ubuntu-image/task.yaml
+.. literalinclude:: code/craft-an-ubuntu-image/task.yaml
     :language: bash
     :dedent: 2
     :start-at: sudo apt install qemu-system-x86
@@ -72,7 +72,7 @@ We'll run our image with QEMU. Install it with:
 Lastly, we'll need UEFI firmware to pass to QEMU. One of the most popular choices is
 OVMF. Install it with:
 
-.. literalinclude:: code/build-an-ubuntu-image/task.yaml
+.. literalinclude:: code/craft-an-ubuntu-image/task.yaml
     :language: bash
     :dedent: 2
     :start-at: sudo apt install ovmf
@@ -85,7 +85,7 @@ Set up the project
 We'll need a directory to hold the project. Create a directory wherever you like to keep
 your software projects:
 
-.. literalinclude:: code/build-an-ubuntu-image/task.yaml
+.. literalinclude:: code/craft-an-ubuntu-image/task.yaml
     :language: bash
     :dedent: 2
     :start-at: mkdir ubuntu-minimal
@@ -94,7 +94,7 @@ your software projects:
 Images are built and configured through an ``imagecraft.yaml`` file, called the *project
 file*. Let's create one in the new project directory with the ``init`` command:
 
-.. literalinclude:: code/build-an-ubuntu-image/task.yaml
+.. literalinclude:: code/craft-an-ubuntu-image/task.yaml
     :language: bash
     :dedent: 2
     :start-at: imagecraft init
@@ -114,7 +114,7 @@ environment. Imagecraft initialized these keys with generic values. Let's update
 ``summary`` and ``description`` keys to better reflect the new project. Replace the
 first six keys with:
 
-.. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
+.. literalinclude:: code/craft-an-ubuntu-image/imagecraft.yaml
     :language: yaml
     :start-at: name: ubuntu-minimal
     :end-at: and it's booted with GRUB.
@@ -149,7 +149,7 @@ The image will have two partitions: a root file system and an EFI system partiti
 first was defined for us, but we'll need to define the EFI system partition ourselves.
 Add the following highlighted lines after the ``rootfs`` partition:
 
-.. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
+.. literalinclude:: code/craft-an-ubuntu-image/imagecraft.yaml
     :language: yaml
     :class: no-copybutton
     :start-at: volumes:
@@ -190,7 +190,7 @@ the image's root, but we'll still need to mount the EFI system partition.
 
 Add the following highlighted lines to the end of the ``filesystems`` key:
 
-.. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
+.. literalinclude:: code/craft-an-ubuntu-image/imagecraft.yaml
     :language: yaml
     :class: no-copybutton
     :start-at: filesystems:
@@ -216,7 +216,7 @@ where we'll build up the image.
 In the ``parts`` key, replace the template part with a new part named ``rootfs``,
 defined as follows:
 
-.. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
+.. literalinclude:: code/craft-an-ubuntu-image/imagecraft.yaml
     :language: yaml
     :start-at: parts:
     :end-at: resolute
@@ -233,7 +233,7 @@ configuration file. We also still need to create the /boot/efi/ directory we mou
 
 Add the following ``override-build`` key to the part:
 
-.. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
+.. literalinclude:: code/craft-an-ubuntu-image/imagecraft.yaml
     :language: yaml
     :class: no-copybutton
     :lines: 39-51
@@ -250,7 +250,7 @@ At this point, the file system only exists in the ``rootfs`` part. To get it int
 final image, we'll need to copy it into the overlay file system. Add the following
 highlighted lines to the ``rootfs`` key:
 
-.. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
+.. literalinclude:: code/craft-an-ubuntu-image/imagecraft.yaml
     :language: yaml
     :class: no-copybutton
     :start-at: rootfs:
@@ -269,7 +269,7 @@ Add essential packages
 The image still needs some additional packages to be bootable. Let's define a new
 part to source them:
 
-.. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
+.. literalinclude:: code/craft-an-ubuntu-image/imagecraft.yaml
     :language: yaml
     :lines: 55-64
 
@@ -303,7 +303,7 @@ backup, and the file system check order.
 Let's create a part that writes this to the ``/etc/fstab`` file in the overlay file
 system:
 
-.. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
+.. literalinclude:: code/craft-an-ubuntu-image/imagecraft.yaml
     :language: yaml
     :lines: 66-72
 
@@ -327,7 +327,7 @@ built for production environments.
 
 Add the following part:
 
-.. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
+.. literalinclude:: code/craft-an-ubuntu-image/imagecraft.yaml
     :language: yaml
     :start-at: login:
     :end-at: echo "root:password" | chpasswd --root "${CRAFT_OVERLAY}"
@@ -347,7 +347,7 @@ Pack the image
 To isolate the image build from your machine, we'll pack the image in a LXD container.
 Open a new terminal in the ``ubuntu-minimal/`` project directory and run:
 
-.. literalinclude:: code/build-an-ubuntu-image/task.yaml
+.. literalinclude:: code/craft-an-ubuntu-image/task.yaml
     :language: bash
     :dedent: 2
     :start-at: imagecraft pack
@@ -373,7 +373,7 @@ Run and test the image
 Before we run our image with QEMU, let's copy the UEFI variables from OVMF into a
 temporary directory so we don't compromise the originals:
 
-.. literalinclude:: code/build-an-ubuntu-image/task.yaml
+.. literalinclude:: code/craft-an-ubuntu-image/task.yaml
     :language: bash
     :dedent: 2
     :start-at: cp /usr/share/OVMF/OVMF_VARS_4M.fd /tmp/OVMF_VARS_4M.fd
@@ -383,7 +383,7 @@ You'll need to repeat this step if you reboot your machine between runs.
 
 With no further ado, let's run the image with QEMU:
 
-.. literalinclude:: code/build-an-ubuntu-image/task.yaml
+.. literalinclude:: code/craft-an-ubuntu-image/task.yaml
     :language: bash
     :dedent: 2
     :start-at: qemu-system-x86_64 \
@@ -426,7 +426,7 @@ Here's the complete project file for the image. Yours should look similar to it.
 
 .. dropdown:: imagecraft.yaml for ubuntu-minimal
 
-    .. literalinclude:: code/build-an-ubuntu-image/imagecraft.yaml
+    .. literalinclude:: code/craft-an-ubuntu-image/imagecraft.yaml
         :language: yaml
 
 
