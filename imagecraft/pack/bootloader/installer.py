@@ -22,7 +22,9 @@ Coordinates the two phases of bootloader installation:
    the partitions' prime directories, which ``diskutil.format_device`` then
    embeds via ``mke2fs -d``/``mcopy``.
 2. :meth:`BootloaderInstaller.install_image_boot_code` -- run *after* the
-   final disk image has been assembled; BIOS targets only.
+   final disk image has been assembled; installs the BIOS boot code with
+   ``grub-bios-setup`` for BIOS volumes and (on x86) as a fallback alongside
+   EFI volumes.
 """
 
 import contextlib
@@ -181,6 +183,31 @@ class BootloaderInstaller:
         )
         self._root_dir: Path | None = None
         self._boot_method = BootMethod.NONE
+        self._fallback_bios_method = BootMethod.NONE
+
+    @property
+    def _has_mbr_structure_role(self) -> bool:
+        """Whether the volume declares a structure item with the ``mbr`` role.
+
+        Some gadget layouts (following snapd's gadget.yaml conventions) mark
+        a partition with ``role: mbr`` to install the MBR boot code
+        themselves; such volumes opt out of the BIOS fallback install.
+        Note: the volume model does not currently accept this role value, so
+        this is inert until the schema supports it.
+        """
+        return any(item.role == "mbr" for item in self.volume.structure)
+
+    @property
+    def _can_embed_bios_boot_code(self) -> bool:
+        """Whether the volume has an embedding area for BIOS (i386-pc) core.img.
+
+        GRUB refuses to embed core.img in the post-MBR gap of a GPT disk, so
+        a GPT-schema volume needs a BIOS Boot partition. MBR-schema volumes
+        can always embed in the gap between the MBR and the first partition.
+        """
+        if self.volume.volume_schema == PartitionSchema.MBR:
+            return True
+        return self.volume.has_bios_boot_partition
 
     @property
     def partition_uuids(self) -> dict[str, str]:
@@ -375,19 +402,37 @@ class BootloaderInstaller:
             emit.warning(f"Skipping bootloader installation: {err}", prefix="")
             return BootMethod.NONE
 
+        # On x86, also stage the BIOS (i386-pc) modules so the image can boot
+        # via legacy BIOS when firmware doesn't support EFI, unless the
+        # project installs its own MBR boot code via a role: mbr partition.
+        # This is fallback-only behavior, so unlike the primary BIOS staging
+        # above, a missing-tools error is a real failure and propagates.
+        if (
+            boot_method == BootMethod.EFI
+            and not self._has_mbr_structure_role
+            and self._can_embed_bios_boot_code
+            and self._spec.non_efi_format is not None
+        ):
+            stage_grub_modules(self._root_dir, boot_dir, self._spec.non_efi_format)
+            self._fallback_bios_method = BootMethod.BIOS
+
         self._boot_method = boot_method
         return boot_method
 
     def install_image_boot_code(self, *, image_path: Path) -> None:
         """Install BIOS boot code into the raw disk image, if applicable.
 
-        No-op for non-BIOS volumes. Must be called after the image's
-        partitions have been formatted and finalized, and after
+        Runs for BIOS volumes, and on x86 also as a fallback alongside EFI
+        volumes (so the image also boots via legacy BIOS), unless the project
+        declares a structure item with the ``mbr`` role. Must be called after
+        the image's partitions have been formatted and finalized, and after
         :meth:`prepare_rootfs`.
 
         :param image_path: Path to the final, partitioned disk image file.
         """
-        if self._boot_method != BootMethod.BIOS:
+        if self._boot_method == BootMethod.NONE:
+            return
+        if BootMethod.BIOS not in (self._boot_method, self._fallback_bios_method):
             return
         # prepare_rootfs() sets _root_dir before _boot_method becomes BIOS.
         assert self._root_dir is not None  # noqa: S101
