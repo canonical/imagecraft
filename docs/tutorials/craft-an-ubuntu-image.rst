@@ -125,7 +125,7 @@ scratch.
 
 The ``build-base`` key defines the operating system that's used to assemble the image.
 It does *not* affect the image's contents. It's best to build with the latest Ubuntu LTS
-release in most cases, so we updated this to ``ubuntu@26.04``.
+release in most cases, so we left this unchanged.
 
 The ``summary`` and ``description`` keys tell consumers of the image a little more
 about it. The summary is a one-line description, limited at 79 characters, while the
