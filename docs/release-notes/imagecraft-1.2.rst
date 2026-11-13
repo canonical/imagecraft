@@ -67,10 +67,10 @@ Minor features
 Imagecraft 1.2 brings the following minor changes.
 
 
-<FEATURE A>
-~~~~~~~~~~~
+New default build base
+~~~~~~~~~~~~~~~~~~~~~~
 
-- <Add a short description of a minor change.>
+Projects are now initialized with the ``ubuntu@26.04`` build base.
 
 
 Feature deprecations
