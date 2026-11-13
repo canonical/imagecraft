@@ -70,7 +70,8 @@ Imagecraft 1.2 brings the following minor changes.
 New default build base
 ~~~~~~~~~~~~~~~~~~~~~~
 
-Projects are now initialized with the ``ubuntu@26.04`` build base.
+Projects are now initialized with the ``ubuntu@26.04`` build base. To use the
+``ubuntu@24.04`` build base, run ``imagecraft init --base=ubuntu@24.04``
 
 
 Feature deprecations
