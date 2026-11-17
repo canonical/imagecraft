@@ -15,6 +15,12 @@ Current releases
 ----------------
 
 
+Imagecraft 1.2
+~~~~~~~~~~~~~~
+
+- :ref:`Imagecraft 1.2 release notes <release-notes-imagecraft-1-2>`
+
+
 Imagecraft 1.1
 ~~~~~~~~~~~~~~
 
@@ -79,6 +85,7 @@ development keeps pace with the OS's new releases and support lifecycle.
 .. toctree::
    :maxdepth: 1
 
+   Imagecraft 1.2 <imagecraft-1.2>
    Imagecraft 1.1 <imagecraft-1.1>
    Imagecraft 1.0 <imagecraft-1.0>
 

@@ -29,23 +29,24 @@ parts:
     override-build: |
       craftctl default
       mkdir -p $CRAFT_PART_INSTALL/boot/efi
+
+      if [ "$CRAFT_ARCH_BUILD_FOR" = "amd64" ]; then
+        URL="http://archive.ubuntu.com/ubuntu"
+      else
+        URL="http://ports.ubuntu.com/ubuntu-ports"
+      fi
+
+      echo "deb $URL noble main" > $CRAFT_PART_INSTALL/etc/apt/sources.list
     organize:
       "*": (overlay)/
 
   efi-packages:
     plugin: nil
     after: [rootfs]
-    override-overlay: |
-      ARCH="$(dpkg --print-architecture)"
-      if [ "$ARCH" = "amd64" ]; then
-        URL="http://archive.ubuntu.com/ubuntu"
-      else
-        URL="http://ports.ubuntu.com/ubuntu-ports"
-      fi
-
-      echo "deb $URL noble main" > /etc/apt/sources.list
-      apt-get update
-      apt-get install -y grub-efi-$ARCH
+    overlay-packages:
+      - grub-efi-$CRAFT_ARCH_BUILD_FOR
+      - for amd64:
+          - grub-pc-bin
 
   disable-cloud-init:
     plugin: nil
@@ -101,6 +102,15 @@ volumes:
   pc:
     schema: gpt
     structure:
+      - for amd64:
+          # Raw embedding area for the BIOS fallback's core.img (x86 only);
+          # Filesystem is ext4 because Imagecraft doesn't yet
+          # support `filesystem: none` for raw partitions.
+          - name: biosboot
+            type: 21686148-6449-6E6F-744E-656564454649
+            filesystem: ext4
+            role: system-boot
+            size: 2M
       - name: efi
         type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
         filesystem: vfat
