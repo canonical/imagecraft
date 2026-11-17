@@ -858,9 +858,9 @@ dependencies = [
 
 [package.optional-dependencies]
 apt = [
-    { name = "python-apt", version = "2.7.7+ubuntu5", source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }, marker = "(sys_platform == 'linux' and extra == 'group-10-imagecraft-dev-noble') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-resolute' and extra == 'group-10-imagecraft-dev-stonking')" },
-    { name = "python-apt", version = "2.9.9", source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }, marker = "(sys_platform == 'linux' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-resolute' and extra == 'group-10-imagecraft-dev-stonking')" },
-    { name = "python-apt", version = "3.0.0+ubuntu1", source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }, marker = "(sys_platform == 'linux' and extra != 'group-10-imagecraft-dev-noble' and extra != 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-resolute' and extra == 'group-10-imagecraft-dev-stonking')" },
+    { name = "python-apt", version = "2.7.7+ubuntu5.3", source = { registry = "https://lengau.github.io/python-apt-wheels/simple/" }, marker = "(sys_platform == 'linux' and extra == 'group-10-imagecraft-dev-noble') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-resolute' and extra == 'group-10-imagecraft-dev-stonking')" },
+    { name = "python-apt", version = "2.9.0+ubuntu1", source = { registry = "https://lengau.github.io/python-apt-wheels/simple/" }, marker = "(sys_platform == 'linux' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-resolute' and extra == 'group-10-imagecraft-dev-stonking')" },
+    { name = "python-apt", version = "3.0.0+ubuntu1", source = { registry = "https://lengau.github.io/python-apt-wheels/simple/" }, marker = "(sys_platform == 'linux' and extra != 'group-10-imagecraft-dev-noble' and extra != 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-resolute' and extra == 'group-10-imagecraft-dev-stonking')" },
 ]
 
 [package.dev-dependencies]
@@ -876,19 +876,19 @@ dev = [
     { name = "types-setuptools" },
 ]
 dev-noble = [
-    { name = "python-apt", version = "2.7.7+ubuntu5", source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }, marker = "sys_platform == 'linux'" },
+    { name = "python-apt", version = "2.7.7+ubuntu5.3", source = { registry = "https://lengau.github.io/python-apt-wheels/simple/" }, marker = "sys_platform == 'linux'" },
 ]
 dev-plucky = [
-    { name = "python-apt", version = "2.9.9", source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }, marker = "sys_platform == 'linux'" },
+    { name = "python-apt", version = "2.9.0+ubuntu1", source = { registry = "https://lengau.github.io/python-apt-wheels/simple/" }, marker = "sys_platform == 'linux'" },
 ]
 dev-questing = [
-    { name = "python-apt", version = "3.0.0+ubuntu1", source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }, marker = "sys_platform == 'linux'" },
+    { name = "python-apt", version = "3.0.0+ubuntu1", source = { registry = "https://lengau.github.io/python-apt-wheels/simple/" }, marker = "sys_platform == 'linux'" },
 ]
 dev-resolute = [
-    { name = "python-apt", version = "3.0.0+ubuntu1", source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }, marker = "sys_platform == 'linux'" },
+    { name = "python-apt", version = "3.0.0+ubuntu1", source = { registry = "https://lengau.github.io/python-apt-wheels/simple/" }, marker = "sys_platform == 'linux'" },
 ]
 dev-stonking = [
-    { name = "python-apt", version = "3.0.0+ubuntu1", source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }, marker = "sys_platform == 'linux'" },
+    { name = "python-apt", version = "3.0.0+ubuntu1", source = { registry = "https://lengau.github.io/python-apt-wheels/simple/" }, marker = "sys_platform == 'linux'" },
 ]
 docs = [
     { name = "canonical-sphinx" },
@@ -953,7 +953,7 @@ requires-dist = [
     { name = "pydantic", specifier = "~=2.14.0" },
     { name = "pygit2", marker = "python_full_version == '3.12.*'", specifier = ">=1.13.0,<1.15.0" },
     { name = "pygit2", marker = "python_full_version == '3.14.*'", specifier = ">=1.19.0,<1.21.0" },
-    { name = "python-apt", marker = "sys_platform == 'linux' and extra == 'apt'", specifier = ">=2.7.0", index = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" },
+    { name = "python-apt", marker = "sys_platform == 'linux' and extra == 'apt'", specifier = ">=2.7.0", index = "https://lengau.github.io/python-apt-wheels/simple/" },
 ]
 provides-extras = ["apt"]
 
@@ -969,11 +969,11 @@ dev = [
     { name = "types-pygments" },
     { name = "types-setuptools" },
 ]
-dev-noble = [{ name = "python-apt", marker = "sys_platform == 'linux'", specifier = "~=2.7.0", index = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }]
-dev-plucky = [{ name = "python-apt", marker = "sys_platform == 'linux'", specifier = "~=2.9.0", index = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }]
-dev-questing = [{ name = "python-apt", marker = "sys_platform == 'linux'", specifier = "~=3.0.0", index = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }]
-dev-resolute = [{ name = "python-apt", marker = "sys_platform == 'linux'", specifier = "~=3.0.0", index = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }]
-dev-stonking = [{ name = "python-apt", marker = "sys_platform == 'linux'", specifier = "~=3.0.0", index = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }]
+dev-noble = [{ name = "python-apt", marker = "sys_platform == 'linux'", specifier = "~=2.7.0", index = "https://lengau.github.io/python-apt-wheels/simple/" }]
+dev-plucky = [{ name = "python-apt", marker = "sys_platform == 'linux'", specifier = "~=2.9.0", index = "https://lengau.github.io/python-apt-wheels/simple/" }]
+dev-questing = [{ name = "python-apt", marker = "sys_platform == 'linux'", specifier = "~=3.0.0", index = "https://lengau.github.io/python-apt-wheels/simple/" }]
+dev-resolute = [{ name = "python-apt", marker = "sys_platform == 'linux'", specifier = "~=3.0.0", index = "https://lengau.github.io/python-apt-wheels/simple/" }]
+dev-stonking = [{ name = "python-apt", marker = "sys_platform == 'linux'", specifier = "~=3.0.0", index = "https://lengau.github.io/python-apt-wheels/simple/" }]
 docs = [
     { name = "canonical-sphinx", specifier = "~=0.6" },
     { name = "myst-parser", specifier = "~=4.0" },
@@ -990,7 +990,7 @@ docs = [
     { name = "sphinx-related-links", specifier = "~=0.1" },
     { name = "sphinx-rerediraffe", specifier = ">=0.0.3,<1.0.0" },
     { name = "sphinx-roles", specifier = "~=0.1" },
-    { name = "sphinx-sitemap", specifier = "~=2.6.0" },
+    { name = "sphinx-sitemap", specifier = "~=2.9" },
     { name = "sphinx-terminal", specifier = "~=1.0" },
     { name = "sphinxcontrib-details-directive" },
     { name = "sphinxcontrib-jquery", specifier = "~=4.1" },
@@ -1010,7 +1010,7 @@ docs-sphinx-stack = [
     { name = "sphinx-related-links", specifier = "~=0.1" },
     { name = "sphinx-rerediraffe", specifier = ">=0.0.3,<1.0.0" },
     { name = "sphinx-roles", specifier = "~=0.1" },
-    { name = "sphinx-sitemap", specifier = "~=2.6.0" },
+    { name = "sphinx-sitemap", specifier = "~=2.9" },
     { name = "sphinx-terminal", specifier = "~=1.0" },
     { name = "sphinxcontrib-jquery", specifier = "~=4.1" },
     { name = "sphinxext-opengraph", specifier = "~=0.13" },
@@ -1967,8 +1967,8 @@ wheels = [
 
 [[package]]
 name = "python-apt"
-version = "2.7.7+ubuntu5"
-source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }
+version = "2.7.7+ubuntu5.3"
+source = { registry = "https://lengau.github.io/python-apt-wheels/simple/" }
 resolution-markers = [
     "python_full_version == '3.14.*'",
     "python_full_version == '3.13.*' or python_full_version >= '3.15'",
@@ -1977,37 +1977,42 @@ resolution-markers = [
     "python_full_version < '3.11.5'",
 ]
 wheels = [
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-2.7.7+ubuntu5-cp311-cp311-manylinux_2_39_aarch64.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-2.7.7+ubuntu5-cp311-cp311-manylinux_2_39_armv7l.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-2.7.7+ubuntu5-cp311-cp311-manylinux_2_39_ppc64le.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-2.7.7+ubuntu5-cp311-cp311-manylinux_2_39_s390x.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-2.7.7+ubuntu5-cp311-cp311-manylinux_2_39_x86_64.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-2.7.7+ubuntu5-cp312-cp312-manylinux_2_39_aarch64.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-2.7.7+ubuntu5-cp312-cp312-manylinux_2_39_armv7l.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-2.7.7+ubuntu5-cp312-cp312-manylinux_2_39_ppc64le.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-2.7.7+ubuntu5-cp312-cp312-manylinux_2_39_s390x.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-2.7.7+ubuntu5-cp312-cp312-manylinux_2_39_x86_64.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-2.7.7+ubuntu5-cp313-cp313-manylinux_2_39_aarch64.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-2.7.7+ubuntu5-cp313-cp313-manylinux_2_39_armv7l.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-2.7.7+ubuntu5-cp313-cp313-manylinux_2_39_ppc64le.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-2.7.7+ubuntu5-cp313-cp313-manylinux_2_39_s390x.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-2.7.7+ubuntu5-cp313-cp313-manylinux_2_39_x86_64.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-2.7.7+ubuntu5-cp314-cp314-manylinux_2_39_aarch64.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-2.7.7+ubuntu5-cp314-cp314-manylinux_2_39_armv7l.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-2.7.7+ubuntu5-cp314-cp314-manylinux_2_39_ppc64le.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-2.7.7+ubuntu5-cp314-cp314-manylinux_2_39_s390x.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-2.7.7+ubuntu5-cp314-cp314-manylinux_2_39_x86_64.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-2.7.7+ubuntu5-cp314-cp314t-manylinux_2_39_aarch64.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-2.7.7+ubuntu5-cp314-cp314t-manylinux_2_39_armv7l.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-2.7.7+ubuntu5-cp314-cp314t-manylinux_2_39_ppc64le.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-2.7.7+ubuntu5-cp314-cp314t-manylinux_2_39_s390x.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-2.7.7+ubuntu5-cp314-cp314t-manylinux_2_39_x86_64.whl" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2026-10-31-79/python_apt-2.7.7+ubuntu5.3-cp311-cp311-manylinux_2_39_aarch64.whl", hash = "sha256:baf67bcafe047919546fc4dd7f2e7db72401e74afbb61e10d8d2304318298933" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2026-10-31-79/python_apt-2.7.7+ubuntu5.3-cp311-cp311-manylinux_2_39_armv7l.whl", hash = "sha256:054d16a8d72c6026d15242ea3314ab2a0ffae25446858f3b97ed511d035d8487" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2026-10-31-79/python_apt-2.7.7+ubuntu5.3-cp311-cp311-manylinux_2_39_ppc64le.whl", hash = "sha256:9d4ba91c8103ababaea0087f293645308f9aea8a3ebdbfad0b9c1a3dc645effb" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2026-10-31-79/python_apt-2.7.7+ubuntu5.3-cp311-cp311-manylinux_2_39_riscv64.whl", hash = "sha256:311b6b1346967075f9b86301639314246ce92be2bf9786dce921e81caad73aa8" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2026-10-31-79/python_apt-2.7.7+ubuntu5.3-cp311-cp311-manylinux_2_39_s390x.whl", hash = "sha256:d904081c041ecad78eda8428cb444b1f588cd4a2b4bf17087681e6d1581fd872" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2026-10-31-79/python_apt-2.7.7+ubuntu5.3-cp311-cp311-manylinux_2_39_x86_64.whl", hash = "sha256:e456b56bdaf6b2559c6cd564207d6c5e1e55950e7a07ed1b475109eafbc1a5f4" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2026-10-31-79/python_apt-2.7.7+ubuntu5.3-cp312-cp312-manylinux_2_39_aarch64.whl", hash = "sha256:c3d8093134821b21c215aafb37a2d024b73645e22c811fca2eada797f0a2c30a" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2026-10-31-79/python_apt-2.7.7+ubuntu5.3-cp312-cp312-manylinux_2_39_armv7l.whl", hash = "sha256:d63776e4c8a31dc492e00b5e77d0e6d3a322e1c6ff419c9d56f9f6f81b154c67" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2026-10-31-79/python_apt-2.7.7+ubuntu5.3-cp312-cp312-manylinux_2_39_ppc64le.whl", hash = "sha256:80e07418cd191598179cae0b9b57fc5bc120442684f6d8836c9ef2e966d5207e" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2026-10-31-79/python_apt-2.7.7+ubuntu5.3-cp312-cp312-manylinux_2_39_riscv64.whl", hash = "sha256:95338b124aaf2028f6b6fa410042e026e9b409ee4145c92429adbce378d8c2fe" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2026-10-31-79/python_apt-2.7.7+ubuntu5.3-cp312-cp312-manylinux_2_39_s390x.whl", hash = "sha256:0b17cb10398381138aaed323301368bf3f4754676d7a53a3c058b0fcbba12bbc" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2026-10-31-79/python_apt-2.7.7+ubuntu5.3-cp312-cp312-manylinux_2_39_x86_64.whl", hash = "sha256:83726861e0d4cb375d32b66f7ddf7364ded6fdc9e4da8ccc94bbf06c4a7a3a87" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2026-10-31-79/python_apt-2.7.7+ubuntu5.3-cp313-cp313-manylinux_2_39_aarch64.whl", hash = "sha256:f9fae972183d265f93f833917357df71670a38feeea2401e5b5e549755e34caa" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2026-10-31-79/python_apt-2.7.7+ubuntu5.3-cp313-cp313-manylinux_2_39_armv7l.whl", hash = "sha256:05cefb86f73090a6e0fb755ad785df7653821d2aa7f8a38bb8fa33a8f59ef8fb" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2026-10-31-79/python_apt-2.7.7+ubuntu5.3-cp313-cp313-manylinux_2_39_ppc64le.whl", hash = "sha256:2de6411ffe72ad41008194cb898d55e7f715c3b9f0fde239c0bebb1b01414b2f" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2026-10-31-79/python_apt-2.7.7+ubuntu5.3-cp313-cp313-manylinux_2_39_riscv64.whl", hash = "sha256:0320d29ca9d6a579a0f1bcfea506b047f8b023d19bf0d4bb101fc6af1a2c03e5" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2026-10-31-79/python_apt-2.7.7+ubuntu5.3-cp313-cp313-manylinux_2_39_s390x.whl", hash = "sha256:ae4f9a5236976a22ecdcf98241a70548a73e592386b5a1cca5662260b2bdb113" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2026-10-31-79/python_apt-2.7.7+ubuntu5.3-cp313-cp313-manylinux_2_39_x86_64.whl", hash = "sha256:ee08b6f6aa0d9844de66628374c8b76efe391948d2fd8b5dc95ad5a9a4508d54" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2026-10-31-79/python_apt-2.7.7+ubuntu5.3-cp314-cp314-manylinux_2_39_aarch64.whl", hash = "sha256:61b06852d2160c1649becd0aee8c712d4ea0a20894b3250517f3b8cbd980cbf6" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2026-10-31-79/python_apt-2.7.7+ubuntu5.3-cp314-cp314-manylinux_2_39_armv7l.whl", hash = "sha256:c6ab6b6de0e03549c41056ec85c4ba98e9a22215f887d691af6a14b00ce860b6" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2026-10-31-79/python_apt-2.7.7+ubuntu5.3-cp314-cp314-manylinux_2_39_ppc64le.whl", hash = "sha256:34862fb4f33bad39b7a539cb70b7d6231ed028d78cdefd009f4a72f1e0a506de" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2026-10-31-79/python_apt-2.7.7+ubuntu5.3-cp314-cp314-manylinux_2_39_riscv64.whl", hash = "sha256:4d7f651e0019ac4a9b4d217dfe8d68947be36971dee4560bd16b029f1b1f2978" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2026-10-31-79/python_apt-2.7.7+ubuntu5.3-cp314-cp314-manylinux_2_39_s390x.whl", hash = "sha256:a203350841d865af34d74a54ba848e66fc7ae1d45024fd967e1a29bf2e9980ed" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2026-10-31-79/python_apt-2.7.7+ubuntu5.3-cp314-cp314-manylinux_2_39_x86_64.whl", hash = "sha256:78578026019478000302ca96f1e8162fea5dd987508b26bf1831e9dea7fe611b" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2026-10-31-79/python_apt-2.7.7+ubuntu5.3-cp314-cp314t-manylinux_2_39_aarch64.whl", hash = "sha256:940c39fc555ceb51012f40a3036207c2ba3ff9aa9d2735001c24849e68279abf" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2026-10-31-79/python_apt-2.7.7+ubuntu5.3-cp314-cp314t-manylinux_2_39_armv7l.whl", hash = "sha256:be074a7e86dd9625385497b1c9eb8793ddc0ed7655735372d40071d37e090488" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2026-10-31-79/python_apt-2.7.7+ubuntu5.3-cp314-cp314t-manylinux_2_39_ppc64le.whl", hash = "sha256:bd5c93df16a53a02e538d98e43368434a41a883273d8617ecef4019b3196e81e" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2026-10-31-79/python_apt-2.7.7+ubuntu5.3-cp314-cp314t-manylinux_2_39_riscv64.whl", hash = "sha256:944ea709690b2859c2b2abae6d935ff892a857353e4292f9aec94cec4cfabec8" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2026-10-31-79/python_apt-2.7.7+ubuntu5.3-cp314-cp314t-manylinux_2_39_s390x.whl", hash = "sha256:581966ff973ddf1d604d866859cec47e3bed167e249ef361abf7eaaaf92f46ab" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2026-10-31-79/python_apt-2.7.7+ubuntu5.3-cp314-cp314t-manylinux_2_39_x86_64.whl", hash = "sha256:9728aa8084fae4cc0e94bffa0c8efa0d4fb084c04fb443db79f8615e8a0ea141" },
 ]
 
 [[package]]
 name = "python-apt"
-version = "2.9.9"
-source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }
+version = "2.9.0+ubuntu1"
+source = { registry = "https://lengau.github.io/python-apt-wheels/simple/" }
 resolution-markers = [
     "python_full_version == '3.14.*'",
     "python_full_version == '3.13.*' or python_full_version >= '3.15'",
@@ -2016,15 +2021,23 @@ resolution-markers = [
     "python_full_version < '3.11.5'",
 ]
 wheels = [
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-2.9.9-cp311-cp311-manylinux_2_41_x86_64.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-2.9.9-cp312-cp312-manylinux_2_41_x86_64.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-2.9.9-cp313-cp313-manylinux_2_41_x86_64.whl" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2025-05-22-publish/python_apt-2.9.0%2Bubuntu1-cp311-cp311-manylinux_2_40_aarch64.whl" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2025-05-22-publish/python_apt-2.9.0%2Bubuntu1-cp311-cp311-manylinux_2_40_x86_64.whl" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2025-05-22-publish/python_apt-2.9.0%2Bubuntu1-cp312-cp312-manylinux_2_40_aarch64.whl" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2024-12-07/python_apt-2.9.0%2Bubuntu1-cp312-cp312-manylinux_2_40_ppc64le.whl" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2024-12-07/python_apt-2.9.0%2Bubuntu1-cp312-cp312-manylinux_2_40_riscv64.whl" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2024-12-07/python_apt-2.9.0%2Bubuntu1-cp312-cp312-manylinux_2_40_s390x.whl" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2025-05-22-publish/python_apt-2.9.0%2Bubuntu1-cp312-cp312-manylinux_2_40_x86_64.whl" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2025-05-22-publish/python_apt-2.9.0%2Bubuntu1-cp313-cp313-manylinux_2_40_aarch64.whl" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2025-05-22-publish/python_apt-2.9.0%2Bubuntu1-cp313-cp313-manylinux_2_40_x86_64.whl" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2025-05-22-publish/python_apt-2.9.0%2Bubuntu1-cp314-cp314-manylinux_2_40_aarch64.whl" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2025-05-22-publish/python_apt-2.9.0%2Bubuntu1-cp314-cp314-manylinux_2_40_x86_64.whl" },
 ]
 
 [[package]]
 name = "python-apt"
 version = "3.0.0+ubuntu1"
-source = { registry = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/" }
+source = { registry = "https://lengau.github.io/python-apt-wheels/simple/" }
 resolution-markers = [
     "python_full_version == '3.14.*'",
     "python_full_version == '3.13.*' or python_full_version >= '3.15'",
@@ -2033,26 +2046,16 @@ resolution-markers = [
     "python_full_version < '3.11.5'",
 ]
 wheels = [
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-3.0.0+ubuntu1-cp311-cp311-manylinux_2_42_aarch64.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-3.0.0+ubuntu1-cp311-cp311-manylinux_2_42_ppc64le.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-3.0.0+ubuntu1-cp311-cp311-manylinux_2_42_s390x.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-3.0.0+ubuntu1-cp311-cp311-manylinux_2_42_x86_64.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-3.0.0+ubuntu1-cp312-cp312-manylinux_2_42_aarch64.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-3.0.0+ubuntu1-cp312-cp312-manylinux_2_42_ppc64le.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-3.0.0+ubuntu1-cp312-cp312-manylinux_2_42_s390x.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-3.0.0+ubuntu1-cp312-cp312-manylinux_2_42_x86_64.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-3.0.0+ubuntu1-cp313-cp313-manylinux_2_42_aarch64.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-3.0.0+ubuntu1-cp313-cp313-manylinux_2_42_ppc64le.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-3.0.0+ubuntu1-cp313-cp313-manylinux_2_42_s390x.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-3.0.0+ubuntu1-cp313-cp313-manylinux_2_42_x86_64.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-3.0.0+ubuntu1-cp314-cp314-manylinux_2_42_aarch64.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-3.0.0+ubuntu1-cp314-cp314-manylinux_2_42_ppc64le.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-3.0.0+ubuntu1-cp314-cp314-manylinux_2_42_s390x.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-3.0.0+ubuntu1-cp314-cp314-manylinux_2_42_x86_64.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-3.0.0+ubuntu1-cp314-cp314t-manylinux_2_42_aarch64.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-3.0.0+ubuntu1-cp314-cp314t-manylinux_2_42_ppc64le.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-3.0.0+ubuntu1-cp314-cp314t-manylinux_2_42_s390x.whl" },
-    { url = "https://people.canonical.com/~lengau/python-apt-ubuntu-wheels/python-apt/python_apt-3.0.0+ubuntu1-cp314-cp314t-manylinux_2_42_x86_64.whl" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2025-10-21-publish/python_apt-3.0.0%2Bubuntu1-cp311-cp311-manylinux_2_42_aarch64.whl", hash = "sha256:394b64f81943650fb507a9ca8d4274d0927a77ca6cbc303f4407343bd14ca881" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2025-10-21-publish/python_apt-3.0.0%2Bubuntu1-cp311-cp311-manylinux_2_42_x86_64.whl", hash = "sha256:40cc3fbed30fb42df8547820266c35c6defd63a2db2d2175117d711338041f15" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2025-10-21-publish/python_apt-3.0.0%2Bubuntu1-cp312-cp312-manylinux_2_42_aarch64.whl", hash = "sha256:f1adafd35dd165ea10bcdde98436bdfa02ef8578ca8de8ff5d73725026ce736d" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2025-10-21-publish/python_apt-3.0.0%2Bubuntu1-cp312-cp312-manylinux_2_42_x86_64.whl", hash = "sha256:e2ec4008ff86130b0550348ce12cc1c05b71d62691b93ba695c0bbc724e746fc" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2025-10-21-publish/python_apt-3.0.0%2Bubuntu1-cp313-cp313-manylinux_2_42_aarch64.whl", hash = "sha256:59d3e314348106e2ed379adde44d9f08b8868db5b2ef6f094ab93a307d8605fd" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2025-10-21-publish/python_apt-3.0.0%2Bubuntu1-cp313-cp313-manylinux_2_42_x86_64.whl", hash = "sha256:9039197e3a723584b306a299fc21fdef30730afaf5838b21071e9d8634f2cf66" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2025-10-21-publish/python_apt-3.0.0%2Bubuntu1-cp314-cp314-manylinux_2_42_aarch64.whl", hash = "sha256:2e57f9b7e3df8ee213e6ecfb2e10e424e4e6fef9bf5bb5348cc4d97a2062d36a" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2025-10-21-publish/python_apt-3.0.0%2Bubuntu1-cp314-cp314-manylinux_2_42_x86_64.whl", hash = "sha256:dc7c40b74c91b6cb4816069b9f7774f0c957ff1e657f8cb740b48fe1ec5eee63" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2025-10-21-publish/python_apt-3.0.0%2Bubuntu1-cp314-cp314t-manylinux_2_42_aarch64.whl", hash = "sha256:bfab1022b59b920bf90db5ef1e413105b869d02bf2e7bd1bf924ab8ab7ee2b9a" },
+    { url = "https://github.com/lengau/python-apt-wheels/releases/download/2025-10-21-publish/python_apt-3.0.0%2Bubuntu1-cp314-cp314t-manylinux_2_42_x86_64.whl", hash = "sha256:bc44a81a7a85a3a79014de9001ebe71f67a5fbf1d8c98210dfabdd8543db2274" },
 ]
 
 [[package]]
@@ -2508,6 +2511,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/3c/03/15c1d632e6671ae07a8689ce84c6c72d7849cca13ec32bc68c2e3d6f6f08/sphinx_jsonschema-1.19.2.tar.gz", hash = "sha256:1a48954217c2b3c6759c89b9ddd2c8e5b668b8730564e0283b009f23932be150", size = 30550, upload-time = "2025-12-01T08:54:33.726Z" }
 
 [[package]]
+name = "sphinx-last-updated-by-git"
+version = "0.3.8"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "sphinx" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/03/fd/de1685b6dab173dff31da24e0d3b29f02873fc24a1cdbb7678721ddc8581/sphinx_last_updated_by_git-0.3.8.tar.gz", hash = "sha256:c145011f4609d841805b69a9300099fc02fed8f5bb9e5bcef77d97aea97b7761", size = 10785, upload-time = "2024-08-11T07:15:54.601Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e1/fb/e496f16fa11fbe2dbdd0b5e306ede153dfed050aae4766fc89d500720dc7/sphinx_last_updated_by_git-0.3.8-py3-none-any.whl", hash = "sha256:6382c8285ac1f222483a58569b78c0371af5e55f7fbf9c01e5e8a72d6fdfa499", size = 8580, upload-time = "2024-08-11T07:15:53.244Z" },
+]
+
+[[package]]
 name = "sphinx-lint"
 version = "1.0.2"
 source = { registry = "https://pypi.org/simple" }
@@ -2614,14 +2629,14 @@ wheels = [
 
 [[package]]
 name = "sphinx-sitemap"
-version = "2.6.0"
+version = "2.9.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "sphinx" },
+    { name = "sphinx-last-updated-by-git" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/42/ed/96cc112b671e06df01c8306c25ce3331ccfece0d30235e32eb039afc8094/sphinx_sitemap-2.6.0.tar.gz", hash = "sha256:5e0c66b9f2e371ede80c659866a9eaad337d46ab02802f9c7e5f7bc5893c28d2", size = 6042, upload-time = "2024-04-29T00:18:13.399Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/61/17/56fe0f65e3567f829b2b4153a622be1d4b222b781e0d90d7db5a7738f30f/sphinx_sitemap-2.9.0.tar.gz", hash = "sha256:70f97bcdf444e3d68e118355cf82a1f54c4d3c03d651cd17fe87398b26e25e21", size = 6978, upload-time = "2025-10-06T00:24:00.036Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/94/d4/dffb4da380be24fd390d284634735d6fba560980014050e52569c04d215b/sphinx_sitemap-2.6.0-py3-none-any.whl", hash = "sha256:7478e417d141f99c9af27ccd635f44c03a471a08b20e778a0f9daef7ace1d30b", size = 5632, upload-time = "2024-04-29T00:18:12.147Z" },
+    { url = "https://files.pythonhosted.org/packages/e4/94/3c57e8b1985e755c48972e2ecd59526d4bf0b52a1fe805bc52a8e98cb92d/sphinx_sitemap-2.9.0-py3-none-any.whl", hash = "sha256:f1f1d3a9ad012ba17a7ef0b560d303bff2d0db26647567d6e810bcc754466664", size = 6218, upload-time = "2025-10-06T00:23:58.778Z" },
 ]
 
 [[package]]

@@ -3,24 +3,28 @@ on:
   push:
     tags:
       # These tags should be protected, remember to enable the rule:
-      # https://github.com/canonical/starbase/settings/tag_protection
+      # https://github.com/canonical/imagecraft/settings/tag_protection
       - "[0-9]+.[0-9]+.[0-9]+"
+  pull_request:
+    paths:
+      - .github/workflows/release-publish.yaml
 
 jobs:
   source-wheel:
-    runs-on: [self-hosted]
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: [self-hosted, medium, linux]
     permissions:
       contents: read
     steps:
       - name: Install uv
         run: |
           sudo snap install --classic astral-uv
-          sudo apt --yes install python3-venv
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Fetch tag annotations
+        if: ${{ github.event_name != 'pull_request' }}
         run: |
           # Note: we fetch the tags here instead of using actions/checkout's "fetch-tags"
           # because of https://github.com/actions/checkout/issues/1467
@@ -28,10 +32,8 @@ jobs:
           git describe --dirty --long --match '[0-9]*.[0-9]*.[0-9]*' --exclude '*[^0-9.]*'
       - name: Build packages
         run: |
-          uv venv --no-managed-python
-          uv pip install build twine
-          uv run -m build
-          uv run twine check dist/*
+          uv build
+          uvx twine check dist/*
       - name: Upload pypi packages artifact
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -39,7 +41,7 @@ jobs:
           path: dist/
   github-release:
     needs: ["source-wheel"]
-    runs-on: [self-hosted]
+    runs-on: [self-hosted, medium, linux]
     permissions:
       contents: write
     steps:
@@ -48,6 +50,8 @@ jobs:
         with:
           name: pypi-packages
       - name: Release
+        # Only actually publish the Github release when we're on a tag.
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
         env:
           GH_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

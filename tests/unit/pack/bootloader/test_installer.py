@@ -295,6 +295,7 @@ class TestGracefulSkip:
         assert boot_method == BootMethod.NONE
 
     def test_install_image_boot_code_skips_when_tools_missing(self, tmp_path, mocker):
+        """Primary BIOS installs keep the tolerant warn-and-skip behavior."""
         volume = _mbr_volume([{**ROOT_ITEM, "type": "83"}])
         installer = BootloaderInstaller(volume=volume, arch=_AMD64)
         mocker.patch.object(installer_mod, "generate_grub_cfg")
@@ -312,6 +313,127 @@ class TestGracefulSkip:
         mock_install = mocker.patch.object(installer_mod, "PCBiosInstaller")
         installer.install_image_boot_code(image_path=tmp_path / "disk.img")
         mock_install.assert_not_called()
+
+
+class TestBiosFallbackWithEfi:
+    """x86 EFI images must also get the BIOS (i386-pc) fallback boot code."""
+
+    def test_efi_stages_bios_modules_and_installs_boot_code(self, tmp_path, mocker):
+        volume = _gpt_volume([ESP_ITEM, BIOS_BOOT_ITEM, ROOT_ITEM])
+        installer = BootloaderInstaller(volume=volume, arch=_AMD64)
+        mocker.patch.object(installer_mod, "generate_grub_cfg")
+        mocker.patch.object(installer_mod, "EfiInstaller")
+        mock_stage = mocker.patch.object(installer_mod, "stage_grub_modules")
+        mock_bios = mocker.patch.object(installer_mod, "PCBiosInstaller")
+
+        boot_method = _prepare(installer, tmp_path)
+
+        assert boot_method == BootMethod.EFI
+        stage_formats = [call.args[2] for call in mock_stage.call_args_list]
+        assert "i386-pc" in stage_formats
+        installer.install_image_boot_code(image_path=tmp_path / "disk.img")
+        mock_bios.assert_called_once()
+
+    def test_no_fallback_for_gpt_without_bios_boot_partition(self, tmp_path, mocker):
+        """A GPT volume without a BIOS Boot partition has no embedding area."""
+        volume = _gpt_volume([ESP_ITEM, ROOT_ITEM])
+        installer = BootloaderInstaller(volume=volume, arch=_AMD64)
+        mocker.patch.object(installer_mod, "generate_grub_cfg")
+        mocker.patch.object(installer_mod, "EfiInstaller")
+        mock_stage = mocker.patch.object(installer_mod, "stage_grub_modules")
+        mock_bios = mocker.patch.object(installer_mod, "PCBiosInstaller")
+
+        boot_method = _prepare(installer, tmp_path)
+
+        assert boot_method == BootMethod.EFI
+        stage_formats = [call.args[2] for call in mock_stage.call_args_list]
+        assert "i386-pc" not in stage_formats
+        installer.install_image_boot_code(image_path=tmp_path / "disk.img")
+        mock_bios.assert_not_called()
+
+    def test_no_bios_fallback_for_non_x86(self, tmp_path, mocker):
+        volume = _gpt_volume([ESP_ITEM, BIOS_BOOT_ITEM, ROOT_ITEM])
+        installer = BootloaderInstaller(volume=volume, arch=DebianArchitecture.ARM64)
+        mocker.patch.object(installer_mod, "generate_grub_cfg")
+        mocker.patch.object(installer_mod, "EfiInstaller")
+        mock_stage = mocker.patch.object(installer_mod, "stage_grub_modules")
+
+        boot_method = _prepare(installer, tmp_path)
+
+        assert boot_method == BootMethod.EFI
+        stage_formats = [call.args[2] for call in mock_stage.call_args_list]
+        assert "i386-pc" not in stage_formats
+        assert installer._fallback_bios_method is BootMethod.NONE
+
+    def test_no_bios_fallback_when_mbr_role_declared(self, tmp_path, mocker):
+        """A role: mbr structure item opts out of the BIOS fallback install."""
+        volume = _gpt_volume([ESP_ITEM, BIOS_BOOT_ITEM, ROOT_ITEM])
+        mbr_item = mocker.Mock(role="mbr", name="mbr")
+        installer = BootloaderInstaller(volume=volume, arch=_AMD64)
+        installer.volume = mocker.Mock(
+            structure=[*volume.structure, mbr_item],
+            volume_schema=volume.volume_schema,
+            root_partition=volume.root_partition,
+            esp_partition=volume.esp_partition,
+            boot_partition=volume.boot_partition,
+            has_bios_boot_partition=volume.has_bios_boot_partition,
+        )
+        mocker.patch.object(installer_mod, "generate_grub_cfg")
+        mocker.patch.object(installer_mod, "EfiInstaller")
+        mock_stage = mocker.patch.object(installer_mod, "stage_grub_modules")
+
+        boot_method = _prepare(installer, tmp_path)
+
+        assert boot_method == BootMethod.EFI
+        stage_formats = [call.args[2] for call in mock_stage.call_args_list]
+        assert "i386-pc" not in stage_formats
+
+    def test_fallback_staging_tools_missing_fails(self, tmp_path, mocker):
+        """Unlike primary BIOS staging, fallback staging failures are fatal."""
+        volume = _gpt_volume([ESP_ITEM, BIOS_BOOT_ITEM, ROOT_ITEM])
+        installer = BootloaderInstaller(volume=volume, arch=_AMD64)
+        mocker.patch.object(installer_mod, "generate_grub_cfg")
+        mocker.patch.object(installer_mod, "EfiInstaller")
+        mocker.patch.object(
+            installer_mod,
+            "stage_grub_modules",
+            side_effect=errors.BootloaderToolsMissingError("no grub-pc-bin"),
+        )
+        mock_bios = mocker.patch.object(installer_mod, "PCBiosInstaller")
+
+        with pytest.raises(errors.BootloaderToolsMissingError):
+            _prepare(installer, tmp_path)
+
+        installer.install_image_boot_code(image_path=tmp_path / "disk.img")
+        mock_bios.assert_not_called()
+
+    def test_fallback_setup_failure_hard_fails_for_efi(self, tmp_path, mocker):
+        """With the embedding-area precondition met, failures are real bugs."""
+        volume = _gpt_volume([ESP_ITEM, BIOS_BOOT_ITEM, ROOT_ITEM])
+        installer = BootloaderInstaller(volume=volume, arch=_AMD64)
+        mocker.patch.object(installer_mod, "generate_grub_cfg")
+        mocker.patch.object(installer_mod, "EfiInstaller")
+        mocker.patch.object(installer_mod, "stage_grub_modules")
+        mock_bios = mocker.patch.object(installer_mod, "PCBiosInstaller")
+        mock_bios.return_value.install.side_effect = errors.BootloaderError(
+            "grub-bios-setup failed"
+        )
+
+        _prepare(installer, tmp_path)
+        with pytest.raises(errors.BootloaderError):
+            installer.install_image_boot_code(image_path=tmp_path / "disk.img")
+
+    def test_fallback_setup_failure_hard_fails_for_primary_bios(self, tmp_path, mocker):
+        volume = _mbr_volume([{**ROOT_ITEM, "type": "83"}])
+        installer = BootloaderInstaller(volume=volume, arch=_AMD64)
+        mocker.patch.object(installer_mod, "generate_grub_cfg")
+        mocker.patch.object(installer_mod, "stage_grub_modules")
+        mock_bios = mocker.patch.object(installer_mod, "PCBiosInstaller")
+        mock_bios.return_value.install.side_effect = errors.BootloaderError("boom")
+
+        _prepare(installer, tmp_path)
+        with pytest.raises(errors.BootloaderError):
+            installer.install_image_boot_code(image_path=tmp_path / "disk.img")
 
 
 class TestBootFstab:

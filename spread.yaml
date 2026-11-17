@@ -141,8 +141,11 @@ backends:
       multipass exec "$instance_name" -- \
         sudo systemctl restart ssh
 
-      # Get the IP from the instance
-      ip=$(multipass info --format csv "$instance_name" | tail -1 | cut -d\, -f3)
+      # Get the IP from the instance. The CSV header varies between
+      # Multipass versions (recent ones add a Zone column), so locate the
+      # Ipv4 column dynamically instead of using a fixed field number.
+      csv=$(multipass info --format csv "$instance_name" | tail -1)
+      ip=$(echo "$csv" | awk -F',' '{for (i = 1; i <= NF; i++) if ($i ~ /^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)/) {print $i; exit}}')
       ADDRESS "$ip"
     discard: |
       instance_name=$(multipass list --format csv | grep $SPREAD_SYSTEM_ADDRESS | cut -f1 -d\,)

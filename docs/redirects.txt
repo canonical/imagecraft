@@ -5,4 +5,5 @@
 # must be a file that _does exist_ in the source.
 
 "reference/imagecraft-yaml-file.rst" "reference/imagecraft-yaml.rst"
-"how-to-guides/basic_image.rst" "tutorials/build-an-ubuntu-image.rst"
+"how-to-guides/basic_image.rst" "tutorials/craft-an-ubuntu-image.rst"
+"tutorials/build-an-ubuntu-image.rst" "tutorials/craft-an-ubuntu-image.rst"

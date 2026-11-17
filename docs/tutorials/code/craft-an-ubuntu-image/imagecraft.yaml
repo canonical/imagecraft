@@ -1,11 +1,11 @@
 name: ubuntu-minimal
 base: bare
-build-base: ubuntu@24.04
+build-base: ubuntu@26.04
 version: "0.1"
 summary: A lightweight, unofficial Ubuntu image for AMD64 machines.
 description: |
   The ubuntu-minimal image is a lightweight, unofficial Ubuntu image for AMD64
-  machines. Its root file system and packages are based off of Ubuntu 24.04 LTS,
+  machines. Its root file system and packages are based off of Ubuntu 26.04 LTS,
   and it's booted with GRUB.
 
 platforms:
@@ -38,14 +38,14 @@ filesystems:
 parts:
   rootfs:
     plugin: mmdebstrap
-    mmdebstrap-suite: noble
+    mmdebstrap-suite: resolute
     override-build: |
       craftctl default
       mkdir $CRAFT_PART_INSTALL/boot/efi/
       cat << EOF > $CRAFT_PART_INSTALL/etc/apt/sources.list.d/ubuntu.sources
       Types: deb deb-src
       URIs: http://archive.ubuntu.com/ubuntu
-      Suites: noble noble-updates noble-backports noble-security
+      Suites: resolute resolute-updates resolute-backports resolute-security
       Components: main restricted universe multiverse
       Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
       EOF
@@ -56,6 +56,7 @@ parts:
     plugin: nil
     overlay-packages:
       - ubuntu-server-minimal
+      - login
       - linux-image-generic
       - grub2-common
       - grub-pc
