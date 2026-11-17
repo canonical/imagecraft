@@ -6,7 +6,7 @@ authors = [{ name = "Canonical Ltd.", email = "snapcraft@lists.snapcraft.io" }]
 dependencies = [
   # To use a dev version of a craft library:
   # craft-lib @ git+https://github.com/canonical/craft-lib@ref
-  "craft-application~=7.5.0",
+  "craft-application @ git+https://github.com/LoweRAM/craft-application.git@work/IMAGECRAFT-222/extensions-base",
   "craft-cli~=3.4.1",
   "craft-grammar~=2.3.0",
   "craft-parts~=2.37.2",

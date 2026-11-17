@@ -180,6 +180,13 @@ class Project(BaseProject):
     entry of ``default`` must map a partition to the ``/`` mount point.
     """
 
+    extensions: list[str] | None = Field(
+        default=None,
+        description="The list of extensions to apply to this project.",
+        examples=[["sample"]],
+    )
+    """The list of extensions to apply to this project."""
+
     model_config = ConfigDict(
         validate_assignment=True,
         extra="forbid",
