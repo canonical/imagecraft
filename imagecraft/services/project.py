@@ -45,6 +45,7 @@ class ImagecraftProjectService(ProjectService):
                 extensions=declared,
                 app_name=self._app.name,
                 build_for=build_for,
+                services=self._services,
             )
         transform_yaml(
             build_on=build_on,

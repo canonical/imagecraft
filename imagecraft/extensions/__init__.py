@@ -27,8 +27,11 @@ from craft_application.extensions import (
     unregister,
 )
 
+from .gadget_volumes import GadgetVolumesExtension
+
 __all__ = [
     "Extension",
+    "GadgetVolumesExtension",
     "apply_extensions",
     "get_extension_class",
     "get_extension_names",

@@ -549,8 +549,8 @@ toml = [
 
 [[package]]
 name = "craft-application"
-version = "7.5.0.post226+g1e24fcb"
-source = { git = "https://github.com/LoweRAM/craft-application.git?rev=work%2FIMAGECRAFT-222%2Fextensions-base#1e24fcbe7477268678139bb85435b1a25ac49d7a" }
+version = "7.5.0.post227+gaec7320"
+source = { git = "https://github.com/LoweRAM/craft-application.git?rev=work%2FIMAGECRAFT-222%2Fextensions-base#aec732045e61555a9bc6bf43f824be277fc65b03" }
 dependencies = [
     { name = "annotated-types" },
     { name = "craft-archives" },

@@ -52,6 +52,13 @@ def register_services() -> None:
 
 def register_extensions() -> None:
     """Register Imagecraft extensions."""
+    from craft_application.extensions import register  # noqa: PLC0415
+
+    register(
+        "gadget-volumes",
+        "GadgetVolumesExtension",
+        module="imagecraft.extensions.gadget_volumes",
+    )
 
 
 def _create_app() -> Imagecraft:
