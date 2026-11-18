@@ -91,6 +91,14 @@ def reset_features():
     Features.reset()
 
 
+@pytest.fixture(autouse=True)
+def reset_extensions():
+    from craft_application.extensions import reset  # noqa: PLC0415
+
+    yield
+    reset()
+
+
 @pytest.fixture
 def enable_features(reset_features):
     """Enable both features."""

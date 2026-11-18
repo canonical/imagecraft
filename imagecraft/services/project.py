@@ -19,6 +19,7 @@ from typing import Any, cast
 import craft_cli
 import craft_platforms
 from craft_application import ProjectService
+from craft_application.extensions import apply_extensions
 from typing_extensions import override
 
 from imagecraft import grammar
@@ -29,14 +30,22 @@ class ImagecraftProjectService(ProjectService):
     """Imagecraft-specific project service."""
 
     @override
-    @staticmethod
     def _app_preprocess_project(
+        self,
         project: dict[str, Any],
         *,
         build_on: str,
         build_for: str,
         platform: str,
     ) -> None:
+        if declared := project.get("extensions"):
+            apply_extensions(
+                project_root=self._project_dir,
+                yaml_data=project,
+                extensions=declared,
+                app_name=self._app.name,
+                build_for=build_for,
+            )
         transform_yaml(
             build_on=build_on,
             build_for=build_for,

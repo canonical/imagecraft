@@ -50,19 +50,32 @@ def register_services() -> None:
     )
 
 
+def register_extensions() -> None:
+    """Register Imagecraft extensions."""
+
+
 def _create_app() -> Imagecraft:
     # pylint: disable=import-outside-toplevel
     # Import these here so that the script that generates the docs for the
     # commands doesn't need to know *too much* of the application.
+    from craft_application.commands import (  # noqa: PLC0415
+        get_extensions_command_group,
+    )
+
     from .application import APP_METADATA, Imagecraft  # noqa: PLC0415
 
     register_services()
+    register_extensions()
 
     services = ServiceFactory(
         app=APP_METADATA,
     )  # type: ignore[assignment]
 
-    return Imagecraft(app=APP_METADATA, services=services, extra_loggers={"imagecraft"})
+    app = Imagecraft(app=APP_METADATA, services=services, extra_loggers={"imagecraft"})
+    ext_group = get_extensions_command_group()
+    app.add_command_group(ext_group.name, ext_group.commands)
+
+    return app
 
 
 def get_app_info() -> tuple[Dispatcher, dict[str, Any]]:
