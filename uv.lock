@@ -19,6 +19,7 @@ conflicts = [[
 [manifest]
 constraints = [
     { name = "build", specifier = ">=0.7.0" },
+    { name = "certifi", specifier = ">=2026.10.18" },
     { name = "cffi", specifier = ">=1.15" },
     { name = "httplib2", specifier = ">=0.20.0" },
     { name = "iniconfig", specifier = ">=1.1.0" },
@@ -26,7 +27,7 @@ constraints = [
     { name = "lxml", specifier = ">=5.0" },
     { name = "markdown", specifier = ">=3.0" },
     { name = "markupsafe", specifier = ">=2.0" },
-    { name = "oauthlib", specifier = ">=3.0.0" },
+    { name = "oauthlib", specifier = ">=4.0.1" },
     { name = "protobuf", specifier = ">=5.0" },
     { name = "pynacl", specifier = ">=1.5" },
     { name = "pyparsing", specifier = ">=3.0.0" },
@@ -34,7 +35,7 @@ constraints = [
     { name = "pytz", specifier = ">=2020" },
     { name = "pyyaml", specifier = ">=5.0" },
     { name = "regex", specifier = ">=2021.11.10" },
-    { name = "setuptools", specifier = ">=50" },
+    { name = "setuptools", specifier = ">=84.1.0" },
     { name = "sphinx-basic-ng", specifier = ">=1.0.0b1" },
     { name = "starlette", specifier = ">=1.3.1" },
     { name = "tornado", specifier = ">=4.0" },
