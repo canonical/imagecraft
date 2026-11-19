@@ -19,9 +19,9 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
-import tempfile
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -29,7 +29,7 @@ from typing import TYPE_CHECKING, Any
 
 from craft_application import errors
 from craft_application.extensions import Extension
-from craft_application.util import safe_yaml_load
+from craft_application.util import dump_yaml, safe_yaml_load
 from craft_cli import emit
 from typing_extensions import override
 
@@ -275,16 +275,27 @@ def _extract_gadget_from_snap(snap_path: Path) -> dict[str, Any] | None:
     return None
 
 
+def get_gadget_cache_dir() -> Path:
+    """Return the XDG cache directory for gadget YAML files."""
+    xdg_cache = os.getenv("XDG_CACHE_HOME")
+    base = Path(xdg_cache) if xdg_cache else Path.home() / ".cache"
+    return base / "imagecraft" / "gadgets"
+
+
 def _fetch_gadget_from_store(
     *,
     snap_name: str,
     channel: str,
     arch: str,
 ) -> dict[str, Any]:
-    """Fetch snap details from the Snap Store API and extract gadget.yaml."""
+    """Fetch snap details from the Snap Store API and extract gadget.yaml.
+
+    Checks the snap revision from the store and caches the extracted gadget.yaml
+    by snap name, architecture, and revision to avoid redundant downloads.
+    """
     api_url = (
         f"https://api.snapcraft.io/api/v1/snaps/details/{snap_name}"
-        f"?channel={channel}&fields=anon_download_url"
+        f"?channel={channel}&fields=anon_download_url,revision"
     )
     headers = {
         "X-Ubuntu-Series": "16",
@@ -302,28 +313,51 @@ def _fetch_gadget_from_store(
         ) from err
 
     download_url = payload.get("anon_download_url")
+    revision = payload.get("revision")
     if not download_url:
         raise errors.ExtensionError(
             f"Snap Store did not provide a download URL for {snap_name!r} ({channel}, {arch}).",
             resolution="Ensure the gadget snap is published for this architecture and channel.",
         )
 
-    with tempfile.NamedTemporaryFile(suffix=".snap", delete=True) as temp_snap:
+    cache_dir = get_gadget_cache_dir()
+    cache_file = (
+        cache_dir / f"{snap_name}_{arch}_r{revision}.yaml"
+        if revision is not None
+        else None
+    )
+
+    if cache_file is not None and cache_file.is_file():
+        emit.debug(
+            f"gadget-volumes: using cached gadget.yaml for {snap_name} r{revision}"
+        )
+        cached = safe_yaml_load(cache_file.read_text(encoding="utf-8"))
+        if isinstance(cached, dict) and "volumes" in cached:
+            return cached
+
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    snap_file = cache_dir / f"{snap_name}_{arch}_r{revision or 'latest'}.snap"
+    try:
         snap_req = urllib.request.Request(download_url)  # noqa: S310
         try:
-            with urllib.request.urlopen(snap_req) as resp:  # noqa: S310
-                shutil.copyfileobj(resp, temp_snap)
-            temp_snap.flush()
+            with urllib.request.urlopen(snap_req) as resp, snap_file.open("wb") as out:  # noqa: S310
+                shutil.copyfileobj(resp, out)
         except urllib.error.URLError as err:
             raise errors.ExtensionError(
                 f"Failed to download gadget snap from {download_url}: {err}",
                 resolution="Check internet connectivity.",
             ) from err
 
-        content = _extract_gadget_from_snap(Path(temp_snap.name))
+        content = _extract_gadget_from_snap(snap_file)
         if content is None:
             raise errors.ExtensionError(
                 f"Downloaded gadget snap {snap_name!r} does not contain meta/gadget.yaml.",
                 resolution="Verify that the snap is a valid gadget snap.",
             )
+
+        if cache_file is not None:
+            cache_file.write_text(dump_yaml(content), encoding="utf-8")
+
         return content
+    finally:
+        snap_file.unlink(missing_ok=True)

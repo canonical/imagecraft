@@ -184,19 +184,30 @@ def test_gadget_volumes_from_local_snap(tmp_path: Path):
 
 
 def test_gadget_volumes_from_uc_prepare_store(tmp_path: Path, monkeypatch):
+    cache_home = tmp_path / "cache"
+    monkeypatch.setenv("XDG_CACHE_HOME", str(cache_home))
     (tmp_path / "model.assert").write_text(SAMPLE_MODEL_ASSERT, encoding="utf-8")
 
-    mock_snap_path = tmp_path / "store_pc.snap"
+    snap_dir = tmp_path / "store_mock"
+    snap_dir.mkdir()
+    mock_snap_path = snap_dir / "store_pc.snap"
     _create_mock_snap(mock_snap_path, SAMPLE_GADGET_YAML)
     snap_bytes = mock_snap_path.read_bytes()
 
+    download_calls = 0
+
     def mock_urlopen(req, *args, **kwargs):
+        nonlocal download_calls
         del args, kwargs
         url = req.full_url if hasattr(req, "full_url") else str(req)
         if "api.snapcraft.io/api/v1/snaps/details" in url:
-            payload = {"anon_download_url": "https://api.snapcraft.io/download/pc.snap"}
+            payload = {
+                "anon_download_url": "https://api.snapcraft.io/download/pc.snap",
+                "revision": 196,
+            }
             return io.BytesIO(json.dumps(payload).encode("utf-8"))
         if "download/pc.snap" in url:
+            download_calls += 1
             return io.BytesIO(snap_bytes)
         raise urllib.error.URLError("Unexpected URL")
 
@@ -221,6 +232,71 @@ def test_gadget_volumes_from_uc_prepare_store(tmp_path: Path, monkeypatch):
 
     assert "volumes" in snippet
     assert "pc" in snippet["volumes"]
+    assert download_calls == 1
+    assert (cache_home / "imagecraft" / "gadgets" / "pc_amd64_r196.yaml").is_file()
+
+    # Second run with same revision uses cache without re-downloading
+    snippet_cached = ext.get_root_snippet()
+    assert snippet_cached == snippet
+    assert download_calls == 1
+
+
+def test_gadget_volumes_cache_invalidation_on_revision_bump(
+    tmp_path: Path, monkeypatch
+):
+    cache_home = tmp_path / "cache"
+    monkeypatch.setenv("XDG_CACHE_HOME", str(cache_home))
+    (tmp_path / "model.assert").write_text(SAMPLE_MODEL_ASSERT, encoding="utf-8")
+
+    snap_dir = tmp_path / "store_mock"
+    snap_dir.mkdir()
+    mock_snap_path = snap_dir / "store_pc.snap"
+    _create_mock_snap(mock_snap_path, SAMPLE_GADGET_YAML)
+    snap_bytes = mock_snap_path.read_bytes()
+
+    current_rev = 196
+    download_calls = 0
+
+    def mock_urlopen(req, *args, **kwargs):
+        nonlocal download_calls
+        del args, kwargs
+        url = req.full_url if hasattr(req, "full_url") else str(req)
+        if "api.snapcraft.io/api/v1/snaps/details" in url:
+            payload = {
+                "anon_download_url": "https://api.snapcraft.io/download/pc.snap",
+                "revision": current_rev,
+            }
+            return io.BytesIO(json.dumps(payload).encode("utf-8"))
+        if "download/pc.snap" in url:
+            download_calls += 1
+            return io.BytesIO(snap_bytes)
+        raise urllib.error.URLError("Unexpected URL")
+
+    monkeypatch.setattr("urllib.request.urlopen", mock_urlopen)
+
+    yaml_data = {
+        "parts": {
+            "seed": {
+                "plugin": "uc-prepare",
+                "uc-prepare-model-assert": "model.assert",
+            }
+        }
+    }
+
+    ext = GadgetVolumesExtension(
+        project_root=tmp_path,
+        yaml_data=yaml_data,
+        app_name="imagecraft",
+        build_for="amd64",
+    )
+    ext.get_root_snippet()
+    assert download_calls == 1
+
+    # Bump revision -> should re-download
+    current_rev = 197
+    ext.get_root_snippet()
+    assert download_calls == 2
+    assert (cache_home / "imagecraft" / "gadgets" / "pc_amd64_r197.yaml").is_file()
 
 
 def test_gadget_volumes_not_found_raises(tmp_path: Path):

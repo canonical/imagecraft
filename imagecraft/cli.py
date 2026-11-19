@@ -48,6 +48,9 @@ def register_services() -> None:
     ServiceFactory.register(
         "project", "ImagecraftProjectService", module="imagecraft.services.project"
     )
+    ServiceFactory.register(
+        "provider", "ImagecraftProviderService", module="imagecraft.services.provider"
+    )
 
 
 def register_extensions() -> None:
