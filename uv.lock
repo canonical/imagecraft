@@ -19,6 +19,7 @@ conflicts = [[
 [manifest]
 constraints = [
     { name = "build", specifier = ">=0.7.0" },
+    { name = "certifi", specifier = ">=2026.10.18" },
     { name = "cffi", specifier = ">=1.15" },
     { name = "httplib2", specifier = ">=0.20.0" },
     { name = "iniconfig", specifier = ">=1.1.0" },
@@ -26,7 +27,7 @@ constraints = [
     { name = "lxml", specifier = ">=5.0" },
     { name = "markdown", specifier = ">=3.0" },
     { name = "markupsafe", specifier = ">=2.0" },
-    { name = "oauthlib", specifier = ">=3.0.0" },
+    { name = "oauthlib", specifier = ">=4.0.1" },
     { name = "protobuf", specifier = ">=5.0" },
     { name = "pynacl", specifier = ">=1.5" },
     { name = "pyparsing", specifier = ">=3.0.0" },
@@ -34,7 +35,7 @@ constraints = [
     { name = "pytz", specifier = ">=2020" },
     { name = "pyyaml", specifier = ">=5.0" },
     { name = "regex", specifier = ">=2021.11.10" },
-    { name = "setuptools", specifier = ">=50" },
+    { name = "setuptools", specifier = ">=84.1.0" },
     { name = "sphinx-basic-ng", specifier = ">=1.0.0b1" },
     { name = "starlette", specifier = ">=1.3.1" },
     { name = "tornado", specifier = ">=4.0" },
@@ -158,11 +159,11 @@ wheels = [
 
 [[package]]
 name = "certifi"
-version = "2026.7.22"
+version = "2026.10.23"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/a3/c2/24167ea9858356b47a87a50d39908bfdb72ceeefe0041586e704e5376b3a/certifi-2026.7.22.tar.gz", hash = "sha256:741e2c3b351ddf169a738da9f2c048608ff7f2c5cc02f1ebc6b118bb090d5d55", size = 138112, upload-time = "2026-07-22T03:35:12.644Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/fd/11/b524cbd9bbdaca58608e4cf4053fd463417549e1959fa8d3aa18319f9555/certifi-2026.10.23.tar.gz", hash = "sha256:a9895e6e2758b371e0545e321a3a8fd1fcfd9829ada8824a936dfb16aaaf36cd", size = 136225, upload-time = "2026-10-23T11:36:16.478Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0b/a7/71ac2cff56fec219ed242bb11b8efb69fcc4bec75db06fb7bfe35de520e6/certifi-2026.7.22-py3-none-any.whl", hash = "sha256:62f22742b58a1a33014a2b6b706588a8d7e2a88ae7bd1a6ebe8c992928483775", size = 136983, upload-time = "2026-07-22T03:35:11.276Z" },
+    { url = "https://files.pythonhosted.org/packages/32/d1/a3652fe2c19134d0d15922177821d863cbd7e842d53a21bbe7e8e3a1b5ac/certifi-2026.10.23-py3-none-any.whl", hash = "sha256:e9b54de76e530bb6cf0ccd036787103acb58fd42ba930ea8bf948ddbaa2f61d1", size = 135082, upload-time = "2026-10-23T11:36:14.763Z" },
 ]
 
 [[package]]
@@ -858,9 +859,9 @@ dependencies = [
 
 [package.optional-dependencies]
 apt = [
-    { name = "python-apt", version = "2.7.7+ubuntu5.3", source = { registry = "https://lengau.github.io/python-apt-wheels/simple/" }, marker = "sys_platform == 'linux' and extra == 'group-10-imagecraft-dev-noble' or extra == 'group-10-imagecraft-dev-noble' and (extra == 'group-10-imagecraft-dev-plucky' or extra == 'group-10-imagecraft-dev-questing' or extra == 'group-10-imagecraft-dev-resolute' or extra == 'group-10-imagecraft-dev-stonking') or extra == 'group-10-imagecraft-dev-plucky' and (extra == 'group-10-imagecraft-dev-questing' or extra == 'group-10-imagecraft-dev-resolute' or extra == 'group-10-imagecraft-dev-stonking') or extra == 'group-10-imagecraft-dev-questing' and (extra == 'group-10-imagecraft-dev-resolute' or extra == 'group-10-imagecraft-dev-stonking') or extra == 'group-10-imagecraft-dev-resolute' and extra == 'group-10-imagecraft-dev-stonking'" },
-    { name = "python-apt", version = "2.9.0+ubuntu1", source = { registry = "https://lengau.github.io/python-apt-wheels/simple/" }, marker = "sys_platform == 'linux' and extra == 'group-10-imagecraft-dev-plucky' or extra == 'group-10-imagecraft-dev-noble' and (extra == 'group-10-imagecraft-dev-plucky' or extra == 'group-10-imagecraft-dev-questing' or extra == 'group-10-imagecraft-dev-resolute' or extra == 'group-10-imagecraft-dev-stonking') or extra == 'group-10-imagecraft-dev-plucky' and (extra == 'group-10-imagecraft-dev-questing' or extra == 'group-10-imagecraft-dev-resolute' or extra == 'group-10-imagecraft-dev-stonking') or extra == 'group-10-imagecraft-dev-questing' and (extra == 'group-10-imagecraft-dev-resolute' or extra == 'group-10-imagecraft-dev-stonking') or extra == 'group-10-imagecraft-dev-resolute' and extra == 'group-10-imagecraft-dev-stonking'" },
-    { name = "python-apt", version = "3.0.0+ubuntu1", source = { registry = "https://lengau.github.io/python-apt-wheels/simple/" }, marker = "sys_platform == 'linux' and extra != 'group-10-imagecraft-dev-noble' and extra != 'group-10-imagecraft-dev-plucky' or extra == 'group-10-imagecraft-dev-noble' and (extra == 'group-10-imagecraft-dev-plucky' or extra == 'group-10-imagecraft-dev-questing' or extra == 'group-10-imagecraft-dev-resolute' or extra == 'group-10-imagecraft-dev-stonking') or extra == 'group-10-imagecraft-dev-plucky' and (extra == 'group-10-imagecraft-dev-questing' or extra == 'group-10-imagecraft-dev-resolute' or extra == 'group-10-imagecraft-dev-stonking') or extra == 'group-10-imagecraft-dev-questing' and (extra == 'group-10-imagecraft-dev-resolute' or extra == 'group-10-imagecraft-dev-stonking') or extra == 'group-10-imagecraft-dev-resolute' and extra == 'group-10-imagecraft-dev-stonking'" },
+    { name = "python-apt", version = "2.7.7+ubuntu5.3", source = { registry = "https://lengau.github.io/python-apt-wheels/simple/" }, marker = "(sys_platform == 'linux' and extra == 'group-10-imagecraft-dev-noble') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-resolute' and extra == 'group-10-imagecraft-dev-stonking')" },
+    { name = "python-apt", version = "2.9.0+ubuntu1", source = { registry = "https://lengau.github.io/python-apt-wheels/simple/" }, marker = "(sys_platform == 'linux' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-resolute' and extra == 'group-10-imagecraft-dev-stonking')" },
+    { name = "python-apt", version = "3.0.0+ubuntu1", source = { registry = "https://lengau.github.io/python-apt-wheels/simple/" }, marker = "(sys_platform == 'linux' and extra != 'group-10-imagecraft-dev-noble' and extra != 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-plucky') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-noble' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-questing') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-plucky' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-resolute') or (extra == 'group-10-imagecraft-dev-questing' and extra == 'group-10-imagecraft-dev-stonking') or (extra == 'group-10-imagecraft-dev-resolute' and extra == 'group-10-imagecraft-dev-stonking')" },
 ]
 
 [package.dev-dependencies]
@@ -896,7 +897,6 @@ docs = [
     { name = "packaging" },
     { name = "pydantic-kitbash" },
     { name = "rst2html" },
-    { name = "setuptools" },
     { name = "sphinx-autobuild" },
     { name = "sphinx-design" },
     { name = "sphinx-lint" },
@@ -908,7 +908,6 @@ docs = [
     { name = "sphinx-roles" },
     { name = "sphinx-sitemap" },
     { name = "sphinx-terminal" },
-    { name = "sphinxcontrib-details-directive" },
     { name = "sphinxcontrib-jquery" },
     { name = "sphinxext-opengraph" },
     { name = "sphinxext-rediraffe" },
@@ -980,7 +979,6 @@ docs = [
     { name = "packaging", specifier = "~=26.1" },
     { name = "pydantic-kitbash", specifier = ">=1.0.1,<2.0" },
     { name = "rst2html", specifier = ">=2020.7.4" },
-    { name = "setuptools", specifier = "<82.0" },
     { name = "sphinx-autobuild", specifier = ">=2024.10.3" },
     { name = "sphinx-design", specifier = "==0.6.1" },
     { name = "sphinx-lint", specifier = "~=1.0" },
@@ -992,7 +990,6 @@ docs = [
     { name = "sphinx-roles", specifier = "~=0.1" },
     { name = "sphinx-sitemap", specifier = "~=2.9" },
     { name = "sphinx-terminal", specifier = "~=1.0" },
-    { name = "sphinxcontrib-details-directive" },
     { name = "sphinxcontrib-jquery", specifier = "~=4.1" },
     { name = "sphinxext-opengraph", specifier = "~=0.13" },
     { name = "sphinxext-rediraffe", specifier = "==0.3.0" },
@@ -1499,11 +1496,11 @@ wheels = [
 
 [[package]]
 name = "oauthlib"
-version = "4.0.0"
+version = "4.0.1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/7a/d8/a1bcc8ba112a627f8ffbdc212a78ce18d3ac07e91a5ca65d27918eee25a1/oauthlib-4.0.0.tar.gz", hash = "sha256:efb274799819440f95b4ab3b818869f1ce9ae26c5beacba0201d1a1b76b54f86", size = 187232, upload-time = "2026-09-28T06:01:18.77Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/33/17/2bb072de0b990303c985f26869fd47bb179024a051f47e7f9d208eb92f8e/oauthlib-4.0.1.tar.gz", hash = "sha256:3d73febdb6faa00f277c81fb04be7b7586fb96fc3b7f0b9c772dada69a25ede7", size = 191219, upload-time = "2026-10-31T09:52:58.008Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d9/f4/78229a1066068ca14fc60fb26cf7381cabe4382261392b90e5f9552722d4/oauthlib-4.0.0-py3-none-any.whl", hash = "sha256:624c28c13a0a59cabf9747dfa52af63be3e512a7f2714df16e91b5b3a145e6cd", size = 159715, upload-time = "2026-09-28T06:01:17.008Z" },
+    { url = "https://files.pythonhosted.org/packages/df/ef/3b8adde1b32a6f540758bff734d3442c621734c83708e5f02b0ba2f43b84/oauthlib-4.0.1-py3-none-any.whl", hash = "sha256:498a298876e996301950a5b053d12c31628bb7b895db03666430c69ce182eb61", size = 161934, upload-time = "2026-10-31T09:52:56.206Z" },
 ]
 
 [[package]]
@@ -2345,11 +2342,11 @@ wheels = [
 
 [[package]]
 name = "setuptools"
-version = "81.0.0"
+version = "84.2.1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/0d/1c/73e719955c59b8e424d015ab450f51c0af856ae46ea2da83eba51cc88de1/setuptools-81.0.0.tar.gz", hash = "sha256:487b53915f52501f0a79ccfd0c02c165ffe06631443a886740b91af4b7a5845a", size = 1198299, upload-time = "2026-02-06T21:10:39.601Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/70/b3/c19426f783614d625699a4b247faf628ea9ab1db228674491767b417f9e1/setuptools-84.2.1.tar.gz", hash = "sha256:3ff8b3b5492a0aa66960f4419365a86b84e013070d4313e4d4a6894f5d64d6bc", size = 1230289, upload-time = "2026-10-20T19:01:37.742Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e1/e3/c164c88b2e5ce7b24d667b9bd83589cf4f3520d97cad01534cd3c4f55fdb/setuptools-81.0.0-py3-none-any.whl", hash = "sha256:fdd925d5c5d9f62e4b74b30d6dd7828ce236fd6ed998a08d81de62ce5a6310d6", size = 1062021, upload-time = "2026-02-06T21:10:37.175Z" },
+    { url = "https://files.pythonhosted.org/packages/ef/55/6dc6d6bb953bdfc52519a0059592c52b6e3b8ad51cf8256dffceb55b0610/setuptools-84.2.1-py3-none-any.whl", hash = "sha256:ca140b45d5325a9478f880e351484f62fef15f336462e449ca0c03c873d589c2", size = 876263, upload-time = "2026-10-20T19:01:35.678Z" },
 ]
 
 [[package]]
@@ -2660,18 +2657,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/ba/6e/b837e84a1a704953c62ef8776d45c3e8d759876b4a84fe14eba2859106fe/sphinxcontrib_applehelp-2.0.0.tar.gz", hash = "sha256:2f29ef331735ce958efa4734873f084941970894c6090408b079c61b2e1c06d1", size = 20053, upload-time = "2024-07-29T01:09:00.465Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/5d/85/9ebeae2f76e9e77b952f4b274c27238156eae7979c5421fba91a28f4970d/sphinxcontrib_applehelp-2.0.0-py3-none-any.whl", hash = "sha256:4cd3f0ec4ac5dd9c17ec65e9ab272c9b867ea77425228e68ecf08d6b28ddbdb5", size = 119300, upload-time = "2024-07-29T01:08:58.99Z" },
-]
-
-[[package]]
-name = "sphinxcontrib-details-directive"
-version = "0.1.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "sphinx" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/62/0a/2de87a4f6e0e33415692ed4b03e0b7dfde7d91a691d1486c1577191f875c/sphinxcontrib-details-directive-0.1.0.tar.gz", hash = "sha256:78bd6a67f786a21868abf0e6a5973340d7e7a6fd71b1890de9c856f92877b38b", size = 7969, upload-time = "2019-09-22T13:24:27.707Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/10/9e/9cb96fbdca829ba3eb094d966d0f48bb018215e73f96c8750088e73f2f19/sphinxcontrib_details_directive-0.1.0-py2.py3-none-any.whl", hash = "sha256:ed4d4f47b36e3e905601d425945cbe9d50d4cbcf9964bbf9c863d5a983fb7bf6", size = 10724, upload-time = "2019-09-22T13:24:25.279Z" },
 ]
 
 [[package]]

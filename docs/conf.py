@@ -208,7 +208,6 @@ extensions = [
     "sphinx_sitemap",
     # Custom Craft extensions
     "pydantic_kitbash",
-    "sphinxcontrib.details.directive",
     "sphinx-pydantic",
     "sphinx_rerediraffe",
     "sphinx.ext.autodoc",

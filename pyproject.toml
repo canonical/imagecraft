@@ -60,12 +60,8 @@ dev-resolute = ["python-apt~=3.0.0;sys_platform=='linux'"]
 dev-stonking = ["python-apt~=3.0.0;sys_platform=='linux'"]
 docs = [
   "pydantic-kitbash>=1.0.1,<2.0",
-  # Missing from sphinxcontrib-details-directive, see
-  # https://github.com/sphinx-contrib/sphinxcontrib-details-directive/issues/5
-  "setuptools<82.0",
   "sphinx-lint~=1.0",
   "sphinx-pydantic==0.1.1",
-  "sphinxcontrib-details-directive",
   "sphinxext-rediraffe==0.3.0",
   { include-group = "docs-sphinx-stack" },
 ]
@@ -120,6 +116,7 @@ python-apt = { index = "python-apt-wheels" }
 constraint-dependencies = [
   # Basic constraints to allow --resolution=lowest
   "build>=0.7.0",
+  "certifi>=2026.10.18",
   "cffi>=1.15",
   "iniconfig>=1.1.0",
   "httplib2>=0.20.0",
@@ -127,7 +124,7 @@ constraint-dependencies = [
   "lxml>=5.0",
   "markdown>=3.0",
   "markupsafe>=2.0",
-  "oauthlib>=3.0.0",
+  "oauthlib>=4.0.1",
   "protobuf>=5.0",
   "pynacl>=1.5",
   "pyparsing>=3.0.0",
@@ -135,7 +132,7 @@ constraint-dependencies = [
   "pytz>=2020",
   "pyyaml>=5.0",
   "regex>=2021.11.10",
-  "setuptools>=50",
+  "setuptools>=84.1.0",
   "sphinx-basic-ng>=1.0.0b1",
   "starlette>=1.3.1",
   "tornado>=4.0",
