@@ -12,3 +12,9 @@ id = "GHSA-h35f-9h28-mq5c"
 reason = """
 We are stuck with this version of Setuptools until we can move to the Sphinx Stack.
 """
+
+[[IgnoredVulns]]
+id = "GHSA-xmj3-9gf7-h52w"
+reason = """
+Setuptools is constrained to <82.0 by the docs group (sphinxcontrib-details-directive requires pkg_resources).
+"""
