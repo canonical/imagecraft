@@ -60,12 +60,8 @@ dev-resolute = ["python-apt~=3.0.0;sys_platform=='linux'"]
 dev-stonking = ["python-apt~=3.0.0;sys_platform=='linux'"]
 docs = [
   "pydantic-kitbash>=1.0.1,<2.0",
-  # Missing from sphinxcontrib-details-directive, see
-  # https://github.com/sphinx-contrib/sphinxcontrib-details-directive/issues/5
-  "setuptools<82.0",
   "sphinx-lint~=1.0",
   "sphinx-pydantic==0.1.1",
-  "sphinxcontrib-details-directive",
   "sphinxext-rediraffe==0.3.0",
   { include-group = "docs-sphinx-stack" },
 ]
