@@ -98,7 +98,9 @@ def volume_definition(request: pytest.FixtureRequest) -> GPTVolume | MBRVolume:
     return request.param
 
 
-@pytest.fixture(params=[pytest.param(fs, id=fs.value) for fs in FileSystem])
+@pytest.fixture(
+    params=[pytest.param(fs, id=fs.value) for fs in FileSystem if fs != FileSystem.NONE]
+)
 def fstype(request: pytest.FixtureRequest) -> FileSystem:
     return request.param
 
