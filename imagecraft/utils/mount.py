@@ -737,13 +737,15 @@ def mount_volume(
 
     for idx, item in enumerate(volume.structure, start=1):
         filesystem = getattr(item, "filesystem", None)
-        if not filesystem:
+        if not filesystem or filesystem == FileSystem.NONE:
             continue
 
-        rel_path = mountpoint_overrides.get(
-            item.name,
-            _DEFAULT_ROLE_MOUNTS.get(item.role, f"mnt/{item.name}"),
+        default_mount = (
+            _DEFAULT_ROLE_MOUNTS.get(item.role, f"mnt/{item.name}")
+            if item.role is not None
+            else f"mnt/{item.name}"
         )
+        rel_path = mountpoint_overrides.get(item.name, default_mount)
 
         # Calculate byte offset and size
         if is_gpt:

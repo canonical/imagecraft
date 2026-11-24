@@ -19,7 +19,7 @@ from unittest.mock import call as mocker_call
 
 import pytest
 from imagecraft import errors
-from imagecraft.models import GPTVolume, MBRVolume
+from imagecraft.models import FileSystem, GPTVolume, MBRVolume
 from imagecraft.utils.mount import (
     BaseMount,
     CompositeMount,
@@ -592,3 +592,24 @@ def test_mount_volume_mbr(mocker, mbr_volume, tmp_path: Path):
         "seed": FatFuseMount,
         "": ExtFuseMount,
     }
+
+
+def test_mount_volume_skips_none_filesystem(mocker, mbr_volume, tmp_path: Path):
+    disk_path = tmp_path / "disk.img"
+    disk_path.touch()
+    mbr_volume.structure[0].filesystem = FileSystem.NONE
+
+    mocker.patch(
+        "imagecraft.pack.gptutil.get_partition_sector_offset_by_number",
+        return_value=2459648,
+    )
+    mocker.patch(
+        "imagecraft.pack.gptutil.get_partition_size_sectors_by_number",
+        return_value=4194304,
+    )
+
+    vol_mount = mount_volume(mbr_volume, disk_path)
+
+    assert len(vol_mount._mount_entries) == 1
+    assert vol_mount._mount_entries[0][0] == ""
+    assert isinstance(vol_mount._mount_entries[0][1], ExtFuseMount)

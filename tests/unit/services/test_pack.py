@@ -779,7 +779,7 @@ def test_pack_artifacts_detaches_on_error(
     mock_detach.assert_called_once()
 
 
-def test_pack_artifacts_skips_bios_boot_partition_formatting(
+def test_pack_artifacts_skips_none_filesystem_formatting(
     tmp_path: Path,
     configured_pack_service: ImagecraftPackService,
     mock_image_service: ImageService,
@@ -788,19 +788,17 @@ def test_pack_artifacts_skips_bios_boot_partition_formatting(
 ):
     project = cast(Project, default_factory.get("project").get())
     volume = project.volumes["pc"]
-    bios_boot_item = {
-        "name": "bios-boot",
-        "type": "21686148-6449-6E6F-744E-656564454649",
+    raw_item = {
+        "name": "raw",
+        "type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
         "size": "1M",
-        "role": "system-boot",
-        "filesystem": "ext4",
     }
     mocker.patch.object(
         volume,
         "structure",
         [
             *volume.structure,
-            GPTStructureItem.model_validate(bios_boot_item),
+            GPTStructureItem.model_validate(raw_item),
         ],
     )
     mocker.patch.object(mock_image_service, "create_images")
@@ -825,7 +823,7 @@ def test_pack_artifacts_skips_bios_boot_partition_formatting(
         call.kwargs["device_path"].name
         for call in mock_diskutil.format_device.call_args_list
     ]
-    assert "pc_bios-boot.img" not in formatted_names
+    assert "pc_raw.img" not in formatted_names
     assert mock_diskutil.format_device.call_count == 2
 
 
