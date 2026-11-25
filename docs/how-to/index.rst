@@ -15,3 +15,4 @@ Imagecraft.
     configure-with-cloud-init
     include-custom-files
     pre-install-snaps
+    enable-bios-boot
