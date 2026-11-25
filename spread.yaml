@@ -5,6 +5,7 @@ path: /home/imagecraft
 environment:
   LANG: "C.UTF-8"
   LANGUAGE: "en"
+  LXD_CHANNEL: $(HOST:printf %s "${LXD_CHANNEL:-6/stable}")
   # build the snap with lxd
   PROJECT_PATH: /home/imagecraft
   CRAFT_BUILD_ENVIRONMENT: host # Build in destructive mode until we can solve https://github.com/canonical/imagecraft/issues/253
@@ -238,7 +239,11 @@ prepare: |
   # Setup lxd
   tests.pkgs remove lxd
   snap install multipass --channel=latest/stable
-  snap install lxd --channel=latest/stable
+  if snap list lxd >/dev/null; then
+      snap refresh --channel="$LXD_CHANNEL" lxd
+  else
+      snap install --channel="$LXD_CHANNEL" lxd
+  fi
 
   # Hold snap refreshes for 24h.
   snap set system refresh.hold="$(date --date=tomorrow +%Y-%m-%dT%H:%M:%S%:z)"
