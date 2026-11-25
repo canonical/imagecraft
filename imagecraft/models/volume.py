@@ -168,6 +168,9 @@ class FileSystem(enum.Enum):
     VFAT = "vfat"
     """The VFAT filesystem."""
 
+    NONE = "none"
+    """No filesystem (unformatted raw partition)."""
+
 
 class Role(str, enum.Enum):
     """Role describes the purpose of a given partition."""
@@ -205,7 +208,8 @@ class StructureItem(CraftBaseModel):
     The name is interpreted as a UTF-16 encoded string.
     """
 
-    role: Role = Field(
+    role: Role | None = Field(
+        default=None,
         description="The partition's purpose in the image.",
         examples=["system-data", "system-boot"],
     )
@@ -221,8 +225,9 @@ class StructureItem(CraftBaseModel):
     """
 
     filesystem: FileSystem = Field(
+        default=FileSystem.NONE,
         description="The filesystem of the partition.",
-        examples=["ext4", "fat16"],
+        examples=["ext4", "fat16", "none"],
     )
     """The filesystem of the partition."""
 

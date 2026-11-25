@@ -1,0 +1,35 @@
+name: optional-role-none-fs
+version: "0.1"
+summary: Optional role and none filesystem
+description: Test project with omitted role and default/explicit none filesystem.
+base: bare
+build-base: devel
+
+platforms:
+  amd64:
+
+filesystems:
+  default:
+    - mount: /
+      device: (volume/disk/rootfs)
+
+parts:
+  my-part:
+    plugin: nil
+
+volumes:
+  disk:
+    schema: mbr
+    structure:
+      - name: raw-default
+        type: "83"
+        size: 1M
+      - name: raw-explicit
+        filesystem: none
+        type: "83"
+        size: 1M
+      - name: rootfs
+        role: system-data
+        filesystem: ext4
+        type: "83"
+        size: 100M

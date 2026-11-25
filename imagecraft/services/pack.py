@@ -31,7 +31,6 @@ from imagecraft.models import (
     Role,
     VolumeMetadata,
     get_partition_name,
-    is_bios_boot_partition,
 )
 from imagecraft.models.volume import GptType
 from imagecraft.pack import diskutil
@@ -491,7 +490,7 @@ class ImagecraftPackService(PackageService):
             partition_uuids = bootloader.partition_uuids
 
             for structure_item in volume.structure:
-                if is_bios_boot_partition(structure_item):
+                if structure_item.filesystem == FileSystem.NONE:
                     continue
                 partition_name = get_partition_name(volume_name, structure_item)
                 emit.progress(f"Preparing partition {partition_name}")

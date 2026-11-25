@@ -17,7 +17,7 @@
 import re
 
 import pytest
-from imagecraft.models import Role, Volume
+from imagecraft.models import FileSystem, Role, Volume
 from imagecraft.models.volume import (
     GPTStructureItem,
     GPTVolume,
@@ -772,3 +772,42 @@ def test_hybrid_volume_duplicate_filesystem_labels():
                 ],
             }
         )
+
+
+@pytest.mark.parametrize(
+    "volume_data",
+    [
+        pytest.param(
+            {
+                "schema": "gpt",
+                "structure": [
+                    {
+                        "name": "bios-boot",
+                        "type": "21686148-6449-6E6F-744E-656564454649",
+                        "size": "1M",
+                    }
+                ],
+            },
+            id="omitted",
+        ),
+        pytest.param(
+            {
+                "schema": "mbr",
+                "structure": [
+                    {
+                        "name": "raw",
+                        "type": "83",
+                        "filesystem": "none",
+                        "size": "1M",
+                    }
+                ],
+            },
+            id="explicit-none",
+        ),
+    ],
+)
+def test_structure_filesystem_and_role_optional(volume_data):
+    volume = TypeAdapter(Volume).validate_python(volume_data)
+
+    assert volume.structure[0].role is None
+    assert volume.structure[0].filesystem == FileSystem.NONE
